@@ -2,22 +2,31 @@ package minify
 
 import (
 	"io"
+	"log"
 	"io/ioutil"
 	"bytes"
 )
 
+type Minify struct {
+	UglifyjsPath string
+}
+
 type Minifier func(io.Reader) (io.Reader, error)
 
-func inlineMinify(minifier Minifier, val []byte) []byte {
+func inline(minifier Minifier, val []byte) []byte {
 	buffer, err := minifier(bytes.NewBuffer(val))
 	if err == nil {
 		if newVal, err := ioutil.ReadAll(buffer); err == nil {
 			return newVal
+		} else {
+			log.Println(err)
 		}
+	} else {
+		log.Println(err)
 	}
 	return val
 }
 
-func inlineMinifyString(minifier Minifier, val string) string {
-	return string(inlineMinify(minifier, []byte(val)))
+func inlineString(minifier Minifier, val string) string {
+	return string(inline(minifier, []byte(val)))
 }

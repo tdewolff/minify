@@ -8,7 +8,7 @@ import (
 	"code.google.com/p/go.net/html"
 )
 
-func Html(r io.Reader) (io.Reader, error) {
+func (minify Minify) Html(r io.Reader) (io.Reader, error) {
 	multipleWhitespaceRegexp := regexp.MustCompile("\\s+")
 	validAttrRegexp := regexp.MustCompile("^[^\\s\"'`=<>/]*$")
 	booleanAttrRegexp := regexp.MustCompile("^(allowfullscreen|async|autofocus|autoplay|checked|compact|controls|declare|"+
@@ -82,9 +82,9 @@ func Html(r io.Reader) (io.Reader, error) {
 					}
 
 					if val == "text/javascript" {
-						text = inlineMinify(Js, text)
+						text = inline(minify.Js, text)
 					} else if val == "text/css" {
-						text = inlineMinify(Css, text)
+						text = inline(minify.Css, text)
 					}
 				}
 				buffer.Write(text); text = nil
@@ -181,10 +181,10 @@ func Html(r io.Reader) (io.Reader, error) {
 
 					// CSS and JS minifiers for attribute inline code
 					if attr.Key == "style" {
-						val = inlineMinifyString(Css, val)
+						val = inlineString(minify.Css, val)
 					} else if eventAttrRegexp.MatchString(attr.Key) {
 						val = strings.TrimLeft(val, "javascript:")
-						val = inlineMinifyString(Js, val)
+						val = inlineString(minify.Js, val)
 					} else if (attr.Key == "href" || attr.Key == "src" || attr.Key == "cite" || attr.Key == "action") &&
 							getAttr(token, "rel") != "external" || attr.Key == "profile" || attr.Key == "xmlns" {
 						val = strings.TrimLeft(val, "http:")

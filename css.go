@@ -22,7 +22,7 @@ import (
 	"bytes"
 )
 
-func Css(r io.Reader) (io.Reader, error) {
+func (minify Minify) Css(r io.Reader) (io.Reader, error) {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
