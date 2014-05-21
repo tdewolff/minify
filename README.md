@@ -1,0 +1,1 @@
+Minifiers written for HTML and CSS. The JS minifier uses compiler.jar (Closure-Compiler) in the working path. The HTML minifier is quite thorough, the CSS minifier needs more work.
