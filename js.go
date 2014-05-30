@@ -2,12 +2,13 @@ package minify
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
 	"bytes"
 	"os/exec"
 )
 
-func (minify Minify) Js(r io.Reader) (io.Reader, error) {
+func (minify Minify) Js(r io.ReadCloser) (io.ReadCloser, error) {
 	if _, err := exec.LookPath("node"); err != nil { return r, err }
 	if _, err := os.Stat(minify.UglifyjsPath); err != nil { return r, err }
 
@@ -25,15 +26,15 @@ func (minify Minify) Js(r io.Reader) (io.Reader, error) {
 	if _, err := io.Copy(stdIn, r); err != nil { return nil, err }
 	stdIn.Close()
 
-	if _, err = io.Copy(os.Stderr, stdErr); err != nil { return nil, err }
-	stdErr.Close()
-
 	buffer := new(bytes.Buffer)
 	if _, err = io.Copy(buffer, stdOut); err != nil { return nil, err }
 	stdOut.Close()
 
+	if _, err = io.Copy(os.Stderr, stdErr); err != nil { return nil, err }
+	stdErr.Close()
+
 	if buffer.Len() > 0 {
 		buffer.Truncate(buffer.Len() - 1)
 	}
-	return buffer, cmd.Wait()
+	return ioutil.NopCloser(buffer), cmd.Wait()
 }

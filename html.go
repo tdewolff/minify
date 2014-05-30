@@ -2,13 +2,14 @@ package minify
 
 import (
 	"io"
+	"io/ioutil"
 	"strings"
 	"regexp"
 	"bytes"
 	"code.google.com/p/go.net/html"
 )
 
-func (minify Minify) Html(r io.Reader) (io.Reader, error) {
+func (minify Minify) Html(r io.ReadCloser) (io.ReadCloser, error) {
 	multipleWhitespaceRegexp := regexp.MustCompile("\\s+")
 	validAttrRegexp := regexp.MustCompile("^[^\\s\"'`=<>/]*$")
 	booleanAttrRegexp := regexp.MustCompile("^(allowfullscreen|async|autofocus|autoplay|checked|compact|controls|declare|"+
@@ -55,7 +56,7 @@ func (minify Minify) Html(r io.Reader) (io.Reader, error) {
 		case html.ErrorToken:
 			if z.Err() == io.EOF {
 				buffer.Write(text)
-				return buffer, nil
+				return ioutil.NopCloser(buffer), nil
 			}
 			return nil, z.Err()
 		case html.DoctypeToken:

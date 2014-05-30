@@ -11,10 +11,21 @@ type Minify struct {
 	UglifyjsPath string
 }
 
-type Minifier func(io.Reader) (io.Reader, error)
+type Minifier func(io.ReadCloser) (io.ReadCloser, error)
+
+func (minify Minify) MinifierByMime(mime string) Minifier {
+	if mime == "text/html" {
+		return minify.Html
+	} else if mime == "text/javascript" {
+		return minify.Js
+	} else if mime == "text/css" {
+		return minify.Css
+	}
+	return nil
+}
 
 func inline(minifier Minifier, val []byte) []byte {
-	buffer, err := minifier(bytes.NewBuffer(val))
+	buffer, err := minifier(ioutil.NopCloser(bytes.NewBuffer(val)))
 	if err == nil {
 		if newVal, err := ioutil.ReadAll(buffer); err == nil {
 			return newVal

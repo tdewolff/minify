@@ -22,7 +22,7 @@ import (
 	"bytes"
 )
 
-func (minify Minify) Css(r io.Reader) (io.Reader, error) {
+func (minify Minify) Css(r io.ReadCloser) (io.ReadCloser, error) {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
@@ -176,25 +176,25 @@ func (minify Minify) Css(r io.Reader) (io.Reader, error) {
 	afterValue := false
 	var prop string
 
-	bytes := new(bytes.Buffer)
+	buffer := new(bytes.Buffer)
 	l := lex("cssminify", s, inline)
 	for {
 		i := l.NextItem()
 		switch i.typ {
 		case itemEOF:
-			return bytes, nil
+			return ioutil.NopCloser(buffer), nil
 		case itemError:
 			return nil, errors.New(i.val)
 		case itemSelector:
 			val := whitespace.ReplaceAllString(i.val, " ")
 			val = selectors.ReplaceAllString(val, "$1")
-			bytes.WriteString(val)
+			buffer.WriteString(val)
 		case itemProperty:
 			prop = i.val
 			if afterValue {
-				bytes.WriteString(";")
+				buffer.WriteString(";")
 			}
-			bytes.WriteString(i.val+":")
+			buffer.WriteString(i.val+":")
 		case itemValue:
 			val := strings.Replace(i.val, ", ", ",", -1)
 
@@ -262,11 +262,11 @@ func (minify Minify) Css(r io.Reader) (io.Reader, error) {
 				val = "#"+hex
 			}
 
-			bytes.WriteString(val)
+			buffer.WriteString(val)
 			afterValue = true;
 		case itemComment:
 		default:
-			bytes.WriteString(i.val)
+			buffer.WriteString(i.val)
 			afterValue = false;
 		}
 	}
