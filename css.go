@@ -27,8 +27,9 @@ func (minify Minify) Css(r io.ReadCloser) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := string(b)
+	r.Close()
 
+	s := string(b)
 	inline := false
 	if strings.IndexRune(s, '{') == -1 {
 		inline = true

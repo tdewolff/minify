@@ -8,36 +8,29 @@ import (
 )
 
 type Minify struct {
+	MimeMinifier map[string]Minifier
 	UglifyjsPath string
+	TemplateDelims [2]string
 }
 
-type Minifier func(io.ReadCloser) (io.ReadCloser, error)
+type Minifier func(Minify, io.ReadCloser) (io.ReadCloser, error)
 
-func (minify Minify) MinifierByMime(mime string) Minifier {
-	if mime == "text/html" {
-		return minify.Html
-	} else if mime == "text/javascript" {
-		return minify.Js
-	} else if mime == "text/css" {
-		return minify.Css
-	}
-	return nil
-}
-
-func inline(minifier Minifier, val []byte) []byte {
-	buffer, err := minifier(ioutil.NopCloser(bytes.NewBuffer(val)))
-	if err == nil {
-		if newVal, err := ioutil.ReadAll(buffer); err == nil {
-			return newVal
+func (minify Minify) inline(mime string, val []byte) []byte {
+	if minifier, ok := minify.MimeMinifier[mime]; ok {
+		buffer, err := minifier(minify, ioutil.NopCloser(bytes.NewBuffer(val)))
+		if err == nil {
+			if newVal, err := ioutil.ReadAll(buffer); err == nil {
+				return newVal
+			} else {
+				log.Println("ioutil.ReadAll:", err)
+			}
 		} else {
-			log.Println(err)
+			log.Println("minify.Minifier:", err)
 		}
-	} else {
-		log.Println(err)
 	}
 	return val
 }
 
-func inlineString(minifier Minifier, val string) string {
-	return string(inline(minifier, []byte(val)))
+func (minify Minify) inlineString(mime string, val string) string {
+	return string(minify.inline(mime, []byte(val)))
 }

@@ -10,6 +10,10 @@ import (
 )
 
 func (minify Minify) Html(r io.ReadCloser) (io.ReadCloser, error) {
+	defer func() {
+		r.Close()
+	}()
+
 	multipleWhitespaceRegexp := regexp.MustCompile("\\s+")
 	validAttrRegexp := regexp.MustCompile("^[^\\s\"'`=<>/]*$")
 	booleanAttrRegexp := regexp.MustCompile("^(allowfullscreen|async|autofocus|autoplay|checked|compact|controls|declare|"+
@@ -64,6 +68,9 @@ func (minify Minify) Html(r io.ReadCloser) (io.ReadCloser, error) {
 
 			// https://developers.google.com/speed/articles/html5-performance
 			buffer.WriteString("<!doctype html>")
+		case html.CommentToken:
+			buffer.Write(text)
+			text = []byte("<!--"+z.Token().Data+"-->")
 		case html.TextToken:
 			buffer.Write(text)
 			text = z.Text()
@@ -81,12 +88,7 @@ func (minify Minify) Html(r io.ReadCloser) (io.ReadCloser, error) {
 							val = defaultStyleType
 						}
 					}
-
-					if val == "text/javascript" {
-						text = inline(minify.Js, text)
-					} else if val == "text/css" {
-						text = inline(minify.Css, text)
-					}
+					text = minify.inline(val, text)
 				}
 				buffer.Write(text); text = nil
 				break
@@ -94,6 +96,15 @@ func (minify Minify) Html(r io.ReadCloser) (io.ReadCloser, error) {
 
 			// whitespace removal; if after an inline element, trim left if precededBySpace
 			text = multipleWhitespaceRegexp.ReplaceAll(text, []byte(" "))
+
+			// remove trailing space on template delimiters
+			if len(minify.TemplateDelims) == 2 {
+				delimPos := strings.LastIndex(string(text), minify.TemplateDelims[1])
+				if delimPos != -1 && string(text[delimPos:]) == minify.TemplateDelims[1]+" " {
+					text = text[:len(text)-1]
+				}
+			}
+
 			if inlineTagRegexp.MatchString(prevElementToken.Data) {
 				if precededBySpace {
 					text = bytes.TrimLeft(text, " ")
@@ -182,10 +193,10 @@ func (minify Minify) Html(r io.ReadCloser) (io.ReadCloser, error) {
 
 					// CSS and JS minifiers for attribute inline code
 					if attr.Key == "style" {
-						val = inlineString(minify.Css, val)
+						val = minify.inlineString(defaultStyleType, val)
 					} else if eventAttrRegexp.MatchString(attr.Key) {
 						val = strings.TrimLeft(val, "javascript:")
-						val = inlineString(minify.Js, val)
+						val = minify.inlineString(defaultScriptType, val)
 					} else if (attr.Key == "href" || attr.Key == "src" || attr.Key == "cite" || attr.Key == "action") &&
 							getAttr(token, "rel") != "external" || attr.Key == "profile" || attr.Key == "xmlns" {
 						val = strings.TrimLeft(val, "http:")
@@ -209,7 +220,7 @@ func (minify Minify) Html(r io.ReadCloser) (io.ReadCloser, error) {
 					}
 
 					// no quote if possible, else prefer single or double depending on which occurs more often in value
-					if validAttrRegexp.MatchString(val) {
+					if validAttrRegexp.MatchString(val) && (len(minify.TemplateDelims) != 2 || strings.Index(val, minify.TemplateDelims[0]) == -1) {
 						buffer.WriteString(val)
 					} else if strings.Count(val, "\"") > strings.Count(val, "'") {
 						buffer.WriteByte('\'')
