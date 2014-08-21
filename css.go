@@ -22,6 +22,7 @@ import (
 	"bytes"
 )
 
+// TODO: use UglifyCSS
 func (minify Minify) Css(r io.ReadCloser) (io.ReadCloser, error) {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
