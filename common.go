@@ -9,8 +9,8 @@ import (
 
 type Minify struct {
 	MimeMinifier map[string]Minifier
-	UglifyjsPath string
-	TemplateDelims [2]string
+	JsMinifier []string
+	TemplateDelims []string
 }
 
 type Minifier func(Minify, io.ReadCloser) (io.ReadCloser, error)

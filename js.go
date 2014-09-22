@@ -1,10 +1,8 @@
 package minify
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
 	"bytes"
 	"os/exec"
 )
@@ -14,12 +12,10 @@ func (minify Minify) Js(r io.ReadCloser) (io.ReadCloser, error) {
 		r.Close()
 	}()
 
-	if _, err := exec.LookPath("node"); err != nil { return r, fmt.Errorf("exec.LookPath(\"node\"): %s", err) }
-	if _, err := os.Stat(minify.UglifyjsPath); err != nil { return r, fmt.Errorf("os.Stat(\""+minify.UglifyjsPath+"\"): %s", err) }
+	//if _, err := exec.LookPath("node"); err != nil { return r, fmt.Errorf("exec.LookPath(\"node\"): %s", err) }
+	//if _, err := os.Stat(minify.UglifyjsPath); err != nil { return r, fmt.Errorf("os.Stat(\""+minify.UglifyjsPath+"\"): %s", err) }
 
-	cmd := exec.Command("node", minify.UglifyjsPath)
-	//stdErr, err := cmd.StderrPipe()
-	//if err != nil { return r, err }
+	cmd := exec.Command(minify.JsMinifier[0], minify.JsMinifier[1:]...)
 
 	stdOut, err := cmd.StdoutPipe()
 	if err != nil { return r, err }
@@ -35,11 +31,5 @@ func (minify Minify) Js(r io.ReadCloser) (io.ReadCloser, error) {
 	if _, err = io.Copy(buffer, stdOut); err != nil { return nil, err }
 	stdOut.Close()
 
-	//if _, err = io.Copy(os.Stderr, stdErr); err != nil { return nil, err }
-	//stdErr.Close()
-
-	// if buffer.Len() > 0 {
-	// 	buffer.Truncate(buffer.Len() - 1)
-	// }
 	return ioutil.NopCloser(buffer), cmd.Wait()
 }
