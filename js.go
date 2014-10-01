@@ -1,6 +1,7 @@
 package minify
 
 import (
+	"errors"
 	"io"
 	"io/ioutil"
 	"bytes"
@@ -15,7 +16,14 @@ func (minify Minify) Js(r io.ReadCloser) (io.ReadCloser, error) {
 	//if _, err := exec.LookPath("node"); err != nil { return r, fmt.Errorf("exec.LookPath(\"node\"): %s", err) }
 	//if _, err := os.Stat(minify.UglifyjsPath); err != nil { return r, fmt.Errorf("os.Stat(\""+minify.UglifyjsPath+"\"): %s", err) }
 
-	cmd := exec.Command(minify.JsMinifier[0], minify.JsMinifier[1:]...)
+	var cmd *exec.Cmd
+	if len(minify.JsMinifier) == 0 {
+		return nil, errors.New("JS minifier not set")
+	} else if len(minify.JsMinifier) == 1 {
+		cmd = exec.Command(minify.JsMinifier[0])
+	} else {
+		cmd = exec.Command(minify.JsMinifier[0], minify.JsMinifier[1:]...)
+	}
 
 	stdOut, err := cmd.StdoutPipe()
 	if err != nil { return r, err }
