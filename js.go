@@ -13,9 +13,6 @@ func (minify Minify) Js(r io.ReadCloser) (io.ReadCloser, error) {
 		r.Close()
 	}()
 
-	//if _, err := exec.LookPath("node"); err != nil { return r, fmt.Errorf("exec.LookPath(\"node\"): %s", err) }
-	//if _, err := os.Stat(minify.UglifyjsPath); err != nil { return r, fmt.Errorf("os.Stat(\""+minify.UglifyjsPath+"\"): %s", err) }
-
 	var cmd *exec.Cmd
 	if len(minify.JsMinifier) == 0 {
 		return nil, errors.New("JS minifier not set")

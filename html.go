@@ -1,11 +1,12 @@
 package minify
 
 import (
+	"bytes"
 	"io"
 	"io/ioutil"
-	"strings"
 	"regexp"
-	"bytes"
+	"strings"
+
 	"code.google.com/p/go.net/html"
 )
 
@@ -22,14 +23,6 @@ func (minify Minify) Html(r io.ReadCloser) (io.ReadCloser, error) {
 		"readonly|required|reversed|scoped|seamless|selected|sortable|spellcheck|translate|truespeed|typemustmatch|"+
 		"visible)$")
 	eventAttrRegexp := regexp.MustCompile("^on[a-z]+$")
-	// eventAttrRegexp := regexp.MustCompile("^(onabort|onafterprint|onbeforeprint|onbeforeunload|onblur|oncanplay|"+
-	// 	"oncanplaythrough|onchange|onclick|oncontextmenu|ondblclick|ondrag|ondragend|ondragenter|ondragleave|ondragover|"+
-	// 	"ondragstart|ondrop|ondurationchange|onemptied|onended|onerror|onfocus|onformchange|onforminput|onhaschange|"+
-	// 	"oninput|oninvalid|onkeydown|onkeypress|onkeyup|onload|onloadeddata|onloadedmetadata|onloadstart|onmessage|"+
-	// 	"onmousedown|onmousemove|onmouseout|onmouseover|onmouseup|onmousewheel|onoffline|ononline|onpagehide|onpageshow|"+
-	// 	"onpause|onplay|onplaying|onpopstate|onprogress|onratechange|onreadystatechange|onredo|onresize|onscroll|"+
-	// 	"onseeked|onseeking|onselect|onshow|onstalled|onstorage|onsubmit|onsuspend|ontimeupdate|onundo|onunload|"+
-	// 	"onvolumechange|onwaiting)$")
 	specialTagRegexp := regexp.MustCompile("^(style|script|pre|code|textarea)$")
 	inlineTagRegexp := regexp.MustCompile("^(b|big|i|small|tt|abbr|acronym|cite|dfn|em|kbd|strong|samp|var|a|bdo|br|img|"+
 		"map|object|q|span|sub|sup|button|input|label|select)$")
@@ -153,168 +146,8 @@ func (minify Minify) Html(r io.ReadCloser) (io.ReadCloser, error) {
 				break
 			}
 
-			/*if len(minify.TemplateDelims) == 2 {
-				attributes := ""
-				inTemplate := false
-				for _, attr := range token.Attr {
-					fmt.Println(attr.Key, attr.Val)
-					valClosePos := strings.Index(attr.Val, minify.TemplateDelims[1])
-					if inTemplate {
-						keyClosePos := strings.Index(attr.Key, minify.TemplateDelims[1])
-						if keyClosePos != -1 {
-
-						}
-
-					} else if valClosePos != -1 {
-						attributes += " "+attr.Key+"="+attr.Val
-						inTemplate = strings.Index(attr.Val[valClosePos:], minify.TemplateDelims[0]) != -1
-					} else {
-						attributes += " "+attr.Key+"=\""+attr.Val
-						inTemplate = strings.Index(attr.Val, minify.TemplateDelims[0]) != -1
-						if !inTemplate {
-							attributes += "\""
-						}
-					}
-				}
-
-				if len(attributes) > 0 {
-					attributes = attributes[1:]
-					fmt.Println(attributes)
-
-					escapes := 0
-					inVal := false
-					var valDelim uint8
-					key, val := "", ""
-					var Attr []html.Attribute
-					for len(attributes) > 0 {
-						if len(attributes) >= len(minify.TemplateDelims[0]) && attributes[:len(minify.TemplateDelims[0])] == minify.TemplateDelims[0] {
-							// in template tag
-							attributes = attributes[len(minify.TemplateDelims[0]):]
-							closePos := strings.Index(attributes, minify.TemplateDelims[1])
-							if closePos == -1 {
-								Attr = append(Attr, html.Attribute{"", "", minify.TemplateDelims[0]+attributes})
-								break
-							} else {
-								Attr = append(Attr, html.Attribute{"", "", minify.TemplateDelims[0]+attributes[:closePos+len(minify.TemplateDelims[1])]})
-								attributes = attributes[closePos+len(minify.TemplateDelims[1]):]
-							}
-						} else {
-							if !inVal || valDelim == 0 {
-								// in key
-								if attributes[0] == '=' {
-									inVal = true
-									valDelim = 0
-								} else if valDelim == 0 {
-									valDelim = ' '
-									if attributes[0] == '"' || attributes[0] == '\'' {
-										valDelim = attributes[0]
-									}
-								} else {
-									key += string(attributes[0])
-								}
-							} else {
-								// in val
-								if attributes[0] == '\\' {
-									val += string(attributes[0])
-									escapes++
-								} else {
-									if attributes[0] == valDelim && escapes % 2 == 0 {
-										inVal = false
-										Attr = append(Attr, html.Attribute{"", strings.TrimSpace(key), strings.TrimSpace(val)})
-										key, val = "", ""
-									} else {
-										val += string(attributes[0])
-									}
-									escapes = 0
-								}
-							}
-							attributes = attributes[1:]
-						}
-					}
-					Attr = append(Attr, html.Attribute{"", key, val})
-
-					for _, attr := range Attr {
-						fmt.Println(attr.Key, attr.Val)
-					}
-				}
-			}*/
-
-			/*if len(minify.TemplateDelims) == 2 {
-				carry := false
-				carryKey := ""
-				//carryVal := ""
-				var Attr []html.Attribute
-				for i, attr := range token.Attr {
-					fmt.Println(">", attr.Key, attr.Val)
-
-					keyOpenDelim := strings.Index(attr.Key, minify.TemplateDelims[0])
-					if keyOpenDelim == -1 && carry {
-						keyOpenDelim = 0
-						carry = false
-					}
-
-					if keyOpenDelim != -1 {
-						token.Attr[i].Key = carryKey + attr.Key[:keyOpenDelim]
-						carryKey = ""
-						if keyCloseDelim := strings.LastIndex(attr.Key, minify.TemplateDelims[1]); keyCloseDelim != -1 {
-							token.Attr[i].Key += attr.Key[keyCloseDelim + len(minify.TemplateDelims[1]):]
-							Attr = append(Attr, html.Attribute{"", "", attr.Key[keyOpenDelim:keyCloseDelim + len(minify.TemplateDelims[1])]})
-						} else if valCloseDelim := strings.LastIndex(attr.Val, minify.TemplateDelims[1]); valCloseDelim != -1 {
-							token.Attr[i].Val = attr.Val[valCloseDelim + len(minify.TemplateDelims[1]):]
-							Attr = append(Attr, html.Attribute{"", "", attr.Key[keyOpenDelim:]+"="+attr.Val[:valCloseDelim + len(minify.TemplateDelims[1])]})
-						} else {
-							carry = true
-							carryKey = token.Attr[i].Key
-							token.Attr[i].Key = ""
-							token.Attr[i].Val = ""
-							continue
-						}
-					} else if valOpenDelim := strings.Index(attr.Val, minify.TemplateDelims[0]); valOpenDelim != -1 {
-						token.Attr[i].Val = attr.Val[:valOpenDelim]
-						if valCloseDelim := strings.LastIndex(attr.Val, minify.TemplateDelims[1]); valCloseDelim != -1 {
-							token.Attr[i].Val += attr.Val[valCloseDelim + len(minify.TemplateDelims[1]):]
-							Attr = append(Attr, html.Attribute{"", "", attr.Val[valOpenDelim:valCloseDelim + len(minify.TemplateDelims[1])]})
-						} else {
-							carry = true
-							carryKey = attr.Key
-							//carryVal = token.Attr[i].Val
-							token.Attr[i].Key = ""
-							token.Attr[i].Val = ""
-							continue
-						}
-					}
-
-					if token.Attr[i].Key == "" {
-						if token.Attr[i].Val == "" {
-							continue
-						} else {
-							split := strings.Split(token.Attr[i].Val, "=")
-							if len(split) >= 2 {
-								token.Attr[i].Key = split[0]
-								token.Attr[i].Val = strings.Join(split[1:], "=")
-							}
-						}
-					} else if len(token.Attr[i].Val) > 0 && token.Attr[i].Val[0] == '=' {
-						token.Attr[i].Val = token.Attr[i].Val[1:]
-					}
-					token.Attr[i].Val = strings.Trim(token.Attr[i].Val, "'\"")
-					Attr = append(Attr, html.Attribute{"", token.Attr[i].Key, token.Attr[i].Val})
-				}
-				token.Attr = Attr
-			}
-
-			for _, attr := range token.Attr {
-				fmt.Println("=", attr.Key, attr.Val)
-			}*/
-
 			// output attributes
 			for _, attr := range token.Attr {
-				// template tags go into Val with empty Key
-				/*if attr.Key == "" && attr.Val != "" {
-					buffer.WriteString(attr.Val)
-					continue
-				}*/
-
 				val := strings.TrimSpace(attr.Val)
 				val = strings.Replace(val, "&", "&amp;", -1)
 				val = strings.Replace(val, "<", "&lt;", -1)
@@ -355,12 +188,17 @@ func (minify Minify) Html(r io.ReadCloser) (io.ReadCloser, error) {
 					if attr.Key == "style" {
 						val = minify.inlineString(defaultStyleType, val)
 					} else if eventAttrRegexp.MatchString(attr.Key) {
-						val = strings.TrimLeft(val, "javascript:")
+						if strings.HasPrefix(val, "javascript:") {
+							val = val[11:]
+						}
 						val = minify.inlineString(defaultScriptType, val)
 					} else if (attr.Key == "href" || attr.Key == "src" || attr.Key == "cite" || attr.Key == "action") &&
 							getAttr(token, "rel") != "external" || attr.Key == "profile" || attr.Key == "xmlns" {
-						val = strings.TrimLeft(val, "http:")
-						val = strings.TrimLeft(val, "https:")
+						if strings.HasPrefix(val, "http:") {
+							val = val[5:]
+						} else if strings.HasPrefix(val, "https:") {
+							val = val[6:]
+						}
 					} else if token.Data == "meta" && attr.Key == "content" {
 						http_equiv := getAttr(token, "http-equiv")
 						if http_equiv == "content-type" {
