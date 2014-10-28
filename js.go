@@ -1,10 +1,10 @@
 package minify
 
 import (
+	"bytes"
 	"errors"
 	"io"
 	"io/ioutil"
-	"bytes"
 	"os/exec"
 )
 

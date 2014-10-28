@@ -9,17 +9,17 @@ package minify
 */
 
 import (
-	"unicode/utf8"
-	"io"
-	"io/ioutil"
-	"fmt"
-	"strings"
-	"regexp"
-	"errors"
-	"strconv"
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"bytes"
+	"errors"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"regexp"
+	"strconv"
+	"strings"
+	"unicode/utf8"
 )
 
 // TODO: use UglifyCSS

@@ -91,12 +91,12 @@ func (minify Minify) Html(r io.ReadCloser) (io.ReadCloser, error) {
 			text = multipleWhitespaceRegexp.ReplaceAll(text, []byte(" "))
 
 			// remove trailing space on template delimiters
-			if len(minify.TemplateDelims) == 2 {
-				delimPos := strings.LastIndex(string(text), minify.TemplateDelims[1])
-				if delimPos != -1 && string(text[delimPos:]) == minify.TemplateDelims[1]+" " {
-					text = text[:len(text)-1]
-				}
-			}
+			// if len(minify.TemplateDelims) == 2 {
+			// 	delimPos := strings.LastIndex(string(text), minify.TemplateDelims[1])
+			// 	if delimPos != -1 && string(text[delimPos:]) == minify.TemplateDelims[1]+" " {
+			// 		text = text[:len(text)-1]
+			// 	}
+			// }
 
 			if inlineTagRegexp.MatchString(prevElementToken.Data) {
 				if precededBySpace {
@@ -218,7 +218,7 @@ func (minify Minify) Html(r io.ReadCloser) (io.ReadCloser, error) {
 					}
 
 					// no quote if possible, else prefer single or double depending on which occurs more often in value
-					if validAttrRegexp.MatchString(val) && (len(minify.TemplateDelims) != 2 || strings.Index(val, minify.TemplateDelims[0]) == -1) {
+					if validAttrRegexp.MatchString(val)/* && (len(minify.TemplateDelims) != 2 || strings.Index(val, minify.TemplateDelims[0]) == -1)*/ {
 						buffer.WriteString(val)
 					} else if strings.Count(val, "\"") > strings.Count(val, "'") {
 						buffer.WriteByte('\'')
