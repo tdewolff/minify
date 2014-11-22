@@ -1,3 +1,5 @@
+[![GoDoc](http://godoc.org/github.com/tdewolff/GoMinify?status.svg)](http://godoc.org/github.com/tdewolff/GoMinify)
+
 # GoMinify
 
 GoMinify is a minifier package written in [Go][1]. It has a build-in HTML and CSS minifier and provides an interface to implement any minifier.
@@ -29,6 +31,6 @@ It is in need of a CSS tokenizer, preferably from another package, in future.
 
 ## Usage
 
-
+TODO: examples
 
 [1]: http://golang.org/ "Go Language"
