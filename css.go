@@ -22,7 +22,7 @@ import (
 )
 
 // TODO: use a better tokenizer
-func (minify Minify) CSS(w io.Writer, r io.Reader) error {
+func (m Minify) CSS(w io.Writer, r io.Reader) error {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return err
