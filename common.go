@@ -2,9 +2,9 @@ package minify
 
 import (
 	"bytes"
-	"log"
 	"io"
 	"io/ioutil"
+	"log"
 
 	"github.com/kballard/go-shellquote"
 )
@@ -13,7 +13,7 @@ type Minifier func(Minify, io.ReadCloser) (io.ReadCloser, error)
 
 type Minify struct {
 	MimeMinifier map[string]Minifier
-	JsMinifier []string
+	JsMinifier   []string
 }
 
 func NewMinify(jsMinifier string) *Minify {

@@ -23,17 +23,27 @@ func (minify Minify) Js(r io.ReadCloser) (io.ReadCloser, error) {
 	}
 
 	stdOut, err := cmd.StdoutPipe()
-	if err != nil { return r, err }
+	if err != nil {
+		return r, err
+	}
 
 	stdIn, err := cmd.StdinPipe()
-	if err != nil { return r, err }
+	if err != nil {
+		return r, err
+	}
 
-	if err = cmd.Start(); err != nil { return r, err }
-	if _, err := io.Copy(stdIn, r); err != nil { return nil, err }
+	if err = cmd.Start(); err != nil {
+		return r, err
+	}
+	if _, err := io.Copy(stdIn, r); err != nil {
+		return nil, err
+	}
 	stdIn.Close()
 
 	buffer := new(bytes.Buffer)
-	if _, err = io.Copy(buffer, stdOut); err != nil { return nil, err }
+	if _, err = io.Copy(buffer, stdOut); err != nil {
+		return nil, err
+	}
 	stdOut.Close()
 
 	return ioutil.NopCloser(buffer), cmd.Wait()

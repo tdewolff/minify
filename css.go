@@ -1,11 +1,11 @@
 package minify
 
-/* CSS minifier - does a fair job but can be improved:
-	- remove space before !important
-	- collapse margin/padding/border/background/list/etc. definitions into one
-	- remove empty or with duplicate selector blocks
-	- shorten zero values (none/0px/0pt/etc. -> 0)
-	- remove quotes within url()?
+/* CSS minifier - does a fair job but can be improved with the following points (non-exhaustive list):
+- remove space before !important
+- collapse margin/padding/border/background/list/etc. definitions into one
+- remove empty or with duplicate selector blocks
+- shorten zero values (none/0px/0pt etc. become 0)
+- remove quotes within url()?
 */
 
 import (
@@ -22,7 +22,7 @@ import (
 	"unicode/utf8"
 )
 
-// TODO: use UglifyCSS
+// TODO: use a better tokenizer
 func (minify Minify) Css(r io.ReadCloser) (io.ReadCloser, error) {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
@@ -37,7 +37,7 @@ func (minify Minify) Css(r io.ReadCloser) (io.ReadCloser, error) {
 	}
 
 	// hex values with a shorter color name
-	hexColors := map[string]string {
+	hexColors := map[string]string{
 		"000080": "navy",
 		"008000": "green",
 		"008080": "teal",
@@ -69,108 +69,108 @@ func (minify Minify) Css(r io.ReadCloser) (io.ReadCloser, error) {
 		"FFFAFA": "snow",
 		"FFFFF0": "ivory",
 		"FF0000": "red",
-		"F00": "red",
+		"F00":    "red",
 	}
 
-	colorNames := map[string]string {
-		"black": "000",
-		"darkblue": "00008B",
-		"mediumblue": "0000CD",
-		"darkgreen": "006400",
-		"darkcyan": "008B8B",
-		"deepskyblue": "00BFFF",
-		"darkturquoise": "00CED1",
-		"mediumspringgreen": "00FA9A",
-		"springgreen": "00FF7F",
-		"midnightblue": "191970",
-		"dodgerblue": "1E90FF",
-		"lightseagreen": "20B2AA",
-		"forestgreen": "228B22",
-		"seagreen": "2E8B57",
-		"darkslategray": "2F4F4F",
-		"limegreen": "32CD32",
-		"mediumseagreen": "3CB371",
-		"turquoise": "40E0D0",
-		"royalblue": "4169E1",
-		"steelblue": "4682B4",
-		"darkslateblue": "483D8B",
-		"mediumturquoise": "48D1CC",
-		"darkolivegreen": "556B2F",
-		"cadetblue": "5F9EA0",
-		"cornflowerblue": "6495ED",
-		"mediumaquamarine": "66CDAA",
-		"slateblue": "6A5ACD",
-		"olivedrab": "6B8E23",
-		"slategray": "708090",
-		"lightslateblue": "789",
-		"mediumslateblue": "7B68EE",
-		"lawngreen": "7CFC00",
-		"chartreuse": "7FFF00",
-		"aquamarine": "7FFFD4",
-		"lightskyblue": "87CEFA",
-		"blueviolet": "8A2BE2",
-		"darkmagenta": "8B008B",
-		"saddlebrown": "8B4513",
-		"darkseagreen": "8FBC8F",
-		"lightgreen": "90EE90",
-		"mediumpurple": "9370DB",
-		"darkviolet": "9400D3",
-		"palegreen": "98FB98",
-		"darkorchid": "9932CC",
-		"yellowgreen": "9ACD32",
-		"darkgray": "A9A9A9",
-		"lightblue": "ADD8E6",
-		"greenyellow": "ADFF2F",
-		"paleturquoise": "AFEEEE",
-		"lightsteelblue": "B0C4DE",
-		"powderblue": "B0E0E6",
-		"firebrick": "B22222",
-		"darkgoldenrod": "B8860B",
-		"mediumorchid": "BA55D3",
-		"rosybrown": "BC8F8F",
-		"darkkhaki": "BDB76B",
-		"mediumvioletred": "C71585",
-		"indianred": "CD5C5C",
-		"chocolate": "D2691E",
-		"lightgray": "D3D3D3",
-		"goldenrod": "DAA520",
-		"palevioletred": "DB7093",
-		"gainsboro": "DCDCDC",
-		"burlywood": "DEB887",
-		"lightcyan": "E0FFFF",
-		"lavender": "E6E6FA",
-		"darksalmon": "E9967A",
-		"palegoldenrod": "EEE8AA",
-		"lightcoral": "F08080",
-		"aliceblue": "F0F8FF",
-		"honeydew": "F0FFF0",
-		"sandybrown": "F4A460",
-		"whitesmoke": "F5F5F5",
-		"mintcream": "F5FFFA",
-		"ghostwhite": "F8F8FF",
-		"antiquewhite": "FAEBD7",
+	colorNames := map[string]string{
+		"black":                "000",
+		"darkblue":             "00008B",
+		"mediumblue":           "0000CD",
+		"darkgreen":            "006400",
+		"darkcyan":             "008B8B",
+		"deepskyblue":          "00BFFF",
+		"darkturquoise":        "00CED1",
+		"mediumspringgreen":    "00FA9A",
+		"springgreen":          "00FF7F",
+		"midnightblue":         "191970",
+		"dodgerblue":           "1E90FF",
+		"lightseagreen":        "20B2AA",
+		"forestgreen":          "228B22",
+		"seagreen":             "2E8B57",
+		"darkslategray":        "2F4F4F",
+		"limegreen":            "32CD32",
+		"mediumseagreen":       "3CB371",
+		"turquoise":            "40E0D0",
+		"royalblue":            "4169E1",
+		"steelblue":            "4682B4",
+		"darkslateblue":        "483D8B",
+		"mediumturquoise":      "48D1CC",
+		"darkolivegreen":       "556B2F",
+		"cadetblue":            "5F9EA0",
+		"cornflowerblue":       "6495ED",
+		"mediumaquamarine":     "66CDAA",
+		"slateblue":            "6A5ACD",
+		"olivedrab":            "6B8E23",
+		"slategray":            "708090",
+		"lightslateblue":       "789",
+		"mediumslateblue":      "7B68EE",
+		"lawngreen":            "7CFC00",
+		"chartreuse":           "7FFF00",
+		"aquamarine":           "7FFFD4",
+		"lightskyblue":         "87CEFA",
+		"blueviolet":           "8A2BE2",
+		"darkmagenta":          "8B008B",
+		"saddlebrown":          "8B4513",
+		"darkseagreen":         "8FBC8F",
+		"lightgreen":           "90EE90",
+		"mediumpurple":         "9370DB",
+		"darkviolet":           "9400D3",
+		"palegreen":            "98FB98",
+		"darkorchid":           "9932CC",
+		"yellowgreen":          "9ACD32",
+		"darkgray":             "A9A9A9",
+		"lightblue":            "ADD8E6",
+		"greenyellow":          "ADFF2F",
+		"paleturquoise":        "AFEEEE",
+		"lightsteelblue":       "B0C4DE",
+		"powderblue":           "B0E0E6",
+		"firebrick":            "B22222",
+		"darkgoldenrod":        "B8860B",
+		"mediumorchid":         "BA55D3",
+		"rosybrown":            "BC8F8F",
+		"darkkhaki":            "BDB76B",
+		"mediumvioletred":      "C71585",
+		"indianred":            "CD5C5C",
+		"chocolate":            "D2691E",
+		"lightgray":            "D3D3D3",
+		"goldenrod":            "DAA520",
+		"palevioletred":        "DB7093",
+		"gainsboro":            "DCDCDC",
+		"burlywood":            "DEB887",
+		"lightcyan":            "E0FFFF",
+		"lavender":             "E6E6FA",
+		"darksalmon":           "E9967A",
+		"palegoldenrod":        "EEE8AA",
+		"lightcoral":           "F08080",
+		"aliceblue":            "F0F8FF",
+		"honeydew":             "F0FFF0",
+		"sandybrown":           "F4A460",
+		"whitesmoke":           "F5F5F5",
+		"mintcream":            "F5FFFA",
+		"ghostwhite":           "F8F8FF",
+		"antiquewhite":         "FAEBD7",
 		"lightgoldenrodyellow": "FAFAD2",
-		"fuchsia": "F0F",
-		"magenta": "F0F",
-		"deeppink": "FF1493",
-		"orangered": "FF4500",
-		"darkorange": "FF8C00",
-		"lightsalmon": "FFA07A",
-		"lightpink": "FFB6C1",
-		"peachpuff": "FFDAB9",
-		"navajowhite": "FFDEAD",
-		"moccasin": "FFE4B5",
-		"mistyrose": "FFE4E1",
-		"blanchedalmond": "FFEBCD",
-		"papayawhip": "FFEFD5",
-		"lavenderblush": "FFF0F5",
-		"seashell": "FFF5EE",
-		"cornsilk": "FFF8DC",
-		"lemonchiffon": "FFFACD",
-		"floralwhite": "FFFAF0",
-		"yellow": "FF0",
-		"lightyellow": "FFFFE0",
-		"white": "FFF",
+		"fuchsia":              "F0F",
+		"magenta":              "F0F",
+		"deeppink":             "FF1493",
+		"orangered":            "FF4500",
+		"darkorange":           "FF8C00",
+		"lightsalmon":          "FFA07A",
+		"lightpink":            "FFB6C1",
+		"peachpuff":            "FFDAB9",
+		"navajowhite":          "FFDEAD",
+		"moccasin":             "FFE4B5",
+		"mistyrose":            "FFE4E1",
+		"blanchedalmond":       "FFEBCD",
+		"papayawhip":           "FFEFD5",
+		"lavenderblush":        "FFF0F5",
+		"seashell":             "FFF5EE",
+		"cornsilk":             "FFF8DC",
+		"lemonchiffon":         "FFFACD",
+		"floralwhite":          "FFFAF0",
+		"yellow":               "FF0",
+		"lightyellow":          "FFFFE0",
+		"white":                "FFF",
 	}
 
 	whitespace := regexp.MustCompile("\\s+")
@@ -196,7 +196,7 @@ func (minify Minify) Css(r io.ReadCloser) (io.ReadCloser, error) {
 			if afterValue {
 				buffer.WriteString(";")
 			}
-			buffer.WriteString(i.val+":")
+			buffer.WriteString(i.val + ":")
 		case itemValue:
 			val := strings.Replace(i.val, ", ", ",", -1)
 
@@ -212,9 +212,9 @@ func (minify Minify) Css(r io.ReadCloser) (io.ReadCloser, error) {
 
 			if len(val) >= 5 && (strings.Index(val, "rgb(") == 0 || strings.Index(val, "rgba(") == 0) {
 				if strings.Index(val, "rgb(") == 0 {
-					val = val[4:len(val) - 1]
+					val = val[4 : len(val)-1]
 				} else {
-					val = val[5:len(val) - 1]
+					val = val[5 : len(val)-1]
 				}
 
 				params := strings.Split(val, ",")
@@ -230,9 +230,9 @@ func (minify Minify) Css(r io.ReadCloser) (io.ReadCloser, error) {
 					for _, param := range params {
 						var f float64
 						var n uint32
-						if param[len(param) - 1] == '%' {
-							f, err = strconv.ParseFloat(param[:len(param) - 1], 32)
-							n = uint32(f * 255.0 + 0.5)
+						if param[len(param)-1] == '%' {
+							f, err = strconv.ParseFloat(param[:len(param)-1], 32)
+							n = uint32(f*255.0 + 0.5)
 						} else {
 							f, err = strconv.ParseFloat(param, 32)
 							n = uint32(f + 0.5)
@@ -249,27 +249,27 @@ func (minify Minify) Css(r io.ReadCloser) (io.ReadCloser, error) {
 					if err == nil {
 						b := make([]byte, 4)
 						binary.LittleEndian.PutUint32(b, hexVal)
-						val = "#"+hex.EncodeToString(b)
+						val = "#" + hex.EncodeToString(b)
 					}
 				}
 			}
 
 			if len(val) >= 4 && val[0] == '#' {
 				if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
-					val = "#"+string(val[1])+string(val[3])+string(val[5])
+					val = "#" + string(val[1]) + string(val[3]) + string(val[5])
 				} else if name, ok := hexColors[strings.ToUpper(val[1:])]; ok {
 					val = name
 				}
 			} else if hex, ok := colorNames[strings.ToLower(val)]; ok {
-				val = "#"+hex
+				val = "#" + hex
 			}
 
 			buffer.WriteString(val)
-			afterValue = true;
+			afterValue = true
 		case itemComment:
 		default:
 			buffer.WriteString(i.val)
-			afterValue = false;
+			afterValue = false
 		}
 	}
 }
@@ -307,17 +307,18 @@ func (i item) String() string {
 ////////////////////////////////////////////////////////////////
 
 type stateFn func(*lexer) stateFn
+
 const eof = 0
 
 type lexer struct {
-	name  string    // used only for error reports.
-	input string    // the string being scanned.
-	start int       // start position of this item.
-	pos   int       // current position in the input.
-	width int       // width of last rune read from input.
-	state stateFn
+	name      string // used only for error reports.
+	input     string // the string being scanned.
+	start     int    // start position of this item.
+	pos       int    // current position in the input.
+	width     int    // width of last rune read from input.
+	state     stateFn
 	prevState stateFn
-	items chan item // channel of scanned items.
+	items     chan item // channel of scanned items.
 }
 
 func lex(name, input string, inline bool) *lexer {
