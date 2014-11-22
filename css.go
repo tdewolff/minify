@@ -23,12 +23,11 @@ import (
 )
 
 // TODO: use a better tokenizer
-func (minify Minify) Css(r io.ReadCloser) (io.ReadCloser, error) {
+func (minify Minify) Css(r io.Reader) (io.Reader, error) {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
-	r.Close()
 
 	s := string(b)
 	inline := false
@@ -184,7 +183,7 @@ func (minify Minify) Css(r io.ReadCloser) (io.ReadCloser, error) {
 		i := l.NextItem()
 		switch i.typ {
 		case itemEOF:
-			return ioutil.NopCloser(buffer), nil
+			return buffer, nil
 		case itemError:
 			return nil, errors.New(i.val)
 		case itemSelector:

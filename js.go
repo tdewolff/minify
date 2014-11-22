@@ -4,15 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"io/ioutil"
 	"os/exec"
 )
 
-func (minify Minify) Js(r io.ReadCloser) (io.ReadCloser, error) {
-	defer func() {
-		r.Close()
-	}()
-
+func (minify Minify) Js(r io.Reader) (io.Reader, error) {
 	var cmd *exec.Cmd
 	if len(minify.JsMinifier) == 0 {
 		return nil, errors.New("JS minifier not set")
@@ -46,5 +41,5 @@ func (minify Minify) Js(r io.ReadCloser) (io.ReadCloser, error) {
 	}
 	stdOut.Close()
 
-	return ioutil.NopCloser(buffer), cmd.Wait()
+	return buffer, cmd.Wait()
 }

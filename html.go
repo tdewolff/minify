@@ -3,18 +3,13 @@ package minify
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"regexp"
 	"strings"
 
 	"code.google.com/p/go.net/html"
 )
 
-func (minify Minify) Html(r io.ReadCloser) (io.ReadCloser, error) {
-	defer func() {
-		r.Close()
-	}()
-
+func (m Minify) Html(r io.Reader) (io.Reader, error) {
 	multipleWhitespaceRegexp := regexp.MustCompile("\\s+")
 	validAttrRegexp := regexp.MustCompile("^[^\\s\"'`=<>/]*$")
 	booleanAttrRegexp := regexp.MustCompile("^(allowfullscreen|async|autofocus|autoplay|checked|compact|controls|declare|" +
@@ -53,7 +48,7 @@ func (minify Minify) Html(r io.ReadCloser) (io.ReadCloser, error) {
 		case html.ErrorToken:
 			if z.Err() == io.EOF {
 				buffer.Write(text)
-				return ioutil.NopCloser(buffer), nil
+				return buffer, nil
 			}
 			return nil, z.Err()
 		case html.DoctypeToken:
@@ -73,16 +68,16 @@ func (minify Minify) Html(r io.ReadCloser) (io.ReadCloser, error) {
 			if len(specialTag) > 0 {
 				tag := specialTag[len(specialTag)-1].Data
 				if tag == "style" || tag == "script" {
-					val := getAttr(specialTag[len(specialTag)-1], "type")
-					if val == "" {
+					mime := getAttr(specialTag[len(specialTag)-1], "type")
+					if mime == "" {
 						// default
 						if tag == "script" {
-							val = defaultScriptType
+							mime = defaultScriptType
 						} else {
-							val = defaultStyleType
+							mime = defaultStyleType
 						}
 					}
-					text = minify.inline(val, text)
+					text = m.FilterBytes(mime, text)
 				}
 				buffer.Write(text)
 				text = nil
@@ -179,12 +174,12 @@ func (minify Minify) Html(r io.ReadCloser) (io.ReadCloser, error) {
 
 					// CSS and JS minifiers for attribute inline code
 					if attr.Key == "style" {
-						val = minify.inlineString(defaultStyleType, val)
+						val = m.FilterString(defaultStyleType, val)
 					} else if eventAttrRegexp.MatchString(attr.Key) {
 						if strings.HasPrefix(val, "javascript:") {
 							val = val[11:]
 						}
-						val = minify.inlineString(defaultScriptType, val)
+						val = m.FilterString(defaultScriptType, val)
 					} else if (attr.Key == "href" || attr.Key == "src" || attr.Key == "cite" || attr.Key == "action") &&
 						getAttr(token, "rel") != "external" || attr.Key == "profile" || attr.Key == "xmlns" {
 						if strings.HasPrefix(val, "http:") {
