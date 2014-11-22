@@ -5,8 +5,6 @@ import (
 	"errors"
 	"io"
 	"os/exec"
-
-	"github.com/kballard/go-shellquote"
 )
 
 var ErrNotExist = errors.New("minifier does not exist for mime type")
@@ -22,8 +20,8 @@ type Minify struct {
 func NewMinify() *Minify {
 	return &Minify{
 		map[string]MinifyFunc{
-			"text/html":              (Minify).Html,
-			"text/css":               (Minify).Css,
+			"text/html":              (Minify).HTML,
+			"text/css":               (Minify).CSS,
 		},
 	}
 }
@@ -32,20 +30,8 @@ func (m *Minify) Implement(mime string, f MinifyFunc) {
 	m.Minifier[mime] = f
 }
 
-func (m *Minify) ImplementCmd(mime string, cmdString string) error {
-	cmdSplit, err := shellquote.Split(cmdString)
-	if err != nil {
-		return err
-	}
-
+func (m *Minify) ImplementCmd(mime string, cmd *exec.Cmd) error {
 	m.Minifier[mime] = func(m Minify, w io.Writer, r io.Reader) error {
-		var cmd *exec.Cmd
-		if len(cmdSplit) == 1 {
-			cmd = exec.Command(cmdSplit[0])
-		} else {
-			cmd = exec.Command(cmdSplit[0], cmdSplit[1:]...)
-		}
-
 		stdOut, err := cmd.StdoutPipe()
 		if err != nil {
 			return err

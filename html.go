@@ -9,7 +9,7 @@ import (
 	"code.google.com/p/go.net/html"
 )
 
-func (m Minify) Html(w io.Writer, r io.Reader) error {
+func (m Minify) HTML(w io.Writer, r io.Reader) error {
 	multipleWhitespaceRegexp := regexp.MustCompile("\\s+")
 	validAttrRegexp := regexp.MustCompile("^[^\\s\"'`=<>/]*$")
 	booleanAttrRegexp := regexp.MustCompile("^(allowfullscreen|async|autofocus|autoplay|checked|compact|controls|declare|" +
