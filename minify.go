@@ -36,10 +36,12 @@ func (m *Minify) ImplementCmd(mime string, cmd *exec.Cmd) error {
 		if err != nil {
 			return err
 		}
+		defer stdOut.Close()
 		stdIn, err := cmd.StdinPipe()
 		if err != nil {
 			return err
 		}
+		defer stdIn.Close()
 
 		if err = cmd.Start(); err != nil {
 			return err
@@ -51,7 +53,6 @@ func (m *Minify) ImplementCmd(mime string, cmd *exec.Cmd) error {
 		if _, err = io.Copy(w, stdOut); err != nil {
 			return err
 		}
-		stdOut.Close()
 
 		return cmd.Wait()
 	}
