@@ -9,7 +9,6 @@ package minify
 */
 
 import (
-	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
@@ -23,13 +22,13 @@ import (
 )
 
 // TODO: use a better tokenizer
-func (minify Minify) Css(r io.Reader) (io.Reader, error) {
+func (minify Minify) Css(w io.Writer, r io.Reader) error {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
 	s := string(b)
+
 	inline := false
 	if strings.IndexRune(s, '{') == -1 {
 		inline = true
@@ -177,25 +176,24 @@ func (minify Minify) Css(r io.Reader) (io.Reader, error) {
 	afterValue := false
 	var prop string
 
-	buffer := new(bytes.Buffer)
 	l := lex("cssminify", s, inline)
 	for {
 		i := l.NextItem()
 		switch i.typ {
 		case itemEOF:
-			return buffer, nil
+			return nil
 		case itemError:
-			return nil, errors.New(i.val)
+			return errors.New(i.val)
 		case itemSelector:
 			val := whitespace.ReplaceAllString(i.val, " ")
 			val = selectors.ReplaceAllString(val, "$1")
-			buffer.WriteString(val)
+			w.Write([]byte(val))
 		case itemProperty:
 			prop = i.val
 			if afterValue {
-				buffer.WriteString(";")
+				w.Write([]byte(";"))
 			}
-			buffer.WriteString(i.val + ":")
+			w.Write([]byte(i.val+":"))
 		case itemValue:
 			val := strings.Replace(i.val, ", ", ",", -1)
 
@@ -263,11 +261,11 @@ func (minify Minify) Css(r io.Reader) (io.Reader, error) {
 				val = "#" + hex
 			}
 
-			buffer.WriteString(val)
+			w.Write([]byte(val))
 			afterValue = true
 		case itemComment:
 		default:
-			buffer.WriteString(i.val)
+			w.Write([]byte(i.val))
 			afterValue = false
 		}
 	}

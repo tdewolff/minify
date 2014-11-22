@@ -9,7 +9,7 @@ import (
 	"code.google.com/p/go.net/html"
 )
 
-func (m Minify) Html(r io.Reader) (io.Reader, error) {
+func (m Minify) Html(w io.Writer, r io.Reader) error {
 	multipleWhitespaceRegexp := regexp.MustCompile("\\s+")
 	validAttrRegexp := regexp.MustCompile("^[^\\s\"'`=<>/]*$")
 	booleanAttrRegexp := regexp.MustCompile("^(allowfullscreen|async|autofocus|autoplay|checked|compact|controls|declare|" +
@@ -40,28 +40,27 @@ func (m Minify) Html(r io.Reader) (io.Reader, error) {
 		return ""
 	}
 
-	buffer := new(bytes.Buffer)
 	z := html.NewTokenizer(r)
 	for {
 		tt := z.Next()
 		switch tt {
 		case html.ErrorToken:
 			if z.Err() == io.EOF {
-				buffer.Write(text)
-				return buffer, nil
+				w.Write(text)
+				return nil
 			}
-			return nil, z.Err()
+			return z.Err()
 		case html.DoctypeToken:
-			buffer.Write(bytes.TrimSpace(text))
+			w.Write(bytes.TrimSpace(text))
 			text = nil
 
 			// https://developers.google.com/speed/articles/html5-performance
-			buffer.WriteString("<!doctype html>")
+			w.Write([]byte("<!doctype html>"))
 		case html.CommentToken:
-			buffer.Write(text)
+			w.Write(text)
 			text = []byte("<!--" + z.Token().Data + "-->")
 		case html.TextToken:
-			buffer.Write(text)
+			w.Write(text)
 			text = z.Text()
 
 			// CSS and JS minifiers for inline code
@@ -79,7 +78,7 @@ func (m Minify) Html(r io.Reader) (io.Reader, error) {
 					}
 					text = m.FilterBytes(mime, text)
 				}
-				buffer.Write(text)
+				w.Write(text)
 				text = nil
 				break
 			}
@@ -112,7 +111,7 @@ func (m Minify) Html(r io.Reader) (io.Reader, error) {
 				text = bytes.TrimRight(text, " ")
 				precededBySpace = true
 			}
-			buffer.Write(text)
+			w.Write(text)
 			text = nil
 
 			if token.Data == "body" || token.Data == "head" || token.Data == "html" || token.Data == "tbody" ||
@@ -122,16 +121,16 @@ func (m Minify) Html(r io.Reader) (io.Reader, error) {
 				break
 			}
 
-			buffer.WriteByte('<')
+			w.Write([]byte("<"))
 			if tt == html.EndTagToken {
-				buffer.WriteByte('/')
+				w.Write([]byte("/"))
 			}
-			buffer.WriteString(token.Data)
+			w.Write([]byte(token.Data))
 
 			// rewrite charset https://developers.google.com/speed/articles/html5-performance
 			if token.Data == "meta" && getAttr(token, "http-equiv") == "content-type" &&
 				getAttr(token, "content") == "text/html; charset=utf-8" {
-				buffer.WriteString(" charset=utf-8>")
+				w.Write([]byte(" charset=utf-8>"))
 				break
 			}
 
@@ -159,9 +158,7 @@ func (m Minify) Html(r io.Reader) (io.Reader, error) {
 						token.Data == "button" && val == "submit") {
 					continue
 				}
-
-				buffer.WriteByte(' ')
-				buffer.WriteString(attr.Key)
+				w.Write([]byte(" "+attr.Key))
 
 				isBoolean := booleanAttrRegexp.MatchString(attr.Key)
 				if len(val) == 0 && !isBoolean {
@@ -170,7 +167,7 @@ func (m Minify) Html(r io.Reader) (io.Reader, error) {
 
 				// booleans have no value
 				if !isBoolean {
-					buffer.WriteByte('=')
+					w.Write([]byte("="))
 
 					// CSS and JS minifiers for attribute inline code
 					if attr.Key == "style" {
@@ -207,23 +204,19 @@ func (m Minify) Html(r io.Reader) (io.Reader, error) {
 
 					// no quote if possible, else prefer single or double depending on which occurs more often in value
 					if validAttrRegexp.MatchString(val) {
-						buffer.WriteString(val)
+						w.Write([]byte(val))
 					} else if strings.Count(val, "\"") > strings.Count(val, "'") {
-						buffer.WriteByte('\'')
-						buffer.WriteString(strings.Replace(val, "'", "&#39;", -1))
-						buffer.WriteByte('\'')
+						w.Write([]byte("'"+strings.Replace(val, "'", "&#39;", -1)+"'"))
 					} else {
-						buffer.WriteByte('"')
-						buffer.WriteString(strings.Replace(val, "\"", "&quot;", -1))
-						buffer.WriteByte('"')
+						w.Write([]byte("\""+strings.Replace(val, "\"", "&quot;", -1)+"\""))
 					}
 				}
 			}
 
 			if tt == html.SelfClosingTagToken {
-				buffer.WriteByte('/')
+				w.Write([]byte("/"))
 			}
-			buffer.WriteByte('>')
+			w.Write([]byte(">"))
 		}
 	}
 }
