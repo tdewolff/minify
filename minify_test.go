@@ -10,6 +10,8 @@ import (
 	"testing"
 )
 
+var errDummy = errors.New("dummy error")
+
 // from os/exec/exec_test.go
 func helperCommand(t *testing.T, s ...string) *exec.Cmd {
 	cs := []string{"-test.run=TestHelperProcess", "--"}
@@ -19,100 +21,93 @@ func helperCommand(t *testing.T, s ...string) *exec.Cmd {
 	return cmd
 }
 
-func TestFilter(t *testing.T) {
-	errDummy := errors.New("dummy error")
+////////////////////////////////////////////////////////////////
 
-	m := &Minify{map[string]MinifyFunc{
-		"nil": func(m Minify, w io.Writer, r io.Reader) error {
-			return nil
-		},
-		"err": func(m Minify, w io.Writer, r io.Reader) error {
-			return errDummy
-		},
-	}}
+var m = &Minifier{map[string]MinifyFunc{
+	"copy": func(m Minifier, w io.Writer, r io.Reader) error {
+		io.Copy(w, r)
+		return nil
+	},
+	"nil": func(m Minifier, w io.Writer, r io.Reader) error {
+		return nil
+	},
+	"err": func(m Minifier, w io.Writer, r io.Reader) error {
+		return errDummy
+	},
+}}
 
-	if err := m.Filter("?", nil, nil); err != ErrNotExist {
+func TestMinify(t *testing.T) {
+	if err := m.Minify("?", nil, nil); err != ErrNotExist {
 		t.Error(err, "!=", ErrNotExist)
 	}
-	if err := m.Filter("nil", nil, nil); err != nil {
-		t.Error(err, "!= nil")
+	if err := m.Minify("nil", nil, nil); err != nil {
+		t.Error(err, "!=", nil)
 	}
-	if err := m.Filter("err", nil, nil); err != errDummy {
+	if err := m.Minify("err", nil, nil); err != errDummy {
 		t.Error(err, "!=", errDummy)
+	}
+
+	b := []byte("test")
+	if out, err := m.MinifyBytes("nil", b); err != nil || !bytes.Equal(out, []byte{}) {
+		t.Error(err, "!=", nil, "||", out, "!=", []byte{})
+	}
+	if out, err := m.MinifyBytes("?", b); err != ErrNotExist || !bytes.Equal(out, b) {
+		t.Error(err, "!=", ErrNotExist, "||", out, "!=", b)
+	}
+
+	s := "test"
+	if out, err := m.MinifyString("nil", s); err != nil || out != "" {
+		t.Error(err, "!=", nil, "||", out, "!=", "")
+	}
+	if out, err := m.MinifyString("?", s); err != ErrNotExist || out != s {
+		t.Error(err, "!=", ErrNotExist, "||", out, "!=", s)
 	}
 }
 
-func TestDefaultFilters(t *testing.T) {
+func TestDefaultMinifiers(t *testing.T) {
+	m := NewMinifier()
 	w := &bytes.Buffer{}
 
 	r := bytes.NewBufferString("html")
-	if err := NewMinify().Filter("text/html", w, r); err != nil {
+	if err := m.Minify("text/html", w, r); err != nil {
 		t.Error(err)
 	}
 	r = bytes.NewBufferString("key:value")
-	if err := NewMinify().Filter("text/css", w, r); err != nil {
+	if err := m.Minify("text/css", w, r); err != nil {
 		t.Error(err)
 	}
 
 	if w.String() != "htmlkey:value" {
-		t.Error(w.String(), "!= htmlkey:value")
+		t.Error(w.String(), "!=", "htmlkey:value")
 	}
 }
 
-func TestFilterBytes(t *testing.T) {
-	in := []byte("<html>test")
-	exp := []byte("test")
-	if out := NewMinify().FilterBytes("text/html", in); !bytes.Equal(out, exp) {
-		t.Error(out, "!= test")
-	}
-	if out := NewMinify().FilterBytes("?", in); !bytes.Equal(out, in) {
-		t.Error(out, "!= <html>test")
-	}
-}
-
-func TestFilterString(t *testing.T) {
-	in := "<html>test"
-	exp := "test"
-	if out := NewMinify().FilterString("text/html", in); out != exp {
-		t.Error(out, "!=", exp)
-	}
-	if out := NewMinify().FilterString("?", in); out != in {
-		t.Error(out, "!=", in)
-	}
-}
-
-func TestImplement(t *testing.T) {
-	errDummy := errors.New("dummy error")
-
-	m := NewMinify()
-	m.Implement("err", func(m Minify, w io.Writer, r io.Reader) error {
-		return errDummy
-	})
-
-	if err := m.Filter("err", nil, nil); err != errDummy {
-		t.Error(err, "!=", errDummy)
-	}
-}
-
-func TestImplementCmd(t *testing.T) {
-	m := NewMinify()
+func TestAdd(t *testing.T) {
+	m := NewMinifier()
 	w := &bytes.Buffer{}
 	r := bytes.NewBufferString("test")
 
-	if err := m.ImplementCmd("copy", helperCommand(t, "copy")); err != nil {
+	m.Add("err", func(m Minifier, w io.Writer, r io.Reader) error {
+		return errDummy
+	})
+	if err := m.Minify("err", nil, nil); err != errDummy {
+		t.Error(err, "!=", errDummy)
+	}
+
+	if err := m.AddCmd("copy", helperCommand(t, "copy")); err != nil {
 		t.Error(err)
 	}
-	if err := m.Filter("copy", w, r); err != nil {
+	if err := m.Minify("copy", w, r); err != nil {
 		t.Error(err)
 	}
 	if w.String() != "test" {
 		t.Error(w.String(), "!= test")
 	}
 
-	if err := m.ImplementCmd("err", helperCommand(t, "err")); err != nil {
+	if err := m.AddCmd("err", helperCommand(t, "err")); err != nil {
 		t.Error(err)
 	}
-	if err := m.Filter("err", w, r); err.Error() != "exit status 1" {
+	if err := m.Minify("err", w, r); err.Error() != "exit status 1" {
 		t.Error(err)
 	}
 }

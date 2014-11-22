@@ -31,6 +31,72 @@ It is in need of a CSS tokenizer, preferably from another package, in future.
 
 ## Usage
 
-TODO: examples
+Basic example:
+
+	package main
+
+	import (
+		"fmt"
+		"os"
+		"os/exec"
+
+		"github.com/tdewolff/GoMinify"
+	)
+
+	// Minifies HTML code from stdin to stdout
+	func main() {
+		m := minify.NewMinifier()
+		m.AddCmd("text/javascript", exec.Command("java", "-jar", "path/to/compiler.jar"))
+
+		if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
+			fmt.Println("minify.Minify:", err)
+		}
+	}
+
+Custom minifier:
+
+	package main
+
+	import (
+		"bufio"
+		"fmt"
+		"io"
+		"strings"
+
+		"github.com/tdewolff/GoMinify"
+	)
+
+	// Outputs "Becausemycoffeewastoocold,Iheateditinthemicrowave."
+	func main() {
+		m := minify.NewMinifier()
+		// remove newline and space bytes
+		m.Add("text/plain", func(m minify.Minifier, w io.Writer, r io.Reader) error {
+			rb := bufio.NewReader(r)
+			for {
+				line, err := rb.ReadString('\n')
+				if err != nil && err != io.EOF {
+					return err
+				}
+
+				_, errws := io.WriteString(w, strings.Replace(line, " ", "", -1))
+				if errws != nil {
+					return errws
+				}
+
+				if err == io.EOF {
+					break
+				}
+			}
+			return nil
+		})
+
+		out, err := m.MinifyString("text/plain", "Because my coffee was too cold, I heated it in the microwave.")
+		if err != nil {
+			fmt.Println("minify.Minify:", err)
+		}
+		fmt.Println(out)
+	}
+
+Within a custom minifier, one can call m.MinifyBytes("mime", w, byteArray) when dealing with embedded resources.
 
 [1]: http://golang.org/ "Go Language"

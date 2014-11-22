@@ -1,6 +1,7 @@
 package minify
 
-/* CSS minifier - does a fair job but can be improved with the following points (non-exhaustive list):
+// TODO: use a better tokenizer
+/* TODO: (non-exhaustive)
 - remove space before !important
 - collapse margin/padding/border/background/list/etc. definitions into one
 - remove empty or with duplicate selector blocks
@@ -21,8 +22,9 @@ import (
 	"unicode/utf8"
 )
 
-// TODO: use a better tokenizer
-func (m Minify) CSS(w io.Writer, r io.Reader) error {
+// Minifies CSS files, reads from r and writes to w.
+// It does a mediocre job of minifying CSS files and should be improved in the future.
+func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
 		return err

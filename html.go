@@ -9,7 +9,9 @@ import (
 	"code.google.com/p/go.net/html"
 )
 
-func (m Minify) HTML(w io.Writer, r io.Reader) error {
+// Minifies HTML files, reads from r and writes to w.
+// Removes unnecessary whitespace, tags, attributes, quotes and comments.
+func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 	multipleWhitespaceRegexp := regexp.MustCompile("\\s+")
 	validAttrRegexp := regexp.MustCompile("^[^\\s\"'`=<>/]*$")
 	booleanAttrRegexp := regexp.MustCompile("^(allowfullscreen|async|autofocus|autoplay|checked|compact|controls|declare|" +
@@ -68,7 +70,7 @@ func (m Minify) HTML(w io.Writer, r io.Reader) error {
 				if tag := specialTag[len(specialTag)-1].Data; tag == "style" || tag == "script" {
 					mime := getAttr(specialTag[len(specialTag)-1], "type")
 					if mime == "" {
-						// default
+						// default mime types
 						if tag == "script" {
 							mime = defaultScriptType
 						} else {
@@ -76,16 +78,18 @@ func (m Minify) HTML(w io.Writer, r io.Reader) error {
 						}
 					}
 
-					if err := m.Filter(mime, w, bytes.NewBuffer(text)); err == nil {
-						text = nil
+					if err := m.Minify(mime, w, bytes.NewBuffer(text)); err != nil {
+						if err == ErrNotExist {
+							// no minifier, write the original
+							w.Write(text)
+						} else {
+							return err
+						}
 					}
-				}
-
-				// no filter, write the original
-				if text != nil {
+				} else {
 					w.Write(text)
-					text = nil
 				}
+				text = nil
 				break
 			}
 
@@ -163,7 +167,7 @@ func (m Minify) HTML(w io.Writer, r io.Reader) error {
 						token.Data == "button" && val == "submit") {
 					continue
 				}
-				w.Write([]byte(" "+attr.Key))
+				w.Write([]byte(" " + attr.Key))
 
 				isBoolean := booleanAttrRegexp.MatchString(attr.Key)
 				if len(val) == 0 && !isBoolean {
@@ -172,19 +176,22 @@ func (m Minify) HTML(w io.Writer, r io.Reader) error {
 
 				// booleans have no value
 				if !isBoolean {
+					var err error
 					w.Write([]byte("="))
 
 					// CSS and JS minifiers for attribute inline code
 					if attr.Key == "style" {
-						if err := m.Filter(defaultStyleType, w, bytes.NewBufferString(val)); err != nil {
-							w.Write([]byte(val))
+						val, err = m.MinifyString(defaultStyleType, val)
+						if err != nil && err != ErrNotExist {
+							return err
 						}
 					} else if eventAttrRegexp.MatchString(attr.Key) {
 						if strings.HasPrefix(val, "javascript:") {
 							val = val[11:]
 						}
-						if err := m.Filter(defaultScriptType, w, bytes.NewBufferString(val)); err != nil {
-							w.Write([]byte(val))
+						val, err = m.MinifyString(defaultScriptType, val)
+						if err != nil && err != ErrNotExist {
+							return err
 						}
 					} else if (attr.Key == "href" || attr.Key == "src" || attr.Key == "cite" || attr.Key == "action") &&
 						getAttr(token, "rel") != "external" || attr.Key == "profile" || attr.Key == "xmlns" {
@@ -215,9 +222,9 @@ func (m Minify) HTML(w io.Writer, r io.Reader) error {
 					if validAttrRegexp.MatchString(val) {
 						w.Write([]byte(val))
 					} else if strings.Count(val, "\"") > strings.Count(val, "'") {
-						w.Write([]byte("'"+strings.Replace(val, "'", "&#39;", -1)+"'"))
+						w.Write([]byte("'" + strings.Replace(val, "'", "&#39;", -1) + "'"))
 					} else {
-						w.Write([]byte("\""+strings.Replace(val, "\"", "&quot;", -1)+"\""))
+						w.Write([]byte("\"" + strings.Replace(val, "\"", "&quot;", -1) + "\""))
 					}
 				}
 			}

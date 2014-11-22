@@ -1,3 +1,30 @@
+/*
+A minifier written in [Go][1]. Has a built-in HTML and CSS minifier.
+
+Usage example:
+
+	package main
+
+	import (
+		"fmt"
+		"os"
+		"os/exec"
+
+		"github.com/tdewolff/GoMinify"
+	)
+
+	// Minifies HTML code from stdin to stdout
+	func main() {
+		m := minify.NewMinifier()
+		m.AddCmd("text/javascript", exec.Command("java", "-jar", "path/to/compiler.jar"))
+
+		if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
+			fmt.Println("minify.Minify:", err)
+		}
+	}
+
+[1]: http://golang.org/ "Go Language"
+*/
 package minify
 
 import (
@@ -11,27 +38,36 @@ var ErrNotExist = errors.New("minifier does not exist for mime type")
 
 ////////////////////////////////////////////////////////////////
 
-type MinifyFunc func(Minify, io.Writer, io.Reader) error
+// Minifier function interface
+type MinifyFunc func(Minifier, io.Writer, io.Reader) error
 
-type Minify struct {
-	Minifier map[string]MinifyFunc
+// Minifier holds a map of mime -> function to allow recursive minifier calls of the minifier functions.
+type Minifier struct {
+	Mime map[string]MinifyFunc
 }
 
-func NewMinify() *Minify {
-	return &Minify{
+// NewMinifier returns a new Minifier struct.
+// It loads in the default minifier functions for HTML and CSS (test/html and text/css mime type respectively).
+func NewMinifier() *Minifier {
+	return &Minifier{
 		map[string]MinifyFunc{
-			"text/html":              (Minify).HTML,
-			"text/css":               (Minify).CSS,
+			"text/html":              (Minifier).HTML,
+			"text/css":               (Minifier).CSS,
 		},
 	}
 }
 
-func (m *Minify) Implement(mime string, f MinifyFunc) {
-	m.Minifier[mime] = f
+// Add adds a minify function to the mime -> function map.
+// It allows one to implement a custom minifier for a specific mime type.
+func (m *Minifier) Add(mime string, f MinifyFunc) {
+	m.Mime[mime] = f
 }
 
-func (m *Minify) ImplementCmd(mime string, cmd *exec.Cmd) error {
-	m.Minifier[mime] = func(m Minify, w io.Writer, r io.Reader) error {
+// AddCmd adds a minify function that executes a command to process the minification.
+// It allows the use of external tools like ClosureCompiler, UglifyCSS, etc.
+// Be aware that running external tools will slow down minification a lot!
+func (m *Minifier) AddCmd(mime string, cmd *exec.Cmd) error {
+	m.Mime[mime] = func(m Minifier, w io.Writer, r io.Reader) error {
 		stdOut, err := cmd.StdoutPipe()
 		if err != nil {
 			return err
@@ -53,14 +89,15 @@ func (m *Minify) ImplementCmd(mime string, cmd *exec.Cmd) error {
 		if _, err = io.Copy(w, stdOut); err != nil {
 			return err
 		}
-
 		return cmd.Wait()
 	}
 	return nil
 }
 
-func (m Minify) Filter(mime string, w io.Writer, r io.Reader) error {
-	if f, ok := m.Minifier[mime]; ok {
+// Minify minifies the content of a Reader and writes it to a Writer.
+// An error is returned when no such mime type exists (ErrNotExist) or any error occurred in the minifier function.
+func (m Minifier) Minify(mime string, w io.Writer, r io.Reader) error {
+	if f, ok := m.Mime[mime]; ok {
 		if err := f(m, w, r); err != nil {
 			return err
 		}
@@ -69,18 +106,20 @@ func (m Minify) Filter(mime string, w io.Writer, r io.Reader) error {
 	return ErrNotExist
 }
 
-func (m Minify) FilterBytes(mime string, v []byte) []byte {
+// MinifyBytes minifies an array of bytes. When an error occurs it return the original array.
+func (m Minifier) MinifyBytes(mime string, v []byte) ([]byte, error) {
 	b := &bytes.Buffer{}
-	if err := m.Filter(mime, b, bytes.NewBuffer(v)); err != nil {
-		return v
+	if err := m.Minify(mime, b, bytes.NewBuffer(v)); err != nil {
+		return v, err
 	}
-	return b.Bytes()
+	return b.Bytes(), nil
 }
 
-func (m Minify) FilterString(mime string, v string) string {
+// MinifyString minifies a string. When an error occurs it return the string.
+func (m Minifier) MinifyString(mime string, v string) (string, error) {
 	b := &bytes.Buffer{}
-	if err := m.Filter(mime, b, bytes.NewBufferString(v)); err != nil {
-		return v
+	if err := m.Minify(mime, b, bytes.NewBufferString(v)); err != nil {
+		return v, err
 	}
-	return b.String()
+	return b.String(), nil
 }

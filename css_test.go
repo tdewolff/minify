@@ -6,7 +6,7 @@ import (
 )
 
 func minifyCSS(t *testing.T, s string) string {
-	m := &Minify{}
+	m := &Minifier{}
 	b := &bytes.Buffer{}
 	if err := m.CSS(b, bytes.NewBufferString(s)); err != nil {
 		t.Error(err)
