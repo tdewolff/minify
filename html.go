@@ -190,9 +190,9 @@ func (m Minify) HTML(w io.Writer, r io.Reader) error {
 						getAttr(token, "rel") != "external" || attr.Key == "profile" || attr.Key == "xmlns" {
 						if strings.HasPrefix(val, "http:") {
 							val = val[5:]
-						} else if strings.HasPrefix(val, "https:") {
-							val = val[6:]
-						}
+						}// else if strings.HasPrefix(val, "https:") { // TODO: remove or readd; https: is not the default protocol
+						//	val = val[6:]
+						//}
 					} else if token.Data == "meta" && attr.Key == "content" {
 						http_equiv := getAttr(token, "http-equiv")
 						if http_equiv == "content-type" {
