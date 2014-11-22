@@ -76,7 +76,7 @@ func (m Minify) Html(w io.Writer, r io.Reader) error {
 						}
 					}
 
-					if err = m.Filter(mime, w, bytes.NewBuffer(text)); err == nil {
+					if err := m.Filter(mime, w, bytes.NewBuffer(text)); err == nil {
 						text = nil
 					}
 				}
@@ -176,14 +176,14 @@ func (m Minify) Html(w io.Writer, r io.Reader) error {
 
 					// CSS and JS minifiers for attribute inline code
 					if attr.Key == "style" {
-						if err = m.Filter(defaultStyleType, w, bytes.NewBufferString(val)); err != nil {
+						if err := m.Filter(defaultStyleType, w, bytes.NewBufferString(val)); err != nil {
 							w.Write([]byte(val))
 						}
 					} else if eventAttrRegexp.MatchString(attr.Key) {
 						if strings.HasPrefix(val, "javascript:") {
 							val = val[11:]
 						}
-						if err = m.Filter(defaultScriptType, w, bytes.NewBufferString(val)); err != nil {
+						if err := m.Filter(defaultScriptType, w, bytes.NewBufferString(val)); err != nil {
 							w.Write([]byte(val))
 						}
 					} else if (attr.Key == "href" || attr.Key == "src" || attr.Key == "cite" || attr.Key == "action") &&
