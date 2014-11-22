@@ -65,8 +65,7 @@ func (m Minify) Html(w io.Writer, r io.Reader) error {
 
 			// CSS and JS minifiers for inline code
 			if len(specialTag) > 0 {
-				tag := specialTag[len(specialTag)-1].Data
-				if tag == "style" || tag == "script" {
+				if tag := specialTag[len(specialTag)-1].Data; tag == "style" || tag == "script" {
 					mime := getAttr(specialTag[len(specialTag)-1], "type")
 					if mime == "" {
 						// default
@@ -76,16 +75,22 @@ func (m Minify) Html(w io.Writer, r io.Reader) error {
 							mime = defaultStyleType
 						}
 					}
-					text = m.FilterBytes(mime, text)
+
+					if err = m.Filter(mime, w, bytes.NewBuffer(text)); err == nil {
+						text = nil
+					}
 				}
-				w.Write(text)
-				text = nil
+
+				// no filter, write the original
+				if text != nil {
+					w.Write(text)
+					text = nil
+				}
 				break
 			}
 
 			// whitespace removal; if after an inline element, trim left if precededBySpace
 			text = multipleWhitespaceRegexp.ReplaceAll(text, []byte(" "))
-
 			if inlineTagRegexp.MatchString(prevElementToken.Data) {
 				if precededBySpace {
 					text = bytes.TrimLeft(text, " ")
@@ -171,12 +176,16 @@ func (m Minify) Html(w io.Writer, r io.Reader) error {
 
 					// CSS and JS minifiers for attribute inline code
 					if attr.Key == "style" {
-						val = m.FilterString(defaultStyleType, val)
+						if err = m.Filter(defaultStyleType, w, bytes.NewBufferString(val)); err != nil {
+							w.Write([]byte(val))
+						}
 					} else if eventAttrRegexp.MatchString(attr.Key) {
 						if strings.HasPrefix(val, "javascript:") {
 							val = val[11:]
 						}
-						val = m.FilterString(defaultScriptType, val)
+						if err = m.Filter(defaultScriptType, w, bytes.NewBufferString(val)); err != nil {
+							w.Write([]byte(val))
+						}
 					} else if (attr.Key == "href" || attr.Key == "src" || attr.Key == "cite" || attr.Key == "action") &&
 						getAttr(token, "rel") != "external" || attr.Key == "profile" || attr.Key == "xmlns" {
 						if strings.HasPrefix(val, "http:") {

@@ -38,7 +38,7 @@ func (m *Minify) ImplementCmd(mime string, cmdString string) error {
 		return err
 	}
 
-	m.Minifier[mime] = func (m Minify, w io.Writer, r io.Reader) error {
+	m.Minifier[mime] = func(m Minify, w io.Writer, r io.Reader) error {
 		var cmd *exec.Cmd
 		if len(cmdSplit) == 1 {
 			cmd = exec.Command(cmdSplit[0])
@@ -50,7 +50,6 @@ func (m *Minify) ImplementCmd(mime string, cmdString string) error {
 		if err != nil {
 			return err
 		}
-
 		stdIn, err := cmd.StdinPipe()
 		if err != nil {
 			return err
@@ -63,7 +62,6 @@ func (m *Minify) ImplementCmd(mime string, cmdString string) error {
 			return err
 		}
 		stdIn.Close()
-
 		if _, err = io.Copy(w, stdOut); err != nil {
 			return err
 		}
