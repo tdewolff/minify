@@ -13,7 +13,7 @@ The HTML minifier is rather complete, it strips away:
 - superfluous quotes, or single/double quotes depending on whichever requires fewer escapes
 - default attribute values or attribute booleans
 - unrequired tags (`html`, `head`, `body`, `tr`, ...)
-- default URL protocol (`http:`)
+- the default URL protocol (`http:`)
 - comments
 
 It also rewrites the doctype and meta charset into a shorter format according to [Google's HTML5 performance](https://developers.google.com/speed/articles/html5-performance).
@@ -27,7 +27,7 @@ Website | Original size | GoMinify | [HTML Compressor](https://code.google.com/p
 [StackOverflow](http://stackoverflow.com/) | 201kB | 184kB | 184kB | 92% | 170ms
 [Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 414kB | 423kB | 95% | 280ms
 
-[HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, `tr`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower for smaller files, but tends to be faster for large files (~1.5MB). Accordintg to HTML Compressor it produces smaller files than a couple of other libraries, which means GoMinify produces even smaller files.
+[HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, `tr`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower for smaller files, but tends to be faster for large files (~1.5MB). According to HTML Compressor it produces smaller files than a couple of other libraries, which means GoMinify produces even smaller files.
 
 The used benchmark code is from the basic example below.
 
