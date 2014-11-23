@@ -65,7 +65,7 @@ func TestMinify(t *testing.T) {
 }
 
 func TestDefaultMinifiers(t *testing.T) {
-	m := NewMinifier()
+	m := NewMinifierDefault()
 	w := &bytes.Buffer{}
 
 	r := bytes.NewBufferString("html")
@@ -83,7 +83,7 @@ func TestDefaultMinifiers(t *testing.T) {
 }
 
 func TestAdd(t *testing.T) {
-	m := NewMinifier()
+	m := NewMinifierDefault()
 	w := &bytes.Buffer{}
 	r := bytes.NewBufferString("test")
 

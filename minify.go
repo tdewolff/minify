@@ -13,9 +13,9 @@ Usage example:
 		"github.com/tdewolff/GoMinify"
 	)
 
-	// Minifies HTML code from stdin to stdout
+	// Minifies HTML code from stdin to stdout (note that using buffer is faster)
 	func main() {
-		m := minify.NewMinifier()
+		m := minify.NewMinifierDefault()
 		m.AddCmd("text/javascript", exec.Command("java", "-jar", "path/to/compiler.jar"))
 
 		if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
@@ -38,6 +38,7 @@ var ErrNotExist = errors.New("minifier does not exist for mime type")
 ////////////////////////////////////////////////////////////////
 
 // MinifyFunc is the function interface for minifiers
+// The Minifier parameter is used for embedded resources, such as JS within HTML.
 type MinifyFunc func(Minifier, io.Writer, io.Reader) error
 
 // Minifier holds a map of mime => function to allow recursive minifier calls of the minifier functions.
@@ -45,9 +46,14 @@ type Minifier struct {
 	Mime map[string]MinifyFunc
 }
 
-// NewMinifier returns a new Minifier struct.
-// It loads in the default minifier functions for HTML and CSS (test/html and text/css mime type respectively).
+// NewMinifier returns a new Minifier struct with initialized map.
 func NewMinifier() *Minifier {
+	return &Minifier{map[string]MinifyFunc{}}
+}
+
+// NewMinifierDefault returns a new Minifier struct with initialized map.
+// It loads in the default minifier functions for HTML and CSS (test/html and text/css mime types respectively).
+func NewMinifierDefault() *Minifier {
 	return &Minifier{
 		map[string]MinifyFunc{
 			"text/html":              (Minifier).HTML,
@@ -107,7 +113,8 @@ func (m Minifier) Minify(mime string, w io.Writer, r io.Reader) error {
 	return ErrNotExist
 }
 
-// MinifyBytes minifies an array of bytes. When an error occurs it return the original array.
+// MinifyBytes minifies an array of bytes. When an error occurs it return the original array and the error.
+// It return an error when no such mime type exists (ErrNotExist) or any error occurred in the minifier function.
 func (m Minifier) MinifyBytes(mime string, v []byte) ([]byte, error) {
 	b := &bytes.Buffer{}
 	if err := m.Minify(mime, b, bytes.NewBuffer(v)); err != nil {
@@ -116,7 +123,8 @@ func (m Minifier) MinifyBytes(mime string, v []byte) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-// MinifyString minifies a string. When an error occurs it return the string.
+// MinifyString minifies a string. When an error occurs it return the original string and the error.
+// It return an error when no such mime type exists (ErrNotExist) or any error occurred in the minifier function.
 func (m Minifier) MinifyString(mime string, v string) (string, error) {
 	b := &bytes.Buffer{}
 	if err := m.Minify(mime, b, bytes.NewBufferString(v)); err != nil {

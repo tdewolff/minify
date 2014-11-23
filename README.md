@@ -56,7 +56,7 @@ or add the following import and run project with `go get`
 ## Usage
 Retrieve a minifier struct which holds a map of mime => minifier function. The following loads the default HTML and CSS minifier:
 
-	m := minify.NewMinifier()
+	m := minify.NewMinifierDefault()
 
 To minify a generic stream, byte array or stream with mime type `mime`:
 ``` go
@@ -105,7 +105,7 @@ import (
 
 // Minifies HTML code from stdin to stdout
 func main() {
-	m := minify.NewMinifier()
+	m := minify.NewMinifierDefault()
 	m.AddCmd("text/javascript", exec.Command("java", "-jar", "path/to/compiler.jar"))
 
 	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
@@ -129,7 +129,7 @@ import (
 
 // Outputs "Becausemycoffeewastoocold,Iheateditinthemicrowave."
 func main() {
-	m := minify.NewMinifier()
+	m := minify.NewMinifierDefault()
 
 	// remove newline and space bytes
 	m.Add("text/plain", func(m minify.Minifier, w io.Writer, r io.Reader) error {
