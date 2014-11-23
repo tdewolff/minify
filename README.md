@@ -48,6 +48,27 @@ or add the following import and run project with `go get`
 	import "github.com/tdewolff/GoMinify"
 
 ## Usage
+Retrieve a minifier struct which holds a map of mime -> minifier function. The following loads the default HTML and CSS minifier:
+
+	m := minify.NewMinifier()
+
+To minify a generic stream:
+
+	if err := m.Minify(mime, w, r); err != nil {
+		fmt.Println("minify.Minify:", err)
+	}
+
+Or a byte array or string:
+
+	b, err := m.MinifyBytes(mime, b)
+	if err != nil {
+		fmt.Println("minify.Minify:", err)
+	}
+
+	s, err := m.MinifyString(mime, s)
+	if err != nil {
+		fmt.Println("minify.Minify:", err)
+	}
 
 Basic example:
 ``` go
