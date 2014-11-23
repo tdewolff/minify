@@ -1,5 +1,5 @@
 /*
-A minifier written in [Go][1]. Has a built-in HTML and CSS minifier.
+A minifier written in Go. Has a built-in HTML and CSS minifier.
 
 Usage example:
 
@@ -23,7 +23,6 @@ Usage example:
 		}
 	}
 
-[1]: http://golang.org/ "Go Language"
 */
 package minify
 
