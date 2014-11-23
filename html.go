@@ -81,7 +81,6 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			w.Write(bytes.TrimSpace(text))
 			text = nil
 
-			// https://developers.google.com/speed/articles/html5-performance
 			w.Write([]byte("<!doctype html>"))
 		case html.CommentToken:
 			w.Write(text)
@@ -89,6 +88,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 
 			comment := string(z.Token().Data)
 			if len(comment) > 0 {
+				// TODO: ensure that nested comments are handled properly (tokenizer doesn't handle this!)
 				if strings.HasPrefix(comment, "[if") {
 					text = []byte("<!--" + comment + "-->")
 				} else if strings.HasSuffix(comment, "--") {
@@ -172,7 +172,6 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			}
 			w.Write([]byte(token.Data))
 
-			// rewrite charset https://developers.google.com/speed/articles/html5-performance
 			if token.Data == "meta" && getAttr(token, "http-equiv") == "content-type" &&
 				getAttr(token, "content") == "text/html; charset=utf-8" {
 				w.Write([]byte(" charset=utf-8>"))

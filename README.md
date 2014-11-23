@@ -6,32 +6,33 @@
 
 GoMinify is a minifier package written in [Go][1]. It has a build-in HTML and CSS minifier and provides an interface to implement any minifier.
 
-It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. User can also implement a mime type using an external command.
+It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...).
 
 ## HTML
 The HTML minifier is rather complete and really fast, it strips away:
 
 - unnecessary whitespace
-- superfluous quotes, or single/double quotes depending on whichever requires fewer escapes
-- default attribute values or attribute booleans
+- superfluous quotes, or uses single/double quotes whichever requires fewer escapes
+- default attribute values and attribute boolean values
 - unrequired tags (`html`, `head`, `body`, ...)
-- the default URL protocol (`http:`)
-- comments
+- protocols (`http:` and `javascript:`)
+- comments (except conditional comments)
+- long `doctype` or `meta` charset
 
-It also rewrites the doctype and meta charset into a shorter format according to [Google's HTML5 performance](https://developers.google.com/speed/articles/html5-performance). After recent benchmarking and profiling it is really fast and minifies pages in the 10ms range, making it viable for on-the-fly minification.
+After recent benchmarking and profiling it is really fast and minifies pages in the 10ms range, making it viable for on-the-fly minification.
 
 ### Comparison
 
 Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/) | GoMinify | Ratio | Time*
 ------- | -------- | ------------------------------------------------------------ | -------- | ----- | -----
-[Amazon](http://www.amazon.com/) | 463kB | 457kB | _443kB_ | 96% | 17ms
-[BBC](http://www.bbc.com/) | 113kB | 103kB | _101kB_ | 89% | 10ms
-[StackOverflow](http://stackoverflow.com/) | 201kB | 184kB | _184kB_ | 92% | 16ms
-[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 423kB | _414kB_ | 95% | 28ms
+[Amazon](http://www.amazon.com/) | 463kB | 457kB | **443kB** | 96% | 17ms
+[BBC](http://www.bbc.com/) | 113kB | 103kB | **101kB** | 89% | 10ms
+[StackOverflow](http://stackoverflow.com/) | 201kB | 184kB | **184kB** | 92% | 16ms
+[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 423kB | **414kB** | 95% | 29ms
 
-* These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 10ms range! The used benchmark code is from the basic example below without the JavaScript minifier. The time reading from and writing to a file is excluded from the measurement.
+<small>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 10ms range! The used benchmark code is from the basic example below without the JavaScript minifier. The time reading from and writing to a file is excluded from the measurement.</small>
 
-[HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower for smaller files, but tends to be faster for large files (~1.5MB). According to HTML Compressor, it produces smaller files than a couple of other libraries, which means GoMinify produces even smaller files.
+[HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower (10x). According to HTML Compressor, it produces smaller files than a couple of other libraries, which means GoMinify does better than all.
 
 ## CSS
 The CSS minifier is immature and needs more work. It:
@@ -40,7 +41,7 @@ The CSS minifier is immature and needs more work. It:
 - shortens color codes (by using hexadecimal color codes or color words)
 - shortens a few other values
 
-It is in need of a CSS tokenizer, preferably from another package, in future.
+It is in need of a CSS tokenizer in future, preferably from another package.
 
 ## Installation
 
@@ -53,7 +54,7 @@ or add the following import and run project with `go get`
 	import "github.com/tdewolff/GoMinify"
 
 ## Usage
-Retrieve a minifier struct which holds a map of mime -> minifier function. The following loads the default HTML and CSS minifier:
+Retrieve a minifier struct which holds a map of mime => minifier function. The following loads the default HTML and CSS minifier:
 
 	m := minify.NewMinifier()
 

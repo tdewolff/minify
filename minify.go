@@ -40,7 +40,7 @@ var ErrNotExist = errors.New("minifier does not exist for mime type")
 // MinifyFunc is the function interface for minifiers
 type MinifyFunc func(Minifier, io.Writer, io.Reader) error
 
-// Minifier holds a map of mime -> function to allow recursive minifier calls of the minifier functions.
+// Minifier holds a map of mime => function to allow recursive minifier calls of the minifier functions.
 type Minifier struct {
 	Mime map[string]MinifyFunc
 }
@@ -56,7 +56,7 @@ func NewMinifier() *Minifier {
 	}
 }
 
-// Add adds a minify function to the mime -> function map.
+// Add adds a minify function to the mime => function map.
 // It allows one to implement a custom minifier for a specific mime type.
 func (m *Minifier) Add(mime string, f MinifyFunc) {
 	m.Mime[mime] = f
