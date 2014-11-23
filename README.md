@@ -52,24 +52,39 @@ Retrieve a minifier struct which holds a map of mime -> minifier function. The f
 
 	m := minify.NewMinifier()
 
-To minify a generic stream:
+To minify a generic stream, byte array or stream with mime type `mime`:
+``` go
+// stream
+if err := m.Minify(mime, w, r); err != nil {
+	fmt.Println("minify.Minify:", err)
+}
 
-	if err := m.Minify(mime, w, r); err != nil {
-		fmt.Println("minify.Minify:", err)
-	}
+// byte array
+b, err := m.MinifyBytes(mime, b)
+if err != nil {
+	fmt.Println("minify.Minify:", err)
+}
 
-Or a byte array or string:
+// string
+s, err := m.MinifyString(mime, s)
+if err != nil {
+	fmt.Println("minify.Minify:", err)
+}
+```
 
-	b, err := m.MinifyBytes(mime, b)
-	if err != nil {
-		fmt.Println("minify.Minify:", err)
-	}
+Add function or command for specific mime type `mime`:
+``` go
+// function
+m.Add(mime, func(m minify.Minifier, w io.Writer, r io.Reader) error {
+	io.Copy(w, r)
+	return nil
+})
 
-	s, err := m.MinifyString(mime, s)
-	if err != nil {
-		fmt.Println("minify.Minify:", err)
-	}
+// external command
+m.AddCmd(mime, exec.Command(cmd, args...))
+```
 
+### Examples
 Basic example:
 ``` go
 package main
