@@ -20,11 +20,12 @@ It also rewrites the doctype and meta charset into a shorter format according to
 
 ### Comparison
 
-Website | Original size (kB) | GoMinify (kB) | Ratio | Time
+Website | Original size (kB) | GoMinify (kB) | [HTML Compressor](https://code.google.com/p/htmlcompressor/) (kB) | Ratio | Time
 ------- | ------------------ | ------------- | ----- | ----
-[Amazon](http://www.amazon.com/) | 1684 | 1386 | 82% | 2.5s
-[StackOverflow](http://stackoverflow.com/) | 1248 | 1050 | 84% | 2.2s
-[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 1874 | 1673 | 89% | 3.1s
+[Amazon](http://www.amazon.com/) | 463 | 443 | 457 | 96% | 140ms
+[BBC](http://www.bbc.com/) | 113 | 101 | 103 | 89% | 60ms
+[StackOverflow](http://stackoverflow.com/) | 201 | 184 | 184 | 92% | 170ms
+[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435 | 414 | 423 | 95% | 280ms
 
 TODO: compare to other minifiers
 

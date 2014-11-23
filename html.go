@@ -12,14 +12,13 @@ import (
 // HTML minifies HTML files, it reads from r and writes to w.
 // Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 15% in size.
 func (m Minifier) HTML(w io.Writer, r io.Reader) error {
+	invalidAttrChars := " \t\n\f\r\"'`=<>/"
 	multipleWhitespaceRegexp := regexp.MustCompile("\\s+")
-	validAttrRegexp := regexp.MustCompile("^[^\\s\"'`=<>/]*$")
 	booleanAttrRegexp := regexp.MustCompile("^(allowfullscreen|async|autofocus|autoplay|checked|compact|controls|declare|" +
 		"default|defaultChecked|defaultMuted|defaultSelected|defer|disabled|draggable|enabled|formnovalidate|hidden|" +
 		"undeterminate|inert|ismap|itemscope|multiple|muted|nohref|noresize|noshade|novalidate|nowrap|open|pauseonexit|" +
 		"readonly|required|reversed|scoped|seamless|selected|sortable|spellcheck|translate|truespeed|typemustmatch|" +
 		"visible)$")
-	eventAttrRegexp := regexp.MustCompile("^on[a-z]+$")
 	specialTagRegexp := regexp.MustCompile("^(style|script|pre|code|textarea)$")
 	inlineTagRegexp := regexp.MustCompile("^(b|big|i|small|tt|abbr|acronym|cite|dfn|em|kbd|strong|samp|var|a|bdo|br|img|" +
 		"map|object|q|span|sub|sup|button|input|label|select)$")
@@ -28,8 +27,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 	var text []byte             // write text token until next token is received, allows to look forward one token
 	var specialTag []html.Token // stack array of special tags it is in
 	var prevElementToken html.Token
-	precededBySpace := true //  on true the next text token must no start with a space
-
+	precededBySpace := true 	// on true the next text token must no start with a space
 	defaultScriptType := "text/javascript"
 	defaultStyleType := "text/css"
 
@@ -60,8 +58,18 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			w.Write([]byte("<!doctype html>"))
 		case html.CommentToken:
 			w.Write(text)
-			//text = []byte("<!--" + z.Token().Data + "-->") // uncomment to allow comments
 			text = nil
+
+			comment := string(z.Token().Data)
+			if len(specialTag) > 0 {
+				text = []byte("<!--\n" + comment + "\n-->")
+			} else if len(comment) > 0 {
+				if strings.HasPrefix(comment, "[if") {
+					text = []byte("<!--" + comment + "-->")
+				} else if strings.HasSuffix(comment, "--") {
+					text = []byte("<!" + comment + ">")
+				}
+			}
 		case html.TextToken:
 			w.Write(text)
 			text = z.Text()
@@ -111,7 +119,8 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			if specialTagRegexp.MatchString(token.Data) {
 				if tt == html.StartTagToken {
 					specialTag = append(specialTag, token)
-				} else if tt == html.EndTagToken {
+				} else if tt == html.EndTagToken && len(specialTag) > 0 && specialTag[len(specialTag)-1].Data == token.Data {
+					// TODO: test whether the if statement is error proof
 					specialTag = specialTag[:len(specialTag)-1]
 				}
 			}
@@ -186,7 +195,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 						if err != nil && err != ErrNotExist {
 							return err
 						}
-					} else if eventAttrRegexp.MatchString(attr.Key) {
+					} else if strings.HasPrefix(attr.Key, "on") {
 						if strings.HasPrefix(val, "javascript:") {
 							val = val[11:]
 						}
@@ -198,9 +207,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 						getAttr(token, "rel") != "external" || attr.Key == "profile" || attr.Key == "xmlns" {
 						if strings.HasPrefix(val, "http:") {
 							val = val[5:]
-						}// else if strings.HasPrefix(val, "https:") { // TODO: remove or readd; https: is not the default protocol
-						//	val = val[6:]
-						//}
+						}
 					} else if token.Data == "meta" && attr.Key == "content" {
 						http_equiv := getAttr(token, "http-equiv")
 						if http_equiv == "content-type" {
@@ -220,7 +227,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					}
 
 					// no quote if possible, else prefer single or double depending on which occurs more often in value
-					if validAttrRegexp.MatchString(val) {
+					if strings.IndexAny(val, invalidAttrChars) == -1 {
 						w.Write([]byte(val))
 					} else if strings.Count(val, "\"") > strings.Count(val, "'") {
 						w.Write([]byte("'" + strings.Replace(val, "'", "&#39;", -1) + "'"))
