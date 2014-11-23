@@ -97,11 +97,13 @@ func (m *Minifier) AddCmd(mime string, cmd *exec.Cmd) error {
 // Minify minifies the content of a Reader and writes it to a Writer.
 // An error is returned when no such mime type exists (ErrNotExist) or any error occurred in the minifier function.
 func (m Minifier) Minify(mime string, w io.Writer, r io.Reader) error {
-	if f, ok := m.Mime[mime]; ok {
-		if err := f(m, w, r); err != nil {
-			return err
+	if m.Mime != nil {
+		if f, ok := m.Mime[mime]; ok {
+			if err := f(m, w, r); err != nil {
+				return err
+			}
+			return nil
 		}
-		return nil
 	}
 	return ErrNotExist
 }

@@ -36,7 +36,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 	getAttr := func(token html.Token, k string) string {
 		for _, attr := range token.Attr {
 			if attr.Key == k {
-				return attr.Val
+				return strings.ToLower(attr.Val)
 			}
 		}
 		return ""
@@ -60,7 +60,8 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			w.Write([]byte("<!doctype html>"))
 		case html.CommentToken:
 			w.Write(text)
-			text = []byte("<!--" + z.Token().Data + "-->")
+			//text = []byte("<!--" + z.Token().Data + "-->") // uncomment to allow comments
+			text = nil
 		case html.TextToken:
 			w.Write(text)
 			text = z.Text()

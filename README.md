@@ -18,7 +18,15 @@ The HTML minifier is rather complete, it strips away:
 
 It also rewrites the doctype and meta charset into a shorter format according to [Google's HTML5 performance][https://developers.google.com/speed/articles/html5-performance].
 
-TODO: comparison to other minifiers
+### Comparison
+
+Website | Original size (kB) | GoMinify (kB) | Ratio | Time
+------- | ------------------ | ------------- | ----- | ----
+[Amazon][http://www.amazon.com/] | 1684 | 1386 | 82% | 2.5s
+[StackOverflow][http://stackoverflow.com/] | 1248 | 1050 | 84% | 2.2s
+[Wikipedia][http://en.wikipedia.org/wiki/President_of_the_United_States] | 1874 | 1673 | 89% | 3.1s
+
+TODO: compare to other minifiers
 
 ## CSS
 The CSS minifier is immature and needs more work. It features:
@@ -29,10 +37,20 @@ The CSS minifier is immature and needs more work. It features:
 
 It is in need of a CSS tokenizer, preferably from another package, in future.
 
+## Installation
+
+Run the following command
+
+	go get github.com/tdewolff/GoMinify
+
+or add the following import and run project with `go get`
+
+	import "github.com/tdewolff/GoMinify"
+
 ## Usage
 
 Basic example:
-
+``` go
 	package main
 
 	import (
@@ -52,9 +70,10 @@ Basic example:
 			fmt.Println("minify.Minify:", err)
 		}
 	}
+```
 
 Custom minifier:
-
+``` go
 	package main
 
 	import (
@@ -96,7 +115,8 @@ Custom minifier:
 		}
 		fmt.Println(out)
 	}
+```
 
-Within a custom minifier, one can call m.MinifyBytes("mime", w, byteArray) when dealing with embedded resources.
+Within a custom minifier, one can call `m.MinifyBytes("mime", w, byteArray)` when dealing with embedded resources.
 
 [1]: http://golang.org/ "Go Language"
