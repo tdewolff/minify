@@ -124,6 +124,7 @@ import (
 // Outputs "Becausemycoffeewastoocold,Iheateditinthemicrowave."
 func main() {
 	m := minify.NewMinifier()
+
 	// remove newline and space bytes
 	m.Add("text/plain", func(m minify.Minifier, w io.Writer, r io.Reader) error {
 		rb := bufio.NewReader(r)
@@ -132,12 +133,10 @@ func main() {
 			if err != nil && err != io.EOF {
 				return err
 			}
-
 			_, errws := io.WriteString(w, strings.Replace(line, " ", "", -1))
 			if errws != nil {
 				return errws
 			}
-
 			if err == io.EOF {
 				break
 			}
@@ -153,6 +152,6 @@ func main() {
 }
 ```
 
-Within a custom minifier, one can call `m.MinifyBytes("mime", w, byteArray)` when dealing with embedded resources.
+Within a custom minifier, one can call any `Minify` function recursively when dealing with embedded resources.
 
 [1]: http://golang.org/ "Go Language"
