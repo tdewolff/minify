@@ -231,10 +231,10 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 						var n uint32
 						if param[len(param)-1] == '%' {
 							f, err = strconv.ParseFloat(param[:len(param)-1], 32)
-							n = uint32(f*255.0 + 0.5)
+							n = uint32(f*255.0/100.0 + 0.5)
 						} else {
 							f, err = strconv.ParseFloat(param, 32)
-							n = uint32(f + 0.5)
+							n = uint32(f*255.0 + 0.5)
 						}
 
 						hexVal *= 256
@@ -248,7 +248,7 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 					if err == nil {
 						b := make([]byte, 4)
 						binary.LittleEndian.PutUint32(b, hexVal)
-						val = "#" + hex.EncodeToString(b)
+						val = "#" + hex.EncodeToString(b)[:6]
 					}
 				}
 			}
@@ -256,7 +256,8 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 			if len(val) >= 4 && val[0] == '#' {
 				if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
 					val = "#" + string(val[1]) + string(val[3]) + string(val[5])
-				} else if name, ok := hexColors[strings.ToUpper(val[1:])]; ok {
+				}
+				if name, ok := hexColors[strings.ToUpper(val[1:])]; ok {
 					val = name
 				}
 			} else if hex, ok := colorNames[strings.ToLower(val)]; ok {

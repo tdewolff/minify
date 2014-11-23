@@ -61,12 +61,11 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			text = nil
 
 			comment := string(z.Token().Data)
-			if len(specialTag) > 0 {
-				text = []byte("<!--\n" + comment + "\n-->")
-			} else if len(comment) > 0 {
+			if len(comment) > 0 {
 				if strings.HasPrefix(comment, "[if") {
 					text = []byte("<!--" + comment + "-->")
 				} else if strings.HasSuffix(comment, "--") {
+					// only occurs when mixed up with conditionary comments
 					text = []byte("<!" + comment + ">")
 				}
 			}
@@ -214,10 +213,10 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 						http_equiv := getAttr(token, "http-equiv")
 						if http_equiv == "content-type" {
 							val = strings.Replace(val, ", ", ",", -1)
-						} else if http_equiv == "content-script-type" {
-							defaultScriptType = val
 						} else if http_equiv == "content-style-type" {
 							defaultStyleType = val
+						} else if http_equiv == "content-script-type" {
+							defaultScriptType = val
 						}
 
 						name := getAttr(token, "name")
@@ -237,10 +236,6 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 						w.Write([]byte("\"" + strings.Replace(val, "\"", "&quot;", -1) + "\""))
 					}
 				}
-			}
-
-			if tt == html.SelfClosingTagToken {
-				w.Write([]byte("/"))
 			}
 			w.Write([]byte(">"))
 		}
