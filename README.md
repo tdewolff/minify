@@ -20,12 +20,12 @@ It also rewrites the doctype and meta charset into a shorter format according to
 
 ### Comparison
 
-Website | Original size (kB) | GoMinify (kB) | [HTML Compressor](https://code.google.com/p/htmlcompressor/) (kB) | Ratio | Time
-------- | ------------------ | ------------- | ----------------------------------------------------------------- | ----- | ----
-[Amazon](http://www.amazon.com/) | 463 | 443 | 457 | 96% | 140ms
-[BBC](http://www.bbc.com/) | 113 | 101 | 103 | 89% | 60ms
-[StackOverflow](http://stackoverflow.com/) | 201 | 184 | 184 | 92% | 170ms
-[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435 | 414 | 423 | 95% | 280ms
+Website | Original size | GoMinify | [HTML Compressor](https://code.google.com/p/htmlcompressor/) | Ratio | Time
+------- | ------------- | -------- | ------------------------------------------------------------ | ----- | ----
+[Amazon](http://www.amazon.com/) | 463kB | 443kB | 457kB | 96% | 140ms
+[BBC](http://www.bbc.com/) | 113kB | 101kB | 103kB | 89% | 60ms
+[StackOverflow](http://stackoverflow.com/) | 201kB | 184kB | 184kB | 92% | 170ms
+[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 414kB | 423kB | 95% | 280ms
 
 [HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the html, head, body, tr, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower for smaller files, but tends to be faster for large files (~1.5MB). Accordintg to HTML Compressor it produces smaller files than a couple of other libraries, which means GoMinify produces even smaller files.
 
