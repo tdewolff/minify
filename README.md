@@ -16,15 +16,15 @@ The HTML minifier is rather complete, it strips away:
 - default URL protocol (http:)
 - comments
 
-It also rewrites the doctype and meta charset into a shorter format according to [Google's HTML5 performance][https://developers.google.com/speed/articles/html5-performance].
+It also rewrites the doctype and meta charset into a shorter format according to [Google's HTML5 performance](https://developers.google.com/speed/articles/html5-performance).
 
 ### Comparison
 
 Website | Original size (kB) | GoMinify (kB) | Ratio | Time
 ------- | ------------------ | ------------- | ----- | ----
-[Amazon][http://www.amazon.com/] | 1684 | 1386 | 82% | 2.5s
-[StackOverflow][http://stackoverflow.com/] | 1248 | 1050 | 84% | 2.2s
-[Wikipedia][http://en.wikipedia.org/wiki/President_of_the_United_States] | 1874 | 1673 | 89% | 3.1s
+[Amazon](http://www.amazon.com/) | 1684 | 1386 | 82% | 2.5s
+[StackOverflow](http://stackoverflow.com/) | 1248 | 1050 | 84% | 2.2s
+[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 1874 | 1673 | 89% | 3.1s
 
 TODO: compare to other minifiers
 
@@ -51,70 +51,70 @@ or add the following import and run project with `go get`
 
 Basic example:
 ``` go
-	package main
+package main
 
-	import (
-		"fmt"
-		"os"
-		"os/exec"
+import (
+	"fmt"
+	"os"
+	"os/exec"
 
-		"github.com/tdewolff/GoMinify"
-	)
+	"github.com/tdewolff/GoMinify"
+)
 
-	// Minifies HTML code from stdin to stdout
-	func main() {
-		m := minify.NewMinifier()
-		m.AddCmd("text/javascript", exec.Command("java", "-jar", "path/to/compiler.jar"))
+// Minifies HTML code from stdin to stdout
+func main() {
+	m := minify.NewMinifier()
+	m.AddCmd("text/javascript", exec.Command("java", "-jar", "path/to/compiler.jar"))
 
-		if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
-			fmt.Println("minify.Minify:", err)
-		}
+	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
+		fmt.Println("minify.Minify:", err)
 	}
+}
 ```
 
 Custom minifier:
 ``` go
-	package main
+package main
 
-	import (
-		"bufio"
-		"fmt"
-		"io"
-		"strings"
+import (
+	"bufio"
+	"fmt"
+	"io"
+	"strings"
 
-		"github.com/tdewolff/GoMinify"
-	)
+	"github.com/tdewolff/GoMinify"
+)
 
-	// Outputs "Becausemycoffeewastoocold,Iheateditinthemicrowave."
-	func main() {
-		m := minify.NewMinifier()
-		// remove newline and space bytes
-		m.Add("text/plain", func(m minify.Minifier, w io.Writer, r io.Reader) error {
-			rb := bufio.NewReader(r)
-			for {
-				line, err := rb.ReadString('\n')
-				if err != nil && err != io.EOF {
-					return err
-				}
-
-				_, errws := io.WriteString(w, strings.Replace(line, " ", "", -1))
-				if errws != nil {
-					return errws
-				}
-
-				if err == io.EOF {
-					break
-				}
+// Outputs "Becausemycoffeewastoocold,Iheateditinthemicrowave."
+func main() {
+	m := minify.NewMinifier()
+	// remove newline and space bytes
+	m.Add("text/plain", func(m minify.Minifier, w io.Writer, r io.Reader) error {
+		rb := bufio.NewReader(r)
+		for {
+			line, err := rb.ReadString('\n')
+			if err != nil && err != io.EOF {
+				return err
 			}
-			return nil
-		})
 
-		out, err := m.MinifyString("text/plain", "Because my coffee was too cold, I heated it in the microwave.")
-		if err != nil {
-			fmt.Println("minify.Minify:", err)
+			_, errws := io.WriteString(w, strings.Replace(line, " ", "", -1))
+			if errws != nil {
+				return errws
+			}
+
+			if err == io.EOF {
+				break
+			}
 		}
-		fmt.Println(out)
+		return nil
+	})
+
+	out, err := m.MinifyString("text/plain", "Because my coffee was too cold, I heated it in the microwave.")
+	if err != nil {
+		fmt.Println("minify.Minify:", err)
 	}
+	fmt.Println(out)
+}
 ```
 
 Within a custom minifier, one can call `m.MinifyBytes("mime", w, byteArray)` when dealing with embedded resources.
