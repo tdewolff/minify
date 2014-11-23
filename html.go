@@ -203,8 +203,10 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 						if err != nil && err != ErrNotExist {
 							return err
 						}
-					} else if (attr.Key == "href" || attr.Key == "src" || attr.Key == "cite" || attr.Key == "action") &&
-						getAttr(token, "rel") != "external" || attr.Key == "profile" || attr.Key == "xmlns" {
+					} else if ((attr.Key == "href" || attr.Key == "src" || attr.Key == "cite" || attr.Key == "action") && getAttr(token, "rel") != "external") ||
+							attr.Key == "profile" || attr.Key == "xmlns" || attr.Key == "formaction" || attr.Key == "poster" || attr.Key == "manifest" ||
+							attr.Key == "icon" || attr.Key == "codebase" || attr.Key == "longdesc" || attr.Key == "background" || attr.Key == "icon" ||
+							attr.Key == "classid" || attr.Key == "usemap" || attr.Key == "data" {
 						if strings.HasPrefix(val, "http:") {
 							val = val[5:]
 						}
