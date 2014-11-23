@@ -10,7 +10,7 @@ import (
 )
 
 // HTML minifies HTML files, it reads from r and writes to w.
-// Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 15% in size.
+// Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 10% in size.
 func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 	invalidAttrChars := " \t\n\f\r\"'`=<>/"
 	multipleWhitespaceRegexp := regexp.MustCompile("\\s+")
