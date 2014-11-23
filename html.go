@@ -3,25 +3,52 @@ package minify
 import (
 	"bytes"
 	"io"
-	"regexp"
 	"strings"
 
 	"code.google.com/p/go.net/html"
 )
 
+func replaceMultipleWhitespace(s []byte) []byte {
+	j := 0
+	t := make([]byte, len(s))
+	previousSpace := false
+	for _, x := range s {
+		if strings.IndexByte(" \t\n\f\r", x) == -1 {
+			previousSpace = false
+			t[j] = x
+			j++
+		} else if !previousSpace {
+			previousSpace = true
+			t[j] = ' '
+			j++
+		}
+	}
+	return t[:j]
+}
+
 // HTML minifies HTML files, it reads from r and writes to w.
 // Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 10% in size.
 func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 	invalidAttrChars := " \t\n\f\r\"'`=<>/"
-	multipleWhitespaceRegexp := regexp.MustCompile("\\s+")
-	booleanAttrRegexp := regexp.MustCompile("^(allowfullscreen|async|autofocus|autoplay|checked|compact|controls|declare|" +
+
+	booleanAttrMap := make(map[string]bool)
+	for _, v := range strings.Split("allowfullscreen|async|autofocus|autoplay|checked|compact|controls|declare|" +
 		"default|defaultChecked|defaultMuted|defaultSelected|defer|disabled|draggable|enabled|formnovalidate|hidden|" +
 		"undeterminate|inert|ismap|itemscope|multiple|muted|nohref|noresize|noshade|novalidate|nowrap|open|pauseonexit|" +
 		"readonly|required|reversed|scoped|seamless|selected|sortable|spellcheck|translate|truespeed|typemustmatch|" +
-		"visible)$")
-	specialTagRegexp := regexp.MustCompile("^(style|script|pre|code|textarea)$")
-	inlineTagRegexp := regexp.MustCompile("^(b|big|i|small|tt|abbr|acronym|cite|dfn|em|kbd|strong|samp|var|a|bdo|br|img|" +
-		"map|object|q|span|sub|sup|button|input|label|select)$")
+		"visible", "|") {
+		booleanAttrMap[v] = true
+	}
+
+	specialTagMap := make(map[string]bool)
+	for _, v := range strings.Split("style|script|pre|code|textarea", "|") {
+		specialTagMap[v] = true
+	}
+
+	inlineTagMap := make(map[string]bool)
+	for _, v := range strings.Split("b|big|i|small|tt|abbr|acronym|cite|dfn|em|kbd|strong|samp|var|a|bdo|br|img|map|object|q|span|sub|sup|button|input|label|select", "|") {
+		inlineTagMap[v] = true
+	}
 
 	// state
 	var text []byte             // write text token until next token is received, allows to look forward one token
@@ -102,20 +129,20 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			}
 
 			// whitespace removal; if after an inline element, trim left if precededBySpace
-			text = multipleWhitespaceRegexp.ReplaceAll(text, []byte(" "))
-			if inlineTagRegexp.MatchString(prevElementToken.Data) {
-				if precededBySpace {
-					text = bytes.TrimLeft(text, " ")
+			text = replaceMultipleWhitespace(text)
+			if inlineTagMap[prevElementToken.Data] {
+				if precededBySpace && len(text) > 0 && text[0] == ' ' {
+					text = text[1:]
 				}
 				precededBySpace = len(text) > 0 && text[len(text)-1] == ' '
-			} else {
-				text = bytes.TrimLeft(text, " ")
+			} else if len(text) > 0 && text[0] == ' ' {
+				text = text[1:]
 			}
 		case html.StartTagToken, html.EndTagToken, html.SelfClosingTagToken:
 			token := z.Token()
 			prevElementToken = token
 
-			if specialTagRegexp.MatchString(token.Data) {
+			if specialTagMap[token.Data] {
 				if tt == html.StartTagToken {
 					specialTag = append(specialTag, token)
 				} else if tt == html.EndTagToken && len(specialTag) > 0 && specialTag[len(specialTag)-1].Data == token.Data {
@@ -125,7 +152,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			}
 
 			// whitespace removal; if we encounter a block or a (closing) inline element, trim the right
-			if !inlineTagRegexp.MatchString(token.Data) || (tt == html.EndTagToken && len(text) > 0 && text[len(text)-1] == ' ') {
+			if !inlineTagMap[token.Data] || (tt == html.EndTagToken && len(text) > 0 && text[len(text)-1] == ' ') {
 				text = bytes.TrimRight(text, " ")
 				precededBySpace = true
 			}
@@ -178,7 +205,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				}
 				w.Write([]byte(" " + attr.Key))
 
-				isBoolean := booleanAttrRegexp.MatchString(attr.Key)
+				isBoolean := booleanAttrMap[attr.Key]
 				if len(val) == 0 && !isBoolean {
 					continue
 				}

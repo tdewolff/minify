@@ -1,4 +1,5 @@
 [![GoDoc](http://godoc.org/github.com/tdewolff/GoMinify?status.svg)](http://godoc.org/github.com/tdewolff/GoMinify)
+
 ~85% test coverage
 
 # GoMinify
@@ -8,7 +9,7 @@ GoMinify is a minifier package written in [Go][1]. It has a build-in HTML and CS
 It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. User can also implement a mime type using an external command.
 
 ## HTML
-The HTML minifier is rather complete, it strips away:
+The HTML minifier is rather complete and really fast, it strips away:
 
 - unnecessary whitespace
 - superfluous quotes, or single/double quotes depending on whichever requires fewer escapes
@@ -17,20 +18,20 @@ The HTML minifier is rather complete, it strips away:
 - the default URL protocol (`http:`)
 - comments
 
-It also rewrites the doctype and meta charset into a shorter format according to [Google's HTML5 performance](https://developers.google.com/speed/articles/html5-performance).
+It also rewrites the doctype and meta charset into a shorter format according to [Google's HTML5 performance](https://developers.google.com/speed/articles/html5-performance). After recent benchmarking and profiling it is really fast and minifies pages in the 10ms range, making it viable for on-the-fly minification.
 
 ### Comparison
 
-Website | Original size | GoMinify | [HTML Compressor](https://code.google.com/p/htmlcompressor/) | Ratio | Time
-------- | ------------- | -------- | ------------------------------------------------------------ | ----- | ----
-[Amazon](http://www.amazon.com/) | 463kB | 443kB | 457kB | 96% | 30ms
-[BBC](http://www.bbc.com/) | 113kB | 101kB | 103kB | 89% | 25ms
-[StackOverflow](http://stackoverflow.com/) | 201kB | 184kB | 184kB | 92% | 60ms
-[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 414kB | 423kB | 95% | 90ms
+Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/) | GoMinify | Ratio | Time*
+------- | -------- | ------------------------------------------------------------ | -------- | ----- | -----
+[Amazon](http://www.amazon.com/) | 463kB | 457kB | _443kB_ | 96% | 17ms
+[BBC](http://www.bbc.com/) | 113kB | 103kB | _101kB_ | 89% | 10ms
+[StackOverflow](http://stackoverflow.com/) | 201kB | 184kB | _184kB_ | 92% | 16ms
+[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 423kB | _414kB_ | 95% | 28ms
+
+* These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 10ms range! The used benchmark code is from the basic example below without the JavaScript minifier. The time reading from and writing to a file is excluded from the measurement.
 
 [HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower for smaller files, but tends to be faster for large files (~1.5MB). According to HTML Compressor, it produces smaller files than a couple of other libraries, which means GoMinify produces even smaller files.
-
-The used benchmark code is from the basic example below without the JavaScript minifier. The time reading from and writing to a file is excluded from the measurement.
 
 ## CSS
 The CSS minifier is immature and needs more work. It:
