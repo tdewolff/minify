@@ -22,7 +22,7 @@ import (
 	"unicode/utf8"
 )
 
-// Minifies CSS files, reads from r and writes to w.
+// CSS minifies CSS files, it reads from r and writes to w.
 // It does a mediocre job of minifying CSS files and should be improved in the future.
 func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 	b, err := ioutil.ReadAll(r)

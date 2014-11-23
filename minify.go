@@ -37,7 +37,7 @@ var ErrNotExist = errors.New("minifier does not exist for mime type")
 
 ////////////////////////////////////////////////////////////////
 
-// Minifier function interface
+// MinifyFunc is the function interface for minifiers
 type MinifyFunc func(Minifier, io.Writer, io.Reader) error
 
 // Minifier holds a map of mime -> function to allow recursive minifier calls of the minifier functions.

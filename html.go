@@ -9,8 +9,8 @@ import (
 	"code.google.com/p/go.net/html"
 )
 
-// Minifies HTML files, reads from r and writes to w.
-// Removes unnecessary whitespace, tags, attributes, quotes and comments.
+// HTML minifies HTML files, it reads from r and writes to w.
+// Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 15% in size.
 func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 	multipleWhitespaceRegexp := regexp.MustCompile("\\s+")
 	validAttrRegexp := regexp.MustCompile("^[^\\s\"'`=<>/]*$")
