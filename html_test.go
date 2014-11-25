@@ -2,6 +2,8 @@ package minify
 
 import (
 	"bytes"
+	"math/rand"
+	"regexp"
 	"testing"
 )
 
@@ -16,6 +18,18 @@ func helperHTML(t *testing.T, input, expected string) {
 		t.Error(b.String(), "!=", expected)
 	}
 }
+
+func helperRand(n, m int, chars []byte) []string {
+	r := make([]string, n)
+	for i := range r {
+		for j := 0; j < m; j++ {
+			r[i] += string(chars[rand.Intn(len(chars))])
+		}
+	}
+	return r
+}
+
+////////////////////////////////////////////////////////////////
 
 func TestHTML(t *testing.T) {
 	helperHTML(t, "html", "html")
@@ -47,4 +61,17 @@ func TestHTML(t *testing.T) {
 	helperHTML(t, "<meta http-equiv=\"content-script-type\" content=\"application/js\">", "<meta http-equiv=content-script-type content=\"application/js\">")
 	helperHTML(t, "<span attr=\"\"></span>", "<span attr></span>")
 	helperHTML(t, "<code>x</code>", "<code>x</code>")
+}
+
+func TestWhitespace(t *testing.T) {
+	multipleWhitespaceRegexp := regexp.MustCompile("\\s+")
+
+	array := helperRand(100, 20, []byte("abcdefg \n\r\f\t"))
+	for _, e := range array {
+		reference := multipleWhitespaceRegexp.ReplaceAll([]byte(e), []byte(" "))
+		actual := replaceMultipleWhitespace([]byte(e))
+		if !bytes.Equal(actual, reference) {
+			t.Error(actual, "!=", reference)
+		}
+	}
 }

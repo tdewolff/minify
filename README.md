@@ -21,6 +21,8 @@ The HTML5 minifier is rather complete and really fast, it strips away:
 
 After recent benchmarking and profiling it is really fast and minifies pages in the 10ms range, making it viable for on-the-fly minification.
 
+However, be careful when doing on-the-fly minification. A simple site would typically have HTML pages of 5kB which ideally are compressed to say 4kB. If this would take about 10ms to minify, one has to download slower than 100kB/s to make minification effective. There is a lot of handwaving in this example but it's hardly effective to minify on-the-fly. Rather use caching!
+
 ### Comparison
 
 Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/) | GoMinify | Ratio | Time*

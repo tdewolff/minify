@@ -26,7 +26,7 @@ func replaceMultipleWhitespace(s []byte) []byte {
 	return t[:j]
 }
 
-// HTML minifies HTML files, it reads from r and writes to w.
+// HTML minifies HTML5 files, it reads from r and writes to w.
 // Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 10% in size.
 func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 	invalidAttrChars := " \t\n\f\r\"'`=<>/"
@@ -51,7 +51,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 	}
 
 	// state
-	var text []byte             // write text token until next token is received, allows to look forward one token
+	var text []byte             // write text token until next token is received, allows to look forward one token before writing away
 	var specialTag []html.Token // stack array of special tags it is in
 	var prevElementToken html.Token
 	precededBySpace := true 	// on true the next text token must no start with a space
@@ -92,7 +92,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				if strings.HasPrefix(comment, "[if") {
 					text = []byte("<!--" + comment + "-->")
 				} else if strings.HasSuffix(comment, "--") {
-					// only occurs when mixed up with conditionary comments
+					// only occurs when mixed up with conditional comments
 					text = []byte("<!" + comment + ">")
 				}
 			}
