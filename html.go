@@ -8,6 +8,113 @@ import (
 	"code.google.com/p/go.net/html"
 )
 
+var specialTagMap = map[string]bool{
+	"style": true,
+	"script": true,
+	"pre": true,
+	"code": true,
+	"textarea": true,
+}
+
+var inlineTagMap = map[string]bool{
+	"b": true,
+	"big": true,
+	"i": true,
+	"small": true,
+	"tt": true,
+	"abbr": true,
+	"acronym": true,
+	"cite": true,
+	"dfn": true,
+	"em": true,
+	"kbd": true,
+	"strong": true,
+	"samp": true,
+	"var": true,
+	"a": true,
+	"bdo": true,
+	"br": true,
+	"img": true,
+	"map": true,
+	"object": true,
+	"q": true,
+	"span": true,
+	"sub": true,
+	"sup": true,
+	"button": true,
+	"input": true,
+	"label": true,
+	"select": true,
+}
+
+var invalidAttrChars = " \t\n\f\r\"'`=<>/"
+
+var booleanAttrMap = map[string]bool{
+	"allowfullscreen": true,
+	"async": true,
+	"autofocus": true,
+	"autoplay": true,
+	"checked": true,
+	"compact": true,
+	"controls": true,
+	"declare": true,
+	"default": true,
+	"defaultChecked": true,
+	"defaultMuted": true,
+	"defaultSelected": true,
+	"defer": true,
+	"disabled": true,
+	"draggable": true,
+	"enabled": true,
+	"formnovalidate": true,
+	"hidden": true,
+	"undeterminate": true,
+	"inert": true,
+	"ismap": true,
+	"itemscope": true,
+	"multiple": true,
+	"muted": true,
+	"nohref": true,
+	"noresize": true,
+	"noshade": true,
+	"novalidate": true,
+	"nowrap": true,
+	"open": true,
+	"pauseonexit": true,
+	"readonly": true,
+	"required": true,
+	"reversed": true,
+	"scoped": true,
+	"seamless": true,
+	"selected": true,
+	"sortable": true,
+	"spellcheck": true,
+	"translate": true,
+	"truespeed": true,
+	"typemustmatch": true,
+	"visible": true,
+}
+
+var urlAttrMap = map[string]bool{
+	"href": true,
+	"src": true,
+	"cite": true,
+	"action": true,
+	"profile": true,
+	"xmlns": true,
+	"formaction": true,
+	"poster": true,
+	"manifest": true,
+	"icon": true,
+	"codebase": true,
+	"longdesc": true,
+	"background": true,
+	"classid": true,
+	"usemap": true,
+	"data": true,
+}
+
+// replaceMultipleWhitespace replaces any series of whitespace characters by a single space
 func replaceMultipleWhitespace(s []byte) []byte {
 	j := 0
 	t := make([]byte, len(s))
@@ -26,30 +133,19 @@ func replaceMultipleWhitespace(s []byte) []byte {
 	return t[:j]
 }
 
+// getAttr gets an attribute's value from a token
+func getAttr(token html.Token, k string) string {
+	for _, attr := range token.Attr {
+		if attr.Key == k {
+			return strings.ToLower(attr.Val)
+		}
+	}
+	return ""
+}
+
 // HTML minifies HTML5 files, it reads from r and writes to w.
 // Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 10% in size.
 func (m Minifier) HTML(w io.Writer, r io.Reader) error {
-	invalidAttrChars := " \t\n\f\r\"'`=<>/"
-
-	booleanAttrMap := make(map[string]bool)
-	for _, v := range strings.Split("allowfullscreen|async|autofocus|autoplay|checked|compact|controls|declare|" +
-		"default|defaultChecked|defaultMuted|defaultSelected|defer|disabled|draggable|enabled|formnovalidate|hidden|" +
-		"undeterminate|inert|ismap|itemscope|multiple|muted|nohref|noresize|noshade|novalidate|nowrap|open|pauseonexit|" +
-		"readonly|required|reversed|scoped|seamless|selected|sortable|spellcheck|translate|truespeed|typemustmatch|" +
-		"visible", "|") {
-		booleanAttrMap[v] = true
-	}
-
-	specialTagMap := make(map[string]bool)
-	for _, v := range strings.Split("style|script|pre|code|textarea", "|") {
-		specialTagMap[v] = true
-	}
-
-	inlineTagMap := make(map[string]bool)
-	for _, v := range strings.Split("b|big|i|small|tt|abbr|acronym|cite|dfn|em|kbd|strong|samp|var|a|bdo|br|img|map|object|q|span|sub|sup|button|input|label|select", "|") {
-		inlineTagMap[v] = true
-	}
-
 	// state
 	var text []byte             // write text token until next token is received, allows to look forward one token before writing away
 	var specialTag []html.Token // stack array of special tags it is in
@@ -57,15 +153,6 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 	precededBySpace := true 	// on true the next text token must no start with a space
 	defaultScriptType := "text/javascript"
 	defaultStyleType := "text/css"
-
-	getAttr := func(token html.Token, k string) string {
-		for _, attr := range token.Attr {
-			if attr.Key == k {
-				return strings.ToLower(attr.Val)
-			}
-		}
-		return ""
-	}
 
 	z := html.NewTokenizer(r)
 	for {
@@ -225,10 +312,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 						if err != nil && err != ErrNotExist {
 							return err
 						}
-					} else if ((attr.Key == "href" || attr.Key == "src" || attr.Key == "cite" || attr.Key == "action") && getAttr(token, "rel") != "external") ||
-							attr.Key == "profile" || attr.Key == "xmlns" || attr.Key == "formaction" || attr.Key == "poster" || attr.Key == "manifest" ||
-							attr.Key == "icon" || attr.Key == "codebase" || attr.Key == "longdesc" || attr.Key == "background" || attr.Key == "icon" ||
-							attr.Key == "classid" || attr.Key == "usemap" || attr.Key == "data" {
+					} else if urlAttrMap[attr.Key] {
 						if strings.HasPrefix(val, "http:") {
 							val = val[5:]
 						}
