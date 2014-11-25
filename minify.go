@@ -10,7 +10,7 @@ Usage example:
 		"os"
 		"os/exec"
 
-		"github.com/tdewolff/GoMinify"
+		"github.com/tdewolff/minify"
 	)
 
 	// Minifies HTML code from stdin to stdout (note that using buffer is faster)

@@ -1,4 +1,4 @@
-[![GoDoc](http://godoc.org/github.com/tdewolff/GoMinify?status.svg)](http://godoc.org/github.com/tdewolff/GoMinify)
+[![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify)
 
 ~85% test coverage
 
@@ -34,7 +34,7 @@ Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/
 
 <small>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 10ms range! The used benchmark code is from the basic example below without the JavaScript minifier. The time reading from and writing to a file is excluded from the measurement.</small>
 
-[HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower (10x). According to HTML Compressor, it produces smaller files than a couple of other libraries, which means GoMinify does better than all.
+[HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower (10x). According to HTML Compressor, it produces smaller files than a couple of other libraries, which means Minify does better than all.
 
 ## CSS
 The CSS minifier is immature and needs more work. It:
