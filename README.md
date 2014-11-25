@@ -4,12 +4,12 @@
 
 # GoMinify
 
-GoMinify is a minifier package written in [Go][1]. It has a build-in HTML and CSS minifier and provides an interface to implement any minifier.
+GoMinify is a minifier package written in [Go][1]. It has a build-in HTML5 and CSS minifier and provides an interface to implement any minifier.
 
 It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...).
 
 ## HTML
-The HTML minifier is rather complete and really fast, it strips away:
+The HTML5 minifier is rather complete and really fast, it strips away:
 
 - unnecessary whitespace
 - superfluous quotes, or uses single/double quotes whichever requires fewer escapes
