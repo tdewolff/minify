@@ -87,14 +87,12 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			text = nil
 
 			comment := string(z.Token().Data)
-			if len(comment) > 0 {
-				// TODO: ensure that nested comments are handled properly (tokenizer doesn't handle this!)
-				if strings.HasPrefix(comment, "[if") {
-					text = []byte("<!--" + comment + "-->")
-				} else if strings.HasSuffix(comment, "--") {
-					// only occurs when mixed up with conditional comments
-					text = []byte("<!" + comment + ">")
-				}
+			// TODO: ensure that nested comments are handled properly (tokenizer doesn't handle this!)
+			if strings.HasPrefix(comment, "[if") {
+				text = []byte("<!--" + comment + "-->")
+			} else if strings.HasSuffix(comment, "--") {
+				// only occurs when mixed up with conditional comments
+				text = []byte("<!" + comment + ">")
 			}
 		case html.TextToken:
 			w.Write(text)
@@ -146,7 +144,6 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				if tt == html.StartTagToken {
 					specialTag = append(specialTag, token)
 				} else if tt == html.EndTagToken && len(specialTag) > 0 && specialTag[len(specialTag)-1].Data == token.Data {
-					// TODO: test whether the if statement is error proof
 					specialTag = specialTag[:len(specialTag)-1]
 				}
 			}
