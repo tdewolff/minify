@@ -2,9 +2,9 @@
 
 ~85% test coverage
 
-# GoMinify
+# Minify
 
-GoMinify is a minifier package written in [Go][1]. It has a build-in HTML5 and CSS minifier and provides an interface to implement any minifier.
+Minify is a minifier package written in [Go][1]. It has a build-in HTML5 and CSS minifier and provides an interface to implement any minifier.
 
 It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...).
 
@@ -25,8 +25,8 @@ However, be careful when doing on-the-fly minification. A simple site would typi
 
 ### Comparison
 
-Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/) | GoMinify | Ratio | Time*
-------- | -------- | ------------------------------------------------------------ | -------- | ----- | -----
+Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/) | Minify | Ratio | Time*
+------- | -------- | ------------------------------------------------------------ | ------ | ----- | -----
 [Amazon](http://www.amazon.com/) | 463kB | 457kB | **443kB** | 96% | 17ms
 [BBC](http://www.bbc.com/) | 113kB | 103kB | **101kB** | 89% | 10ms
 [StackOverflow](http://stackoverflow.com/) | 201kB | 184kB | **184kB** | 92% | 16ms
@@ -49,11 +49,11 @@ It is in need of a CSS tokenizer in future, preferably from another package.
 
 Run the following command
 
-	go get github.com/tdewolff/GoMinify
+	go get github.com/tdewolff/minify
 
 or add the following import and run project with `go get`
 
-	import "github.com/tdewolff/GoMinify"
+	import "github.com/tdewolff/minify"
 
 ## Usage
 Retrieve a minifier struct which holds a map of mime => minifier function. The following loads the default HTML and CSS minifier:
@@ -102,7 +102,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/tdewolff/GoMinify"
+	"github.com/tdewolff/minify"
 )
 
 // Minifies HTML code from stdin to stdout
@@ -126,7 +126,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/tdewolff/GoMinify"
+	"github.com/tdewolff/minify"
 )
 
 // Outputs "Becausemycoffeewastoocold,Iheateditinthemicrowave."
