@@ -19,6 +19,7 @@ func helperCSS(t *testing.T, input, expected string) {
 
 func TestCSS(t *testing.T) {
 	helperCSS(t, "key: value;", "key:value")
+	helperCSS(t, "margin: 0 1;", "margin:0 1")
 	helperCSS(t, "i { key: value; }", "i{key:value}")
 	helperCSS(t, "color: #FF0000;", "color:red")
 	helperCSS(t, "color: #000000;", "color:#000")
@@ -28,4 +29,8 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "color: rgba(255,255,255,1);", "color:#FFF")
 	helperCSS(t, "font-weight: bold; font-weight: normal;", "font-weight:700;font-weight:400")
 	helperCSS(t, "outline: none;", "outline:0")
+	helperCSS(t, "margin: 1 1 1 1;", "margin:1")
+	helperCSS(t, "margin: 1 2 1 2;", "margin:1 2")
+	helperCSS(t, "margin: 1 2 3 2;", "margin:1 2 3")
+	helperCSS(t, "margin: 1 2 3 4;", "margin:1 2 3 4")
 }

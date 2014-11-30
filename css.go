@@ -176,14 +176,33 @@ func shortenHex(s string) string {
 	return s
 }
 
-type FuncParam struct {
+type Token struct {
 	tt css.TokenType
 	val string
 }
 
-func funcParams(z *css.Tokenizer) ([]FuncParam, string) {
+func propVals(z *css.Tokenizer) ([]string, string) {
 	raw := ""
-	params := []FuncParam{}
+	vals := []string{}
+loop:
+	for {
+		tt := z.Next()
+		switch tt {
+		case css.SemicolonToken, css.RightBraceToken, css.ErrorToken:
+			break loop
+		case css.WhitespaceToken:
+			raw += " "
+		default:
+			vals = append(vals, z.String())
+			raw += z.String()
+		}
+	}
+	return vals, strings.TrimSpace(raw)
+}
+
+func funcParams(z *css.Tokenizer) ([]Token, string) {
+	raw := ""
+	params := []Token{}
 loop:
 	for {
 		tt := z.Next()
@@ -197,7 +216,7 @@ loop:
 		case css.CommaToken:
 			raw += z.String()
 		default:
-			params = append(params, FuncParam{tt, z.String()})
+			params = append(params, Token{tt, z.String()})
 			raw += z.String()
 		}
 	}
@@ -208,15 +227,26 @@ loop:
 // It does a mediocre job of minifying CSS files and should be improved in the future.
 func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 	semicolonQueued := false
+	lastToken := css.ErrorToken
 	lastIdent := ""
 
 	z := css.NewTokenizer(r)
+	var tt css.TokenType
 	for {
-		tt := z.Next()
+		if tt != css.WhitespaceToken {
+			lastToken = tt
+		}
+		tt = z.Next()
 		if tt == css.WhitespaceToken {
 			continue
 		}
 
+		// whitespace removal correction
+		if (lastToken == css.NumberToken || lastToken == css.IdentToken) && (tt == css.NumberToken || tt == css.IdentToken) {
+			w.Write([]byte(" "))
+		}
+
+		// semicolon removal correction
 		if semicolonQueued {
 			if tt != css.RightBraceToken && tt != css.ErrorToken {
 				w.Write([]byte(";"))
@@ -251,10 +281,45 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 			}
 			w.Write([]byte(ident))
 			lastIdent = ident
+		case css.NumberToken, css.DimensionToken, css.PercentageToken:
+			if lastIdent == "margin" || lastIdent == "padding" {
+				curr := z.String()
+				vals, raw := propVals(z)
+				vals = append([]string{curr}, vals...)
+				raw = curr+" "+raw
+				if len(vals) == 2 {
+					if vals[0] == vals[1] {
+						w.Write([]byte(vals[0]))
+						break
+					}
+				} else if len(vals) == 3 {
+					if vals[0] == vals[1] && vals[0] == vals[2] {
+						w.Write([]byte(vals[0]))
+						break
+					} else if vals[0] == vals[2] {
+						w.Write([]byte(vals[0]+" "+vals[1]))
+						break
+					}
+				} else if len(vals) == 4 {
+					if vals[0] == vals[1] && vals[0] == vals[2] && vals[0] == vals[3] {
+						w.Write([]byte(vals[0]))
+						break
+					} else if vals[0] == vals[2] && vals[1] == vals[3] {
+						w.Write([]byte(vals[0]+" "+vals[1]))
+						break
+					} else if vals[1] == vals[3] {
+						w.Write([]byte(vals[0]+" "+vals[1]+" "+vals[2]))
+						break
+					}
+				}
+				w.Write([]byte(raw))
+				break
+			}
 		case css.FunctionToken:
 			var err error
 			f := z.String()
 			params, raw := funcParams(z)
+			raw = f+raw
 			if f == "rgba(" && len(params) == 4 {
 				d, _ := strconv.ParseFloat(params[3].val[:len(params[3].val)-1], 32)
 				if d - 1.0 < epsilon {
@@ -293,7 +358,7 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 					break
 				}
 			}
-			w.Write([]byte(f+raw))
+			w.Write([]byte(raw))
 		default:
 			w.Write(z.Bytes())
 		}
