@@ -146,7 +146,6 @@ func getAttr(token html.Token, k string) string {
 // HTML minifies HTML5 files, it reads from r and writes to w.
 // Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 10% in size.
 func (m Minifier) HTML(w io.Writer, r io.Reader) error {
-	// state
 	var text []byte             // write text token until next token is received, allows to look forward one token before writing away
 	var specialTag []html.Token // stack array of special tags it is in
 	var prevElementToken html.Token

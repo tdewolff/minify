@@ -72,13 +72,13 @@ func TestDefaultMinifiers(t *testing.T) {
 	if err := m.Minify("text/html", w, r); err != nil {
 		t.Error(err)
 	}
-	r = bytes.NewBufferString("key:value")
+	r = bytes.NewBufferString("css")
 	if err := m.Minify("text/css", w, r); err != nil {
 		t.Error(err)
 	}
 
-	if w.String() != "htmlkey:value" {
-		t.Error(w.String(), "!=", "htmlkey:value")
+	if w.String() != "htmlcss" {
+		t.Error(w.String(), "!=", "htmlcss")
 	}
 }
 
