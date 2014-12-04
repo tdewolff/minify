@@ -34,7 +34,7 @@ Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/
 
 <sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 10ms range! The used benchmark code is from the basic example below without the JavaScript minifier. The time reading from and writing to a file is excluded from the measurement.
 
-[HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower (10x). According to HTML Compressor, it produces smaller files than a couple of other libraries, which means Minify does better than all.
+[HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower. According to HTML Compressor, it produces smaller files than a couple of other libraries, which means Minify does better than all.
 
 ## CSS
 The CSS minifier is immature and needs more work. It:
@@ -56,27 +56,27 @@ or add the following import and run project with `go get`
 	import "github.com/tdewolff/minify"
 
 ## Usage
-Retrieve a minifier struct which holds a map of mime => minifier function. The following loads the default HTML and CSS minifier:
+Retrieve a minifier struct which holds a map of mimes => minifier functions. The following loads the default HTML and CSS minifier:
 
 	m := minify.NewMinifierDefault()
 
-To minify a generic stream, byte array or stream with mime type `mime`:
+To minify a generic stream, byte array or string with mime type `mime`:
 ``` go
-// stream
+// stream, r io.Reader, w io.Writer
 if err := m.Minify(mime, w, r); err != nil {
-	fmt.Println("minify.Minify:", err)
+	fmt.Println("Minify:", err)
 }
 
-// byte array
+// byte array, b []byte
 b, err := m.MinifyBytes(mime, b)
 if err != nil {
-	fmt.Println("minify.Minify:", err)
+	fmt.Println("Minify:", err)
 }
 
-// string
+// string, s string
 s, err := m.MinifyString(mime, s)
 if err != nil {
-	fmt.Println("minify.Minify:", err)
+	fmt.Println("Minify:", err)
 }
 ```
 
@@ -111,7 +111,7 @@ func main() {
 	m.AddCmd("text/javascript", exec.Command("java", "-jar", "path/to/compiler.jar"))
 
 	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
-		fmt.Println("minify.Minify:", err)
+		fmt.Println("Minify:", err)
 	}
 }
 ```
@@ -141,8 +141,7 @@ func main() {
 			if err != nil && err != io.EOF {
 				return err
 			}
-			_, errws := io.WriteString(w, strings.Replace(line, " ", "", -1))
-			if errws != nil {
+			if _, errws := io.WriteString(w, strings.Replace(line, " ", "", -1)); errws != nil {
 				return errws
 			}
 			if err == io.EOF {
@@ -154,12 +153,12 @@ func main() {
 
 	out, err := m.MinifyString("text/plain", "Because my coffee was too cold, I heated it in the microwave.")
 	if err != nil {
-		fmt.Println("minify.Minify:", err)
+		fmt.Println("Minify:", err)
 	}
 	fmt.Println(out)
 }
 ```
 
-Within a custom minifier, one can call any `Minify` function recursively when dealing with embedded resources.
+Within a custom minifier, one can call any `MinifyFunc` recursively when dealing with embedded resources.
 
 [1]: http://golang.org/ "Go Language"
