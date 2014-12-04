@@ -25,14 +25,14 @@ However, be careful when doing on-the-fly minification. A simple site would typi
 
 ### Comparison
 
-Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/) | Minify | Ratio | Time*
-------- | -------- | ------------------------------------------------------------ | ------ | ----- | -----
+Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/) | Minify | Ratio | Time&dagger;
+------- | -------- | ------------------------------------------------------------ | ------ | ----- | ------------
 [Amazon](http://www.amazon.com/) | 463kB | 457kB | **443kB** | 96% | 17ms
 [BBC](http://www.bbc.com/) | 113kB | 103kB | **101kB** | 89% | 10ms
 [StackOverflow](http://stackoverflow.com/) | 201kB | 184kB | **184kB** | 92% | 16ms
 [Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 423kB | **414kB** | 95% | 29ms
 
-<small>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 10ms range! The used benchmark code is from the basic example below without the JavaScript minifier. The time reading from and writing to a file is excluded from the measurement.</small>
+&dagger;These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 10ms range! The used benchmark code is from the basic example below without the JavaScript minifier. The time reading from and writing to a file is excluded from the measurement.
 
 [HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower (10x). According to HTML Compressor, it produces smaller files than a couple of other libraries, which means Minify does better than all.
 
@@ -43,7 +43,7 @@ The CSS minifier is immature and needs more work. It:
 - shortens color codes (by using hexadecimal color codes or color words)
 - shortens a few other values
 
-It is in need of a CSS tokenizer in future, preferably from another package.
+It is in need of a CSS parser, which I am working on, on top of the tokenizer.
 
 ## Installation
 
