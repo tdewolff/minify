@@ -186,15 +186,15 @@ func propVals(z *css.Tokenizer) ([]string, string) {
 	vals := []string{}
 loop:
 	for {
-		tt := z.Next()
+		tt, text := z.Next()
 		switch tt {
 		case css.SemicolonToken, css.RightBraceToken, css.ErrorToken:
 			break loop
 		case css.WhitespaceToken:
 			raw += " "
 		default:
-			vals = append(vals, z.String())
-			raw += z.String()
+			vals = append(vals, string(text))
+			raw += string(text)
 		}
 	}
 	return vals, strings.TrimSpace(raw)
@@ -205,19 +205,19 @@ func funcParams(z *css.Tokenizer) ([]Token, string) {
 	params := []Token{}
 loop:
 	for {
-		tt := z.Next()
+		tt, text := z.Next()
 		switch tt {
 		case css.ErrorToken:
 			break loop
 		case css.RightParenthesisToken:
-			raw += z.String()
+			raw += string(text)
 			break loop
 		case css.WhitespaceToken:
 		case css.CommaToken:
-			raw += z.String()
+			raw += string(text)
 		default:
-			params = append(params, Token{tt, z.String()})
-			raw += z.String()
+			params = append(params, Token{tt, string(text)})
+			raw += string(text)
 		}
 	}
 	return params, raw
@@ -227,23 +227,21 @@ loop:
 // It does a mediocre job of minifying CSS files and should be improved in the future.
 func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 	semicolonQueued := false
-	lastToken := css.ErrorToken
+	//whitespaceQueued := false
+	//lastToken := css.ErrorToken
 	lastIdent := ""
 
 	z := css.NewTokenizer(r)
 	var tt css.TokenType
+	var text []byte
 	for {
-		if tt != css.WhitespaceToken {
-			lastToken = tt
-		}
-		tt = z.Next()
-		if tt == css.WhitespaceToken {
-			continue
-		}
+		// if tt != css.WhitespaceToken && tt != css.CommentToken {
+		// 	lastToken = tt
+		// }
+		tt, text = z.Next()
 
-		// whitespace removal correction
-		if (lastToken == css.NumberToken || lastToken == css.IdentToken) && (tt == css.NumberToken || tt == css.IdentToken) {
-			w.Write([]byte(" "))
+		if tt == css.CommentToken {
+			continue
 		}
 
 		// semicolon removal correction
@@ -252,6 +250,21 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 				w.Write([]byte(";"))
 			}
 			semicolonQueued = false
+		} else if tt == css.SemicolonToken {
+			semicolonQueued = true
+			continue
+		}
+
+		// whitespace removal correction
+		// if whitespaceQueued {
+		// 	if (lastToken != css.SemicolonToken && lastToken != css.ColonToken && lastToken != css.LeftBraceToken && lastToken != css.RightBraceToken && lastToken != css.ErrorToken) &&
+		// 	   (tt != css.SemicolonToken && tt != css.ColonToken && tt != css.LeftBraceToken && tt != css.RightBraceToken && tt != css.ErrorToken) {
+		// 		w.Write([]byte(" "))
+		// 	}
+		// } else
+		if tt == css.WhitespaceToken {
+			w.Write([]byte(" "))
+			continue
 		}
 
 		switch tt {
@@ -260,13 +273,11 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 				return z.Err()
 			}
 			return nil
-		case css.SemicolonToken:
-			semicolonQueued = true
 		case css.HashToken:
-			h := shortenHex(z.String())
+			h := shortenHex(string(text))
 			w.Write([]byte(h))
 		case css.IdentToken:
-			ident := z.String()
+			ident := string(text)
 			if h, ok := colorNames[ident]; ok {
 				w.Write([]byte("#"+h))
 				break
@@ -283,7 +294,7 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 			lastIdent = ident
 		case css.NumberToken, css.DimensionToken, css.PercentageToken:
 			if lastIdent == "margin" || lastIdent == "padding" {
-				curr := z.String()
+				curr := string(text)
 				vals, raw := propVals(z)
 				vals = append([]string{curr}, vals...)
 				raw = curr+" "+raw
@@ -317,7 +328,7 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 			}
 		case css.FunctionToken:
 			var err error
-			f := z.String()
+			f := string(text)
 			params, raw := funcParams(z)
 			raw = f+raw
 			if f == "rgba(" && len(params) == 4 {
@@ -360,7 +371,7 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 			}
 			w.Write([]byte(raw))
 		default:
-			w.Write(z.Bytes())
+			w.Write(text)
 		}
 	}
 }

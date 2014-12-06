@@ -18,6 +18,7 @@ func helperCSS(t *testing.T, input, expected string) {
 }
 
 func TestCSS(t *testing.T) {
+	helperCSS(t, "/*comment*/", "")
 	helperCSS(t, "key: value;", "key:value")
 	helperCSS(t, "margin: 0 1;", "margin:0 1")
 	helperCSS(t, "i { key: value; }", "i{key:value}")
@@ -33,4 +34,5 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "margin: 1 2 1 2;", "margin:1 2")
 	helperCSS(t, "margin: 1 2 3 2;", "margin:1 2 3")
 	helperCSS(t, "margin: 1 2 3 4;", "margin:1 2 3 4")
+	helperCSS(t, ".cla .ss", ".cla .ss")
 }
