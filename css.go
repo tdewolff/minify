@@ -16,8 +16,8 @@ Uses http://www.w3.org/TR/2010/PR-css3-color-20101028/ for colors
 import (
 	"encoding/hex"
 	"errors"
-	"io"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 
@@ -195,16 +195,16 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 		switch n.Type() {
 		case css.DeclarationNode:
 			decl := n.(*css.NodeDeclaration)
-			w.Write([]byte(decl.Prop.String()+":"+css.NodesString(decl.Vals, " ")))
+			w.Write([]byte(decl.Prop.String() + ":" + css.NodesString(decl.Vals, " ")))
 			semicolonQueued = true
 		case css.RulesetNode:
 			ruleset := n.(*css.NodeRuleset)
-			w.Write([]byte(css.NodesString(ruleset.SelGroups, ",")+"{"))
+			w.Write([]byte(css.NodesString(ruleset.SelGroups, ",") + "{"))
 			for i, decl := range ruleset.DeclList.Decls {
 				if i > 0 {
 					w.Write([]byte(";"))
 				}
-				w.Write([]byte(decl.Prop.String()+":"+css.NodesString(decl.Vals, " ")))
+				w.Write([]byte(decl.Prop.String() + ":" + css.NodesString(decl.Vals, " ")))
 			}
 			w.Write([]byte("}"))
 		default:
@@ -242,7 +242,7 @@ func shortenDecl(decl *css.NodeDeclaration) {
 		f := decl.Vals[0].(*css.NodeFunction)
 		if f.Func.String() == "rgba(" && len(f.Args) == 4 {
 			d, _ := strconv.ParseFloat(f.Args[3].Data, 32)
-			if d - 1.0 < epsilon {
+			if d-1.0 < epsilon {
 				f.Func = css.NewToken(css.FunctionToken, "rgb(")
 				f.Args = f.Args[:len(f.Args)-1]
 			}
@@ -268,14 +268,14 @@ func shortenDecl(decl *css.NodeDeclaration) {
 					} else if d > 100.0 {
 						d = 100.0
 					}
-					rgb[i] = byte((d/100.0*255.0)+0.5)
+					rgb[i] = byte((d / 100.0 * 255.0) + 0.5)
 				} else {
 					err = errors.New("'rgb' function doesn't have just numbers and percentages")
 					break
 				}
 			}
 			if err == nil {
-				val := "#"+strings.ToUpper(hex.EncodeToString(rgb))
+				val := "#" + strings.ToUpper(hex.EncodeToString(rgb))
 				if i, ok := shortenColorHex[val]; ok {
 					decl.Vals[0] = css.NewToken(css.IdentToken, i)
 				} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
