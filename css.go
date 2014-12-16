@@ -1,11 +1,9 @@
 package minify
 
-// TODO: use a better tokenizer
 /* TODO: (non-exhaustive)
 - remove space before !important
 - collapse margin/padding/border/background/list/etc. definitions into one
-- remove empty or with duplicate selector blocks
-- shorten zero values (none/0px/0pt etc. become 0)
+- remove duplicate selector blocks
 - remove quotes within url()?
 */
 
@@ -16,7 +14,6 @@ Uses http://www.w3.org/TR/2010/PR-css3-color-20101028/ for colors
 import (
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -172,8 +169,6 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 		return err
 	}
 
-	fmt.Println(stylesheet.String())
-
 	for _, n := range stylesheet.Nodes {
 		switch n.Type() {
 		case css.DeclarationNode:
@@ -199,7 +194,30 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 			semicolonQueued = true
 		case css.RulesetNode:
 			ruleset := n.(*css.NodeRuleset)
-			w.Write([]byte(css.NodesString(ruleset.SelGroups, ",") + "{"))
+			for i, selGroup := range ruleset.SelGroups {
+				if i > 0 {
+					w.Write([]byte(","))
+				}
+				prevOperator := false
+				for j, sel := range selGroup.Selectors {
+					if len(sel.Nodes) == 1 {
+						tt := sel.Nodes[0].TokenType
+						op := sel.Nodes[0].String()
+						if tt == css.DelimToken && (op == ">" || op == "+" || op == "~") || tt == css.IncludeMatchToken || tt == css.DashMatchToken ||
+							tt == css.PrefixMatchToken || tt == css.SuffixMatchToken || tt == css.SubstringMatchToken {
+							w.Write([]byte(op))
+							prevOperator = true
+							continue
+						}
+					}
+					if j > 0 && !prevOperator {
+						w.Write([]byte(" "))
+					}
+					w.Write([]byte(sel.String()))
+					prevOperator = false
+				}
+			}
+			w.Write([]byte("{"))
 			for i, decl := range ruleset.DeclList.Decls {
 				if i > 0 {
 					w.Write([]byte(";"))
@@ -214,7 +232,40 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 	return nil
 }
 
+func shortenToken(token *css.NodeToken) {
+	if token.TokenType == css.NumberToken || token.TokenType == css.DimensionToken || token.TokenType == css.PercentageToken {
+		v := token.String()
+		if token.TokenType == css.PercentageToken {
+			v = v[:len(v)-1]
+		} else if token.TokenType == css.DimensionToken {
+			v, _ = css.SplitDimensionToken(v)
+		}
+
+		f, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return
+		}
+		if f < epsilon {
+			token.Data = "0"
+			if token.TokenType == css.PercentageToken {
+				token.Data += "%"
+			}
+		}
+	}
+}
+
 func shortenDecl(decl *css.NodeDeclaration) {
+	// shorten zeros
+	for _, val := range decl.Vals {
+		if val.Type() == css.TokenNode {
+			shortenToken(val.(*css.NodeToken))
+		} else if val.Type() == css.FunctionNode {
+			for _, arg := range val.(*css.NodeFunction).Args {
+				shortenToken(arg)
+			}
+		}
+	}
+
 	prop := strings.ToLower(decl.Prop.String())
 	if len(decl.Vals) == 1 && decl.Vals[0].Type() == css.TokenNode {
 		t := decl.Vals[0].(*css.NodeToken)

@@ -21,7 +21,7 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "/*comment*/", "")
 	helperCSS(t, "css{}", "")
 	helperCSS(t, "key: value;", "key:value")
-	helperCSS(t, "margin: 0 1;", "margin:0 1")
+	helperCSS(t, "margin: 0 1; padding: 0 1;", "margin:0 1;padding:0 1")
 	helperCSS(t, "i { key: value; key2: value; }", "i{key:value;key2:value}")
 	helperCSS(t, "color: #FF0000;", "color:red")
 	helperCSS(t, "color: #000000;", "color:#000")
@@ -36,5 +36,6 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "margin: 1 2 3 2;", "margin:1 2 3")
 	helperCSS(t, "margin: 1 2 3 4;", "margin:1 2 3 4")
 	helperCSS(t, "margin: 0em;", "margin:0")
-	helperCSS(t, ".cla .ss < #id { }", ".cla .ss<#id{}")
+	helperCSS(t, ".cla .ss > #id { x:y; }", ".cla .ss>#id{x:y}")
+	helperCSS(t, ".cla[id ^= L] { x:y; }", ".cla[id^=L]{x:y}")
 }
