@@ -23,7 +23,7 @@ func helperCommand(t *testing.T, s ...string) *exec.Cmd {
 
 ////////////////////////////////////////////////////////////////
 
-var m = &Minifier{map[string]MinifyFunc{
+var m = &Minifier{map[string]Func{
 	"copy": func(m Minifier, w io.Writer, r io.Reader) error {
 		io.Copy(w, r)
 		return nil

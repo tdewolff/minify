@@ -316,12 +316,12 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 							val = val[5:]
 						}
 					} else if token.Data == "meta" && attr.Key == "content" {
-						http_equiv := getAttr(token, "http-equiv")
-						if http_equiv == "content-type" {
+						httpEquiv := getAttr(token, "http-equiv")
+						if httpEquiv == "content-type" {
 							val = strings.Replace(val, ", ", ",", -1)
-						} else if http_equiv == "content-style-type" {
+						} else if httpEquiv == "content-style-type" {
 							defaultStyleType = val
-						} else if http_equiv == "content-script-type" {
+						} else if httpEquiv == "content-script-type" {
 							defaultScriptType = val
 						}
 

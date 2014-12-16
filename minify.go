@@ -1,5 +1,5 @@
 /*
-A minifier written in Go. Has a built-in HTML and CSS minifier.
+Package minify is a minifier written in Go that has a built-in HTML and CSS minifier.
 
 Usage example:
 
@@ -33,29 +33,30 @@ import (
 	"os/exec"
 )
 
+// ErrNotExist is returned when no minifier exists for a given mime type
 var ErrNotExist = errors.New("minifier does not exist for mime type")
 
 ////////////////////////////////////////////////////////////////
 
-// MinifyFunc is the function interface for minifiers
+// Func is the function interface for minifiers
 // The Minifier parameter is used for embedded resources, such as JS within HTML.
-type MinifyFunc func(Minifier, io.Writer, io.Reader) error
+type Func func(Minifier, io.Writer, io.Reader) error
 
 // Minifier holds a map of mime => function to allow recursive minifier calls of the minifier functions.
 type Minifier struct {
-	Mime map[string]MinifyFunc
+	Mime map[string]Func
 }
 
 // NewMinifier returns a new Minifier struct with initialized map.
 func NewMinifier() *Minifier {
-	return &Minifier{map[string]MinifyFunc{}}
+	return &Minifier{map[string]Func{}}
 }
 
 // NewMinifierDefault returns a new Minifier struct with initialized map.
 // It loads in the default minifier functions for HTML and CSS (test/html and text/css mime types respectively).
 func NewMinifierDefault() *Minifier {
 	return &Minifier{
-		map[string]MinifyFunc{
+		map[string]Func{
 			"text/html": (Minifier).HTML,
 			"text/css":  (Minifier).CSS,
 		},
@@ -64,7 +65,7 @@ func NewMinifierDefault() *Minifier {
 
 // Add adds a minify function to the mime => function map.
 // It allows one to implement a custom minifier for a specific mime type.
-func (m *Minifier) Add(mime string, f MinifyFunc) {
+func (m *Minifier) Add(mime string, f Func) {
 	m.Mime[mime] = f
 }
 
