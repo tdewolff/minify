@@ -38,4 +38,16 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "margin: 0em;", "margin:0")
 	helperCSS(t, ".cla .ss > #id { x:y; }", ".cla .ss>#id{x:y}")
 	helperCSS(t, ".cla[id ^= L] { x:y; }", ".cla[id^=L]{x:y}")
+
+	// coverage
+	helperCSS(t, "margin: 1 1;", "margin:1")
+	helperCSS(t, "margin: 1 2;", "margin:1 2")
+	helperCSS(t, "margin: 1 1 1;", "margin:1")
+	helperCSS(t, "margin: 1 2 1;", "margin:1 2")
+	helperCSS(t, "margin: 1 2 3;", "margin:1 2 3")
+	helperCSS(t, "color: rgb(255,64,64);", "color:#FF4141")
+	helperCSS(t, "color: rgb(256,-34,2342435);", "color:#F0F")
+	helperCSS(t, "color: rgb(120%,-56%,234234234%);", "color:#F0F")
+	helperCSS(t, "color: rgb(ident);", "color:rgb(ident)")
+
 }

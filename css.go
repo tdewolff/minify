@@ -341,7 +341,7 @@ func shortenDecl(decl *css.NodeDeclaration) {
 					}
 					rgb[i] = byte((d / 100.0 * 255.0) + 0.5)
 				} else {
-					err = errors.New("'rgb' function doesn't have just numbers and percentages")
+					err = errors.New("")
 					break
 				}
 			}
