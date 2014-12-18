@@ -159,8 +159,6 @@ var shortenColorName = map[string]string{
 	"white":                "#FFF",
 }
 
-var errParse = errors.New("parse error")
-
 // CSS minifies CSS files, it reads from r and writes to w.
 // It does a mediocre job of minifying CSS files and should be improved in the future.
 func (m Minifier) CSS(w io.Writer, r io.Reader) error {
@@ -174,7 +172,7 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 		case css.DeclarationNode:
 			shortenDecl(n.(*css.NodeDeclaration))
 		case css.RulesetNode:
-			for _, decl := range n.(*css.NodeRuleset).DeclList.Decls {
+			for _, decl := range n.(*css.NodeRuleset).Decls {
 				shortenDecl(decl)
 			}
 		}
@@ -183,20 +181,26 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 	semicolonQueued := false
 	for _, n := range stylesheet.Nodes {
 		if semicolonQueued {
-			w.Write([]byte(";"))
+			if _, err := w.Write([]byte(";")); err != nil {
+				return ErrWrite
+			}
 			semicolonQueued = false
 		}
 
 		switch n.Type() {
 		case css.DeclarationNode:
 			decl := n.(*css.NodeDeclaration)
-			w.Write([]byte(decl.Prop.String() + ":" + css.NodesString(decl.Vals, " ")))
+			if _, err := w.Write([]byte(decl.Prop.String() + ":" + css.NodesString(decl.Vals, " "))); err != nil {
+				return ErrWrite
+			}
 			semicolonQueued = true
 		case css.RulesetNode:
 			ruleset := n.(*css.NodeRuleset)
 			for i, selGroup := range ruleset.SelGroups {
 				if i > 0 {
-					w.Write([]byte(","))
+					if _, err := w.Write([]byte(",")); err != nil {
+						return ErrWrite
+					}
 				}
 				prevOperator := false
 				for j, sel := range selGroup.Selectors {
@@ -205,28 +209,44 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 						op := sel.Nodes[0].String()
 						if tt == css.DelimToken && (op == ">" || op == "+" || op == "~") || tt == css.IncludeMatchToken || tt == css.DashMatchToken ||
 							tt == css.PrefixMatchToken || tt == css.SuffixMatchToken || tt == css.SubstringMatchToken {
-							w.Write([]byte(op))
+							if _, err := w.Write([]byte(op)); err != nil {
+								return ErrWrite
+							}
 							prevOperator = true
 							continue
 						}
 					}
 					if j > 0 && !prevOperator {
-						w.Write([]byte(" "))
+						if _, err := w.Write([]byte(" ")); err != nil {
+							return ErrWrite
+						}
 					}
-					w.Write([]byte(sel.String()))
+					if _, err := w.Write([]byte(sel.String())); err != nil {
+						return ErrWrite
+					}
 					prevOperator = false
 				}
 			}
-			w.Write([]byte("{"))
-			for i, decl := range ruleset.DeclList.Decls {
-				if i > 0 {
-					w.Write([]byte(";"))
-				}
-				w.Write([]byte(decl.Prop.String() + ":" + css.NodesString(decl.Vals, " ")))
+			if _, err := w.Write([]byte("{")); err != nil {
+				return ErrWrite
 			}
-			w.Write([]byte("}"))
+			for i, decl := range ruleset.Decls {
+				if i > 0 {
+					if _, err := w.Write([]byte(";")); err != nil {
+						return ErrWrite
+					}
+				}
+				if _, err := w.Write([]byte(decl.Prop.String() + ":" + css.NodesString(decl.Vals, " "))); err != nil {
+					return ErrWrite
+				}
+			}
+			if _, err := w.Write([]byte("}")); err != nil {
+				return ErrWrite
+			}
 		default:
-			w.Write([]byte(n.String()))
+			if _, err := w.Write([]byte(n.String())); err != nil {
+				return ErrWrite
+			}
 		}
 	}
 	return nil

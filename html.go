@@ -159,17 +159,25 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 		switch tt {
 		case html.ErrorToken:
 			if z.Err() == io.EOF {
-				w.Write(text)
+				if _, err := w.Write(text); err != nil {
+					return ErrWrite
+				}
 				return nil
 			}
 			return z.Err()
 		case html.DoctypeToken:
-			w.Write(bytes.TrimSpace(text))
+			if _, err := w.Write(bytes.TrimSpace(text)); err != nil {
+				return ErrWrite
+			}
 			text = nil
 
-			w.Write([]byte("<!doctype html>"))
+			if _, err := w.Write([]byte("<!doctype html>")); err != nil {
+				return ErrWrite
+			}
 		case html.CommentToken:
-			w.Write(text)
+			if _, err := w.Write(text); err != nil {
+				return ErrWrite
+			}
 			text = nil
 
 			comment := string(z.Token().Data)
@@ -181,7 +189,9 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				text = []byte("<!" + comment + ">")
 			}
 		case html.TextToken:
-			w.Write(text)
+			if _, err := w.Write(text); err != nil {
+				return ErrWrite
+			}
 			text = z.Text()
 
 			// CSS and JS minifiers for inline code
@@ -200,13 +210,17 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					if err := m.Minify(mime, w, bytes.NewBuffer(text)); err != nil {
 						if err == ErrNotExist {
 							// no minifier, write the original
-							w.Write(text)
+							if _, err := w.Write(text); err != nil {
+								return ErrWrite
+							}
 						} else {
 							return err
 						}
 					}
 				} else {
-					w.Write(text)
+					if _, err := w.Write(text); err != nil {
+						return ErrWrite
+					}
 				}
 				text = nil
 				break
@@ -239,7 +253,9 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				text = bytes.TrimRight(text, " ")
 				precededBySpace = true
 			}
-			w.Write(text)
+			if _, err := w.Write(text); err != nil {
+				return ErrWrite
+			}
 			text = nil
 
 			if token.Data == "body" || token.Data == "head" || token.Data == "html" || token.Data == "tbody" ||
@@ -249,15 +265,23 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				break
 			}
 
-			w.Write([]byte("<"))
-			if tt == html.EndTagToken {
-				w.Write([]byte("/"))
+			if _, err := w.Write([]byte("<")); err != nil {
+				return ErrWrite
 			}
-			w.Write([]byte(token.Data))
+			if tt == html.EndTagToken {
+				if _, err := w.Write([]byte("/")); err != nil {
+					return ErrWrite
+				}
+			}
+			if _, err := w.Write([]byte(token.Data)); err != nil {
+				return ErrWrite
+			}
 
 			if token.Data == "meta" && getAttr(token, "http-equiv") == "content-type" &&
 				getAttr(token, "content") == "text/html; charset=utf-8" {
-				w.Write([]byte(" charset=utf-8>"))
+				if _, err := w.Write([]byte(" charset=utf-8>")); err != nil {
+				return ErrWrite
+			}
 				break
 			}
 
@@ -285,7 +309,9 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 						token.Data == "button" && val == "submit") {
 					continue
 				}
-				w.Write([]byte(" " + attr.Key))
+				if _, err := w.Write([]byte(" " + attr.Key)); err != nil {
+					return ErrWrite
+				}
 
 				isBoolean := booleanAttrMap[attr.Key]
 				if len(val) == 0 && !isBoolean {
@@ -295,7 +321,9 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				// booleans have no value
 				if !isBoolean {
 					var err error
-					w.Write([]byte("="))
+					if _, err := w.Write([]byte("=")); err != nil {
+						return ErrWrite
+					}
 
 					// CSS and JS minifiers for attribute inline code
 					if attr.Key == "style" {
@@ -335,15 +363,23 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 
 					// no quote if possible, else prefer single or double depending on which occurs more often in value
 					if strings.IndexAny(val, invalidAttrChars) == -1 {
-						w.Write([]byte(val))
+						if _, err := w.Write([]byte(val)); err != nil {
+							return ErrWrite
+						}
 					} else if strings.Count(val, "\"") > strings.Count(val, "'") {
-						w.Write([]byte("'" + strings.Replace(val, "'", "&#39;", -1) + "'"))
+						if _, err := w.Write([]byte("'" + strings.Replace(val, "'", "&#39;", -1) + "'")); err != nil {
+							return ErrWrite
+						}
 					} else {
-						w.Write([]byte("\"" + strings.Replace(val, "\"", "&quot;", -1) + "\""))
+						if _, err := w.Write([]byte("\"" + strings.Replace(val, "\"", "&quot;", -1) + "\"")); err != nil {
+							return ErrWrite
+						}
 					}
 				}
 			}
-			w.Write([]byte(">"))
+			if _, err := w.Write([]byte(">")); err != nil {
+				return ErrWrite
+			}
 		}
 	}
 }
