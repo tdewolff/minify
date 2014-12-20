@@ -352,7 +352,7 @@ func shortenDecl(decl *css.NodeDeclaration) {
 				} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
 					decl.Vals[0] = css.NewToken(css.HashToken, "#"+string(val[1])+string(val[3])+string(val[5]))
 				} else {
-					decl.Vals[0] = css.NewToken(css.HashToken, "#"+val)
+					decl.Vals[0] = css.NewToken(css.HashToken, val)
 				}
 			}
 		}
