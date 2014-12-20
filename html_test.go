@@ -41,9 +41,7 @@ func TestHTML(t *testing.T) {
 	helperHTML(t, m, "<!--[if IE 6]><!--html--><![endif]-->", "<!--[if IE 6]><!--html--><![endif]-->")
 	helperHTML(t, m, "<!--[if IE 6]><style><!--\ncss\n--></style><![endif]-->", "<!--[if IE 6]><style><!--\ncss\n--></style><![endif]-->")
 	helperHTML(t, m, "<style><!--\ncss\n--></style>", "<style><!--\ncss\n--></style>")
-	helperHTML(t, m, "cats  and 	dogs", "cats and dogs")
-	helperHTML(t, m, " <div> <i> test </i> <b> test </b> </div> ", "<div><i>test</i><b> test</b></div>")
-	helperHTML(t, m, "<html><head></head><body>html</body></html>", "html")
+	helperHTML(t, m, "<html><head></head><body>x</body></html>", "x")
 	helperHTML(t, m, "<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\">", "<meta charset=utf-8>")
 	helperHTML(t, m, "<meta name=\"keywords\" content=\"a, b\">", "<meta name=keywords content=a,b>")
 	helperHTML(t, m, "<meta name=\"viewport\" content=\"width = 996\" />", "<meta name=viewport content=\"width=996\">")
@@ -65,6 +63,14 @@ func TestHTML(t *testing.T) {
 	helperHTML(t, m, "<meta http-equiv=\"content-script-type\" content=\"application/js\">", "<meta http-equiv=content-script-type content=\"application/js\">")
 	helperHTML(t, m, "<span attr=\"\"></span>", "<span attr></span>")
 	helperHTML(t, m, "<code>x</code>", "<code>x</code>")
+	helperHTML(t, m, "<br/>", "<br>")
+	helperHTML(t, m, "<p></p><a></a>", "<p></p><a></a>")
+
+	// whitespace
+	helperHTML(t, m, "cats  and 	dogs", "cats and dogs")
+	helperHTML(t, m, " <div> <i> test </i> <b> test </b> </div> ", "<div><i>test</i> <b>test</b></div>")
+	helperHTML(t, m, "<strong>x </strong>y", "<strong>x </strong>y")
+	helperHTML(t, m, "<strong>x </strong> y", "<strong>x</strong> y")
 }
 
 func TestWhitespace(t *testing.T) {

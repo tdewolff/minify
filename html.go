@@ -143,56 +143,83 @@ func getAttr(token html.Token, k string) string {
 	return ""
 }
 
+type token struct {
+	tt html.TokenType
+	token html.Token
+}
+
+type tokenFeed struct {
+	z *html.Tokenizer
+	curr, next *token
+}
+
+func newTokenFeed(z *html.Tokenizer) *tokenFeed {
+	tf := &tokenFeed{z: z}
+	tf.next = &token{tf.z.Next(), tf.z.Token()}
+	return tf
+}
+
+func (tf *tokenFeed) shift() (html.TokenType, html.Token) {
+	tf.curr = tf.next
+	tf.next = &token{tf.z.Next(), tf.z.Token()}
+	return tf.curr.tt, tf.curr.token
+}
+
+func (tf tokenFeed) peek() (html.TokenType, html.Token) {
+	return tf.next.tt, tf.next.token
+}
+
 // HTML minifies HTML5 files, it reads from r and writes to w.
 // Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 10% in size.
 func (m Minifier) HTML(w io.Writer, r io.Reader) error {
-	var text []byte             // write text token until next token is received, allows to look forward one token before writing away
+	var prevText []byte             // write prevText token until next token is received, allows to look forward one token before writing away
 	var specialTag []html.Token // stack array of special tags it is in
-	var prevElementToken html.Token
-	precededBySpace := true // on true the next text token must no start with a space
+	var prevTagToken html.Token
+	precededBySpace := true // on true the next prevText token must no start with a space
 	defaultScriptType := "text/javascript"
 	defaultStyleType := "text/css"
 
 	z := html.NewTokenizer(r)
+	tf := newTokenFeed(z)
 	for {
-		tt := z.Next()
+		tt, token := tf.shift()
 		switch tt {
 		case html.ErrorToken:
 			if z.Err() == io.EOF {
-				if _, err := w.Write(text); err != nil {
+				if _, err := w.Write(prevText); err != nil {
 					return ErrWrite
 				}
 				return nil
 			}
 			return z.Err()
 		case html.DoctypeToken:
-			if _, err := w.Write(bytes.TrimSpace(text)); err != nil {
+			if _, err := w.Write(bytes.TrimSpace(prevText)); err != nil {
 				return ErrWrite
 			}
-			text = nil
+			prevText = nil
 
 			if _, err := w.Write([]byte("<!doctype html>")); err != nil {
 				return ErrWrite
 			}
 		case html.CommentToken:
-			if _, err := w.Write(text); err != nil {
+			if _, err := w.Write(prevText); err != nil {
 				return ErrWrite
 			}
-			text = nil
+			prevText = nil
 
-			comment := string(z.Token().Data)
+			comment := token.Data
 			// TODO: ensure that nested comments are handled properly (tokenizer doesn't handle this!)
 			if strings.HasPrefix(comment, "[if") {
-				text = []byte("<!--" + comment + "-->")
+				prevText = []byte("<!--" + comment + "-->")
 			} else if strings.HasSuffix(comment, "--") {
 				// only occurs when mixed up with conditional comments
-				text = []byte("<!" + comment + ">")
+				prevText = []byte("<!" + comment + ">")
 			}
 		case html.TextToken:
-			if _, err := w.Write(text); err != nil {
+			if _, err := w.Write(prevText); err != nil {
 				return ErrWrite
 			}
-			text = z.Text()
+			prevText = []byte(token.Data)
 
 			// CSS and JS minifiers for inline code
 			if len(specialTag) > 0 {
@@ -207,10 +234,10 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 						}
 					}
 
-					if err := m.Minify(mime, w, bytes.NewBuffer(text)); err != nil {
+					if err := m.Minify(mime, w, bytes.NewBuffer(prevText)); err != nil {
 						if err == ErrNotExist {
 							// no minifier, write the original
-							if _, err := w.Write(text); err != nil {
+							if _, err := w.Write(prevText); err != nil {
 								return ErrWrite
 							}
 						} else {
@@ -218,27 +245,26 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 						}
 					}
 				} else {
-					if _, err := w.Write(text); err != nil {
+					if _, err := w.Write(prevText); err != nil {
 						return ErrWrite
 					}
 				}
-				text = nil
+				prevText = nil
 				break
 			}
 
 			// whitespace removal; if after an inline element, trim left if precededBySpace
-			text = replaceMultipleWhitespace(text)
-			if inlineTagMap[prevElementToken.Data] {
-				if precededBySpace && len(text) > 0 && text[0] == ' ' {
-					text = text[1:]
+			prevText = replaceMultipleWhitespace(prevText)
+			if inlineTagMap[prevTagToken.Data] {
+				if precededBySpace && len(prevText) > 0 && prevText[0] == ' ' {
+					prevText = prevText[1:]
 				}
-				precededBySpace = len(text) > 0 && text[len(text)-1] == ' '
-			} else if len(text) > 0 && text[0] == ' ' {
-				text = text[1:]
+				precededBySpace = len(prevText) > 0 && prevText[len(prevText)-1] == ' '
+			} else if len(prevText) > 0 && prevText[0] == ' ' {
+				prevText = prevText[1:]
 			}
 		case html.StartTagToken, html.EndTagToken, html.SelfClosingTagToken:
-			token := z.Token()
-			prevElementToken = token
+			prevTagToken = token
 
 			if specialTagMap[token.Data] {
 				if tt == html.StartTagToken {
@@ -249,20 +275,30 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			}
 
 			// whitespace removal; if we encounter a block or a (closing) inline element, trim the right
-			if !inlineTagMap[token.Data] || (tt == html.EndTagToken && len(text) > 0 && text[len(text)-1] == ' ') {
-				text = bytes.TrimRight(text, " ")
+			if !inlineTagMap[token.Data] || (tt == html.EndTagToken && len(prevText) > 0 && prevText[len(prevText)-1] == ' ') {
 				precededBySpace = true
+				// do not remove when next token is text and doesn't start with a space
+				if len(prevText) > 0 {
+					if nextTt, nextToken := tf.peek(); nextTt != html.TextToken || (len(nextToken.Data) > 0 && nextToken.Data[0] == ' ') {
+						prevText = bytes.TrimRight(prevText, " ")
+						precededBySpace = false
+					}
+				}
 			}
-			if _, err := w.Write(text); err != nil {
+			if _, err := w.Write(prevText); err != nil {
 				return ErrWrite
 			}
-			text = nil
+			prevText = nil
 
 			if token.Data == "body" || token.Data == "head" || token.Data == "html" || token.Data == "tbody" ||
 				tt == html.EndTagToken && (token.Data == "colgroup" || token.Data == "dd" || token.Data == "dt" || token.Data == "li" ||
-					token.Data == "option" || token.Data == "p" || token.Data == "td" || token.Data == "tfoot" ||
+					token.Data == "option" || token.Data == "td" || token.Data == "tfoot" ||
 					token.Data == "th" || token.Data == "thead" || token.Data == "tr") {
 				break
+			} else if tt == html.EndTagToken && token.Data == "p" {
+				if _, nextToken := tf.peek(); !inlineTagMap[nextToken.Data] {
+					break
+				}
 			}
 
 			if _, err := w.Write([]byte("<")); err != nil {
