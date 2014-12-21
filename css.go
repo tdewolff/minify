@@ -390,7 +390,7 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 				return ErrWrite
 			}
 			for _, node := range atRule.Nodes {
-				if _, err := w.Write([]byte(" "+node.String())); err != nil {
+				if _, err := w.Write([]byte(" " + node.String())); err != nil {
 					return ErrWrite
 				}
 			}

@@ -39,9 +39,9 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, ".cla .ss > #id { x:y; }", ".cla .ss>#id{x:y}")
 	helperCSS(t, ".cla[id ^= L] { x:y; }", ".cla[id^=L]{x:y}")
 	helperCSS(t, "area:focus { outline : 0;}", "area:focus{outline:0}")
-	helperCSS(t, "@import 'file';" , "@import 'file'")
-	helperCSS(t, "@import 'file' { x:y; };" , "@import 'file'{x:y}")
-	helperCSS(t, "<!-- x:y; -->" , "<!--x:y-->")
+	helperCSS(t, "@import 'file';", "@import 'file'")
+	helperCSS(t, "@import 'file' { x:y; };", "@import 'file'{x:y}")
+	helperCSS(t, "<!-- x:y; -->", "<!--x:y-->")
 
 	helperCSS(t, "font:27px/13px arial,sans-serif", "font:27px/13px arial,sans-serif")
 	helperCSS(t, "text-decoration:none!important", "text-decoration:none!important")

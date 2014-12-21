@@ -120,13 +120,15 @@ func replaceMultipleWhitespace(s []byte) []byte {
 	t := make([]byte, len(s))
 	previousSpace := false
 	for _, x := range s {
-		if strings.IndexByte(" \t\n\f\r", x) == -1 {
+		if x == ' ' || x == '\n' || x == '\r' || x == '\t' || x == '\f' {
+			if !previousSpace {
+				previousSpace = true
+				t[j] = ' '
+				j++
+			}
+		} else {
 			previousSpace = false
 			t[j] = x
-			j++
-		} else if !previousSpace {
-			previousSpace = true
-			t[j] = ' '
 			j++
 		}
 	}
