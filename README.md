@@ -41,11 +41,11 @@ The CSS minifier is quite basic and needs more work. It currently:
 
 - removes most unnecessary whitespace
 - shortens color codes (by using hexadecimal color codes or color identifiers)
-- shortens zero values (0em &#8594; 0)
-- shortens single margin/padding values (margin:1px 1px &#8594; margin:1px)
-- shortens a few other values (outline:none &#8594; outline:0)
+- shortens zero values (`0em` &#8594; `0`)
+- shortens single `margin`/`padding` values (`margin:1px 1px` &#8594; `margin:1px`)
+- shortens a few other values (`outline:none` &#8594; `outline:0`)
 
-In the future it needs to be able to collapse blocks with the same identifier, multiple margin/padding/background/... declarations into one, ...
+In the future it needs to be able to collapse blocks with the same identifier, multiple `margin`/`padding`/`background`/... declarations into one, etc.
 
 ## Installation
 
