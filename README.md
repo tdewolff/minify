@@ -41,9 +41,9 @@ The CSS minifier is quite basic and needs more work. It currently:
 
 - removes most unnecessary whitespace
 - shortens color codes (by using hexadecimal color codes or color identifiers)
-- shortens zero values (0em -> 0)
-- shortens single margin/padding values (margin:1px 1px -> margin:1px)
-- shortens a few other values (outline:none -> outline:0)
+- shortens zero values (0em &#8594; 0)
+- shortens single margin/padding values (margin:1px 1px &#8594; margin:1px)
+- shortens a few other values (outline:none &#8594; outline:0)
 
 In the future it needs to be able to collapse blocks with the same identifier, multiple margin/padding/background/... declarations into one, ...
 
@@ -58,7 +58,7 @@ or add the following import and run project with `go get`
 	import "github.com/tdewolff/minify"
 
 ## Usage
-Retrieve a minifier struct which holds a map of mimes => minifier functions. The following loads the default HTML and CSS minifier:
+Retrieve a minifier struct which holds a map of mimes &#8594; minifier functions. The following loads the default HTML and CSS minifier:
 
 ``` go
 m := minify.NewMinifierDefault()
