@@ -27,16 +27,16 @@ However, be careful when doing on-the-fly minification. A simple site would typi
 
 Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/) | Minify | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | ------------------------------------------------------------ | ------ | ----- | -----------------------
-[Amazon](http://www.amazon.com/) | 463kB | 457kB | **443kB** | 96%<sup>1</sup> | 15ms
+[Amazon](http://www.amazon.com/) | 463kB | 457kB | **443kB** | 96%<sup>[1]</sup> | 15ms
 [BBC](http://www.bbc.com/) | 113kB | 103kB | **101kB** | 89% | 8ms
 [StackOverflow](http://stackoverflow.com/) | 201kB | 184kB | **184kB** | 92% | 18ms
-[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 423kB | **414kB** | 95%<sup>2</sup> | 31ms
+[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 423kB | **414kB** | 95%<sup>[2]</sup> | 31ms
 
 <sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 20ms range! The benchmark uses only the HTML minifier and excludes the time reading from and writing to a file from the measurement.
 
-<sup>1</sup>Contains alot of internal CSS and JS blocks so this does not represent the ratio of HTML minification.
+<sup>[1]</sup>Contains alot of internal CSS and JS blocks so this does not represent the ratio of HTML minification.
 
-<sup>2</sup>Is already somewhat minified, so this doesn't reflect the full potential of `minify.HTML`.
+<sup>[2]</sup>Is already somewhat minified, so this doesn't reflect the full potential of `minify.HTML`.
 
 [HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower. According to HTML Compressor, it produces smaller files than a couple of other libraries, which means `minify.HTML` does better than all.
 
