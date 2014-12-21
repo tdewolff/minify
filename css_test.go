@@ -38,6 +38,7 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "margin: 0em;", "margin:0")
 	helperCSS(t, ".cla .ss > #id { x:y; }", ".cla .ss>#id{x:y}")
 	helperCSS(t, ".cla[id ^= L] { x:y; }", ".cla[id^=L]{x:y}")
+	helperCSS(t, "area:focus { outline : 0;}", "area:focus{outline:0}")
 
 	helperCSS(t, "font:27px/13px arial,sans-serif", "font:27px/13px arial,sans-serif")
 	helperCSS(t, "text-decoration:none!important", "text-decoration:none!important")
