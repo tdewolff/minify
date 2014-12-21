@@ -33,7 +33,9 @@ Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/
 [Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 423kB | **414kB** | 95%<sup>&#42;&#42;&#42;</sup> | 31ms
 
 <sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 20ms range! The benchmark uses only the HTML minifier and excludes the time reading from and writing to a file from the measurement.
+
 <sup>&#42;&#42;</sup>Contains alot of internal CSS and JS blocks so this does not represent the ratio of HTML minification.
+
 <sup>&#42;&#42;&#42;</sup>Is already somewhat minified, so this doesn't reflect the full potential of `minify.HTML`.
 
 [HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower. According to HTML Compressor, it produces smaller files than a couple of other libraries, which means `minify.HTML` does better than all.
