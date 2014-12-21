@@ -144,13 +144,13 @@ func getAttr(token html.Token, k string) string {
 }
 
 type token struct {
-	tt html.TokenType
+	tt    html.TokenType
 	token html.Token
-	text []byte
+	text  []byte
 }
 
 type tokenFeed struct {
-	z *html.Tokenizer
+	z   *html.Tokenizer
 	buf []*token
 }
 
@@ -180,7 +180,7 @@ func (tf *tokenFeed) peek(pos int) (html.TokenType, html.Token, []byte) {
 // HTML minifies HTML5 files, it reads from r and writes to w.
 // Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 10% in size.
 func (m Minifier) HTML(w io.Writer, r io.Reader) error {
-	var prevText []byte             // write prevText token until next token is received, allows to look forward one token before writing away
+	var prevText []byte         // write prevText token until next token is received, allows to look forward one token before writing away
 	var specialTag []html.Token // stack array of special tags it is in
 	var prevTagToken html.Token
 	precededBySpace := true // on true the next prevText token must no start with a space
@@ -351,8 +351,8 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			if token.Data == "meta" && getAttr(token, "http-equiv") == "content-type" &&
 				getAttr(token, "content") == "text/html; charset=utf-8" {
 				if _, err := w.Write([]byte(" charset=utf-8>")); err != nil {
-				return ErrWrite
-			}
+					return ErrWrite
+				}
 				break
 			}
 
