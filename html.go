@@ -146,27 +146,35 @@ func getAttr(token html.Token, k string) string {
 type token struct {
 	tt html.TokenType
 	token html.Token
+	text []byte
 }
 
 type tokenFeed struct {
 	z *html.Tokenizer
-	curr, next *token
+	buf []*token
 }
 
 func newTokenFeed(z *html.Tokenizer) *tokenFeed {
-	tf := &tokenFeed{z: z}
-	tf.next = &token{tf.z.Next(), tf.z.Token()}
-	return tf
+	return &tokenFeed{z: z}
 }
 
-func (tf *tokenFeed) shift() (html.TokenType, html.Token) {
-	tf.curr = tf.next
-	tf.next = &token{tf.z.Next(), tf.z.Token()}
-	return tf.curr.tt, tf.curr.token
+func (tf *tokenFeed) shift() (html.TokenType, html.Token, []byte) {
+	if len(tf.buf) > 0 {
+		tf.buf = tf.buf[1:]
+	}
+	tf.peek(0)
+	return tf.buf[0].tt, tf.buf[0].token, tf.buf[0].text
 }
 
-func (tf tokenFeed) peek() (html.TokenType, html.Token) {
-	return tf.next.tt, tf.next.token
+func (tf *tokenFeed) peek(pos int) (html.TokenType, html.Token, []byte) {
+	for i := len(tf.buf); i <= pos; i++ {
+		t := &token{tf.z.Next(), tf.z.Token(), []byte{}}
+		if t.tt == html.TextToken {
+			t.text = replaceMultipleWhitespace([]byte(t.token.Data))
+		}
+		tf.buf = append(tf.buf, t)
+	}
+	return tf.buf[pos].tt, tf.buf[pos].token, tf.buf[pos].text
 }
 
 // HTML minifies HTML5 files, it reads from r and writes to w.
@@ -182,7 +190,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 	z := html.NewTokenizer(r)
 	tf := newTokenFeed(z)
 	for {
-		tt, token := tf.shift()
+		tt, token, text := tf.shift()
 		switch tt {
 		case html.ErrorToken:
 			if z.Err() == io.EOF {
@@ -254,7 +262,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			}
 
 			// whitespace removal; if after an inline element, trim left if precededBySpace
-			prevText = replaceMultipleWhitespace(prevText)
+			prevText = text
 			if inlineTagMap[prevTagToken.Data] {
 				if precededBySpace && len(prevText) > 0 && prevText[0] == ' ' {
 					prevText = prevText[1:]
@@ -279,7 +287,22 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				precededBySpace = true
 				// do not remove when next token is text and doesn't start with a space
 				if len(prevText) > 0 {
-					if nextTt, nextToken := tf.peek(); nextTt != html.TextToken || (len(nextToken.Data) > 0 && nextToken.Data[0] == ' ') {
+					trim := false
+					i := 0
+					for {
+						nextTt, nextToken, nextText := tf.peek(i)
+						// remove if the tag is not an inline tag (but a block tag)
+						if nextTt == html.ErrorToken || ((nextTt == html.StartTagToken || nextTt == html.EndTagToken || nextTt == html.SelfClosingTagToken) && !inlineTagMap[nextToken.Data]) {
+							trim = true
+							break
+						} else if nextTt == html.TextToken {
+							// remove if the text token starts with a whitespace
+							trim = len(nextText) > 0 && nextText[0] == ' '
+							break
+						}
+						i++
+					}
+					if trim {
 						prevText = bytes.TrimRight(prevText, " ")
 						precededBySpace = false
 					}
@@ -291,12 +314,24 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			prevText = nil
 
 			if token.Data == "body" || token.Data == "head" || token.Data == "html" || token.Data == "tbody" ||
-				tt == html.EndTagToken && (token.Data == "colgroup" || token.Data == "dd" || token.Data == "dt" || token.Data == "li" ||
+				tt == html.EndTagToken && (token.Data == "colgroup" || token.Data == "dd" || token.Data == "dt" ||
 					token.Data == "option" || token.Data == "td" || token.Data == "tfoot" ||
 					token.Data == "th" || token.Data == "thead" || token.Data == "tr") {
 				break
-			} else if tt == html.EndTagToken && token.Data == "p" {
-				if _, nextToken := tf.peek(); !inlineTagMap[nextToken.Data] {
+			} else if tt == html.EndTagToken && (token.Data == "p" || token.Data == "li") {
+				remove := false
+				i := 1
+				for {
+					nextTt, nextToken, nextText := tf.peek(i)
+					// continue if text token is empty or whitespace
+					if nextTt != html.TextToken || (len(nextText) > 0 && string(nextText) != " ") {
+						// remove only when encountering EOF, end tag (from parent) or a start tag of the same tag
+						remove = (nextTt == html.ErrorToken || nextTt == html.EndTagToken || (nextTt == html.StartTagToken && nextToken.Data == token.Data))
+						break
+					}
+					i++
+				}
+				if remove {
 					break
 				}
 			}

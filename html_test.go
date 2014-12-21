@@ -64,13 +64,19 @@ func TestHTML(t *testing.T) {
 	helperHTML(t, m, "<span attr=\"\"></span>", "<span attr></span>")
 	helperHTML(t, m, "<code>x</code>", "<code>x</code>")
 	helperHTML(t, m, "<br/>", "<br>")
+	helperHTML(t, m, "<p></p><p></p>", "<p><p>")
+	helperHTML(t, m, "<ul><li></li><li></li></ul>", "<ul><li><li></ul>")
+	helperHTML(t, m, "<ul><li></li><a></a></ul>", "<ul><li></li><a></a></ul>")
 	helperHTML(t, m, "<p></p><a></a>", "<p></p><a></a>")
+	helperHTML(t, m, "<p></p>x<a></a>", "<p></p>x<a></a>")
 
 	// whitespace
 	helperHTML(t, m, "cats  and 	dogs", "cats and dogs")
 	helperHTML(t, m, " <div> <i> test </i> <b> test </b> </div> ", "<div><i>test</i> <b>test</b></div>")
 	helperHTML(t, m, "<strong>x </strong>y", "<strong>x </strong>y")
 	helperHTML(t, m, "<strong>x </strong> y", "<strong>x</strong> y")
+	helperHTML(t, m, "<p>x </p>y", "<p>x</p>y")
+	helperHTML(t, m, "x <p>y</p>", "x<p>y")
 }
 
 func TestWhitespace(t *testing.T) {
