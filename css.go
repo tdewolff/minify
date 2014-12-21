@@ -15,6 +15,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"io"
+	"math"
 	"strconv"
 	"strings"
 
@@ -189,9 +190,8 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 
 		switch n.Type() {
 		case css.DeclarationNode:
-			decl := n.(*css.NodeDeclaration)
-			if _, err := w.Write([]byte(decl.Prop.String() + ":" + css.NodesString(decl.Vals, " "))); err != nil {
-				return ErrWrite
+			if err := writeDecl(w, n.(*css.NodeDeclaration)); err != nil {
+				return err
 			}
 			semicolonQueued = true
 		case css.RulesetNode:
@@ -236,8 +236,8 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 						return ErrWrite
 					}
 				}
-				if _, err := w.Write([]byte(decl.Prop.String() + ":" + css.NodesString(decl.Vals, " "))); err != nil {
-					return ErrWrite
+				if err := writeDecl(w, decl); err != nil {
+					return err
 				}
 			}
 			if _, err := w.Write([]byte("}")); err != nil {
@@ -248,6 +248,26 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 				return ErrWrite
 			}
 		}
+	}
+	return nil
+}
+
+func writeDecl(w io.Writer, decl *css.NodeDeclaration) error {
+	if _, err := w.Write([]byte(decl.Prop.String() + ":")); err != nil {
+		return ErrWrite
+	}
+	prevDelim := false
+	for j, val := range decl.Vals {
+		currDelim := (val.Type() == css.TokenNode && (val.(*css.NodeToken).TokenType == css.DelimToken || val.(*css.NodeToken).TokenType == css.CommaToken))
+		if j > 0 && !currDelim && !prevDelim {
+			if _, err := w.Write([]byte(" ")); err != nil {
+				return ErrWrite
+			}
+		}
+		if _, err := w.Write([]byte(val.String())); err != nil {
+			return ErrWrite
+		}
+		prevDelim = currDelim
 	}
 	return nil
 }
@@ -265,7 +285,7 @@ func shortenToken(token *css.NodeToken) {
 		if err != nil {
 			return
 		}
-		if f < epsilon {
+		if math.Abs(f) < epsilon {
 			token.Data = "0"
 			if token.TokenType == css.PercentageToken {
 				token.Data += "%"
@@ -307,13 +327,15 @@ func shortenDecl(decl *css.NodeDeclaration) {
 				decl.Vals[0] = css.NewToken(css.IdentToken, i)
 			} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
 				decl.Vals[0] = css.NewToken(css.HashToken, "#"+strings.ToUpper(string(val[1])+string(val[3])+string(val[5])))
+			} else {
+				t.Data = strings.ToUpper(t.Data)
 			}
 		}
 	} else if len(decl.Vals) == 1 && decl.Vals[0].Type() == css.FunctionNode {
 		f := decl.Vals[0].(*css.NodeFunction)
 		if f.Func.String() == "rgba(" && len(f.Args) == 4 {
 			d, _ := strconv.ParseFloat(f.Args[3].Data, 32)
-			if d-1.0 < epsilon {
+			if math.Abs(d-1.0) < epsilon {
 				f.Func = css.NewToken(css.FunctionToken, "rgb(")
 				f.Args = f.Args[:len(f.Args)-1]
 			}
