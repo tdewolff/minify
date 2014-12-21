@@ -14,6 +14,7 @@ var specialTagMap = map[string]bool{
 	"pre":      true,
 	"code":     true,
 	"textarea": true,
+	"noscript":	true,
 }
 
 var inlineTagMap = map[string]bool{
@@ -230,7 +231,8 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 
 			// CSS and JS minifiers for inline code
 			if len(specialTag) > 0 {
-				if tag := specialTag[len(specialTag)-1].Data; tag == "style" || tag == "script" {
+				tag := specialTag[len(specialTag)-1].Data
+				if tag == "style" || tag == "script" {
 					mime := getAttr(specialTag[len(specialTag)-1], "type")
 					if mime == "" {
 						// default mime types
@@ -251,10 +253,12 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 							return err
 						}
 					}
-				} else {
-					if _, err := w.Write(prevText); err != nil {
-						return ErrWrite
+				} else if tag == "noscript" {
+					if err := m.HTML(w, bytes.NewBuffer(prevText)); err != nil {
+						return err
 					}
+				} else if _, err := w.Write(prevText); err != nil {
+					return ErrWrite
 				}
 				prevText = nil
 				break

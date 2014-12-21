@@ -53,6 +53,7 @@ func TestHTML(t *testing.T) {
 	helperHTML(t, m, "<span onload=\"javascript:x;\"></span>", "<span onload=x;></span>")
 	helperHTML(t, m, "<span href=\"http://test\"></span>", "<span href=\"//test\"></span>")
 	helperHTML(t, m, "<span selected=\"selected\"></span>", "<span selected></span>")
+	helperHTML(t, m, "<noscript><html></noscript>", "<noscript></noscript>")
 
 	//helperHTML(t, m, "<!--[if IE 6]>some   spaces<![endif]-->", "<!--[if IE 6]>some spaces<![endif]-->") // TODO: make this work by changing the tokenizer code, see other TODO
 
