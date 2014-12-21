@@ -1,6 +1,6 @@
 [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify)
 
-~85% test coverage
+~87% test coverage
 
 # Minify
 

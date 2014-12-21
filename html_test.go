@@ -66,7 +66,7 @@ func TestHTML(t *testing.T) {
 	helperHTML(t, m, "<code>x</code>", "<code>x</code>")
 	helperHTML(t, m, "<br/>", "<br>")
 	helperHTML(t, m, "<p></p><p></p>", "<p><p>")
-	helperHTML(t, m, "<ul><li></li><li></li></ul>", "<ul><li><li></ul>")
+	helperHTML(t, m, "<ul><li></li> <li></li></ul>", "<ul><li><li></ul>")
 	helperHTML(t, m, "<ul><li></li><a></a></ul>", "<ul><li></li><a></a></ul>")
 	helperHTML(t, m, "<p></p><a></a>", "<p></p><a></a>")
 	helperHTML(t, m, "<p></p>x<a></a>", "<p></p>x<a></a>")

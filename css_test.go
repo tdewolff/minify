@@ -39,6 +39,9 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, ".cla .ss > #id { x:y; }", ".cla .ss>#id{x:y}")
 	helperCSS(t, ".cla[id ^= L] { x:y; }", ".cla[id^=L]{x:y}")
 	helperCSS(t, "area:focus { outline : 0;}", "area:focus{outline:0}")
+	helperCSS(t, "@import 'file';" , "@import 'file'")
+	helperCSS(t, "@import 'file' { x:y; };" , "@import 'file'{x:y}")
+	helperCSS(t, "<!-- x:y; -->" , "<!--x:y-->")
 
 	helperCSS(t, "font:27px/13px arial,sans-serif", "font:27px/13px arial,sans-serif")
 	helperCSS(t, "text-decoration:none!important", "text-decoration:none!important")
@@ -52,8 +55,11 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "margin: 1 1 1;", "margin:1")
 	helperCSS(t, "margin: 1 2 1;", "margin:1 2")
 	helperCSS(t, "margin: 1 2 3;", "margin:1 2 3")
+	helperCSS(t, "margin: 0%;", "margin:0%")
 	helperCSS(t, "color: rgb(255,64,64);", "color:#FF4040")
 	helperCSS(t, "color: rgb(256,-34,2342435);", "color:#F0F")
-	helperCSS(t, "color: rgb(120%,-56%,234234234%);", "color:#F0F")
+	helperCSS(t, "color: rgb(120%,-45%,234234234%);", "color:#F0F")
+	helperCSS(t, "color: rgb(0, 1, ident);", "color:rgb(0,1,ident)")
+	helperCSS(t, "a, b + c { x:y; }", "a,b+c{x:y}")
 	helperCSS(t, "color: rgb(ident);", "color:rgb(ident)")
 }
