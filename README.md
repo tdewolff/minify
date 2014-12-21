@@ -37,13 +37,15 @@ Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/
 [HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower. According to HTML Compressor, it produces smaller files than a couple of other libraries, which means Minify does better than all.
 
 ## CSS
-The CSS minifier is immature and needs more work. It:
+The CSS minifier is quite basic and needs more work. It currently:
 
-- removes unnecessary whitespace
-- shortens color codes (by using hexadecimal color codes or color words)
-- shortens a few other values
+- removes most unnecessary whitespace
+- shortens color codes (by using hexadecimal color codes or color identifiers)
+- shortens zero values (0em -> 0)
+- shortens single margin/padding values (margin:1px 1px -> margin:1px)
+- shortens a few other values (outline:none -> outline:0)
 
-It is in need of a CSS parser, which I am working on, on top of the tokenizer.
+In the future it needs to be able to collapse blocks with the same identifier, multiple margin/padding/background/... declarations into one, ...
 
 ## Installation
 
@@ -58,7 +60,9 @@ or add the following import and run project with `go get`
 ## Usage
 Retrieve a minifier struct which holds a map of mimes => minifier functions. The following loads the default HTML and CSS minifier:
 
-	m := minify.NewMinifierDefault()
+``` go
+m := minify.NewMinifierDefault()
+```
 
 To minify a generic stream, byte array or string with mime type `mime`:
 ``` go
