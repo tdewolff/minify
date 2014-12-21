@@ -55,5 +55,4 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "color: rgb(256,-34,2342435);", "color:#F0F")
 	helperCSS(t, "color: rgb(120%,-56%,234234234%);", "color:#F0F")
 	helperCSS(t, "color: rgb(ident);", "color:rgb(ident)")
-
 }
