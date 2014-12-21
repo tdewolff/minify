@@ -27,10 +27,10 @@ However, be careful when doing on-the-fly minification. A simple site would typi
 
 Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/) | Minify | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | ------------------------------------------------------------ | ------ | ----- | -----------------------
-[Amazon](http://www.amazon.com/) | 463kB | 457kB | **439kB** | 94% | 25ms
+[Amazon](http://www.amazon.com/) | 463kB | 457kB | **443kB** | 96% | 15ms
 [BBC](http://www.bbc.com/) | 113kB | 103kB | **101kB** | 89% | 8ms
 [StackOverflow](http://stackoverflow.com/) | 201kB | 184kB | **184kB** | 92% | 18ms
-[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 423kB | **413kB** | 94% | 45ms
+[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 423kB | **414kB** | 95% | 31ms
 
 <sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 20ms range! The used benchmark code is from the basic example below (default HTML and CSS minifier) without a JavaScript minifiers. The time reading from and writing to a file is excluded from the measurement.
 
@@ -58,29 +58,46 @@ or add the following import and run project with `go get`
 	import "github.com/tdewolff/minify"
 
 ## Usage
-Retrieve a minifier struct which holds a map of mimes &#8594; minifier functions. The following loads the default HTML and CSS minifier:
+Retrieve a minifier struct which holds a map of mime &#8594; minifier functions.
+``` go
+m := minify.NewMinifier()
+```
 
+The following loads the default HTML and CSS minifier:
 ``` go
 m := minify.NewMinifierDefault()
 ```
 
 To minify a generic stream, byte array or string with mime type `mime`:
 ``` go
-// stream, r io.Reader, w io.Writer
+// w io.Writer, r io.Reader
 if err := m.Minify(mime, w, r); err != nil {
 	fmt.Println("Minify:", err)
 }
 
-// byte array, b []byte
+// b []byte
 b, err := m.MinifyBytes(mime, b)
 if err != nil {
 	fmt.Println("Minify:", err)
 }
 
-// string, s string
+// s string
 s, err := m.MinifyString(mime, s)
 if err != nil {
 	fmt.Println("Minify:", err)
+}
+```
+
+To minify HTML or CSS directly, use:
+``` go
+// w io.Writer, r io.Reader
+if err := m.HTML(w, r); err != nil {
+	fmt.Println("HTML:", err)
+}
+
+// w io.Writer, r io.Reader
+if err := m.CSS(w, r); err != nil {
+	fmt.Println("CSS:", err)
 }
 ```
 
