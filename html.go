@@ -14,7 +14,7 @@ var specialTagMap = map[string]bool{
 	"pre":      true,
 	"code":     true,
 	"textarea": true,
-	"noscript":	true,
+	"noscript": true,
 }
 
 var inlineTagMap = map[string]bool{
