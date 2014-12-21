@@ -32,7 +32,7 @@ Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/
 [StackOverflow](http://stackoverflow.com/) | 201kB | 184kB | **184kB** | 92% | 16ms
 [Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 423kB | **414kB** | 95% | 29ms
 
-<sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 10ms range! The used benchmark code is from the basic example below without the JavaScript minifier. The time reading from and writing to a file is excluded from the measurement.
+<sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 10ms range! The used benchmark code is from the basic example below without the CSS and JavaScript minifiers. The time reading from and writing to a file is excluded from the measurement.
 
 [HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower. According to HTML Compressor, it produces smaller files than a couple of other libraries, which means Minify does better than all.
 
