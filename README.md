@@ -32,9 +32,9 @@ Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/
 [StackOverflow](http://stackoverflow.com/) | 201kB | 184kB | **184kB** | 92% | 18ms
 [Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 423kB | **414kB** | 95% | 31ms
 
-<sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 20ms range! The used benchmark code is from the basic example below (default HTML and CSS minifier) without a JavaScript minifiers. The time reading from and writing to a file is excluded from the measurement.
+<sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 20ms range! The benchmark uses only the HTML minifier and excludes the time reading from and writing to a file from the measurement.
 
-[HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower. According to HTML Compressor, it produces smaller files than a couple of other libraries, which means Minify does better than all.
+[HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower. According to HTML Compressor, it produces smaller files than a couple of other libraries, which means `minify.HTML` does better than all.
 
 ## CSS
 The CSS minifier is quite basic and needs more work. It currently:
