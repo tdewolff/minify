@@ -33,7 +33,6 @@ var inlineTagMap = map[string]bool{
 	"var":     true,
 	"a":       true,
 	"bdo":     true,
-	"br":      true,
 	"img":     true,
 	"map":     true,
 	"object":  true,
