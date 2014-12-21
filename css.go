@@ -398,5 +398,56 @@ func shortenDecl(decl *css.NodeDeclaration) {
 				decl.Vals = []css.Node{decl.Vals[0], decl.Vals[1], decl.Vals[2]}
 			}
 		}
+	} else {
+		for i, val := range decl.Vals {
+			if val.Type() == css.FunctionNode {
+				f := val.(*css.NodeFunction)
+				if f.Func.String() == "rgba(" && len(f.Args) == 4 {
+					d, _ := strconv.ParseFloat(f.Args[3].Data, 32)
+					if math.Abs(d-1.0) < epsilon {
+						f.Func = css.NewToken(css.FunctionToken, "rgb(")
+						f.Args = f.Args[:len(f.Args)-1]
+					}
+				}
+				if f.Func.String() == "rgb(" && len(f.Args) == 3 {
+					var err error
+					rgb := make([]byte, 3)
+					for j := 0; j < 3; j++ {
+						if f.Args[j].TokenType == css.NumberToken {
+							var d int64
+							d, err = strconv.ParseInt(f.Args[j].Data, 10, 32)
+							if d < 0 {
+								d = 0
+							} else if d > 255 {
+								d = 255
+							}
+							rgb[j] = byte(d)
+						} else if f.Args[j].TokenType == css.PercentageToken {
+							var d float64
+							d, err = strconv.ParseFloat(f.Args[j].Data[:len(f.Args[j].Data)-1], 32)
+							if d < 0.0 {
+								d = 0.0
+							} else if d > 100.0 {
+								d = 100.0
+							}
+							rgb[j] = byte((d / 100.0 * 255.0) + 0.5)
+						} else {
+							err = errors.New("")
+							break
+						}
+					}
+					if err == nil {
+						val := "#" + strings.ToUpper(hex.EncodeToString(rgb))
+						if s, ok := shortenColorHex[val]; ok {
+							decl.Vals[i] = css.NewToken(css.IdentToken, s)
+						} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
+							decl.Vals[i] = css.NewToken(css.HashToken, "#"+string(val[1])+string(val[3])+string(val[5]))
+						} else {
+							decl.Vals[i] = css.NewToken(css.HashToken, val)
+						}
+					}
+				}
+			}
+		}
 	}
 }

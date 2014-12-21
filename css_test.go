@@ -43,6 +43,7 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "text-decoration:none!important", "text-decoration:none!important")
 	helperCSS(t, "margin:-1px", "margin:-1px")
 	helperCSS(t, "color:#fff", "color:#FFF")
+	helperCSS(t, "border:2px rgb(255,255,255);", "border:2px #FFF")
 
 	// coverage
 	helperCSS(t, "margin: 1 1;", "margin:1")
