@@ -4,7 +4,7 @@
 
 # Minify
 
-Minify is a minifier package written in [Go][1]. It has a build-in HTML5 and CSS minifier and provides an interface to implement any minifier.
+Minify is a minifier package written in [Go][1]. It has a build-in HTML5 and CSS3 minifier and provides an interface to implement any minifier.
 
 It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...).
 
