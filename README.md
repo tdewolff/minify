@@ -81,16 +81,14 @@ if err := m.Minify(mime, w, r); err != nil {
 }
 ```
 
-#### HTML
-Minify HTML directly from an `io.Reader` to an `io.Writer`:
+Minify **HTML** directly from an `io.Reader` to an `io.Writer`:
 ``` go
 if err := m.HTML(w, r); err != nil {
 	fmt.Println("HTML:", err)
 }
 ```
 
-#### CSS
-Minify CSS directly from an `io.Reader` to an `io.Writer`:
+Minify **CSS** directly from an `io.Reader` to an `io.Writer`:
 ``` go
 if err := m.CSS(w, r); err != nil {
 	fmt.Println("CSS:", err)
@@ -129,7 +127,7 @@ Add a command for specific mime type `mime`:
 m.AddCmd(mime, exec.Command(cmd, args...))
 ```
 
-### Examples
+## Examples
 Basic example that minifies from stdin to stdout and loads the default HTML and CSS minifiers. Additionally, a JS minifier is set to run `java -jar build/compiler.jar` (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/):
 ``` go
 package main
