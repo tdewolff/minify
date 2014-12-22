@@ -62,63 +62,75 @@ or add the following import and run project with `go get`
 	import "github.com/tdewolff/minify"
 
 ## Usage
+### New
 Retrieve a minifier struct which holds a map of mime &#8594; minifier functions.
 ``` go
 m := minify.NewMinifier()
 ```
 
-The following loads the default HTML and CSS minifier:
+The following loads the default HTML and CSS minifiers:
 ``` go
 m := minify.NewMinifierDefault()
 ```
 
-To minify a generic stream, byte array or string with mime type `mime`:
+### From reader
+Minify from an `io.Reader` to an `io.Writer` with mime type `mime`:
 ``` go
-// w io.Writer, r io.Reader
 if err := m.Minify(mime, w, r); err != nil {
 	fmt.Println("Minify:", err)
 }
+```
 
-// b []byte
+#### HTML
+Minify HTML directly from an `io.Reader` to an `io.Writer`:
+``` go
+if err := m.HTML(w, r); err != nil {
+	fmt.Println("HTML:", err)
+}
+```
+
+#### CSS
+Minify CSS directly from an `io.Reader` to an `io.Writer`:
+``` go
+if err := m.CSS(w, r); err != nil {
+	fmt.Println("CSS:", err)
+}
+```
+
+### From bytes
+Minify from and to a `[]byte` with mime type `mime`:
+``` go
 b, err := m.MinifyBytes(mime, b)
 if err != nil {
 	fmt.Println("Minify:", err)
 }
+```
 
-// s string
+### From string
+Minify from and to a `string` with mime type `mime`:
+``` go
 s, err := m.MinifyString(mime, s)
 if err != nil {
 	fmt.Println("Minify:", err)
 }
 ```
 
-To minify HTML or CSS directly, use:
+### Custom minifier
+Add a function for specific mime type `mime`:
 ``` go
-// w io.Writer, r io.Reader
-if err := m.HTML(w, r); err != nil {
-	fmt.Println("HTML:", err)
-}
-
-// w io.Writer, r io.Reader
-if err := m.CSS(w, r); err != nil {
-	fmt.Println("CSS:", err)
-}
-```
-
-Add function or command for specific mime type `mime`:
-``` go
-// function
 m.Add(mime, func(m minify.Minifier, w io.Writer, r io.Reader) error {
 	io.Copy(w, r)
 	return nil
 })
+```
 
-// external command
+Add a command for specific mime type `mime`:
+``` go
 m.AddCmd(mime, exec.Command(cmd, args...))
 ```
 
 ### Examples
-Basic example:
+Basic example that minifies from stdin to stdout and loads the default HTML and CSS minifiers. Additionally, a JS minifier is set to run `java -jar build/compiler.jar` (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/):
 ``` go
 package main
 
@@ -130,10 +142,9 @@ import (
 	"github.com/tdewolff/minify"
 )
 
-// Minifies HTML code from stdin to stdout
 func main() {
 	m := minify.NewMinifierDefault()
-	m.AddCmd("text/javascript", exec.Command("java", "-jar", "path/to/compiler.jar"))
+	m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
 
 	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
 		fmt.Println("Minify:", err)
@@ -141,7 +152,7 @@ func main() {
 }
 ```
 
-Custom minifier:
+Custom minifier that shows an example that implements the minifier function interface:
 ``` go
 package main
 
@@ -156,7 +167,7 @@ import (
 
 // Outputs "Becausemycoffeewastoocold,Iheateditinthemicrowave."
 func main() {
-	m := minify.NewMinifierDefault()
+	m := minify.NewMinifier()
 
 	// remove newline and space bytes
 	m.Add("text/plain", func(m minify.Minifier, w io.Writer, r io.Reader) error {
@@ -184,6 +195,6 @@ func main() {
 }
 ```
 
-Within a custom minifier, one can call any `MinifyFunc` recursively when dealing with embedded resources.
+Within a custom minifier, it is possible to call any minifier function (through `m minify.Minifier`) recursively when dealing with embedded resources.
 
 [1]: http://golang.org/ "Go Language"
