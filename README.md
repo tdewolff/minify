@@ -59,7 +59,9 @@ Run the following command
 
 or add the following import and run project with `go get`
 
-	import "github.com/tdewolff/minify"
+	import (
+		"github.com/tdewolff/minify"
+	)
 
 ## Usage
 ### New
@@ -68,27 +70,27 @@ Retrieve a minifier struct which holds a map of mime &#8594; minifier functions.
 m := minify.NewMinifier()
 ```
 
-The following loads the default HTML and CSS minifiers:
+The following loads the default HTML and CSS minifiers.
 ``` go
 m := minify.NewMinifierDefault()
 ```
 
 ### From reader
-Minify from an `io.Reader` to an `io.Writer` with mime type `mime`:
+Minify from an `io.Reader` to an `io.Writer` with mime type `mime`.
 ``` go
 if err := m.Minify(mime, w, r); err != nil {
 	fmt.Println("Minify:", err)
 }
 ```
 
-Minify **HTML** directly from an `io.Reader` to an `io.Writer`:
+Minify *HTML* directly from an `io.Reader` to an `io.Writer`.
 ``` go
 if err := m.HTML(w, r); err != nil {
 	fmt.Println("HTML:", err)
 }
 ```
 
-Minify **CSS** directly from an `io.Reader` to an `io.Writer`:
+Minify *CSS* directly from an `io.Reader` to an `io.Writer`.
 ``` go
 if err := m.CSS(w, r); err != nil {
 	fmt.Println("CSS:", err)
@@ -96,7 +98,7 @@ if err := m.CSS(w, r); err != nil {
 ```
 
 ### From bytes
-Minify from and to a `[]byte` with mime type `mime`:
+Minify from and to a `[]byte` with mime type `mime`.
 ``` go
 b, err := m.MinifyBytes(mime, b)
 if err != nil {
@@ -105,7 +107,7 @@ if err != nil {
 ```
 
 ### From string
-Minify from and to a `string` with mime type `mime`:
+Minify from and to a `string` with mime type `mime`.
 ``` go
 s, err := m.MinifyString(mime, s)
 if err != nil {
@@ -114,7 +116,7 @@ if err != nil {
 ```
 
 ### Custom minifier
-Add a function for a specific mime type `mime`:
+Add a function for a specific mime type `mime`.
 ``` go
 m.Add(mime, func(m minify.Minifier, w io.Writer, r io.Reader) error {
 	// ...
@@ -122,13 +124,13 @@ m.Add(mime, func(m minify.Minifier, w io.Writer, r io.Reader) error {
 })
 ```
 
-Add a command `cmd` with arguments `args` for a specific mime type `mime`:
+Add a command `cmd` with arguments `args` for a specific mime type `mime`.
 ``` go
 m.AddCmd(mime, exec.Command(cmd, args...))
 ```
 
 ## Examples
-Basic example that minifies from stdin to stdout and loads the default HTML and CSS minifiers. Additionally, a JS minifier is set to run `java -jar build/compiler.jar` (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/)):
+Basic example that minifies from stdin to stdout and loads the default HTML and CSS minifiers. Additionally, a JS minifier is set to run `java -jar build/compiler.jar` (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/)).
 ``` go
 package main
 
@@ -150,7 +152,7 @@ func main() {
 }
 ```
 
-Custom minifier showing an example that implements the minifier function interface:
+Custom minifier showing an example that implements the minifier function interface.  Within a custom minifier, it is possible to call any minifier function (through `m minify.Minifier`) recursively when dealing with embedded resources.
 ``` go
 package main
 
@@ -192,7 +194,5 @@ func main() {
 	fmt.Println(out)
 }
 ```
-
-Within a custom minifier, it is possible to call any minifier function (through `m minify.Minifier`) recursively when dealing with embedded resources.
 
 [1]: http://golang.org/ "Go Language"
