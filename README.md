@@ -100,7 +100,7 @@ Minify from and to a `[]byte` with mime type `mime`:
 ``` go
 b, err := m.MinifyBytes(mime, b)
 if err != nil {
-	fmt.Println("Minify:", err)
+	fmt.Println("MinifyBytes:", err)
 }
 ```
 
@@ -109,26 +109,26 @@ Minify from and to a `string` with mime type `mime`:
 ``` go
 s, err := m.MinifyString(mime, s)
 if err != nil {
-	fmt.Println("Minify:", err)
+	fmt.Println("MinifyString:", err)
 }
 ```
 
 ### Custom minifier
-Add a function for specific mime type `mime`:
+Add a function for a specific mime type `mime`:
 ``` go
 m.Add(mime, func(m minify.Minifier, w io.Writer, r io.Reader) error {
-	io.Copy(w, r)
+	// ...
 	return nil
 })
 ```
 
-Add a command for specific mime type `mime`:
+Add a command `cmd` with arguments `args` for a specific mime type `mime`:
 ``` go
 m.AddCmd(mime, exec.Command(cmd, args...))
 ```
 
 ## Examples
-Basic example that minifies from stdin to stdout and loads the default HTML and CSS minifiers. Additionally, a JS minifier is set to run `java -jar build/compiler.jar` (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/):
+Basic example that minifies from stdin to stdout and loads the default HTML and CSS minifiers. Additionally, a JS minifier is set to run `java -jar build/compiler.jar` (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/)):
 ``` go
 package main
 
@@ -150,7 +150,7 @@ func main() {
 }
 ```
 
-Custom minifier that shows an example that implements the minifier function interface:
+Custom minifier showing an example that implements the minifier function interface:
 ``` go
 package main
 
