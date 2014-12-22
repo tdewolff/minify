@@ -59,9 +59,11 @@ Run the following command
 
 or add the following import and run project with `go get`
 
-	import (
-		"github.com/tdewolff/minify"
-	)
+``` go
+import (
+	"github.com/tdewolff/minify"
+)
+```
 
 ## Usage
 ### New
@@ -130,7 +132,7 @@ m.AddCmd(mime, exec.Command(cmd, args...))
 ```
 
 ## Examples
-Basic example that minifies from stdin to stdout and loads the default HTML and CSS minifiers. Additionally, a JS minifier is set to run `java -jar build/compiler.jar` (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/)).
+Basic example that minifies from stdin to stdout and loads the default HTML and CSS minifiers. Additionally, a JS minifier is set to run `java -jar build/compiler.jar` (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/)). Note that reading the file into a buffer first and writing to a buffer would be faster.
 ``` go
 package main
 

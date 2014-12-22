@@ -13,10 +13,10 @@ Usage example:
 		"github.com/tdewolff/minify"
 	)
 
-	// Minifies HTML code from stdin to stdout (note that using buffer is faster).
+	// Minifies HTML code from stdin to stdout (note that reading the file into a buffer first and writing to a buffer would be faster).
 	func main() {
 		m := minify.NewMinifierDefault()
-		m.AddCmd("text/javascript", exec.Command("java", "-jar", "path/to/compiler.jar"))
+		m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
 
 		if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
 			fmt.Println("minify.Minify:", err)
