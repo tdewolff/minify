@@ -48,6 +48,9 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "margin:-1px", "margin:-1px")
 	helperCSS(t, "color:#fff", "color:#FFF")
 	helperCSS(t, "border:2px rgb(255,255,255);", "border:2px #FFF")
+	helperCSS(t, "margin:0.5em", "margin:.5em")
+	helperCSS(t, "color:#c0c0c0", "color:silver")
+	helperCSS(t, "input[type=\"radio\"]{x:y}", "input[type=radio]{x:y}")
 
 	// coverage
 	helperCSS(t, "margin: 1 1;", "margin:1")

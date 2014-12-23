@@ -177,6 +177,11 @@ func shortenNodes(nodes []css.Node) {
 		case css.DeclarationNode:
 			shortenDecl(n.(*css.NodeDeclaration))
 		case css.RulesetNode:
+			for _, selGroup := range n.(*css.NodeRuleset).SelGroups {
+				for _, sel := range selGroup.Selectors {
+					shortenSelector(sel)
+				}
+			}
 			for _, decl := range n.(*css.NodeRuleset).Decls {
 				shortenDecl(decl)
 			}
@@ -186,21 +191,31 @@ func shortenNodes(nodes []css.Node) {
 	}
 }
 
+func shortenSelector(sel *css.NodeSelector) {
+	for _, n := range sel.Nodes {
+		if n.TokenType == css.StringToken {
+			s := n.Data[1:len(n.Data)-1]
+			if css.IsIdent(s) {
+				n.Data = s
+			}
+		}
+	}
+}
+
 func shortenDecl(decl *css.NodeDeclaration) {
 	// shorten zeros
-	for _, val := range decl.Vals {
+	for i, val := range decl.Vals {
 		if val.Type() == css.TokenNode {
-			shortenToken(val.(*css.NodeToken))
+			decl.Vals[i] = shortenToken(val.(*css.NodeToken))
 		} else if val.Type() == css.FunctionNode {
-			for _, arg := range val.(*css.NodeFunction).Args {
-				shortenToken(arg)
+			for j, arg := range val.(*css.NodeFunction).Args {
+				val.(*css.NodeFunction).Args[j] = shortenToken(arg)
 			}
 		}
 	}
 
 	prop := strings.ToLower(decl.Prop.String())
 	if len(decl.Vals) == 1 && decl.Vals[0].Type() == css.TokenNode {
-		t := decl.Vals[0].(*css.NodeToken)
 		val := strings.ToLower(decl.Vals[0].String())
 		if prop == "outline" && val == "none" {
 			decl.Vals[0] = css.NewToken(css.NumberToken, "0")
@@ -209,18 +224,6 @@ func shortenDecl(decl *css.NodeDeclaration) {
 				decl.Vals[0] = css.NewToken(css.NumberToken, "400")
 			} else if val == "bold" {
 				decl.Vals[0] = css.NewToken(css.NumberToken, "700")
-			}
-		} else if t.TokenType == css.IdentToken {
-			if h, ok := shortenColorName[val]; ok {
-				decl.Vals[0] = css.NewToken(css.HashToken, h)
-			}
-		} else if t.TokenType == css.HashToken {
-			if i, ok := shortenColorHex[strings.ToUpper(val)]; ok {
-				decl.Vals[0] = css.NewToken(css.IdentToken, i)
-			} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
-				decl.Vals[0] = css.NewToken(css.HashToken, "#"+strings.ToUpper(string(val[1])+string(val[3])+string(val[5])))
-			} else {
-				t.Data = strings.ToUpper(t.Data)
 			}
 		}
 	} else if prop == "margin" || prop == "padding" {
@@ -297,26 +300,43 @@ func shortenDecl(decl *css.NodeDeclaration) {
 	}
 }
 
-func shortenToken(token *css.NodeToken) {
+func shortenToken(token *css.NodeToken) *css.NodeToken {
+	val := token.Data
 	if token.TokenType == css.NumberToken || token.TokenType == css.DimensionToken || token.TokenType == css.PercentageToken {
-		v := token.String()
 		if token.TokenType == css.PercentageToken {
-			v = v[:len(v)-1]
+			val = val[:len(val)-1]
 		} else if token.TokenType == css.DimensionToken {
-			v, _ = css.SplitDimensionToken(v)
+			val, _ = css.SplitDimensionToken(val)
 		}
 
-		f, err := strconv.ParseFloat(v, 64)
+		f, err := strconv.ParseFloat(val, 64)
 		if err != nil {
-			return
+			return token
 		}
 		if math.Abs(f) < epsilon {
 			token.Data = "0"
 			if token.TokenType == css.PercentageToken {
 				token.Data += "%"
 			}
+		} else if len(token.Data) > 2 && token.Data[:2] == "0." {
+			token.Data = token.Data[1:]
+		} else if len(token.Data) > 3 && token.Data[:3] == "-0." {
+			token.Data = "-"+token.Data[2:]
+		}
+	} else if token.TokenType == css.IdentToken {
+		if h, ok := shortenColorName[val]; ok {
+			token = css.NewToken(css.HashToken, h)
+		}
+	} else if token.TokenType == css.HashToken {
+		if i, ok := shortenColorHex[strings.ToUpper(val)]; ok {
+			token = css.NewToken(css.IdentToken, i)
+		} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
+			token = css.NewToken(css.HashToken, "#"+strings.ToUpper(string(val[1])+string(val[3])+string(val[5])))
+		} else {
+			token.Data = strings.ToUpper(token.Data)
 		}
 	}
+	return token
 }
 
 func writeNodes(w io.Writer, nodes []css.Node) error {
