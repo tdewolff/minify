@@ -186,7 +186,11 @@ func shortenNodes(nodes []css.Node) {
 				shortenDecl(decl)
 			}
 		case css.AtRuleNode:
-			shortenNodes(n.(*css.NodeAtRule).Block)
+			if n.(*css.NodeAtRule).Block != nil {
+				shortenNodes(n.(*css.NodeAtRule).Block.Nodes)
+			}
+		case css.BlockNode:
+			shortenNodes(n.(*css.NodeBlock).Nodes)
 		}
 	}
 }
@@ -209,7 +213,7 @@ func shortenDecl(decl *css.NodeDeclaration) {
 			decl.Vals[i] = shortenToken(val.(*css.NodeToken))
 		} else if val.Type() == css.FunctionNode {
 			for j, arg := range val.(*css.NodeFunction).Args {
-				val.(*css.NodeFunction).Args[j] = shortenToken(arg)
+				val.(*css.NodeFunction).Args[j].Val = shortenToken(arg.Val)
 			}
 		}
 	}
@@ -270,7 +274,7 @@ func shortenDecl(decl *css.NodeDeclaration) {
 			if val.Type() == css.FunctionNode {
 				f := val.(*css.NodeFunction)
 				if f.Func.String() == "rgba(" && len(f.Args) == 4 {
-					d, _ := strconv.ParseFloat(f.Args[3].Data, 32)
+					d, _ := strconv.ParseFloat(f.Args[3].Val.Data, 32)
 					if math.Abs(d-1.0) < epsilon {
 						f.Func = css.NewToken(css.FunctionToken, "rgb(")
 						f.Args = f.Args[:len(f.Args)-1]
@@ -280,18 +284,19 @@ func shortenDecl(decl *css.NodeDeclaration) {
 					var err error
 					rgb := make([]byte, 3)
 					for j := 0; j < 3; j++ {
-						if f.Args[j].TokenType == css.NumberToken {
+						v := f.Args[j].Val
+						if v.TokenType == css.NumberToken {
 							var d int64
-							d, err = strconv.ParseInt(f.Args[j].Data, 10, 32)
+							d, err = strconv.ParseInt(v.Data, 10, 32)
 							if d < 0 {
 								d = 0
 							} else if d > 255 {
 								d = 255
 							}
 							rgb[j] = byte(d)
-						} else if f.Args[j].TokenType == css.PercentageToken {
+						} else if v.TokenType == css.PercentageToken {
 							var d float64
-							d, err = strconv.ParseFloat(f.Args[j].Data[:len(f.Args[j].Data)-1], 32)
+							d, err = strconv.ParseFloat(v.Data[:len(v.Data)-1], 32)
 							if d < 0.0 {
 								d = 0.0
 							} else if d > 100.0 {
@@ -444,18 +449,29 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 					return ErrWrite
 				}
 			}
-			if len(atRule.Block) > 0 {
-				if _, err := w.Write([]byte("{")); err != nil {
+			if atRule.Block != nil {
+				if _, err := w.Write([]byte(atRule.Block.Open.String())); err != nil {
 					return ErrWrite
 				}
-				if err := writeNodes(w, atRule.Block); err != nil {
+				if err := writeNodes(w, atRule.Block.Nodes); err != nil {
 					return err
 				}
-				if _, err := w.Write([]byte("}")); err != nil {
+				if _, err := w.Write([]byte(atRule.Block.Close.String())); err != nil {
 					return ErrWrite
 				}
 			} else {
 				semicolonQueued = true
+			}
+		case css.BlockNode:
+			block := n.(*css.NodeBlock)
+			if _, err := w.Write([]byte(block.Open.String())); err != nil {
+				return ErrWrite
+			}
+			if err := writeNodes(w, block.Nodes); err != nil {
+				return err
+			}
+			if _, err := w.Write([]byte(block.Close.String())); err != nil {
+				return ErrWrite
 			}
 		default:
 			if _, err := w.Write([]byte(n.String())); err != nil {
@@ -472,7 +488,7 @@ func writeDecl(w io.Writer, decl *css.NodeDeclaration) error {
 	}
 	prevDelim := false
 	for j, val := range decl.Vals {
-		currDelim := (val.Type() == css.TokenNode && (val.(*css.NodeToken).TokenType == css.DelimToken || val.(*css.NodeToken).TokenType == css.CommaToken))
+		currDelim := (val.Type() == css.TokenNode && (val.(*css.NodeToken).TokenType == css.DelimToken || val.(*css.NodeToken).TokenType == css.CommaToken || val.(*css.NodeToken).TokenType == css.ColonToken))
 		if j > 0 && !currDelim && !prevDelim {
 			if _, err := w.Write([]byte(" ")); err != nil {
 				return ErrWrite

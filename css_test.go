@@ -44,6 +44,7 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "<!-- x:y; -->", "<!--x:y-->")
 	helperCSS(t, "font-family:'Arial', 'Times New Roman';", "font-family:Arial,Times New Roman")
 	helperCSS(t, "background:url('http://domain.com/image.png');", "background:url(http://domain.com/image.png)")
+	helperCSS(t, "filter: progid : DXImageTransform.Microsoft.BasicImage(rotation=1);", "filter:progid:DXImageTransform.Microsoft.BasicImage(rotation=1)")
 
 	helperCSS(t, "font:27px/13px arial,sans-serif", "font:27px/13px arial,sans-serif")
 	helperCSS(t, "text-decoration:none!important", "text-decoration:none!important")
