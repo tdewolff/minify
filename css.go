@@ -161,7 +161,6 @@ var shortenColorName = map[string]string{
 }
 
 // CSS minifies CSS files, it reads from r and writes to w.
-// It does a mediocre job of minifying CSS files and should be improved in the future.
 func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 	stylesheet, err := css.Parse(r)
 	if err != nil {
