@@ -215,15 +215,17 @@ func shortenDecl(decl *css.NodeDeclaration) {
 	}
 
 	prop := strings.ToLower(decl.Prop.String())
-	if len(decl.Vals) == 1 && decl.Vals[0].Type() == css.TokenNode {
-		val := strings.ToLower(decl.Vals[0].String())
-		if prop == "outline" && val == "none" {
-			decl.Vals[0] = css.NewToken(css.NumberToken, "0")
-		} else if prop == "font-weight" {
-			if val == "normal" {
-				decl.Vals[0] = css.NewToken(css.NumberToken, "400")
-			} else if val == "bold" {
-				decl.Vals[0] = css.NewToken(css.NumberToken, "700")
+	if prop == "outline" || prop == "font-weight" {
+		if len(decl.Vals) == 1 && decl.Vals[0].Type() == css.TokenNode {
+			val := strings.ToLower(decl.Vals[0].String())
+			if prop == "outline" && val == "none" {
+				decl.Vals[0] = css.NewToken(css.NumberToken, "0")
+			} else if prop == "font-weight" {
+				if val == "normal" {
+					decl.Vals[0] = css.NewToken(css.NumberToken, "400")
+				} else if val == "bold" {
+					decl.Vals[0] = css.NewToken(css.NumberToken, "700")
+				}
 			}
 		}
 	} else if prop == "margin" || prop == "padding" {
@@ -244,6 +246,23 @@ func shortenDecl(decl *css.NodeDeclaration) {
 				decl.Vals = []css.Node{decl.Vals[0], decl.Vals[1]}
 			} else if decl.Vals[1].String() == decl.Vals[3].String() {
 				decl.Vals = []css.Node{decl.Vals[0], decl.Vals[1], decl.Vals[2]}
+			}
+		}
+	} else if prop == "font-family" {
+		for _, val := range decl.Vals {
+			if val.Type() == css.TokenNode && val.(*css.NodeToken).TokenType == css.StringToken {
+				n := val.(*css.NodeToken)
+				s := n.Data[1:len(n.Data)-1]
+				unquote := true
+				for _, fontName := range strings.Split(s, " ") {
+					if !css.IsIdent(fontName) {
+						unquote = false
+						break
+					}
+				}
+				if unquote {
+					n.Data = s
+				}
 			}
 		}
 	} else {
@@ -292,6 +311,17 @@ func shortenDecl(decl *css.NodeDeclaration) {
 							decl.Vals[i] = css.NewToken(css.HashToken, "#"+string(val[1])+string(val[3])+string(val[5]))
 						} else {
 							decl.Vals[i] = css.NewToken(css.HashToken, val)
+						}
+					}
+				}
+			} else if val.Type() == css.TokenNode {
+				n := val.(*css.NodeToken)
+				if n.TokenType == css.URLToken {
+					s := n.Data[4:len(n.Data)-1]
+					if s[0] == '"' || s[0] == '\'' {
+						s = s[1:len(s)-1]
+						if css.IsUrlUnquoted(s) {
+							n.Data = "url("+s+")"
 						}
 					}
 				}
