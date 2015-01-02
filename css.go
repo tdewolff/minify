@@ -12,152 +12,152 @@ Uses http://www.w3.org/TR/2010/PR-css3-color-20101028/ for colors
 */
 
 import (
+	"bytes"
 	"encoding/hex"
 	"errors"
 	"io"
 	"math"
 	"strconv"
-	"strings"
 
 	"github.com/tdewolff/css"
 )
 
 var epsilon = 0.00001
 
-var shortenColorHex = map[string]string{
-	"#000080": "navy",
-	"#008000": "green",
-	"#008080": "teal",
-	"#4B0082": "indigo",
-	"#800000": "maroon",
-	"#800080": "purple",
-	"#808000": "olive",
-	"#808080": "gray",
-	"#A0522D": "sienna",
-	"#A52A2A": "brown",
-	"#C0C0C0": "silver",
-	"#CD853F": "peru",
-	"#D2B48C": "tan",
-	"#DA70D6": "orchid",
-	"#DDA0DD": "plum",
-	"#EE82EE": "violet",
-	"#F0E68C": "khaki",
-	"#F0FFFF": "azure",
-	"#F5DEB3": "wheat",
-	"#F5F5DC": "beige",
-	"#FA8072": "salmon",
-	"#FAF0E6": "linen",
-	"#FF6347": "tomato",
-	"#FF7F50": "coral",
-	"#FFA500": "orange",
-	"#FFC0CB": "pink",
-	"#FFD700": "gold",
-	"#FFE4C4": "bisque",
-	"#FFFAFA": "snow",
-	"#FFFFF0": "ivory",
-	"#FF0000": "red",
-	"#F00":    "red",
+var shortenColorHex = map[string][]byte{
+	"#000080": []byte("navy"),
+	"#008000": []byte("green"),
+	"#008080": []byte("teal"),
+	"#4B0082": []byte("indigo"),
+	"#800000": []byte("maroon"),
+	"#800080": []byte("purple"),
+	"#808000": []byte("olive"),
+	"#808080": []byte("gray"),
+	"#A0522D": []byte("sienna"),
+	"#A52A2A": []byte("brown"),
+	"#C0C0C0": []byte("silver"),
+	"#CD853F": []byte("peru"),
+	"#D2B48C": []byte("tan"),
+	"#DA70D6": []byte("orchid"),
+	"#DDA0DD": []byte("plum"),
+	"#EE82EE": []byte("violet"),
+	"#F0E68C": []byte("khaki"),
+	"#F0FFFF": []byte("azure"),
+	"#F5DEB3": []byte("wheat"),
+	"#F5F5DC": []byte("beige"),
+	"#FA8072": []byte("salmon"),
+	"#FAF0E6": []byte("linen"),
+	"#FF6347": []byte("tomato"),
+	"#FF7F50": []byte("coral"),
+	"#FFA500": []byte("orange"),
+	"#FFC0CB": []byte("pink"),
+	"#FFD700": []byte("gold"),
+	"#FFE4C4": []byte("bisque"),
+	"#FFFAFA": []byte("snow"),
+	"#FFFFF0": []byte("ivory"),
+	"#FF0000": []byte("red"),
+	"#F00":    []byte("red"),
 }
 
-var shortenColorName = map[string]string{
-	"black":                "#000",
-	"darkblue":             "#00008B",
-	"mediumblue":           "#0000CD",
-	"darkgreen":            "#006400",
-	"darkcyan":             "#008B8B",
-	"deepskyblue":          "#00BFFF",
-	"darkturquoise":        "#00CED1",
-	"mediumspringgreen":    "#00FA9A",
-	"springgreen":          "#00FF7F",
-	"midnightblue":         "#191970",
-	"dodgerblue":           "#1E90FF",
-	"lightseagreen":        "#20B2AA",
-	"forestgreen":          "#228B22",
-	"seagreen":             "#2E8B57",
-	"darkslategray":        "#2F4F4F",
-	"limegreen":            "#32CD32",
-	"mediumseagreen":       "#3CB371",
-	"turquoise":            "#40E0D0",
-	"royalblue":            "#4169E1",
-	"steelblue":            "#4682B4",
-	"darkslateblue":        "#483D8B",
-	"mediumturquoise":      "#48D1CC",
-	"darkolivegreen":       "#556B2F",
-	"cadetblue":            "#5F9EA0",
-	"cornflowerblue":       "#6495ED",
-	"mediumaquamarine":     "#66CDAA",
-	"slateblue":            "#6A5ACD",
-	"olivedrab":            "#6B8E23",
-	"slategray":            "#708090",
-	"lightslateblue":       "#789",
-	"mediumslateblue":      "#7B68EE",
-	"lawngreen":            "#7CFC00",
-	"chartreuse":           "#7FFF00",
-	"aquamarine":           "#7FFFD4",
-	"lightskyblue":         "#87CEFA",
-	"blueviolet":           "#8A2BE2",
-	"darkmagenta":          "#8B008B",
-	"saddlebrown":          "#8B4513",
-	"darkseagreen":         "#8FBC8F",
-	"lightgreen":           "#90EE90",
-	"mediumpurple":         "#9370DB",
-	"darkviolet":           "#9400D3",
-	"palegreen":            "#98FB98",
-	"darkorchid":           "#9932CC",
-	"yellowgreen":          "#9ACD32",
-	"darkgray":             "#A9A9A9",
-	"lightblue":            "#ADD8E6",
-	"greenyellow":          "#ADFF2F",
-	"paleturquoise":        "#AFEEEE",
-	"lightsteelblue":       "#B0C4DE",
-	"powderblue":           "#B0E0E6",
-	"firebrick":            "#B22222",
-	"darkgoldenrod":        "#B8860B",
-	"mediumorchid":         "#BA55D3",
-	"rosybrown":            "#BC8F8F",
-	"darkkhaki":            "#BDB76B",
-	"mediumvioletred":      "#C71585",
-	"indianred":            "#CD5C5C",
-	"chocolate":            "#D2691E",
-	"lightgray":            "#D3D3D3",
-	"goldenrod":            "#DAA520",
-	"palevioletred":        "#DB7093",
-	"gainsboro":            "#DCDCDC",
-	"burlywood":            "#DEB887",
-	"lightcyan":            "#E0FFFF",
-	"lavender":             "#E6E6FA",
-	"darksalmon":           "#E9967A",
-	"palegoldenrod":        "#EEE8AA",
-	"lightcoral":           "#F08080",
-	"aliceblue":            "#F0F8FF",
-	"honeydew":             "#F0FFF0",
-	"sandybrown":           "#F4A460",
-	"whitesmoke":           "#F5F5F5",
-	"mintcream":            "#F5FFFA",
-	"ghostwhite":           "#F8F8FF",
-	"antiquewhite":         "#FAEBD7",
-	"lightgoldenrodyellow": "#FAFAD2",
-	"fuchsia":              "#F0F",
-	"magenta":              "#F0F",
-	"deeppink":             "#FF1493",
-	"orangered":            "#FF4500",
-	"darkorange":           "#FF8C00",
-	"lightsalmon":          "#FFA07A",
-	"lightpink":            "#FFB6C1",
-	"peachpuff":            "#FFDAB9",
-	"navajowhite":          "#FFDEAD",
-	"moccasin":             "#FFE4B5",
-	"mistyrose":            "#FFE4E1",
-	"blanchedalmond":       "#FFEBCD",
-	"papayawhip":           "#FFEFD5",
-	"lavenderblush":        "#FFF0F5",
-	"seashell":             "#FFF5EE",
-	"cornsilk":             "#FFF8DC",
-	"lemonchiffon":         "#FFFACD",
-	"floralwhite":          "#FFFAF0",
-	"yellow":               "#FF0",
-	"lightyellow":          "#FFFFE0",
-	"white":                "#FFF",
+var shortenColorName = map[string][]byte{
+	"black":                []byte("#000"),
+	"darkblue":             []byte("#00008B"),
+	"mediumblue":           []byte("#0000CD"),
+	"darkgreen":            []byte("#006400"),
+	"darkcyan":             []byte("#008B8B"),
+	"deepskyblue":          []byte("#00BFFF"),
+	"darkturquoise":        []byte("#00CED1"),
+	"mediumspringgreen":    []byte("#00FA9A"),
+	"springgreen":          []byte("#00FF7F"),
+	"midnightblue":         []byte("#191970"),
+	"dodgerblue":           []byte("#1E90FF"),
+	"lightseagreen":        []byte("#20B2AA"),
+	"forestgreen":          []byte("#228B22"),
+	"seagreen":             []byte("#2E8B57"),
+	"darkslategray":        []byte("#2F4F4F"),
+	"limegreen":            []byte("#32CD32"),
+	"mediumseagreen":       []byte("#3CB371"),
+	"turquoise":            []byte("#40E0D0"),
+	"royalblue":            []byte("#4169E1"),
+	"steelblue":            []byte("#4682B4"),
+	"darkslateblue":        []byte("#483D8B"),
+	"mediumturquoise":      []byte("#48D1CC"),
+	"darkolivegreen":       []byte("#556B2F"),
+	"cadetblue":            []byte("#5F9EA0"),
+	"cornflowerblue":       []byte("#6495ED"),
+	"mediumaquamarine":     []byte("#66CDAA"),
+	"slateblue":            []byte("#6A5ACD"),
+	"olivedrab":            []byte("#6B8E23"),
+	"slategray":            []byte("#708090"),
+	"lightslateblue":       []byte("#789"),
+	"mediumslateblue":      []byte("#7B68EE"),
+	"lawngreen":            []byte("#7CFC00"),
+	"chartreuse":           []byte("#7FFF00"),
+	"aquamarine":           []byte("#7FFFD4"),
+	"lightskyblue":         []byte("#87CEFA"),
+	"blueviolet":           []byte("#8A2BE2"),
+	"darkmagenta":          []byte("#8B008B"),
+	"saddlebrown":          []byte("#8B4513"),
+	"darkseagreen":         []byte("#8FBC8F"),
+	"lightgreen":           []byte("#90EE90"),
+	"mediumpurple":         []byte("#9370DB"),
+	"darkviolet":           []byte("#9400D3"),
+	"palegreen":            []byte("#98FB98"),
+	"darkorchid":           []byte("#9932CC"),
+	"yellowgreen":          []byte("#9ACD32"),
+	"darkgray":             []byte("#A9A9A9"),
+	"lightblue":            []byte("#ADD8E6"),
+	"greenyellow":          []byte("#ADFF2F"),
+	"paleturquoise":        []byte("#AFEEEE"),
+	"lightsteelblue":       []byte("#B0C4DE"),
+	"powderblue":           []byte("#B0E0E6"),
+	"firebrick":            []byte("#B22222"),
+	"darkgoldenrod":        []byte("#B8860B"),
+	"mediumorchid":         []byte("#BA55D3"),
+	"rosybrown":            []byte("#BC8F8F"),
+	"darkkhaki":            []byte("#BDB76B"),
+	"mediumvioletred":      []byte("#C71585"),
+	"indianred":            []byte("#CD5C5C"),
+	"chocolate":            []byte("#D2691E"),
+	"lightgray":            []byte("#D3D3D3"),
+	"goldenrod":            []byte("#DAA520"),
+	"palevioletred":        []byte("#DB7093"),
+	"gainsboro":            []byte("#DCDCDC"),
+	"burlywood":            []byte("#DEB887"),
+	"lightcyan":            []byte("#E0FFFF"),
+	"lavender":             []byte("#E6E6FA"),
+	"darksalmon":           []byte("#E9967A"),
+	"palegoldenrod":        []byte("#EEE8AA"),
+	"lightcoral":           []byte("#F08080"),
+	"aliceblue":            []byte("#F0F8FF"),
+	"honeydew":             []byte("#F0FFF0"),
+	"sandybrown":           []byte("#F4A460"),
+	"whitesmoke":           []byte("#F5F5F5"),
+	"mintcream":            []byte("#F5FFFA"),
+	"ghostwhite":           []byte("#F8F8FF"),
+	"antiquewhite":         []byte("#FAEBD7"),
+	"lightgoldenrodyellow": []byte("#FAFAD2"),
+	"fuchsia":              []byte("#F0F"),
+	"magenta":              []byte("#F0F"),
+	"deeppink":             []byte("#FF1493"),
+	"orangered":            []byte("#FF4500"),
+	"darkorange":           []byte("#FF8C00"),
+	"lightsalmon":          []byte("#FFA07A"),
+	"lightpink":            []byte("#FFB6C1"),
+	"peachpuff":            []byte("#FFDAB9"),
+	"navajowhite":          []byte("#FFDEAD"),
+	"moccasin":             []byte("#FFE4B5"),
+	"mistyrose":            []byte("#FFE4E1"),
+	"blanchedalmond":       []byte("#FFEBCD"),
+	"papayawhip":           []byte("#FFEFD5"),
+	"lavenderblush":        []byte("#FFF0F5"),
+	"seashell":             []byte("#FFF5EE"),
+	"cornsilk":             []byte("#FFF8DC"),
+	"lemonchiffon":         []byte("#FFFACD"),
+	"floralwhite":          []byte("#FFFAF0"),
+	"yellow":               []byte("#FF0"),
+	"lightyellow":          []byte("#FFFFE0"),
+	"white":                []byte("#FFF"),
 }
 
 // CSS minifies CSS files, it reads from r and writes to w.
@@ -217,47 +217,47 @@ func shortenDecl(decl *css.NodeDeclaration) {
 		}
 	}
 
-	prop := strings.ToLower(decl.Prop.Data)
-	if prop == "outline" || prop == "font-weight" {
+	prop := bytes.ToLower(decl.Prop.Data)
+	if bytes.Equal(prop, []byte("outline")) || bytes.Equal(prop, []byte("font-weight")) {
 		if len(decl.Vals) == 1 && decl.Vals[0].Type() == css.TokenNode {
-			val := strings.ToLower(decl.Vals[0].(*css.NodeToken).Data)
-			if prop == "outline" && val == "none" {
-				decl.Vals[0] = css.NewToken(css.NumberToken, "0")
-			} else if prop == "font-weight" {
-				if val == "normal" {
-					decl.Vals[0] = css.NewToken(css.NumberToken, "400")
-				} else if val == "bold" {
-					decl.Vals[0] = css.NewToken(css.NumberToken, "700")
+			val := bytes.ToLower(decl.Vals[0].(*css.NodeToken).Data)
+			if bytes.Equal(prop, []byte("outline")) && bytes.Equal(val, []byte("none")) {
+				decl.Vals[0] = css.NewToken(css.NumberToken, []byte("0"))
+			} else if bytes.Equal(prop, []byte("font-weight")) {
+				if bytes.Equal(val, []byte("normal")) {
+					decl.Vals[0] = css.NewToken(css.NumberToken, []byte("400"))
+				} else if bytes.Equal(val, []byte("bold")) {
+					decl.Vals[0] = css.NewToken(css.NumberToken, []byte("700"))
 				}
 			}
 		}
-	} else if prop == "margin" || prop == "padding" {
+	} else if bytes.Equal(prop, []byte("margin")) || bytes.Equal(prop, []byte("padding")) {
 		if len(decl.Vals) == 2 && decl.Vals[0].Type() == css.TokenNode && decl.Vals[1].Type() == css.TokenNode {
-			if decl.Vals[0].(*css.NodeToken).Data == decl.Vals[1].(*css.NodeToken).Data {
+			if bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[1].(*css.NodeToken).Data) {
 				decl.Vals = []css.Node{decl.Vals[0]}
 			}
 		} else if len(decl.Vals) == 3 && decl.Vals[0].Type() == css.TokenNode && decl.Vals[1].Type() == css.TokenNode && decl.Vals[2].Type() == css.TokenNode {
-			if decl.Vals[0].(*css.NodeToken).Data == decl.Vals[1].(*css.NodeToken).Data && decl.Vals[0].(*css.NodeToken).Data == decl.Vals[2].(*css.NodeToken).Data {
+			if bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[1].(*css.NodeToken).Data) && bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[2].(*css.NodeToken).Data) {
 				decl.Vals = []css.Node{decl.Vals[0]}
-			} else if decl.Vals[0].(*css.NodeToken).Data == decl.Vals[2].(*css.NodeToken).Data {
+			} else if bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[2].(*css.NodeToken).Data) {
 				decl.Vals = []css.Node{decl.Vals[0], decl.Vals[1]}
 			}
 		} else if len(decl.Vals) == 4 && decl.Vals[0].Type() == css.TokenNode && decl.Vals[1].Type() == css.TokenNode && decl.Vals[2].Type() == css.TokenNode && decl.Vals[3].Type() == css.TokenNode {
-			if decl.Vals[0].(*css.NodeToken).Data == decl.Vals[1].(*css.NodeToken).Data && decl.Vals[0].(*css.NodeToken).Data == decl.Vals[2].(*css.NodeToken).Data && decl.Vals[0].(*css.NodeToken).Data == decl.Vals[3].(*css.NodeToken).Data {
+			if bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[1].(*css.NodeToken).Data) && bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[2].(*css.NodeToken).Data) && bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[3].(*css.NodeToken).Data) {
 				decl.Vals = []css.Node{decl.Vals[0]}
-			} else if decl.Vals[0].(*css.NodeToken).Data == decl.Vals[2].(*css.NodeToken).Data && decl.Vals[1].(*css.NodeToken).Data == decl.Vals[3].(*css.NodeToken).Data {
+			} else if bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[2].(*css.NodeToken).Data) && bytes.Equal(decl.Vals[1].(*css.NodeToken).Data, decl.Vals[3].(*css.NodeToken).Data) {
 				decl.Vals = []css.Node{decl.Vals[0], decl.Vals[1]}
-			} else if decl.Vals[1].(*css.NodeToken).Data == decl.Vals[3].(*css.NodeToken).Data {
+			} else if bytes.Equal(decl.Vals[1].(*css.NodeToken).Data, decl.Vals[3].(*css.NodeToken).Data) {
 				decl.Vals = []css.Node{decl.Vals[0], decl.Vals[1], decl.Vals[2]}
 			}
 		}
-	} else if prop == "font-family" {
+	} else if bytes.Equal(prop, []byte("font-family")) {
 		for _, val := range decl.Vals {
 			if val.Type() == css.TokenNode && val.(*css.NodeToken).TokenType == css.StringToken {
 				n := val.(*css.NodeToken)
 				s := n.Data[1 : len(n.Data)-1]
 				unquote := true
-				for _, fontName := range strings.Split(s, " ") {
+				for _, fontName := range bytes.Split(s, []byte(" ")) {
 					if !css.IsIdent([]byte(fontName)) {
 						unquote = false
 						break
@@ -272,21 +272,21 @@ func shortenDecl(decl *css.NodeDeclaration) {
 		for i, val := range decl.Vals {
 			if val.Type() == css.FunctionNode {
 				f := val.(*css.NodeFunction)
-				if f.Func.Data == "rgba(" && len(f.Args) == 4 {
-					d, _ := strconv.ParseFloat(f.Args[3].Val.Data, 32)
+				if bytes.Equal(f.Func.Data, []byte("rgba(")) && len(f.Args) == 4 {
+					d, _ := strconv.ParseFloat(string(f.Args[3].Val.Data), 32)
 					if math.Abs(d-1.0) < epsilon {
-						f.Func = css.NewToken(css.FunctionToken, "rgb(")
+						f.Func = css.NewToken(css.FunctionToken, []byte("rgb("))
 						f.Args = f.Args[:len(f.Args)-1]
 					}
 				}
-				if f.Func.Data == "rgb(" && len(f.Args) == 3 {
+				if bytes.Equal(f.Func.Data, []byte("rgb(")) && len(f.Args) == 3 {
 					var err error
 					rgb := make([]byte, 3)
 					for j := 0; j < 3; j++ {
 						v := f.Args[j].Val
 						if v.TokenType == css.NumberToken {
 							var d int64
-							d, err = strconv.ParseInt(v.Data, 10, 32)
+							d, err = strconv.ParseInt(string(v.Data), 10, 32)
 							if d < 0 {
 								d = 0
 							} else if d > 255 {
@@ -295,7 +295,7 @@ func shortenDecl(decl *css.NodeDeclaration) {
 							rgb[j] = byte(d)
 						} else if v.TokenType == css.PercentageToken {
 							var d float64
-							d, err = strconv.ParseFloat(v.Data[:len(v.Data)-1], 32)
+							d, err = strconv.ParseFloat(string(v.Data[:len(v.Data)-1]), 32)
 							if d < 0.0 {
 								d = 0.0
 							} else if d > 100.0 {
@@ -308,11 +308,13 @@ func shortenDecl(decl *css.NodeDeclaration) {
 						}
 					}
 					if err == nil {
-						val := "#" + strings.ToUpper(hex.EncodeToString(rgb))
-						if s, ok := shortenColorHex[val]; ok {
+						valHex := make([]byte, 6)
+						hex.Encode(valHex, rgb)
+						val := append([]byte("#"), bytes.ToUpper(valHex)...)
+						if s, ok := shortenColorHex[string(val)]; ok {
 							decl.Vals[i] = css.NewToken(css.IdentToken, s)
 						} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
-							decl.Vals[i] = css.NewToken(css.HashToken, "#"+string(val[1])+string(val[3])+string(val[5]))
+							decl.Vals[i] = css.NewToken(css.HashToken, append([]byte("#"), val[1], val[3], val[5]))
 						} else {
 							decl.Vals[i] = css.NewToken(css.HashToken, val)
 						}
@@ -325,7 +327,7 @@ func shortenDecl(decl *css.NodeDeclaration) {
 					if s[0] == '"' || s[0] == '\'' {
 						s = s[1 : len(s)-1]
 						if css.IsUrlUnquoted([]byte(s)) {
-							n.Data = "url(" + s + ")"
+							n.Data = append([]byte("url("), append(s, ')')...)
 						}
 					}
 				}
@@ -340,40 +342,39 @@ func shortenToken(token *css.NodeToken) *css.NodeToken {
 		if token.TokenType == css.PercentageToken {
 			val = val[:len(val)-1]
 		} else if token.TokenType == css.DimensionToken {
-			num, _ := css.SplitDimensionToken([]byte(val))
-			val = string(num)
+			val, _ = css.SplitDimensionToken(val)
 		}
 
-		f, err := strconv.ParseFloat(val, 64)
+		f, err := strconv.ParseFloat(string(val), 64)
 		if err != nil {
 			return token
 		}
 		if math.Abs(f) < epsilon {
-			token.Data = "0"
+			token.Data = []byte("0")
 			if token.TokenType == css.PercentageToken {
-				token.Data += "%"
+				token.Data = append(token.Data, '%')
 			}
-		} else if len(token.Data) > 2 && token.Data[:2] == "0." {
+		} else if len(token.Data) > 2 && bytes.Equal(token.Data[:2], []byte("0.")) {
 			token.Data = token.Data[1:]
-		} else if len(token.Data) > 3 && token.Data[:3] == "-0." {
-			token.Data = "-" + token.Data[2:]
+		} else if len(token.Data) > 3 && bytes.Equal(token.Data[:3], []byte("-0.")) {
+			token.Data = append([]byte("-"), token.Data[2:]...)
 		}
 	} else if token.TokenType == css.IdentToken {
-		if h, ok := shortenColorName[val]; ok {
+		if h, ok := shortenColorName[string(val)]; ok {
 			token = css.NewToken(css.HashToken, h)
 		}
 	} else if token.TokenType == css.HashToken {
-		if i, ok := shortenColorHex[strings.ToUpper(val)]; ok {
+		if i, ok := shortenColorHex[string(bytes.ToUpper(val))]; ok {
 			token = css.NewToken(css.IdentToken, i)
 		} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
-			token = css.NewToken(css.HashToken, "#"+strings.ToUpper(string(val[1])+string(val[3])+string(val[5])))
+			token = css.NewToken(css.HashToken, append([]byte("#"), bytes.ToUpper(append([]byte{val[1]}, val[3], val[5]))...))
 		} else {
-			token.Data = strings.ToUpper(token.Data)
+			token.Data = bytes.ToUpper(token.Data)
 		}
 	} else if token.TokenType == css.StringToken {
-		token.Data = strings.Replace(token.Data, "\\\r\n", "", -1)
-		token.Data = strings.Replace(token.Data, "\\\r", "", -1)
-		token.Data = strings.Replace(token.Data, "\\\n", "", -1)
+		token.Data = bytes.Replace(token.Data, []byte("\\\r\n"), []byte(""), -1)
+		token.Data = bytes.Replace(token.Data, []byte("\\\r"), []byte(""), -1)
+		token.Data = bytes.Replace(token.Data, []byte("\\\n"), []byte(""), -1)
 	}
 	return token
 }
@@ -407,9 +408,10 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 					if len(sel.Nodes) == 1 {
 						tt := sel.Nodes[0].TokenType
 						op := sel.Nodes[0].Data
-						if tt == css.DelimToken && (op == ">" || op == "+" || op == "~") || tt == css.IncludeMatchToken || tt == css.DashMatchToken ||
+						// TODO: check if clause
+						if tt == css.DelimToken && len(op) == 1 && (op[0] == '>' || op[0] == '+' || op[0] == '~') || tt == css.IncludeMatchToken || tt == css.DashMatchToken ||
 							tt == css.PrefixMatchToken || tt == css.SuffixMatchToken || tt == css.SubstringMatchToken {
-							if _, err := w.Write([]byte(op)); err != nil {
+							if _, err := w.Write(op); err != nil {
 								return ErrWrite
 							}
 							prevOperator = true
@@ -422,7 +424,7 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 						}
 					}
 					for _, node := range sel.Nodes {
-						if _, err := w.Write([]byte(node.Data)); err != nil {
+						if _, err := w.Write(node.Data); err != nil {
 							return ErrWrite
 						}
 					}
@@ -447,22 +449,25 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 			}
 		case css.AtRuleNode:
 			atRule := n.(*css.NodeAtRule)
-			if _, err := w.Write([]byte(atRule.At.Data)); err != nil {
+			if _, err := w.Write(atRule.At.Data); err != nil {
 				return ErrWrite
 			}
 			for _, node := range atRule.Nodes {
-				if _, err := w.Write([]byte(" " + node.Data)); err != nil {
+				if _, err := w.Write([]byte(" ")); err != nil {
+					return ErrWrite
+				}
+				if _, err := w.Write(node.Data); err != nil {
 					return ErrWrite
 				}
 			}
 			if atRule.Block != nil {
-				if _, err := w.Write([]byte(atRule.Block.Open.Data)); err != nil {
+				if _, err := w.Write(atRule.Block.Open.Data); err != nil {
 					return ErrWrite
 				}
 				if err := writeNodes(w, atRule.Block.Nodes); err != nil {
 					return err
 				}
-				if _, err := w.Write([]byte(atRule.Block.Close.Data)); err != nil {
+				if _, err := w.Write(atRule.Block.Close.Data); err != nil {
 					return ErrWrite
 				}
 			} else {
@@ -470,18 +475,18 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 			}
 		case css.BlockNode:
 			block := n.(*css.NodeBlock)
-			if _, err := w.Write([]byte(block.Open.Data)); err != nil {
+			if _, err := w.Write(block.Open.Data); err != nil {
 				return ErrWrite
 			}
 			if err := writeNodes(w, block.Nodes); err != nil {
 				return err
 			}
-			if _, err := w.Write([]byte(block.Close.Data)); err != nil {
+			if _, err := w.Write(block.Close.Data); err != nil {
 				return ErrWrite
 			}
 		case css.TokenNode:
 			token := n.(*css.NodeToken)
-			if _, err := w.Write([]byte(token.Data)); err != nil {
+			if _, err := w.Write(token.Data); err != nil {
 				return ErrWrite
 			}
 		}
@@ -490,7 +495,10 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 }
 
 func writeDecl(w io.Writer, decl *css.NodeDeclaration) error {
-	if _, err := w.Write([]byte(decl.Prop.Data + ":")); err != nil {
+	if _, err := w.Write(decl.Prop.Data); err != nil {
+		return ErrWrite
+	}
+	if _, err := w.Write([]byte(":")); err != nil {
 		return ErrWrite
 	}
 	prevDelim := false
@@ -502,7 +510,7 @@ func writeDecl(w io.Writer, decl *css.NodeDeclaration) error {
 			}
 		}
 		if val.Type() == css.TokenNode {
-			if _, err := w.Write([]byte(val.(*css.NodeToken).Data)); err != nil {
+			if _, err := w.Write(val.(*css.NodeToken).Data); err != nil {
 				return ErrWrite
 			}
 		} else if val.Type() == css.FunctionNode {
@@ -516,7 +524,7 @@ func writeDecl(w io.Writer, decl *css.NodeDeclaration) error {
 }
 
 func writeFunc(w io.Writer, f *css.NodeFunction) error {
-	if _, err := w.Write([]byte(f.Func.Data)); err != nil {
+	if _, err := w.Write(f.Func.Data); err != nil {
 		return ErrWrite
 	}
 	for j, arg := range f.Args {
@@ -526,14 +534,14 @@ func writeFunc(w io.Writer, f *css.NodeFunction) error {
 			}
 		}
 		if arg.Key != nil {
-			if _, err := w.Write([]byte(arg.Key.Data)); err != nil {
+			if _, err := w.Write(arg.Key.Data); err != nil {
 				return ErrWrite
 			}
 			if _, err := w.Write([]byte("=")); err != nil {
 				return ErrWrite
 			}
 		}
-		if _, err := w.Write([]byte(arg.Val.Data)); err != nil {
+		if _, err := w.Write(arg.Val.Data); err != nil {
 			return ErrWrite
 		}
 	}
