@@ -41,7 +41,7 @@ Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/
 [HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower. According to HTML Compressor, it produces smaller files than a couple of other libraries, which means `minify.HTML` does better than all.
 
 ## CSS
-The CSS minifier is quite basic and needs more work. It currently:
+The CSS minifier is sufficient but could use more work. It currently:
 
 - removes most unnecessary whitespace
 - shortens color codes (by using hexadecimal color codes or color identifiers)

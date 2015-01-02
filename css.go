@@ -198,7 +198,7 @@ func shortenSelector(sel *css.NodeSelector) {
 	for _, n := range sel.Nodes {
 		if n.TokenType == css.StringToken {
 			s := n.Data[1:len(n.Data)-1]
-			if css.IsIdent(s) {
+			if css.IsIdent([]byte(s)) {
 				n.Data = s
 			}
 		}
@@ -258,7 +258,7 @@ func shortenDecl(decl *css.NodeDeclaration) {
 				s := n.Data[1:len(n.Data)-1]
 				unquote := true
 				for _, fontName := range strings.Split(s, " ") {
-					if !css.IsIdent(fontName) {
+					if !css.IsIdent([]byte(fontName)) {
 						unquote = false
 						break
 					}
@@ -324,7 +324,7 @@ func shortenDecl(decl *css.NodeDeclaration) {
 					s := n.Data[4:len(n.Data)-1]
 					if s[0] == '"' || s[0] == '\'' {
 						s = s[1:len(s)-1]
-						if css.IsUrlUnquoted(s) {
+						if css.IsUrlUnquoted([]byte(s)) {
 							n.Data = "url("+s+")"
 						}
 					}
@@ -340,7 +340,8 @@ func shortenToken(token *css.NodeToken) *css.NodeToken {
 		if token.TokenType == css.PercentageToken {
 			val = val[:len(val)-1]
 		} else if token.TokenType == css.DimensionToken {
-			val, _ = css.SplitDimensionToken(val)
+			num, _ := css.SplitDimensionToken([]byte(val))
+			val = string(num)
 		}
 
 		f, err := strconv.ParseFloat(val, 64)
