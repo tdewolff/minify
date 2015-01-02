@@ -217,10 +217,10 @@ func shortenDecl(decl *css.NodeDeclaration) {
 		}
 	}
 
-	prop := strings.ToLower(decl.Prop.String())
+	prop := strings.ToLower(decl.Prop.Data)
 	if prop == "outline" || prop == "font-weight" {
 		if len(decl.Vals) == 1 && decl.Vals[0].Type() == css.TokenNode {
-			val := strings.ToLower(decl.Vals[0].String())
+			val := strings.ToLower(decl.Vals[0].(*css.NodeToken).Data)
 			if prop == "outline" && val == "none" {
 				decl.Vals[0] = css.NewToken(css.NumberToken, "0")
 			} else if prop == "font-weight" {
@@ -232,22 +232,22 @@ func shortenDecl(decl *css.NodeDeclaration) {
 			}
 		}
 	} else if prop == "margin" || prop == "padding" {
-		if len(decl.Vals) == 2 {
-			if decl.Vals[0].String() == decl.Vals[1].String() {
+		if len(decl.Vals) == 2 && decl.Vals[0].Type() == css.TokenNode && decl.Vals[1].Type() == css.TokenNode {
+			if decl.Vals[0].(*css.NodeToken).Data == decl.Vals[1].(*css.NodeToken).Data {
 				decl.Vals = []css.Node{decl.Vals[0]}
 			}
-		} else if len(decl.Vals) == 3 {
-			if decl.Vals[0].String() == decl.Vals[1].String() && decl.Vals[0].String() == decl.Vals[2].String() {
+		} else if len(decl.Vals) == 3 && decl.Vals[0].Type() == css.TokenNode && decl.Vals[1].Type() == css.TokenNode && decl.Vals[2].Type() == css.TokenNode {
+			if decl.Vals[0].(*css.NodeToken).Data == decl.Vals[1].(*css.NodeToken).Data && decl.Vals[0].(*css.NodeToken).Data == decl.Vals[2].(*css.NodeToken).Data {
 				decl.Vals = []css.Node{decl.Vals[0]}
-			} else if decl.Vals[0].String() == decl.Vals[2].String() {
+			} else if decl.Vals[0].(*css.NodeToken).Data == decl.Vals[2].(*css.NodeToken).Data {
 				decl.Vals = []css.Node{decl.Vals[0], decl.Vals[1]}
 			}
-		} else if len(decl.Vals) == 4 {
-			if decl.Vals[0].String() == decl.Vals[1].String() && decl.Vals[0].String() == decl.Vals[2].String() && decl.Vals[0].String() == decl.Vals[3].String() {
+		} else if len(decl.Vals) == 4 && decl.Vals[0].Type() == css.TokenNode && decl.Vals[1].Type() == css.TokenNode && decl.Vals[2].Type() == css.TokenNode && decl.Vals[3].Type() == css.TokenNode {
+			if decl.Vals[0].(*css.NodeToken).Data == decl.Vals[1].(*css.NodeToken).Data && decl.Vals[0].(*css.NodeToken).Data == decl.Vals[2].(*css.NodeToken).Data && decl.Vals[0].(*css.NodeToken).Data == decl.Vals[3].(*css.NodeToken).Data {
 				decl.Vals = []css.Node{decl.Vals[0]}
-			} else if decl.Vals[0].String() == decl.Vals[2].String() && decl.Vals[1].String() == decl.Vals[3].String() {
+			} else if decl.Vals[0].(*css.NodeToken).Data == decl.Vals[2].(*css.NodeToken).Data && decl.Vals[1].(*css.NodeToken).Data == decl.Vals[3].(*css.NodeToken).Data {
 				decl.Vals = []css.Node{decl.Vals[0], decl.Vals[1]}
-			} else if decl.Vals[1].String() == decl.Vals[3].String() {
+			} else if decl.Vals[1].(*css.NodeToken).Data == decl.Vals[3].(*css.NodeToken).Data {
 				decl.Vals = []css.Node{decl.Vals[0], decl.Vals[1], decl.Vals[2]}
 			}
 		}
@@ -272,14 +272,14 @@ func shortenDecl(decl *css.NodeDeclaration) {
 		for i, val := range decl.Vals {
 			if val.Type() == css.FunctionNode {
 				f := val.(*css.NodeFunction)
-				if f.Func.String() == "rgba(" && len(f.Args) == 4 {
+				if f.Func.Data == "rgba(" && len(f.Args) == 4 {
 					d, _ := strconv.ParseFloat(f.Args[3].Val.Data, 32)
 					if math.Abs(d-1.0) < epsilon {
 						f.Func = css.NewToken(css.FunctionToken, "rgb(")
 						f.Args = f.Args[:len(f.Args)-1]
 					}
 				}
-				if f.Func.String() == "rgb(" && len(f.Args) == 3 {
+				if f.Func.Data == "rgb(" && len(f.Args) == 3 {
 					var err error
 					rgb := make([]byte, 3)
 					for j := 0; j < 3; j++ {
@@ -406,7 +406,7 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 				for j, sel := range selGroup.Selectors {
 					if len(sel.Nodes) == 1 {
 						tt := sel.Nodes[0].TokenType
-						op := sel.Nodes[0].String()
+						op := sel.Nodes[0].Data
 						if tt == css.DelimToken && (op == ">" || op == "+" || op == "~") || tt == css.IncludeMatchToken || tt == css.DashMatchToken ||
 							tt == css.PrefixMatchToken || tt == css.SuffixMatchToken || tt == css.SubstringMatchToken {
 							if _, err := w.Write([]byte(op)); err != nil {
@@ -421,8 +421,10 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 							return ErrWrite
 						}
 					}
-					if _, err := w.Write([]byte(sel.String())); err != nil {
-						return ErrWrite
+					for _, node := range sel.Nodes {
+						if _, err := w.Write([]byte(node.Data)); err != nil {
+							return ErrWrite
+						}
 					}
 					prevOperator = false
 				}
@@ -445,22 +447,22 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 			}
 		case css.AtRuleNode:
 			atRule := n.(*css.NodeAtRule)
-			if _, err := w.Write([]byte(atRule.At.String())); err != nil {
+			if _, err := w.Write([]byte(atRule.At.Data)); err != nil {
 				return ErrWrite
 			}
 			for _, node := range atRule.Nodes {
-				if _, err := w.Write([]byte(" " + node.String())); err != nil {
+				if _, err := w.Write([]byte(" " + node.Data)); err != nil {
 					return ErrWrite
 				}
 			}
 			if atRule.Block != nil {
-				if _, err := w.Write([]byte(atRule.Block.Open.String())); err != nil {
+				if _, err := w.Write([]byte(atRule.Block.Open.Data)); err != nil {
 					return ErrWrite
 				}
 				if err := writeNodes(w, atRule.Block.Nodes); err != nil {
 					return err
 				}
-				if _, err := w.Write([]byte(atRule.Block.Close.String())); err != nil {
+				if _, err := w.Write([]byte(atRule.Block.Close.Data)); err != nil {
 					return ErrWrite
 				}
 			} else {
@@ -468,17 +470,18 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 			}
 		case css.BlockNode:
 			block := n.(*css.NodeBlock)
-			if _, err := w.Write([]byte(block.Open.String())); err != nil {
+			if _, err := w.Write([]byte(block.Open.Data)); err != nil {
 				return ErrWrite
 			}
 			if err := writeNodes(w, block.Nodes); err != nil {
 				return err
 			}
-			if _, err := w.Write([]byte(block.Close.String())); err != nil {
+			if _, err := w.Write([]byte(block.Close.Data)); err != nil {
 				return ErrWrite
 			}
-		default:
-			if _, err := w.Write([]byte(n.String())); err != nil {
+		case css.TokenNode:
+			token := n.(*css.NodeToken)
+			if _, err := w.Write([]byte(token.Data)); err != nil {
 				return ErrWrite
 			}
 		}
@@ -487,7 +490,7 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 }
 
 func writeDecl(w io.Writer, decl *css.NodeDeclaration) error {
-	if _, err := w.Write([]byte(decl.Prop.String() + ":")); err != nil {
+	if _, err := w.Write([]byte(decl.Prop.Data + ":")); err != nil {
 		return ErrWrite
 	}
 	prevDelim := false
@@ -498,10 +501,44 @@ func writeDecl(w io.Writer, decl *css.NodeDeclaration) error {
 				return ErrWrite
 			}
 		}
-		if _, err := w.Write([]byte(val.String())); err != nil {
-			return ErrWrite
+		if val.Type() == css.TokenNode {
+			if _, err := w.Write([]byte(val.(*css.NodeToken).Data)); err != nil {
+				return ErrWrite
+			}
+		} else if val.Type() == css.FunctionNode {
+			if err := writeFunc(w, val.(*css.NodeFunction)); err != nil {
+				return err
+			}
 		}
 		prevDelim = currDelim
+	}
+	return nil
+}
+
+func writeFunc(w io.Writer, f *css.NodeFunction) error {
+	if _, err := w.Write([]byte(f.Func.Data)); err != nil {
+		return ErrWrite
+	}
+	for j, arg := range f.Args {
+		if j > 0 {
+			if _, err := w.Write([]byte(",")); err != nil {
+				return ErrWrite
+			}
+		}
+		if arg.Key != nil {
+			if _, err := w.Write([]byte(arg.Key.Data)); err != nil {
+				return ErrWrite
+			}
+			if _, err := w.Write([]byte("=")); err != nil {
+				return ErrWrite
+			}
+		}
+		if _, err := w.Write([]byte(arg.Val.Data)); err != nil {
+			return ErrWrite
+		}
+	}
+	if _, err := w.Write([]byte(")")); err != nil {
+		return ErrWrite
 	}
 	return nil
 }
