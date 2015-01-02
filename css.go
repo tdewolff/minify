@@ -370,6 +370,10 @@ func shortenToken(token *css.NodeToken) *css.NodeToken {
 		} else {
 			token.Data = strings.ToUpper(token.Data)
 		}
+	} else if token.TokenType == css.StringToken {
+		token.Data = strings.Replace(token.Data, "\\\r\n", "", -1)
+		token.Data = strings.Replace(token.Data, "\\\r", "", -1)
+		token.Data = strings.Replace(token.Data, "\\\n", "", -1)
 	}
 	return token
 }
