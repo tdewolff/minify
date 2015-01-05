@@ -41,15 +41,30 @@ Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/
 [HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower. According to HTML Compressor, it produces smaller files than a couple of other libraries, which means `minify.HTML` does better than all.
 
 ## CSS
-The CSS minifier is sufficient but could use more work. It currently:
+The CSS minifier is very fast and complete, but will only use safe minifications:
 
-- removes most unnecessary whitespace
-- shortens color codes (by using hexadecimal color codes or color identifiers)
-- shortens zero values (`0em` &#8594; `0`)
-- shortens single `margin`/`padding` values (`margin:1px 1px` &#8594; `margin:1px`)
-- shortens a few other values (`outline:none` &#8594; `outline:0`)
+- remove comments and (most) whitespace
+- remove trailing semicolon(s)
+- remove empty rulesets
+- optimize `margin`, `padding` and `border-width` number of sides
+- remove unnecessary decimal zeros and the `+` sign
+- remove dimensions for zero values
+- remove quotes for URLs
+- rewrite hex colors to/from color names, or to 3 digit hex
+- rewrite `rgb(` and `rgba(` colors to hex/name when possible
+- replace `font-weight` `normal` and `bold` by numbers
+- replace `none` for `border`, `background` and `outline`
+- lowercase all identifiers except class' and ids
+- shorten MS alpha function
+- remove repeated selectors
 
-In the future it needs to be able to collapse blocks with the same identifier, multiple `margin`/`padding`/`background`/... declarations into one, etc.
+It does, on purpose, not use the following unsafe techniques (due to the cascading nature of CSS):
+
+- collapse multiple declarations or duplications
+- (partially) merge rulesets
+- (partially) split rulesets
+
+It's great that so many other tools make comparison tables: http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html, http://www.phpied.com/css-minifiers-comparison/ and http://goalsmashers.github.io/css-minification-benchmark/. From the last link, CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented unsafe techniques, meh.
 
 ## Installation
 
