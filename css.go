@@ -170,21 +170,33 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 	return writeNodes(w, stylesheet.Nodes)
 }
 
+////////////////////////////////////////////////////////////////
+
 func shortenNodes(nodes []css.Node) {
-	for _, n := range nodes {
+	inHeader := true
+	for i, n := range nodes {
+		if inHeader && n.Type() != css.AtRuleNode {
+			inHeader = false
+		}
 		switch n.Type() {
 		case css.DeclarationNode:
 			shortenDecl(n.(*css.NodeDeclaration))
 		case css.RulesetNode:
-			for _, selGroup := range n.(*css.NodeRuleset).SelGroups {
+			ruleset := n.(*css.NodeRuleset)
+			for _, selGroup := range ruleset.SelGroups {
 				for _, sel := range selGroup.Selectors {
 					shortenSelector(sel)
 				}
 			}
-			for _, decl := range n.(*css.NodeRuleset).Decls {
+			for _, decl := range ruleset.Decls {
 				shortenDecl(decl)
 			}
+			removeRepeatingSelGroups(ruleset)
 		case css.AtRuleNode:
+			atRule := n.(*css.NodeAtRule)
+			if !inHeader && (bytes.Equal(atRule.At.Data, []byte("@charset")) || bytes.Equal(atRule.At.Data, []byte("@import"))) {
+				nodes[i] = css.NewToken(css.DelimToken, []byte(""))
+			}
 			if n.(*css.NodeAtRule).Block != nil {
 				shortenNodes(n.(*css.NodeAtRule).Block.Nodes)
 			}
@@ -218,20 +230,13 @@ func shortenDecl(decl *css.NodeDeclaration) {
 	}
 
 	prop := bytes.ToLower(decl.Prop.Data)
-	if bytes.Equal(prop, []byte("outline")) || bytes.Equal(prop, []byte("font-weight")) {
-		if len(decl.Vals) == 1 && decl.Vals[0].Type() == css.TokenNode {
-			val := bytes.ToLower(decl.Vals[0].(*css.NodeToken).Data)
-			if bytes.Equal(prop, []byte("outline")) && bytes.Equal(val, []byte("none")) {
-				decl.Vals[0] = css.NewToken(css.NumberToken, []byte("0"))
-			} else if bytes.Equal(prop, []byte("font-weight")) {
-				if bytes.Equal(val, []byte("normal")) {
-					decl.Vals[0] = css.NewToken(css.NumberToken, []byte("400"))
-				} else if bytes.Equal(val, []byte("bold")) {
-					decl.Vals[0] = css.NewToken(css.NumberToken, []byte("700"))
-				}
-			}
+	if bytes.Equal(prop, []byte("outline")) || bytes.Equal(prop, []byte("background")) || bytes.Equal(prop, []byte("border")) {
+		if len(decl.Vals) == 1 && decl.Vals[0].Type() == css.TokenNode && bytes.Equal(bytes.ToLower(decl.Vals[0].(*css.NodeToken).Data), []byte("none")) {
+			decl.Vals[0] = css.NewToken(css.NumberToken, []byte("0"))
 		}
-	} else if bytes.Equal(prop, []byte("margin")) || bytes.Equal(prop, []byte("padding")) {
+	}
+
+	if bytes.Equal(prop, []byte("margin")) || bytes.Equal(prop, []byte("padding")) {
 		if len(decl.Vals) == 2 && decl.Vals[0].Type() == css.TokenNode && decl.Vals[1].Type() == css.TokenNode {
 			if bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[1].(*css.NodeToken).Data) {
 				decl.Vals = []css.Node{decl.Vals[0]}
@@ -249,6 +254,15 @@ func shortenDecl(decl *css.NodeDeclaration) {
 				decl.Vals = []css.Node{decl.Vals[0], decl.Vals[1]}
 			} else if bytes.Equal(decl.Vals[1].(*css.NodeToken).Data, decl.Vals[3].(*css.NodeToken).Data) {
 				decl.Vals = []css.Node{decl.Vals[0], decl.Vals[1], decl.Vals[2]}
+			}
+		}
+	} else if bytes.Equal(prop, []byte("font-weight")) {
+		if len(decl.Vals) == 1 && decl.Vals[0].Type() == css.TokenNode {
+			val := bytes.ToLower(decl.Vals[0].(*css.NodeToken).Data)
+			if bytes.Equal(val, []byte("normal")) {
+				decl.Vals[0] = css.NewToken(css.NumberToken, []byte("400"))
+			} else if bytes.Equal(val, []byte("bold")) {
+				decl.Vals[0] = css.NewToken(css.NumberToken, []byte("700"))
 			}
 		}
 	} else if bytes.Equal(prop, []byte("font-family")) {
@@ -379,6 +393,8 @@ func shortenToken(token *css.NodeToken) *css.NodeToken {
 	return token
 }
 
+////////////////////////////////////////////////////////////////
+
 func writeNodes(w io.Writer, nodes []css.Node) error {
 	semicolonQueued := false
 	for _, n := range nodes {
@@ -449,6 +465,9 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 			}
 		case css.AtRuleNode:
 			atRule := n.(*css.NodeAtRule)
+			if len(atRule.Nodes) == 0 && atRule.Block == nil {
+				break
+			}
 			if _, err := w.Write(atRule.At.Data); err != nil {
 				return ErrWrite
 			}
@@ -549,4 +568,41 @@ func writeFunc(w io.Writer, f *css.NodeFunction) error {
 		return ErrWrite
 	}
 	return nil
+}
+
+////////////////////////////////////////////////////////////////
+
+func removeRepeatingSelGroups(ruleset *css.NodeRuleset) {
+	repeatingSelGroups := []int{}
+	for i, selGroup := range ruleset.SelGroups {
+		for j, selGroup2 := range ruleset.SelGroups[i+1:] {
+			if equalSelGroup(selGroup, selGroup2) {
+				repeatingSelGroups = append(repeatingSelGroups, i+j+1)
+			}
+		}
+	}
+	for _, i := range repeatingSelGroups {
+		ruleset.SelGroups = append(ruleset.SelGroups[:i], ruleset.SelGroups[i+1:]...)
+	}
+}
+
+////////////////////////////////////////////////////////////////
+
+func equalSelGroup(a *css.NodeSelectorGroup, b *css.NodeSelectorGroup) bool {
+	if len(a.Selectors) != len(b.Selectors) {
+		return false
+	}
+	for i, p := range a.Selectors {
+		q := b.Selectors[i]
+		if len(p.Nodes) != len(q.Nodes) {
+			return false
+		}
+		for j, r := range p.Nodes {
+			s := q.Nodes[j]
+			if !bytes.Equal(r.Data, s.Data) {
+				return false
+			}
+		}
+	}
+	return true
 }

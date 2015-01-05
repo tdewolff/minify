@@ -46,6 +46,10 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "background:url('http://domain.com/image.png');", "background:url(http://domain.com/image.png)")
 	helperCSS(t, "filter: progid : DXImageTransform.Microsoft.BasicImage(rotation=1);", "filter:progid:DXImageTransform.Microsoft.BasicImage(rotation=1)")
 	helperCSS(t, "content: \"a\\\nb\";", "content:\"ab\"")
+	helperCSS(t, "color:#fff;@charset x;", "color:#FFF")
+	helperCSS(t, "color:#fff;@import x;", "color:#FFF")
+	helperCSS(t, "@charset x;@import x;", "@charset x;@import x")
+	helperCSS(t, "@charset;@import;", "")
 
 	helperCSS(t, "font:27px/13px arial,sans-serif", "font:27px/13px arial,sans-serif")
 	helperCSS(t, "text-decoration:none!important", "text-decoration:none!important")
@@ -55,6 +59,9 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "margin:0.5em", "margin:.5em")
 	helperCSS(t, "color:#c0c0c0", "color:silver")
 	helperCSS(t, "input[type=\"radio\"]{x:y}", "input[type=radio]{x:y}")
+
+	// advanced
+	helperCSS(t, "test,test2,test { x:y; }", "test,test2{x:y}")
 
 	// coverage
 	helperCSS(t, "margin: 1 1;", "margin:1")
