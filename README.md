@@ -58,13 +58,13 @@ The CSS minifier is very fast and complete, but will only use safe minifications
 - shorten MS alpha function
 - remove repeated selectors
 
-It does, on purpose, not use the following unsafe techniques (due to the cascading nature of CSS):
+It does purposely not use the following unsafe (due to the cascading nature of CSS) techniques:
 
-- collapse multiple declarations or duplications
+- collapse multiple or duplicative declarations
 - (partially) merge rulesets
 - (partially) split rulesets
 
-It's great that so many other tools make comparison tables: http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html, http://www.phpied.com/css-minifiers-comparison/ and http://goalsmashers.github.io/css-minification-benchmark/. From the last link, CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented unsafe techniques, meh.
+It's great that so many other tools make comparison tables: [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full).html, [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). From the last link, this CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented unsafe techniques..., meh.
 
 ## Installation
 
