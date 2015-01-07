@@ -479,79 +479,81 @@ func combineDecls(ruleset *css.NodeRuleset) {
 		}
 	}
 
-	if rulesetPropIndex(ruleset, []byte("font")) == -1 {
-		fontIndices := rulesetPropIndices(ruleset, [][]byte{[]byte("font-style"), []byte("font-variant"), []byte("font-weight"), []byte("font-size"), []byte("line-height"), []byte("font-family")})
-		if fontIndices != nil {
-			font := ruleset.Decls[fontIndices[0]]
-			font.Prop.Data = []byte("font")
-			font.Vals = append(font.Vals, ruleset.Decls[fontIndices[1]].Vals...)
-			font.Vals = append(font.Vals, ruleset.Decls[fontIndices[2]].Vals...)
-			font.Vals = append(font.Vals, ruleset.Decls[fontIndices[3]].Vals...)
-			font.Vals = append(font.Vals, css.NewToken(css.DelimToken, []byte("/")))
-			font.Vals = append(font.Vals, ruleset.Decls[fontIndices[4]].Vals...)
-			font.Vals = append(font.Vals, ruleset.Decls[fontIndices[5]].Vals...)
-			removed := 0
-			for _, i := range fontIndices[1:] {
-				ruleset.Decls = append(ruleset.Decls[:i-removed], ruleset.Decls[i-removed+1:]...)
-				removed++
+	if len(ruleset.Decls) > 2 { // optimization for small rulesets
+		if rulesetPropIndex(ruleset, []byte("font")) == -1 {
+			fontIndices := rulesetPropIndices(ruleset, [][]byte{[]byte("font-style"), []byte("font-variant"), []byte("font-weight"), []byte("font-size"), []byte("line-height"), []byte("font-family")})
+			if fontIndices != nil {
+				font := ruleset.Decls[fontIndices[0]]
+				font.Prop.Data = []byte("font")
+				font.Vals = append(font.Vals, ruleset.Decls[fontIndices[1]].Vals...)
+				font.Vals = append(font.Vals, ruleset.Decls[fontIndices[2]].Vals...)
+				font.Vals = append(font.Vals, ruleset.Decls[fontIndices[3]].Vals...)
+				font.Vals = append(font.Vals, css.NewToken(css.DelimToken, []byte("/")))
+				font.Vals = append(font.Vals, ruleset.Decls[fontIndices[4]].Vals...)
+				font.Vals = append(font.Vals, ruleset.Decls[fontIndices[5]].Vals...)
+				removed := 0
+				for _, i := range fontIndices[1:] {
+					ruleset.Decls = append(ruleset.Decls[:i-removed], ruleset.Decls[i-removed+1:]...)
+					removed++
+				}
 			}
 		}
-	}
 
-	replaceBy := func(ruleset *css.NodeRuleset, substituent []byte, props [][]byte) {
-		if indices := rulesetPropIndices(ruleset, props); indices != nil && len(indices) > 0 {
-			node := ruleset.Decls[indices[0]]
-			node.Prop.Data = []byte(substituent)
-			for _, i := range indices[1:] {
-				node.Vals = append(node.Vals, ruleset.Decls[indices[i]].Vals...)
-			}
-			removed := 0
-			for _, i := range indices[1:] {
-				ruleset.Decls = append(ruleset.Decls[:i-removed], ruleset.Decls[i-removed+1:]...)
-				removed++
+		replaceBy := func(ruleset *css.NodeRuleset, substituent []byte, props [][]byte) {
+			if indices := rulesetPropIndices(ruleset, props); indices != nil && len(indices) > 0 {
+				node := ruleset.Decls[indices[0]]
+				node.Prop.Data = []byte(substituent)
+				for _, i := range indices[1:] {
+					node.Vals = append(node.Vals, ruleset.Decls[indices[i]].Vals...)
+				}
+				removed := 0
+				for _, i := range indices[1:] {
+					ruleset.Decls = append(ruleset.Decls[:i-removed], ruleset.Decls[i-removed+1:]...)
+					removed++
+				}
 			}
 		}
-	}
 
-	if rulesetPropIndex(ruleset, []byte("background")) == -1 {
-		replaceBy(ruleset, []byte("background"), [][]byte{[]byte("background-style"), []byte("background-image"), []byte("background-repeat"), []byte("background-attachment"), []byte("background-position")})
-	}
-	if rulesetPropIndex(ruleset, []byte("margin")) == -1 {
-		replaceBy(ruleset, []byte("margin"), [][]byte{[]byte("margin-top"), []byte("margin-right"), []byte("margin-bottom"), []byte("margin-left")})
-	}
-	if rulesetPropIndex(ruleset, []byte("padding")) == -1 {
-		replaceBy(ruleset, []byte("padding"), [][]byte{[]byte("padding-top"), []byte("padding-right"), []byte("padding-bottom"), []byte("padding-left")})
-	}
-	if rulesetPropIndex(ruleset, []byte("border")) == -1 {
-		if rulesetPropIndex(ruleset, []byte("border-color")) == -1 {
-			replaceBy(ruleset, []byte("border-color"), [][]byte{[]byte("border-color-top"), []byte("border-color-right"), []byte("border-color-bottom"), []byte("border-color-left")})
+		if rulesetPropIndex(ruleset, []byte("background")) == -1 {
+			replaceBy(ruleset, []byte("background"), [][]byte{[]byte("background-style"), []byte("background-image"), []byte("background-repeat"), []byte("background-attachment"), []byte("background-position")})
 		}
-		if rulesetPropIndex(ruleset, []byte("border-style")) == -1 {
-			replaceBy(ruleset, []byte("border-style"), [][]byte{[]byte("border-style-top"), []byte("border-style-right"), []byte("border-style-bottom"), []byte("border-style-left")})
+		if rulesetPropIndex(ruleset, []byte("margin")) == -1 {
+			replaceBy(ruleset, []byte("margin"), [][]byte{[]byte("margin-top"), []byte("margin-right"), []byte("margin-bottom"), []byte("margin-left")})
 		}
-		if rulesetPropIndex(ruleset, []byte("border-width")) == -1 {
-			replaceBy(ruleset, []byte("border-width"), [][]byte{[]byte("border-width-top"), []byte("border-width-right"), []byte("border-width-bottom"), []byte("border-width-left")})
+		if rulesetPropIndex(ruleset, []byte("padding")) == -1 {
+			replaceBy(ruleset, []byte("padding"), [][]byte{[]byte("padding-top"), []byte("padding-right"), []byte("padding-bottom"), []byte("padding-left")})
 		}
 		if rulesetPropIndex(ruleset, []byte("border")) == -1 {
-			if rulesetPropIndex(ruleset, []byte("border-color")) == -1 && rulesetPropIndex(ruleset, []byte("border-style")) == -1 && rulesetPropIndex(ruleset, []byte("border-width")) == -1 {
-				replaceBy(ruleset, []byte("border"), [][]byte{[]byte("border-top"), []byte("border-right"), []byte("border-bottom"), []byte("border-left")})
+			if rulesetPropIndex(ruleset, []byte("border-color")) == -1 {
+				replaceBy(ruleset, []byte("border-color"), [][]byte{[]byte("border-color-top"), []byte("border-color-right"), []byte("border-color-bottom"), []byte("border-color-left")})
 			}
-			if rulesetPropIndex(ruleset, []byte("border-top")) == -1 && rulesetPropIndex(ruleset, []byte("border-right")) == -1 && rulesetPropIndex(ruleset, []byte("border-bottom")) == -1 && rulesetPropIndex(ruleset, []byte("border-left")) == -1 {
-				replaceBy(ruleset, []byte("border"), [][]byte{[]byte("border-width"), []byte("border-style"), []byte("border-color")})
+			if rulesetPropIndex(ruleset, []byte("border-style")) == -1 {
+				replaceBy(ruleset, []byte("border-style"), [][]byte{[]byte("border-style-top"), []byte("border-style-right"), []byte("border-style-bottom"), []byte("border-style-left")})
+			}
+			if rulesetPropIndex(ruleset, []byte("border-width")) == -1 {
+				replaceBy(ruleset, []byte("border-width"), [][]byte{[]byte("border-width-top"), []byte("border-width-right"), []byte("border-width-bottom"), []byte("border-width-left")})
+			}
+			if rulesetPropIndex(ruleset, []byte("border")) == -1 {
+				if rulesetPropIndex(ruleset, []byte("border-color")) == -1 && rulesetPropIndex(ruleset, []byte("border-style")) == -1 && rulesetPropIndex(ruleset, []byte("border-width")) == -1 {
+					replaceBy(ruleset, []byte("border"), [][]byte{[]byte("border-top"), []byte("border-right"), []byte("border-bottom"), []byte("border-left")})
+				}
+				if rulesetPropIndex(ruleset, []byte("border-top")) == -1 && rulesetPropIndex(ruleset, []byte("border-right")) == -1 && rulesetPropIndex(ruleset, []byte("border-bottom")) == -1 && rulesetPropIndex(ruleset, []byte("border-left")) == -1 {
+					replaceBy(ruleset, []byte("border"), [][]byte{[]byte("border-width"), []byte("border-style"), []byte("border-color")})
+				}
 			}
 		}
-	}
-	if rulesetPropIndex(ruleset, []byte("outline")) == -1 {
-		replaceBy(ruleset, []byte("outline"), [][]byte{[]byte("outline-width"), []byte("outline-style"), []byte("outline-color")})
-	}
-	if rulesetPropIndex(ruleset, []byte("list-style")) == -1 {
-		replaceBy(ruleset, []byte("list-style"), [][]byte{[]byte("list-style-type"), []byte("list-style-position"), []byte("list-style-image")})
-	}
-	if rulesetPropIndex(ruleset, []byte("border-radius")) == -1 {
-		replaceBy(ruleset, []byte("border-radius"), [][]byte{[]byte("border-top-left-radius"), []byte("border-top-right-radius"), []byte("border-bottom-left-radius"), []byte("border-bottom-right-radius")})
-	}
-	if rulesetPropIndex(ruleset, []byte("cue")) == -1 {
-		replaceBy(ruleset, []byte("cue"), [][]byte{[]byte("cue-before"), []byte("cue-after")})
+		if rulesetPropIndex(ruleset, []byte("outline")) == -1 {
+			replaceBy(ruleset, []byte("outline"), [][]byte{[]byte("outline-width"), []byte("outline-style"), []byte("outline-color")})
+		}
+		if rulesetPropIndex(ruleset, []byte("list-style")) == -1 {
+			replaceBy(ruleset, []byte("list-style"), [][]byte{[]byte("list-style-type"), []byte("list-style-position"), []byte("list-style-image")})
+		}
+		if rulesetPropIndex(ruleset, []byte("border-radius")) == -1 {
+			replaceBy(ruleset, []byte("border-radius"), [][]byte{[]byte("border-top-left-radius"), []byte("border-top-right-radius"), []byte("border-bottom-left-radius"), []byte("border-bottom-right-radius")})
+		}
+		if rulesetPropIndex(ruleset, []byte("cue")) == -1 {
+			replaceBy(ruleset, []byte("cue"), [][]byte{[]byte("cue-before"), []byte("cue-after")})
+		}
 	}
 }
 
