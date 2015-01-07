@@ -52,8 +52,8 @@ The CSS minifier is very fast and complete, but will only use safe minifications
 - remove quotes for font families and make lowercase
 - rewrite hex colors to/from color names, or to 3 digit hex
 - rewrite `rgb(` and `rgba(` colors to hex/name when possible
-- replace `font-weight` `normal` and `bold` by numbers
-- replace `none` for `border`, `background` and `outline`
+- replace `normal` and `bold` by numbers for `font-weight` and `font`
+- replace `none` &#8594; `0` for `border`, `background` and `outline`
 - lowercase all identifiers except classes, IDs and URLs
 - shorten MS alpha function
 - remove empty rulesets
@@ -66,9 +66,9 @@ It does purposely not use the following techniques:
 
 - (partially) merge rulesets
 - (partially) split rulesets
-- collapse multiple declarations when main declaration is defined within a ruleset (don't put `font-weight` with an already existing `font`)
-- put nested ID selector at the front (`body > div#elem p` -> `#elem p`)
-- put space after pseudo-selectors (legacy bug-preventing)
+- collapse multiple declarations when main declaration is defined within a ruleset (don't put `font-weight` within an already existing `font`, too complex)
+- put nested ID selector at the front (`body > div#elem p` &#8594; `#elem p`, unsafe)
+- put space after pseudo-selectors (IE6 is old, move on!)
 
 It's great that so many other tools make comparison tables: [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html), [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). From the last link, this CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented and often unsafe techniques, so that's fine.
 
