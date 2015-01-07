@@ -191,7 +191,8 @@ func shortenNodes(nodes []css.Node) {
 			for _, decl := range ruleset.Decls {
 				shortenDecl(decl)
 			}
-			removeDuplicateSelGroups(ruleset)
+			combineDecls(ruleset)
+			removeSelGroups(ruleset)
 		case css.AtRuleNode:
 			atRule := n.(*css.NodeAtRule)
 			if !inHeader && (bytes.Equal(atRule.At.Data, []byte("@charset")) || bytes.Equal(atRule.At.Data, []byte("@import"))) {
@@ -208,24 +209,36 @@ func shortenNodes(nodes []css.Node) {
 
 func shortenSelector(sel *css.NodeSelector) {
 	class := false
-	attr := false
-	for _, n := range sel.Nodes {
-		if n.TokenType == css.DelimToken && n.Data[0] == '.' {
-			class = true
-		} else if n.TokenType == css.LeftBracketToken {
-			attr = true
-		} else if n.TokenType == css.RightBracketToken {
-			attr = false
-		} else if n.TokenType == css.StringToken {
-			s := n.Data[1 : len(n.Data)-1]
-			if css.IsIdent([]byte(s)) {
-				n.Data = s
+	for i, n := range sel.Nodes {
+		if n.Type() == css.TokenNode {
+			token := n.(*css.NodeToken)
+			if token.TokenType == css.DelimToken && token.Data[0] == '.' {
+				class = true
+			} else if token.TokenType == css.IdentToken {
+				if !class {
+					token.Data = bytes.ToLower(token.Data)
+				}
+				class = false
 			}
-		} else if n.TokenType == css.IdentToken {
-			if !class && !attr {
-				n.Data = bytes.ToLower(n.Data)
+		} else if n.Type() == css.AttributeSelectorNode {
+			attr := n.(*css.NodeAttributeSelector)
+			for j, val := range attr.Vals {
+				if val.TokenType == css.StringToken {
+					s := val.Data[1 : len(val.Data)-1]
+					if css.IsIdent([]byte(s)) {
+						attr.Vals[j] = css.NewToken(css.IdentToken, s)
+					}
+				}
 			}
-			class = false
+			if (bytes.Equal(attr.Key.Data, []byte("id")) || bytes.Equal(attr.Key.Data, []byte("class"))) && attr.Op != nil && bytes.Equal(attr.Op.Data, []byte("=")) && len(attr.Vals) == 1 && css.IsIdent(attr.Vals[0].Data) {
+				if bytes.Equal(attr.Key.Data, []byte("id")) {
+					sel.Nodes[i] = css.NewToken(css.HashToken, append([]byte("#"), attr.Vals[0].Data...))
+				} else {
+					sel.Nodes[i] = css.NewToken(css.DelimToken, []byte("."))
+					sel.Nodes = append(append(sel.Nodes[:i+1], css.NewToken(css.IdentToken, attr.Vals[0].Data)), sel.Nodes[i+1:]...)
+					class = true
+				}
+			}
 		}
 	}
 }
@@ -254,7 +267,7 @@ func shortenDecl(decl *css.NodeDeclaration) {
 	decl.Prop.Data = bytes.ToLower(decl.Prop.Data)
 	prop := decl.Prop.Data
 
-	if bytes.Equal(prop, []byte("outline")) || bytes.Equal(prop, []byte("background")) || bytes.Equal(prop, []byte("border")) {
+	if bytes.HasPrefix(prop, []byte("outline")) || bytes.HasPrefix(prop, []byte("background")) || bytes.HasPrefix(prop, []byte("border")) {
 		if len(decl.Vals) == 1 && decl.Vals[0].Type() == css.TokenNode && bytes.Equal(bytes.ToLower(decl.Vals[0].(*css.NodeToken).Data), []byte("none")) {
 			decl.Vals[0] = css.NewToken(css.NumberToken, []byte("0"))
 		}
@@ -272,37 +285,41 @@ func shortenDecl(decl *css.NodeDeclaration) {
 				decl.Vals = []css.Node{decl.Vals[0], decl.Vals[1]}
 			}
 		} else if len(decl.Vals) == 4 && decl.Vals[0].Type() == css.TokenNode && decl.Vals[1].Type() == css.TokenNode && decl.Vals[2].Type() == css.TokenNode && decl.Vals[3].Type() == css.TokenNode {
-			if bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[1].(*css.NodeToken).Data) && bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[2].(*css.NodeToken).Data) && bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[3].(*css.NodeToken).Data) {
+			if bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[1].(*css.NodeToken).Data) &&
+			   bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[2].(*css.NodeToken).Data) &&
+			   bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[3].(*css.NodeToken).Data) {
 				decl.Vals = []css.Node{decl.Vals[0]}
-			} else if bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[2].(*css.NodeToken).Data) && bytes.Equal(decl.Vals[1].(*css.NodeToken).Data, decl.Vals[3].(*css.NodeToken).Data) {
+			} else if bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[2].(*css.NodeToken).Data) &&bytes.Equal(decl.Vals[1].(*css.NodeToken).Data, decl.Vals[3].(*css.NodeToken).Data) {
 				decl.Vals = []css.Node{decl.Vals[0], decl.Vals[1]}
 			} else if bytes.Equal(decl.Vals[1].(*css.NodeToken).Data, decl.Vals[3].(*css.NodeToken).Data) {
 				decl.Vals = []css.Node{decl.Vals[0], decl.Vals[1], decl.Vals[2]}
 			}
 		}
-	} else if bytes.Equal(prop, []byte("font-weight")) {
-		if len(decl.Vals) == 1 && decl.Vals[0].Type() == css.TokenNode {
-			val := bytes.ToLower(decl.Vals[0].(*css.NodeToken).Data)
-			if bytes.Equal(val, []byte("normal")) {
-				decl.Vals[0] = css.NewToken(css.NumberToken, []byte("400"))
-			} else if bytes.Equal(val, []byte("bold")) {
-				decl.Vals[0] = css.NewToken(css.NumberToken, []byte("700"))
-			}
-		}
-	} else if bytes.Equal(prop, []byte("font-family")) {
-		for _, val := range decl.Vals {
-			if val.Type() == css.TokenNode && val.(*css.NodeToken).TokenType == css.StringToken {
-				n := val.(*css.NodeToken)
-				s := n.Data[1 : len(n.Data)-1]
-				unquote := true
-				for _, fontName := range bytes.Split(s, []byte(" ")) {
-					if !css.IsIdent([]byte(fontName)) {
-						unquote = false
-						break
+	} else if bytes.HasPrefix(prop, []byte("font")) {
+		for i, val := range decl.Vals {
+			if val.Type() == css.TokenNode {
+				if val.(*css.NodeToken).TokenType == css.IdentToken {
+					if bytes.Equal(val.(*css.NodeToken).Data, []byte("normal")) && bytes.Equal(prop, []byte("font-weight")) { // normal could also be specified for font-variant, not just font-weight
+						decl.Vals[i] = css.NewToken(css.NumberToken, []byte("400"))
+					} else if bytes.Equal(val.(*css.NodeToken).Data, []byte("bold")) {
+						decl.Vals[i] = css.NewToken(css.NumberToken, []byte("700"))
 					}
-				}
-				if unquote {
-					n.Data = s
+				} else if val.(*css.NodeToken).TokenType == css.StringToken {
+					n := val.(*css.NodeToken)
+					n.Data = bytes.ToLower(n.Data)
+					s := n.Data[1 : len(n.Data)-1]
+					unquote := true
+					for _, fontName := range bytes.Split(s, []byte(" ")) {
+						// if len is zero, it contains two consecutive spaces
+						if len(fontName) == 0 || !css.IsIdent(fontName) || bytes.Equal(fontName, []byte("inherit")) || bytes.Equal(fontName, []byte("serif")) || bytes.Equal(fontName, []byte("sans-serif")) || bytes.Equal(fontName, []byte("monospace")) ||
+						   bytes.Equal(fontName, []byte("fantasy")) || bytes.Equal(fontName, []byte("cursive")) || bytes.Equal(fontName, []byte("initial")) || bytes.Equal(fontName, []byte("default")) {
+							unquote = false
+							break
+						}
+					}
+					if unquote {
+						n.Data = s
+					}
 				}
 			}
 		}
@@ -330,7 +347,7 @@ func shortenDecl(decl *css.NodeDeclaration) {
 			n := decl.Vals[0].(*css.NodeToken)
 			alpha := []byte("progid:DXImageTransform.Microsoft.Alpha(Opacity=")
 			if n.TokenType == css.StringToken && bytes.HasPrefix(n.Data[1:len(n.Data)-1], alpha) {
-				n.Data = append([]byte{n.Data[0]}, append([]byte("alpha(opacity="), n.Data[1+len(alpha):]...)...)
+				n.Data = append(append([]byte{n.Data[0]}, []byte("alpha(opacity=")...), n.Data[1+len(alpha):]...)
 			}
 		}
 	}  else {
@@ -394,7 +411,7 @@ func shortenDecl(decl *css.NodeDeclaration) {
 							s = s[1 : len(s)-1]
 						}
 					}
-					n.Data = append([]byte("url("), append(s, ')')...)
+					n.Data = append(append([]byte("url("), s...), ')')
 				}
 			}
 		}
@@ -415,9 +432,6 @@ func shortenToken(token *css.NodeToken) *css.NodeToken {
 		}
 		if math.Abs(f) < epsilon {
 			token.Data = []byte("0")
-			if token.TokenType == css.PercentageToken {
-				token.Data = append(token.Data, '%')
-			}
 		} else {
 			if len(num) > 0 && num[0] == '-' {
 				num = append([]byte{'-'}, bytes.TrimLeft(num[1:], "0")...)
@@ -453,6 +467,112 @@ func shortenToken(token *css.NodeToken) *css.NodeToken {
 
 ////////////////////////////////////////////////////////////////
 
+func combineDecls(ruleset *css.NodeRuleset) {
+	// remove duplicates
+	removed := 0
+	for i, decl := range ruleset.Decls {
+		for _, decl2 := range ruleset.Decls[i-removed+1:] {
+			if decl.Prop.Equals(decl2.Prop) {
+				ruleset.Decls = append(ruleset.Decls[:i-removed], ruleset.Decls[i-removed+1:]...)
+				removed++
+			}
+		}
+	}
+
+	if rulesetPropIndex(ruleset, []byte("font")) == -1 {
+		fontIndices := rulesetPropIndices(ruleset, [][]byte{[]byte("font-style"), []byte("font-variant"), []byte("font-weight"), []byte("font-size"), []byte("line-height"), []byte("font-family")})
+		if fontIndices != nil {
+			font := ruleset.Decls[fontIndices[0]]
+			font.Prop.Data = []byte("font")
+			font.Vals = append(font.Vals, ruleset.Decls[fontIndices[1]].Vals...)
+			font.Vals = append(font.Vals, ruleset.Decls[fontIndices[2]].Vals...)
+			font.Vals = append(font.Vals, ruleset.Decls[fontIndices[3]].Vals...)
+			font.Vals = append(font.Vals, css.NewToken(css.DelimToken, []byte("/")))
+			font.Vals = append(font.Vals, ruleset.Decls[fontIndices[4]].Vals...)
+			font.Vals = append(font.Vals, ruleset.Decls[fontIndices[5]].Vals...)
+			removed := 0
+			for _, i := range fontIndices[1:] {
+				ruleset.Decls = append(ruleset.Decls[:i-removed], ruleset.Decls[i-removed+1:]...)
+				removed++
+			}
+		}
+	}
+
+	replaceBy := func(ruleset *css.NodeRuleset, substituent []byte, props [][]byte) {
+		if indices := rulesetPropIndices(ruleset, props); indices != nil && len(indices) > 0 {
+			node := ruleset.Decls[indices[0]]
+			node.Prop.Data = []byte(substituent)
+			for _, i := range indices[1:] {
+				node.Vals = append(node.Vals, ruleset.Decls[indices[i]].Vals...)
+			}
+			removed := 0
+			for _, i := range indices[1:] {
+				ruleset.Decls = append(ruleset.Decls[:i-removed], ruleset.Decls[i-removed+1:]...)
+				removed++
+			}
+		}
+	}
+
+	if rulesetPropIndex(ruleset, []byte("background")) == -1 {
+		replaceBy(ruleset, []byte("background"), [][]byte{[]byte("background-style"), []byte("background-image"), []byte("background-repeat"), []byte("background-attachment"), []byte("background-position")})
+	}
+	if rulesetPropIndex(ruleset, []byte("margin")) == -1 {
+		replaceBy(ruleset, []byte("margin"), [][]byte{[]byte("margin-top"), []byte("margin-right"), []byte("margin-bottom"), []byte("margin-left")})
+	}
+	if rulesetPropIndex(ruleset, []byte("padding")) == -1 {
+		replaceBy(ruleset, []byte("padding"), [][]byte{[]byte("padding-top"), []byte("padding-right"), []byte("padding-bottom"), []byte("padding-left")})
+	}
+	if rulesetPropIndex(ruleset, []byte("border")) == -1 {
+		if rulesetPropIndex(ruleset, []byte("border-color")) == -1 {
+			replaceBy(ruleset, []byte("border-color"), [][]byte{[]byte("border-color-top"), []byte("border-color-right"), []byte("border-color-bottom"), []byte("border-color-left")})
+		}
+		if rulesetPropIndex(ruleset, []byte("border-style")) == -1 {
+			replaceBy(ruleset, []byte("border-style"), [][]byte{[]byte("border-style-top"), []byte("border-style-right"), []byte("border-style-bottom"), []byte("border-style-left")})
+		}
+		if rulesetPropIndex(ruleset, []byte("border-width")) == -1 {
+			replaceBy(ruleset, []byte("border-width"), [][]byte{[]byte("border-width-top"), []byte("border-width-right"), []byte("border-width-bottom"), []byte("border-width-left")})
+		}
+		if rulesetPropIndex(ruleset, []byte("border")) == -1 {
+			if rulesetPropIndex(ruleset, []byte("border-color")) == -1 && rulesetPropIndex(ruleset, []byte("border-style")) == -1 && rulesetPropIndex(ruleset, []byte("border-width")) == -1 {
+				replaceBy(ruleset, []byte("border"), [][]byte{[]byte("border-top"), []byte("border-right"), []byte("border-bottom"), []byte("border-left")})
+			}
+			if rulesetPropIndex(ruleset, []byte("border-top")) == -1 && rulesetPropIndex(ruleset, []byte("border-right")) == -1 && rulesetPropIndex(ruleset, []byte("border-bottom")) == -1 && rulesetPropIndex(ruleset, []byte("border-left")) == -1 {
+				replaceBy(ruleset, []byte("border"), [][]byte{[]byte("border-width"), []byte("border-style"), []byte("border-color")})
+			}
+		}
+	}
+	if rulesetPropIndex(ruleset, []byte("outline")) == -1 {
+		replaceBy(ruleset, []byte("outline"), [][]byte{[]byte("outline-width"), []byte("outline-style"), []byte("outline-color")})
+	}
+	if rulesetPropIndex(ruleset, []byte("list-style")) == -1 {
+		replaceBy(ruleset, []byte("list-style"), [][]byte{[]byte("list-style-type"), []byte("list-style-position"), []byte("list-style-image")})
+	}
+	if rulesetPropIndex(ruleset, []byte("border-radius")) == -1 {
+		replaceBy(ruleset, []byte("border-radius"), [][]byte{[]byte("border-top-left-radius"), []byte("border-top-right-radius"), []byte("border-bottom-left-radius"), []byte("border-bottom-right-radius")})
+	}
+	if rulesetPropIndex(ruleset, []byte("cue")) == -1 {
+		replaceBy(ruleset, []byte("cue"), [][]byte{[]byte("cue-before"), []byte("cue-after")})
+	}
+}
+
+////////////////////////////////////////////////////////////////
+
+func removeSelGroups(ruleset *css.NodeRuleset) {
+	repeatingSelGroups := []int{}
+	for i, selGroup := range ruleset.SelGroups {
+		for j, selGroup2 := range ruleset.SelGroups[i+1:] {
+			if selGroup.Equals(selGroup2) {
+				repeatingSelGroups = append(repeatingSelGroups, i+j+1)
+			}
+		}
+	}
+	for _, i := range repeatingSelGroups {
+		ruleset.SelGroups = append(ruleset.SelGroups[:i], ruleset.SelGroups[i+1:]...)
+	}
+}
+
+////////////////////////////////////////////////////////////////
+
 func writeNodes(w io.Writer, nodes []css.Node) error {
 	semicolonQueued := false
 	for _, n := range nodes {
@@ -479,9 +599,9 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 				}
 				prevOperator := false
 				for j, sel := range selGroup.Selectors {
-					if len(sel.Nodes) == 1 {
-						tt := sel.Nodes[0].TokenType
-						op := sel.Nodes[0].Data
+					if len(sel.Nodes) == 1 && sel.Nodes[0].Type() == css.TokenNode {
+						tt := sel.Nodes[0].(*css.NodeToken).TokenType
+						op := sel.Nodes[0].(*css.NodeToken).Data
 						// TODO: check if clause
 						if tt == css.DelimToken && len(op) == 1 && (op[0] == '>' || op[0] == '+' || op[0] == '~') || tt == css.IncludeMatchToken || tt == css.DashMatchToken ||
 							tt == css.PrefixMatchToken || tt == css.SuffixMatchToken || tt == css.SubstringMatchToken {
@@ -498,8 +618,23 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 						}
 					}
 					for _, node := range sel.Nodes {
-						if _, err := w.Write(node.Data); err != nil {
-							return ErrWrite
+						if node.Type() == css.TokenNode {
+							if _, err := w.Write(node.(*css.NodeToken).Data); err != nil {
+								return ErrWrite
+							}
+						} else if node.Type() == css.AttributeSelectorNode {
+							attr := node.(*css.NodeAttributeSelector)
+							if _, err := w.Write(append(append([]byte("["), attr.Key.Data...), attr.Op.Data...)); err != nil {
+								return ErrWrite
+							}
+							for _, val := range attr.Vals {
+								if _, err := w.Write(val.Data); err != nil {
+									return ErrWrite
+								}
+							}
+							if _, err := w.Write([]byte("]")); err != nil {
+								return ErrWrite
+							}
 						}
 					}
 					prevOperator = false
@@ -630,37 +765,24 @@ func writeFunc(w io.Writer, f *css.NodeFunction) error {
 
 ////////////////////////////////////////////////////////////////
 
-func removeDuplicateSelGroups(ruleset *css.NodeRuleset) {
-	repeatingSelGroups := []int{}
-	for i, selGroup := range ruleset.SelGroups {
-		for j, selGroup2 := range ruleset.SelGroups[i+1:] {
-			if equalSelGroup(selGroup, selGroup2) {
-				repeatingSelGroups = append(repeatingSelGroups, i+j+1)
-			}
+func rulesetPropIndex(ruleset *css.NodeRuleset, x []byte) int {
+	prop := css.NewToken(css.IdentToken, x)
+	for i, decl := range ruleset.Decls {
+		if decl.Prop.Equals(prop) {
+			return i
 		}
 	}
-	for _, i := range repeatingSelGroups {
-		ruleset.SelGroups = append(ruleset.SelGroups[:i], ruleset.SelGroups[i+1:]...)
-	}
+	return -1
 }
 
-////////////////////////////////////////////////////////////////
-
-func equalSelGroup(a *css.NodeSelectorGroup, b *css.NodeSelectorGroup) bool {
-	if len(a.Selectors) != len(b.Selectors) {
-		return false
-	}
-	for i, p := range a.Selectors {
-		q := b.Selectors[i]
-		if len(p.Nodes) != len(q.Nodes) {
-			return false
+func rulesetPropIndices(ruleset *css.NodeRuleset, x [][]byte) []int {
+	indices := []int{}
+	for i, prop := range x {
+		if rulesetPropIndex(ruleset, prop) == -1 {
+			indices = nil
+			break
 		}
-		for j, r := range p.Nodes {
-			s := q.Nodes[j]
-			if !bytes.Equal(r.Data, s.Data) {
-				return false
-			}
-		}
+		indices = append(indices, i)
 	}
-	return true
+	return indices
 }

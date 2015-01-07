@@ -30,7 +30,9 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "color: rgb(100%,100%,100%);", "color:#fff")
 	helperCSS(t, "color: rgba(255,0,0,1);", "color:red")
 	helperCSS(t, "font-weight: bold; font-weight: normal;", "font-weight:700;font-weight:400")
+	helperCSS(t, "font: bold \"Times new Roman\",\"Sans-Serif\";", "font:700 times new roman,\"sans-serif\"")
 	helperCSS(t, "outline: none;", "outline:0")
+	helperCSS(t, "border-left: none;", "border-left:0")
 	helperCSS(t, "margin: 1 1 1 1;", "margin:1")
 	helperCSS(t, "margin: 1 2 1 2;", "margin:1 2")
 	helperCSS(t, "margin: 1 2 3 2;", "margin:1 2 3")
@@ -42,7 +44,7 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "@import 'file';", "@import 'file'")
 	helperCSS(t, "@import 'file' { x:y; };", "@import 'file'{x:y}")
 	helperCSS(t, "<!-- x:y; -->", "<!--x:y-->")
-	helperCSS(t, "font-family:'Arial', 'Times New Roman';", "font-family:Arial,Times New Roman")
+	helperCSS(t, "font-family:'Arial', 'Times New Roman';", "font-family:arial,times new roman")
 	helperCSS(t, "background:url('http://domain.com/image.png');", "background:url(http://domain.com/image.png)")
 	helperCSS(t, "filter: progid : DXImageTransform.Microsoft.BasicImage(rotation=1);", "filter:progid:DXImageTransform.Microsoft.BasicImage(rotation=1)")
 	helperCSS(t, "content: \"a\\\nb\";", "content:\"ab\"")
@@ -73,6 +75,10 @@ func TestCSS(t *testing.T) {
 
 	// advanced
 	helperCSS(t, "test,test2,test { x:y; }", "test,test2{x:y}")
+	helperCSS(t, "test{ x:y; x:z; }", "test{x:z}")
+	helperCSS(t, "test[id=a]{x:y;}", "test#a{x:y}")
+	helperCSS(t, "test[class='b']{x:y;}", "test.b{x:y}")
+	helperCSS(t, "test{ font-style: italic; font-variant: small-caps; font-weight: bold; font-size: 12pt; line-height:110%; font-family:serif; }", "test{font:italic small-caps 700 12pt/110% serif}")
 
 	// coverage
 	helperCSS(t, "margin: 1 1;", "margin:1")
@@ -80,7 +86,7 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "margin: 1 1 1;", "margin:1")
 	helperCSS(t, "margin: 1 2 1;", "margin:1 2")
 	helperCSS(t, "margin: 1 2 3;", "margin:1 2 3")
-	helperCSS(t, "margin: 0%;", "margin:0%")
+	helperCSS(t, "margin: 0%;", "margin:0")
 	helperCSS(t, "color: rgb(255,64,64);", "color:#ff4040")
 	helperCSS(t, "color: rgb(256,-34,2342435);", "color:#f0f")
 	helperCSS(t, "color: rgb(120%,-45%,234234234%);", "color:#f0f")

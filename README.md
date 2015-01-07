@@ -45,26 +45,32 @@ The CSS minifier is very fast and complete, but will only use safe minifications
 
 - remove comments and (most) whitespace
 - remove trailing semicolon(s)
-- remove empty rulesets
 - optimize `margin`, `padding` and `border-width` number of sides
 - remove unnecessary decimal zeros and the `+` sign
-- remove dimensions for zero values
+- remove dimension and percentage for zero values
 - remove quotes for URLs
+- remove quotes for font families and make lowercase
 - rewrite hex colors to/from color names, or to 3 digit hex
 - rewrite `rgb(` and `rgba(` colors to hex/name when possible
 - replace `font-weight` `normal` and `bold` by numbers
 - replace `none` for `border`, `background` and `outline`
-- lowercase all identifiers except class' and ids
+- lowercase all identifiers except classes, IDs and URLs
 - shorten MS alpha function
+- remove empty rulesets
 - remove repeated selectors
+- remove overwritten properties in ruleset
+- rewrite properties into one in ruleset if possible (like `margin-top`, `margin-right`, `margin-bottom` and `margin-left` &#8594; `margin`)
+- rewrite attribute selectors for IDs and classes (`div[id=a]` &#8594; `div#a`)
 
-It does purposely not use the following unsafe (due to the cascading nature of CSS) techniques:
+It does purposely not use the following techniques:
 
-- collapse multiple or duplicative declarations
 - (partially) merge rulesets
 - (partially) split rulesets
+- collapse multiple declarations when main declaration is defined within a ruleset (don't put `font-weight` with an already existing `font`)
+- put nested ID selector at the front (`body > div#elem p` -> `#elem p`)
+- put space after pseudo-selectors (legacy bug-preventing)
 
-It's great that so many other tools make comparison tables: [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full).html, [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). From the last link, this CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented unsafe techniques..., meh.
+It's great that so many other tools make comparison tables: [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html), [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). From the last link, this CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented and often unsafe techniques, so that's fine.
 
 ## Installation
 
