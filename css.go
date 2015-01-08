@@ -341,11 +341,13 @@ func shortenDecl(decl *css.NodeDeclaration) {
 				n.Data = append(append([]byte{n.Data[0]}, []byte("alpha(opacity=")...), n.Data[1+len(alpha):]...)
 			}
 		}
-	} else if bytes.HasPrefix(prop, []byte("outline")) || bytes.HasPrefix(prop, []byte("background")) || bytes.HasPrefix(prop, []byte("border")) {
-		if len(decl.Vals) == 1 && decl.Vals[0].Type() == css.TokenNode && bytes.Equal(bytes.ToLower(decl.Vals[0].(*css.NodeToken).Data), []byte("none")) {
-			decl.Vals[0] = css.NewToken(css.NumberToken, []byte("0"))
-		}
 	} else {
+		if bytes.HasPrefix(prop, []byte("outline")) || bytes.HasPrefix(prop, []byte("background")) || bytes.HasPrefix(prop, []byte("border")) {
+			if len(decl.Vals) == 1 && decl.Vals[0].Type() == css.TokenNode && bytes.Equal(bytes.ToLower(decl.Vals[0].(*css.NodeToken).Data), []byte("none")) {
+				decl.Vals[0] = css.NewToken(css.NumberToken, []byte("0"))
+			}
+		}
+
 		for i, val := range decl.Vals {
 			if val.Type() == css.FunctionNode {
 				f := val.(*css.NodeFunction)
