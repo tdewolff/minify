@@ -191,8 +191,6 @@ func shortenNodes(nodes []css.Node) {
 			for _, decl := range ruleset.Decls {
 				shortenDecl(decl)
 			}
-			combineDecls(ruleset)
-			removeSelGroups(ruleset)
 		case css.AtRuleNode:
 			atRule := n.(*css.NodeAtRule)
 			if !inHeader && (bytes.Equal(atRule.At.Data, []byte("@charset")) || bytes.Equal(atRule.At.Data, []byte("@import"))) {
@@ -266,13 +264,6 @@ func shortenDecl(decl *css.NodeDeclaration) {
 
 	decl.Prop.Data = bytes.ToLower(decl.Prop.Data)
 	prop := decl.Prop.Data
-
-	if bytes.HasPrefix(prop, []byte("outline")) || bytes.HasPrefix(prop, []byte("background")) || bytes.HasPrefix(prop, []byte("border")) {
-		if len(decl.Vals) == 1 && decl.Vals[0].Type() == css.TokenNode && bytes.Equal(bytes.ToLower(decl.Vals[0].(*css.NodeToken).Data), []byte("none")) {
-			decl.Vals[0] = css.NewToken(css.NumberToken, []byte("0"))
-		}
-	}
-
 	if bytes.Equal(prop, []byte("margin")) || bytes.Equal(prop, []byte("padding")) {
 		if len(decl.Vals) == 2 && decl.Vals[0].Type() == css.TokenNode && decl.Vals[1].Type() == css.TokenNode {
 			if bytes.Equal(decl.Vals[0].(*css.NodeToken).Data, decl.Vals[1].(*css.NodeToken).Data) {
@@ -350,7 +341,11 @@ func shortenDecl(decl *css.NodeDeclaration) {
 				n.Data = append(append([]byte{n.Data[0]}, []byte("alpha(opacity=")...), n.Data[1+len(alpha):]...)
 			}
 		}
-	}  else {
+	} else if bytes.HasPrefix(prop, []byte("outline")) || bytes.HasPrefix(prop, []byte("background")) || bytes.HasPrefix(prop, []byte("border")) {
+		if len(decl.Vals) == 1 && decl.Vals[0].Type() == css.TokenNode && bytes.Equal(bytes.ToLower(decl.Vals[0].(*css.NodeToken).Data), []byte("none")) {
+			decl.Vals[0] = css.NewToken(css.NumberToken, []byte("0"))
+		}
+	} else {
 		for i, val := range decl.Vals {
 			if val.Type() == css.FunctionNode {
 				f := val.(*css.NodeFunction)
@@ -467,114 +462,6 @@ func shortenToken(token *css.NodeToken) *css.NodeToken {
 
 ////////////////////////////////////////////////////////////////
 
-func combineDecls(ruleset *css.NodeRuleset) {
-	// remove duplicates
-	removed := 0
-	for i, decl := range ruleset.Decls {
-		for _, decl2 := range ruleset.Decls[i-removed+1:] {
-			if decl.Prop.Equals(decl2.Prop) {
-				ruleset.Decls = append(ruleset.Decls[:i-removed], ruleset.Decls[i-removed+1:]...)
-				removed++
-			}
-		}
-	}
-
-	if len(ruleset.Decls) > 2 { // optimization for small rulesets
-		if rulesetPropIndex(ruleset, []byte("font")) == -1 {
-			fontIndices := rulesetPropIndices(ruleset, [][]byte{[]byte("font-style"), []byte("font-variant"), []byte("font-weight"), []byte("font-size"), []byte("line-height"), []byte("font-family")})
-			if fontIndices != nil {
-				font := ruleset.Decls[fontIndices[0]]
-				font.Prop.Data = []byte("font")
-				font.Vals = append(font.Vals, ruleset.Decls[fontIndices[1]].Vals...)
-				font.Vals = append(font.Vals, ruleset.Decls[fontIndices[2]].Vals...)
-				font.Vals = append(font.Vals, ruleset.Decls[fontIndices[3]].Vals...)
-				font.Vals = append(font.Vals, css.NewToken(css.DelimToken, []byte("/")))
-				font.Vals = append(font.Vals, ruleset.Decls[fontIndices[4]].Vals...)
-				font.Vals = append(font.Vals, ruleset.Decls[fontIndices[5]].Vals...)
-				removed := 0
-				for _, i := range fontIndices[1:] {
-					ruleset.Decls = append(ruleset.Decls[:i-removed], ruleset.Decls[i-removed+1:]...)
-					removed++
-				}
-			}
-		}
-
-		replaceBy := func(ruleset *css.NodeRuleset, substituent []byte, props [][]byte) {
-			if indices := rulesetPropIndices(ruleset, props); indices != nil && len(indices) > 0 {
-				node := ruleset.Decls[indices[0]]
-				node.Prop.Data = []byte(substituent)
-				for _, i := range indices[1:] {
-					node.Vals = append(node.Vals, ruleset.Decls[indices[i]].Vals...)
-				}
-				removed := 0
-				for _, i := range indices[1:] {
-					ruleset.Decls = append(ruleset.Decls[:i-removed], ruleset.Decls[i-removed+1:]...)
-					removed++
-				}
-			}
-		}
-
-		if rulesetPropIndex(ruleset, []byte("background")) == -1 {
-			replaceBy(ruleset, []byte("background"), [][]byte{[]byte("background-style"), []byte("background-image"), []byte("background-repeat"), []byte("background-attachment"), []byte("background-position")})
-		}
-		if rulesetPropIndex(ruleset, []byte("margin")) == -1 {
-			replaceBy(ruleset, []byte("margin"), [][]byte{[]byte("margin-top"), []byte("margin-right"), []byte("margin-bottom"), []byte("margin-left")})
-		}
-		if rulesetPropIndex(ruleset, []byte("padding")) == -1 {
-			replaceBy(ruleset, []byte("padding"), [][]byte{[]byte("padding-top"), []byte("padding-right"), []byte("padding-bottom"), []byte("padding-left")})
-		}
-		if rulesetPropIndex(ruleset, []byte("border")) == -1 {
-			if rulesetPropIndex(ruleset, []byte("border-color")) == -1 {
-				replaceBy(ruleset, []byte("border-color"), [][]byte{[]byte("border-color-top"), []byte("border-color-right"), []byte("border-color-bottom"), []byte("border-color-left")})
-			}
-			if rulesetPropIndex(ruleset, []byte("border-style")) == -1 {
-				replaceBy(ruleset, []byte("border-style"), [][]byte{[]byte("border-style-top"), []byte("border-style-right"), []byte("border-style-bottom"), []byte("border-style-left")})
-			}
-			if rulesetPropIndex(ruleset, []byte("border-width")) == -1 {
-				replaceBy(ruleset, []byte("border-width"), [][]byte{[]byte("border-width-top"), []byte("border-width-right"), []byte("border-width-bottom"), []byte("border-width-left")})
-			}
-			if rulesetPropIndex(ruleset, []byte("border")) == -1 {
-				if rulesetPropIndex(ruleset, []byte("border-color")) == -1 && rulesetPropIndex(ruleset, []byte("border-style")) == -1 && rulesetPropIndex(ruleset, []byte("border-width")) == -1 {
-					replaceBy(ruleset, []byte("border"), [][]byte{[]byte("border-top"), []byte("border-right"), []byte("border-bottom"), []byte("border-left")})
-				}
-				if rulesetPropIndex(ruleset, []byte("border-top")) == -1 && rulesetPropIndex(ruleset, []byte("border-right")) == -1 && rulesetPropIndex(ruleset, []byte("border-bottom")) == -1 && rulesetPropIndex(ruleset, []byte("border-left")) == -1 {
-					replaceBy(ruleset, []byte("border"), [][]byte{[]byte("border-width"), []byte("border-style"), []byte("border-color")})
-				}
-			}
-		}
-		if rulesetPropIndex(ruleset, []byte("outline")) == -1 {
-			replaceBy(ruleset, []byte("outline"), [][]byte{[]byte("outline-width"), []byte("outline-style"), []byte("outline-color")})
-		}
-		if rulesetPropIndex(ruleset, []byte("list-style")) == -1 {
-			replaceBy(ruleset, []byte("list-style"), [][]byte{[]byte("list-style-type"), []byte("list-style-position"), []byte("list-style-image")})
-		}
-		if rulesetPropIndex(ruleset, []byte("border-radius")) == -1 {
-			replaceBy(ruleset, []byte("border-radius"), [][]byte{[]byte("border-top-left-radius"), []byte("border-top-right-radius"), []byte("border-bottom-left-radius"), []byte("border-bottom-right-radius")})
-		}
-		if rulesetPropIndex(ruleset, []byte("cue")) == -1 {
-			replaceBy(ruleset, []byte("cue"), [][]byte{[]byte("cue-before"), []byte("cue-after")})
-		}
-	}
-}
-
-////////////////////////////////////////////////////////////////
-
-func removeSelGroups(ruleset *css.NodeRuleset) {
-	repeatingSelGroups := []int{}
-	for i, selGroup := range ruleset.SelGroups {
-		for j, selGroup2 := range ruleset.SelGroups[i+1:] {
-			if selGroup.Equals(selGroup2) {
-				repeatingSelGroups = append(repeatingSelGroups, i+j+1)
-			}
-		}
-	}
-	for _, i := range repeatingSelGroups {
-		ruleset.SelGroups = append(ruleset.SelGroups[:i], ruleset.SelGroups[i+1:]...)
-	}
-}
-
-////////////////////////////////////////////////////////////////
-
 func writeNodes(w io.Writer, nodes []css.Node) error {
 	semicolonQueued := false
 	for _, n := range nodes {
@@ -626,12 +513,17 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 							}
 						} else if node.Type() == css.AttributeSelectorNode {
 							attr := node.(*css.NodeAttributeSelector)
-							if _, err := w.Write(append(append([]byte("["), attr.Key.Data...), attr.Op.Data...)); err != nil {
+							if _, err := w.Write(append([]byte("["), attr.Key.Data...)); err != nil {
 								return ErrWrite
 							}
-							for _, val := range attr.Vals {
-								if _, err := w.Write(val.Data); err != nil {
+							if attr.Op != nil {
+								if _, err := w.Write(attr.Op.Data); err != nil {
 									return ErrWrite
+								}
+								for _, val := range attr.Vals {
+									if _, err := w.Write(val.Data); err != nil {
+										return ErrWrite
+									}
 								}
 							}
 							if _, err := w.Write([]byte("]")); err != nil {
@@ -763,28 +655,4 @@ func writeFunc(w io.Writer, f *css.NodeFunction) error {
 		return ErrWrite
 	}
 	return nil
-}
-
-////////////////////////////////////////////////////////////////
-
-func rulesetPropIndex(ruleset *css.NodeRuleset, x []byte) int {
-	prop := css.NewToken(css.IdentToken, x)
-	for i, decl := range ruleset.Decls {
-		if decl.Prop.Equals(prop) {
-			return i
-		}
-	}
-	return -1
-}
-
-func rulesetPropIndices(ruleset *css.NodeRuleset, x [][]byte) []int {
-	indices := []int{}
-	for i, prop := range x {
-		if rulesetPropIndex(ruleset, prop) == -1 {
-			indices = nil
-			break
-		}
-		indices = append(indices, i)
-	}
-	return indices
 }

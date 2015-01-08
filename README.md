@@ -56,8 +56,6 @@ The CSS minifier is very fast and complete, but will only use safe minifications
 - shorten MS alpha function
 - remove empty rulesets
 - remove repeated selectors
-- remove overwritten properties in ruleset
-- rewrite properties into one in ruleset if possible (like `margin-top`, `margin-right`, `margin-bottom` and `margin-left` &#8594; `margin`)
 - rewrite attribute selectors for IDs and classes (`div[id=a]` &#8594; `div#a`)
 
 It does purposely not use the following techniques:
@@ -65,6 +63,8 @@ It does purposely not use the following techniques:
 - (partially) merge rulesets
 - (partially) split rulesets
 - collapse multiple declarations when main declaration is defined within a ruleset (don't put `font-weight` within an already existing `font`, too complex)
+- remove overwritten properties in ruleset (this not always overwrites it, for example with `!important`)
+- rewrite properties into one in ruleset if possible (like `margin-top`, `margin-right`, `margin-bottom` and `margin-left` &#8594; `margin`)
 - put nested ID selector at the front (`body > div#elem p` &#8594; `#elem p`, unsafe)
 - put space after pseudo-selectors (IE6 is old, move on!)
 
