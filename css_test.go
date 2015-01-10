@@ -63,6 +63,7 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "margin:-0.5em", "margin:-.5em")
 	helperCSS(t, "margin:05em", "margin:5em")
 	helperCSS(t, "margin:.50em", "margin:.5em")
+	helperCSS(t, "margin:5.0em", "margin:5em")
 	helperCSS(t, "color:#c0c0c0", "color:silver")
 	helperCSS(t, "input[type=\"radio\"]{x:y}", "input[type=radio]{x:y}")
 	helperCSS(t, "-ms-filter: \"progid:DXImageTransform.Microsoft.Alpha(Opacity=80)\";", "-ms-filter:\"alpha(opacity=80)\"")
@@ -74,11 +75,8 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, ".CLASS{margin:1em}", ".CLASS{margin:1em}")
 
 	// advanced
-	//helperCSS(t, "test,test2,test { x:y; }", "test,test2{x:y}")
-	//helperCSS(t, "test{ x:y; x:z; }", "test{x:z}")
 	helperCSS(t, "test[id=a]{x:y;}", "test#a{x:y}")
 	helperCSS(t, "test[class='b']{x:y;}", "test.b{x:y}")
-	//helperCSS(t, "test{ font-style: italic; font-variant: small-caps; font-weight: bold; font-size: 12pt; line-height:110%; font-family:serif; }", "test{font:italic small-caps 700 12pt/110% serif}")
 
 	// coverage
 	helperCSS(t, "margin: 1 1;", "margin:1")

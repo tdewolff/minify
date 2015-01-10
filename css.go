@@ -440,6 +440,9 @@ func shortenToken(token *css.NodeToken) *css.NodeToken {
 			}
 			if bytes.Index(num, []byte(".")) != -1 {
 				num = bytes.TrimRight(num, "0")
+				if num[len(num)-1] == '.' {
+					num = num[:len(num)-1]
+				}
 			}
 			token.Data = append(num, dim...)
 		}
