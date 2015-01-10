@@ -37,9 +37,6 @@ import (
 // ErrNotExist is returned when no minifier exists for a given mime type
 var ErrNotExist = errors.New("minifier does not exist for mime type")
 
-// ErrWrite is returned when an error occurred when writing to the writer
-var ErrWrite = errors.New("write error")
-
 ////////////////////////////////////////////////////////////////
 
 // Func is the function interface for minifiers

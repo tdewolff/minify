@@ -197,23 +197,23 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 		case html.ErrorToken:
 			if z.Err() == io.EOF {
 				if _, err := w.Write(prevText); err != nil {
-					return ErrWrite
+					return err
 				}
 				return nil
 			}
 			return z.Err()
 		case html.DoctypeToken:
 			if _, err := w.Write(bytes.TrimSpace(prevText)); err != nil {
-				return ErrWrite
+				return err
 			}
 			prevText = nil
 
 			if _, err := w.Write([]byte("<!doctype html>")); err != nil {
-				return ErrWrite
+				return err
 			}
 		case html.CommentToken:
 			if _, err := w.Write(prevText); err != nil {
-				return ErrWrite
+				return err
 			}
 			prevText = nil
 
@@ -227,7 +227,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			}
 		case html.TextToken:
 			if _, err := w.Write(prevText); err != nil {
-				return ErrWrite
+				return err
 			}
 			prevText = []byte(token.Data)
 
@@ -249,7 +249,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 						if err == ErrNotExist {
 							// no minifier, write the original
 							if _, err := w.Write(prevText); err != nil {
-								return ErrWrite
+								return err
 							}
 						} else {
 							return err
@@ -260,7 +260,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 						return err
 					}
 				} else if _, err := w.Write(prevText); err != nil {
-					return ErrWrite
+					return err
 				}
 				prevText = nil
 				break
@@ -314,7 +314,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				}
 			}
 			if _, err := w.Write(prevText); err != nil {
-				return ErrWrite
+				return err
 			}
 			prevText = nil
 
@@ -342,21 +342,21 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			}
 
 			if _, err := w.Write([]byte("<")); err != nil {
-				return ErrWrite
+				return err
 			}
 			if tt == html.EndTagToken {
 				if _, err := w.Write([]byte("/")); err != nil {
-					return ErrWrite
+					return err
 				}
 			}
 			if _, err := w.Write([]byte(token.Data)); err != nil {
-				return ErrWrite
+				return err
 			}
 
 			if token.Data == "meta" && getAttr(token, "http-equiv") == "content-type" &&
 				getAttr(token, "content") == "text/html; charset=utf-8" {
 				if _, err := w.Write([]byte(" charset=utf-8>")); err != nil {
-					return ErrWrite
+					return err
 				}
 				break
 			}
@@ -386,7 +386,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					continue
 				}
 				if _, err := w.Write([]byte(" " + attr.Key)); err != nil {
-					return ErrWrite
+					return err
 				}
 
 				isBoolean := booleanAttrMap[attr.Key]
@@ -398,7 +398,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				if !isBoolean {
 					var err error
 					if _, err := w.Write([]byte("=")); err != nil {
-						return ErrWrite
+						return err
 					}
 
 					// CSS and JS minifiers for attribute inline code
@@ -440,21 +440,21 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					// no quote if possible, else prefer single or double depending on which occurs more often in value
 					if strings.IndexAny(val, invalidAttrChars) == -1 {
 						if _, err := w.Write([]byte(val)); err != nil {
-							return ErrWrite
+							return err
 						}
 					} else if strings.Count(val, "\"") > strings.Count(val, "'") {
 						if _, err := w.Write([]byte("'" + strings.Replace(val, "'", "&#39;", -1) + "'")); err != nil {
-							return ErrWrite
+							return err
 						}
 					} else {
 						if _, err := w.Write([]byte("\"" + strings.Replace(val, "\"", "&quot;", -1) + "\"")); err != nil {
-							return ErrWrite
+							return err
 						}
 					}
 				}
 			}
 			if _, err := w.Write([]byte(">")); err != nil {
-				return ErrWrite
+				return err
 			}
 		}
 	}

@@ -472,7 +472,7 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 	for _, n := range nodes {
 		if _, ok := n.(*css.NodeToken); semicolonQueued && !ok { // it is only TokenNode for CDO and CDC (<!-- and --> respectively)
 			if _, err := w.Write([]byte(";")); err != nil {
-				return ErrWrite
+				return err
 			}
 			semicolonQueued = false
 		}
@@ -487,7 +487,7 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 			for i, selGroup := range m.SelGroups {
 				if i > 0 {
 					if _, err := w.Write([]byte(",")); err != nil {
-						return ErrWrite
+						return err
 					}
 				}
 				prevOperator := false
@@ -497,8 +497,8 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 							// TODO: check if clause
 							if token.TokenType == css.DelimToken && len(token.Data) == 1 && (token.Data[0] == '>' || token.Data[0] == '+' || token.Data[0] == '~') || token.TokenType == css.IncludeMatchToken || token.TokenType == css.DashMatchToken ||
 								token.TokenType == css.PrefixMatchToken || token.TokenType == css.SuffixMatchToken || token.TokenType == css.SubstringMatchToken {
-								if _, err := w.Write(token.Data); err != nil {
-									return ErrWrite
+								if err := token.Serialize(w); err != nil {
+									return err
 								}
 								prevOperator = true
 								continue
@@ -507,44 +507,24 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 					}
 					if j > 0 && !prevOperator {
 						if _, err := w.Write([]byte(" ")); err != nil {
-							return ErrWrite
+							return err
 						}
 					}
 					for _, node := range sel.Nodes {
-						switch k := node.(type) {
-						case *css.NodeToken:
-							if _, err := w.Write(k.Data); err != nil {
-								return ErrWrite
-							}
-						case *css.NodeAttributeSelector:
-							if _, err := w.Write(append([]byte("["), k.Key.Data...)); err != nil {
-								return ErrWrite
-							}
-							if k.Op != nil {
-								if _, err := w.Write(k.Op.Data); err != nil {
-									return ErrWrite
-								}
-								for _, val := range k.Vals {
-									if _, err := w.Write(val.Data); err != nil {
-										return ErrWrite
-									}
-								}
-							}
-							if _, err := w.Write([]byte("]")); err != nil {
-								return ErrWrite
-							}
+						if err := node.Serialize(w); err != nil {
+							return err
 						}
 					}
 					prevOperator = false
 				}
 			}
 			if _, err := w.Write([]byte("{")); err != nil {
-				return ErrWrite
+				return err
 			}
 			for i, decl := range m.Decls {
 				if i > 0 {
 					if _, err := w.Write([]byte(";")); err != nil {
-						return ErrWrite
+						return err
 					}
 				}
 				if err := writeDecl(w, decl); err != nil {
@@ -552,49 +532,49 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 				}
 			}
 			if _, err := w.Write([]byte("}")); err != nil {
-				return ErrWrite
+				return err
 			}
 		case *css.NodeAtRule:
 			if len(m.Nodes) == 0 && m.Block == nil {
 				break
 			}
-			if _, err := w.Write(m.At.Data); err != nil {
-				return ErrWrite
+			if err := m.At.Serialize(w); err != nil {
+				return err
 			}
 			for _, node := range m.Nodes {
 				if _, err := w.Write([]byte(" ")); err != nil {
-					return ErrWrite
+					return err
 				}
-				if _, err := w.Write(node.Data); err != nil {
-					return ErrWrite
+				if err := node.Serialize(w); err != nil {
+					return err
 				}
 			}
 			if m.Block != nil {
-				if _, err := w.Write(m.Block.Open.Data); err != nil {
-					return ErrWrite
+				if err := m.Block.Open.Serialize(w); err != nil {
+					return err
 				}
 				if err := writeNodes(w, m.Block.Nodes); err != nil {
 					return err
 				}
-				if _, err := w.Write(m.Block.Close.Data); err != nil {
-					return ErrWrite
+				if err := m.Block.Close.Serialize(w); err != nil {
+					return err
 				}
 			} else {
 				semicolonQueued = true
 			}
 		case *css.NodeBlock:
-			if _, err := w.Write(m.Open.Data); err != nil {
-				return ErrWrite
+			if err := m.Open.Serialize(w); err != nil {
+				return err
 			}
 			if err := writeNodes(w, m.Nodes); err != nil {
 				return err
 			}
-			if _, err := w.Write(m.Close.Data); err != nil {
-				return ErrWrite
+			if err := m.Close.Serialize(w); err != nil {
+				return err
 			}
-		case *css.NodeToken:
-			if _, err := w.Write(m.Data); err != nil {
-				return ErrWrite
+		default:
+			if err := n.Serialize(w); err != nil {
+				return err
 			}
 		}
 	}
@@ -602,11 +582,11 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 }
 
 func writeDecl(w io.Writer, decl *css.NodeDeclaration) error {
-	if _, err := w.Write(decl.Prop.Data); err != nil {
-		return ErrWrite
+	if err := decl.Prop.Serialize(w); err != nil {
+		return err
 	}
 	if _, err := w.Write([]byte(":")); err != nil {
-		return ErrWrite
+		return err
 	}
 	prevDelim := false
 	for j, val := range decl.Vals {
@@ -614,48 +594,13 @@ func writeDecl(w io.Writer, decl *css.NodeDeclaration) error {
 		currDelim := (ok && (token.TokenType == css.DelimToken || token.TokenType == css.CommaToken || token.TokenType == css.ColonToken))
 		if j > 0 && !currDelim && !prevDelim {
 			if _, err := w.Write([]byte(" ")); err != nil {
-				return ErrWrite
-			}
-		}
-		switch m := val.(type) {
-		case *css.NodeToken:
-			if _, err := w.Write(m.Data); err != nil {
-				return ErrWrite
-			}
-		case *css.NodeFunction:
-			if err := writeFunc(w, m); err != nil {
 				return err
 			}
 		}
+		if err := val.Serialize(w); err != nil {
+			return err
+		}
 		prevDelim = currDelim
-	}
-	return nil
-}
-
-func writeFunc(w io.Writer, f *css.NodeFunction) error {
-	if _, err := w.Write(f.Func.Data); err != nil {
-		return ErrWrite
-	}
-	for j, arg := range f.Args {
-		if j > 0 {
-			if _, err := w.Write([]byte(",")); err != nil {
-				return ErrWrite
-			}
-		}
-		if arg.Key != nil {
-			if _, err := w.Write(arg.Key.Data); err != nil {
-				return ErrWrite
-			}
-			if _, err := w.Write([]byte("=")); err != nil {
-				return ErrWrite
-			}
-		}
-		if _, err := w.Write(arg.Val.Data); err != nil {
-			return ErrWrite
-		}
-	}
-	if _, err := w.Write([]byte(")")); err != nil {
-		return ErrWrite
 	}
 	return nil
 }
