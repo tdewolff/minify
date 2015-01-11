@@ -292,7 +292,7 @@ func shortenDecl(decl *css.NodeDeclaration) {
 				decl.Vals = []css.Node{decl.Vals[0], decl.Vals[1], decl.Vals[2]}
 			}
 		}
-	} else if bytes.HasPrefix(prop, []byte("font")) {
+	} else if bytes.HasPrefix(prop, []byte("font")) && (len(prop) == len("font") || bytes.Equal(prop, []byte("font-family"))) {
 		for i, n := range decl.Vals {
 			if m, ok := n.(*css.NodeToken); ok {
 				if m.TokenType == css.IdentToken {
