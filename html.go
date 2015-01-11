@@ -318,10 +318,10 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			}
 			prevText = nil
 
-			if token.Data == "body" || token.Data == "head" || token.Data == "html" || token.Data == "tbody" ||
+			if len(token.Attr) == 0 && (token.Data == "body" || token.Data == "head" || token.Data == "html" || token.Data == "tbody" ||
 				tt == html.EndTagToken && (token.Data == "colgroup" || token.Data == "dd" || token.Data == "dt" ||
 					token.Data == "option" || token.Data == "td" || token.Data == "tfoot" ||
-					token.Data == "th" || token.Data == "thead" || token.Data == "tr") {
+					token.Data == "th" || token.Data == "thead" || token.Data == "tr") ){
 				break
 			} else if tt == html.EndTagToken && (token.Data == "p" || token.Data == "li") {
 				remove := false
