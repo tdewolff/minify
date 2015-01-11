@@ -197,8 +197,6 @@ func shortenNodes(nodes []css.Node) {
 			if m.Block != nil {
 				shortenNodes(m.Block.Nodes)
 			}
-		case *css.NodeBlock:
-			shortenNodes(m.Nodes)
 		}
 	}
 }
@@ -292,16 +290,17 @@ func shortenDecl(decl *css.NodeDeclaration) {
 				decl.Vals = []css.Node{decl.Vals[0], decl.Vals[1], decl.Vals[2]}
 			}
 		}
-	} else if bytes.HasPrefix(prop, []byte("font")) && (len(prop) == len("font") || bytes.Equal(prop, []byte("font-family"))) {
+	} else if bytes.HasPrefix(prop, []byte("font")) {
 		for i, n := range decl.Vals {
 			if m, ok := n.(*css.NodeToken); ok {
-				if m.TokenType == css.IdentToken {
-					if bytes.Equal(m.Data, []byte("normal")) && bytes.Equal(prop, []byte("font-weight")) { // normal could also be specified for font-variant, not just font-weight
+				if m.TokenType == css.IdentToken && (len(prop) == len("font") || bytes.Equal(prop, []byte("font-weight"))) {
+					if bytes.Equal(m.Data, []byte("normal")) && bytes.Equal(prop, []byte("font-weight")) {
+						// normal could also be specified for font-variant, not just font-weight
 						decl.Vals[i] = css.NewToken(css.NumberToken, []byte("400"))
 					} else if bytes.Equal(m.Data, []byte("bold")) {
 						decl.Vals[i] = css.NewToken(css.NumberToken, []byte("700"))
 					}
-				} else if m.TokenType == css.StringToken {
+				} else if m.TokenType == css.StringToken && (len(prop) == len("font") || bytes.Equal(prop, []byte("font-family"))) {
 					m.Data = bytes.ToLower(m.Data)
 					s := m.Data[1 : len(m.Data)-1]
 					unquote := true
@@ -574,16 +573,6 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 				}
 			} else {
 				semicolonQueued = true
-			}
-		case *css.NodeBlock:
-			if err := m.Open.Serialize(w); err != nil {
-				return err
-			}
-			if err := writeNodes(w, m.Nodes); err != nil {
-				return err
-			}
-			if err := m.Close.Serialize(w); err != nil {
-				return err
 			}
 		default:
 			if err := n.Serialize(w); err != nil {
