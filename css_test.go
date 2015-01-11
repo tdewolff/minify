@@ -73,6 +73,8 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "background:URL(x.PNG);", "background:url(x.PNG)")
 	helperCSS(t, "DIV{margin:1em}", "div{margin:1em}")
 	helperCSS(t, ".CLASS{margin:1em}", ".CLASS{margin:1em}")
+	helperCSS(t, "@media only screen and (max-width:800px)", "@media only screen and (max-width:800px)")
+	helperCSS(t, "@media (-webkit-min-device-pixel-ratio:1.5),(min-resolution:1.5dppx)", "@media (-webkit-min-device-pixel-ratio:1.5),(min-resolution:1.5dppx)")
 
 	// advanced
 	helperCSS(t, "test[id=a]{x:y;}", "test#a{x:y}")

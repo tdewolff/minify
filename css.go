@@ -346,7 +346,8 @@ func shortenDecl(decl *css.NodeDeclaration) {
 				}
 			}
 	} else {
-		if len(decl.Vals) == 1 && (bytes.HasPrefix(prop, []byte("outline")) || bytes.HasPrefix(prop, []byte("background")) || bytes.HasPrefix(prop, []byte("border"))) {
+		if len(decl.Vals) == 1 && (bytes.Equal(prop, []byte("outline")) || bytes.Equal(prop, []byte("background")) ||
+			bytes.HasPrefix(prop, []byte("border")) && (len(prop) == len("border") || bytes.Equal(prop, []byte("border-top")) || bytes.Equal(prop, []byte("border-right")) || bytes.Equal(prop, []byte("border-bottom")) || bytes.Equal(prop, []byte("border-left")))) {
 			if n, ok := decl.Vals[0].(*css.NodeToken); ok && bytes.Equal(bytes.ToLower(n.Data), []byte("none")) {
 				decl.Vals[0] = css.NewToken(css.NumberToken, []byte("0"))
 			}
@@ -493,22 +494,21 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 						return err
 					}
 				}
-				prevOperator := false
+				skipSpace := false
 				for j, sel := range selGroup.Selectors {
 					if len(sel.Nodes) == 1 {
 						if token, ok := sel.Nodes[0].(*css.NodeToken); ok {
-							// TODO: check if clause
-							if token.TokenType == css.DelimToken && len(token.Data) == 1 && (token.Data[0] == '>' || token.Data[0] == '+' || token.Data[0] == '~') || token.TokenType == css.IncludeMatchToken || token.TokenType == css.DashMatchToken ||
+							if token.TokenType == css.DelimToken && (token.Data[0] == '>' || token.Data[0] == '+' || token.Data[0] == '~') || token.TokenType == css.IncludeMatchToken || token.TokenType == css.DashMatchToken ||
 								token.TokenType == css.PrefixMatchToken || token.TokenType == css.SuffixMatchToken || token.TokenType == css.SubstringMatchToken {
 								if err := token.Serialize(w); err != nil {
 									return err
 								}
-								prevOperator = true
+								skipSpace = true
 								continue
 							}
 						}
 					}
-					if j > 0 && !prevOperator {
+					if j > 0 && !skipSpace {
 						if _, err := w.Write([]byte(" ")); err != nil {
 							return err
 						}
@@ -518,7 +518,7 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 							return err
 						}
 					}
-					prevOperator = false
+					skipSpace = false
 				}
 			}
 			if _, err := w.Write([]byte("{")); err != nil {
@@ -544,11 +544,21 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 			if err := m.At.Serialize(w); err != nil {
 				return err
 			}
-			for _, node := range m.Nodes {
-				if _, err := w.Write([]byte(" ")); err != nil {
-					return err
+			skipSpace := false
+			for _, token := range m.Nodes {
+				if token.TokenType == css.RightParenthesisToken || token.TokenType == css.ColonToken || token.TokenType == css.CommaToken {
+					skipSpace = true
+				} else if !skipSpace {
+					if _, err := w.Write([]byte(" ")); err != nil {
+						return err
+					}
+				} else {
+					skipSpace = false
 				}
-				if err := node.Serialize(w); err != nil {
+				if token.TokenType == css.LeftParenthesisToken {
+					skipSpace = true
+				}
+				if err := token.Serialize(w); err != nil {
 					return err
 				}
 			}
