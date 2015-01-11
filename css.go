@@ -307,7 +307,7 @@ func shortenDecl(decl *css.NodeDeclaration) {
 					for _, fontName := range bytes.Split(s, []byte(" ")) {
 						// if len is zero, it contains two consecutive spaces
 						if len(fontName) == 0 || !css.IsIdent(fontName) || bytes.Equal(fontName, []byte("inherit")) || bytes.Equal(fontName, []byte("serif")) || bytes.Equal(fontName, []byte("sans-serif")) || bytes.Equal(fontName, []byte("monospace")) ||
-						   bytes.Equal(fontName, []byte("fantasy")) || bytes.Equal(fontName, []byte("cursive")) || bytes.Equal(fontName, []byte("initial")) || bytes.Equal(fontName, []byte("default")) {
+							bytes.Equal(fontName, []byte("fantasy")) || bytes.Equal(fontName, []byte("cursive")) || bytes.Equal(fontName, []byte("initial")) || bytes.Equal(fontName, []byte("default")) {
 							unquote = false
 							break
 						}
@@ -338,12 +338,12 @@ func shortenDecl(decl *css.NodeDeclaration) {
 			}
 		}
 	} else if len(decl.Vals) == 1 && bytes.Equal(prop, []byte("-ms-filter")) {
-			if n, ok := decl.Vals[0].(*css.NodeToken); ok {
-				alpha := []byte("progid:DXImageTransform.Microsoft.Alpha(Opacity=")
-				if n.TokenType == css.StringToken && bytes.HasPrefix(n.Data[1:len(n.Data)-1], alpha) {
-					n.Data = append(append([]byte{n.Data[0]}, []byte("alpha(opacity=")...), n.Data[1+len(alpha):]...)
-				}
+		if n, ok := decl.Vals[0].(*css.NodeToken); ok {
+			alpha := []byte("progid:DXImageTransform.Microsoft.Alpha(Opacity=")
+			if n.TokenType == css.StringToken && bytes.HasPrefix(n.Data[1:len(n.Data)-1], alpha) {
+				n.Data = append(append([]byte{n.Data[0]}, []byte("alpha(opacity=")...), n.Data[1+len(alpha):]...)
 			}
+		}
 	} else {
 		if len(decl.Vals) == 1 && (bytes.Equal(prop, []byte("outline")) || bytes.Equal(prop, []byte("background")) ||
 			bytes.HasPrefix(prop, []byte("border")) && (len(prop) == len("border") || bytes.Equal(prop, []byte("border-top")) || bytes.Equal(prop, []byte("border-right")) || bytes.Equal(prop, []byte("border-bottom")) || bytes.Equal(prop, []byte("border-left")))) {
