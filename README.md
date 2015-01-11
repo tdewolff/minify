@@ -1,7 +1,6 @@
 [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify)](http://gocover.io/github.com/tdewolff/minify)
 
 # Minify
-
 Minify is a minifier package written in [Go][1]. It has a build-in HTML5 and CSS3 minifier and provides an interface to implement any minifier.
 
 It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...).
@@ -22,7 +21,6 @@ After recent benchmarking and profiling it is really fast and minifies pages in 
 However, be careful when doing on-the-fly minification. A simple site would typically have HTML pages of 5kB which ideally are compressed to say 4kB. If this would take about 10ms to minify, one has to download slower than 100kB/s to make minification effective. There is a lot of handwaving in this example but it's hardly effective to minify on-the-fly. Rather use caching!
 
 ### Comparison
-
 Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/) | Minify | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | ------------------------------------------------------------ | ------ | ----- | -----------------------
 [Amazon](http://www.amazon.com/) | 463kB | 457kB | **443kB** | 96%<sup>&#42;&#42;</sup> | 15ms
@@ -37,6 +35,9 @@ Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/
 <sup>&#42;&#42;&#42;</sup>Is already somewhat minified, so this doesn't reflect the full potential of `minify.HTML`.
 
 [HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower. According to HTML Compressor, it produces smaller files than a couple of other libraries, which means `minify.HTML` does better than all.
+
+### Beware
+Make sure your HTML doesn't depend on spaces between `block` elements that have been changes to `inline` or `inline-block` elements using CSS. Your layout *should not* depend on those spaces and the minifier will remove them. An example is a list of `&lt;li&gt;`s which have `display:inline-block` applied.
 
 ## CSS
 The CSS minifier is very fast and complete, but will only use safe minifications:
@@ -71,13 +72,11 @@ It does purposely not use the following techniques:
 It's great that so many other tools make comparison tables: [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html), [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). From the last link, this CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented and often unsafe techniques, so that's fine.
 
 ## Installation
-
 Run the following command
 
 	go get github.com/tdewolff/minify
 
 or add the following import and run project with `go get`
-
 ``` go
 import (
 	"github.com/tdewolff/minify"
