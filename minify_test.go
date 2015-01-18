@@ -34,7 +34,7 @@ var m = &Minifier{map[string]Func{
 	"err": func(m Minifier, w io.Writer, r io.Reader) error {
 		return errDummy
 	},
-}}
+}, map[string]string{}}
 
 func TestMinify(t *testing.T) {
 	if err := m.Minify("?", nil, nil); err != ErrNotExist {
