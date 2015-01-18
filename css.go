@@ -13,10 +13,12 @@ Uses http://www.w3.org/TR/2010/PR-css3-color-20101028/ for colors
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
 	"io"
 	"math"
+	"net/url"
 	"strconv"
 
 	"github.com/tdewolff/css"
@@ -166,13 +168,13 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	shortenNodes(stylesheet.Nodes)
+	shortenNodes(m, stylesheet.Nodes)
 	return writeNodes(w, stylesheet.Nodes)
 }
 
 ////////////////////////////////////////////////////////////////
 
-func shortenNodes(nodes []css.Node) {
+func shortenNodes(minifier Minifier, nodes []css.Node) {
 	inHeader := true
 	for i, n := range nodes {
 		if _, ok := n.(*css.AtRuleNode); inHeader && !ok {
@@ -180,7 +182,7 @@ func shortenNodes(nodes []css.Node) {
 		}
 		switch m := n.(type) {
 		case *css.DeclarationNode:
-			shortenDecl(m)
+			shortenDecl(minifier, m)
 		case *css.RulesetNode:
 			for _, selGroup := range m.SelGroups {
 				for _, sel := range selGroup.Selectors {
@@ -188,14 +190,14 @@ func shortenNodes(nodes []css.Node) {
 				}
 			}
 			for _, decl := range m.Decls {
-				shortenDecl(decl)
+				shortenDecl(minifier, decl)
 			}
 		case *css.AtRuleNode:
 			if !inHeader && (bytes.Equal(m.At.Data, []byte("@charset")) || bytes.Equal(m.At.Data, []byte("@import"))) {
 				nodes[i] = css.NewToken(css.DelimToken, []byte(""))
 			}
 			if m.Block != nil {
-				shortenNodes(m.Block.Nodes)
+				shortenNodes(minifier, m.Block.Nodes)
 			}
 		}
 	}
@@ -236,7 +238,7 @@ func shortenSelector(sel *css.SelectorNode) {
 	}
 }
 
-func shortenDecl(decl *css.DeclarationNode) {
+func shortenDecl(minifier Minifier, decl *css.DeclarationNode) {
 	// shorten zeros
 	progid := false
 	for i, n := range decl.Vals {
@@ -247,15 +249,13 @@ func shortenDecl(decl *css.DeclarationNode) {
 					progid = true
 					continue
 				}
-				decl.Vals[i] = shortenToken(m)
+				decl.Vals[i] = shortenToken(minifier, m)
 			}
 		case *css.FunctionNode:
 			if !progid {
 				m.Func.Data = bytes.ToLower(m.Func.Data)
 			}
-			for j, arg := range m.Args {
-				m.Args[j].Val = shortenToken(arg.Val)
-			}
+			decl.Vals[i] = shortenFunction(minifier, m)
 		}
 	}
 
@@ -344,81 +344,72 @@ func shortenDecl(decl *css.DeclarationNode) {
 				n.Data = append(append([]byte{n.Data[0]}, []byte("alpha(opacity=")...), n.Data[1+len(alpha):]...)
 			}
 		}
-	} else {
-		if len(decl.Vals) == 1 && (bytes.Equal(prop, []byte("outline")) || bytes.Equal(prop, []byte("background")) ||
-			bytes.HasPrefix(prop, []byte("border")) && (len(prop) == len("border") || bytes.Equal(prop, []byte("border-top")) || bytes.Equal(prop, []byte("border-right")) || bytes.Equal(prop, []byte("border-bottom")) || bytes.Equal(prop, []byte("border-left")))) {
-			if n, ok := decl.Vals[0].(*css.TokenNode); ok && bytes.Equal(bytes.ToLower(n.Data), []byte("none")) {
-				decl.Vals[0] = css.NewToken(css.NumberToken, []byte("0"))
-			}
-		}
-
-		for i, n := range decl.Vals {
-			switch m := n.(type) {
-			case *css.TokenNode:
-				if m.TokenType == css.URLToken {
-					s := m.Data[4 : len(m.Data)-1]
-					if s[0] == '"' || s[0] == '\'' {
-						if css.IsUrlUnquoted([]byte(s[1 : len(s)-1])) {
-							s = s[1 : len(s)-1]
-						}
-					}
-					m.Data = append(append([]byte("url("), s...), ')')
-				}
-			case *css.FunctionNode:
-				if bytes.Equal(m.Func.Data, []byte("rgba(")) && len(m.Args) == 4 {
-					d, _ := strconv.ParseFloat(string(m.Args[3].Val.Data), 32)
-					if math.Abs(d-1.0) < epsilon {
-						m.Func = css.NewToken(css.FunctionToken, []byte("rgb("))
-						m.Args = m.Args[:len(m.Args)-1]
-					}
-				}
-				if bytes.Equal(m.Func.Data, []byte("rgb(")) && len(m.Args) == 3 {
-					var err error
-					rgb := make([]byte, 3)
-					for j := 0; j < 3; j++ {
-						v := m.Args[j].Val
-						if v.TokenType == css.NumberToken {
-							var d int64
-							d, err = strconv.ParseInt(string(v.Data), 10, 32)
-							if d < 0 {
-								d = 0
-							} else if d > 255 {
-								d = 255
-							}
-							rgb[j] = byte(d)
-						} else if v.TokenType == css.PercentageToken {
-							var d float64
-							d, err = strconv.ParseFloat(string(v.Data[:len(v.Data)-1]), 32)
-							if d < 0.0 {
-								d = 0.0
-							} else if d > 100.0 {
-								d = 100.0
-							}
-							rgb[j] = byte((d / 100.0 * 255.0) + 0.5)
-						} else {
-							err = errors.New("")
-							break
-						}
-					}
-					if err == nil {
-						valHex := make([]byte, 6)
-						hex.Encode(valHex, rgb)
-						val := append([]byte("#"), bytes.ToLower(valHex)...)
-						if s, ok := shortenColorHex[string(val)]; ok {
-							decl.Vals[i] = css.NewToken(css.IdentToken, s)
-						} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
-							decl.Vals[i] = css.NewToken(css.HashToken, append([]byte("#"), val[1], val[3], val[5]))
-						} else {
-							decl.Vals[i] = css.NewToken(css.HashToken, val)
-						}
-					}
-				}
-			}
+	} else if len(decl.Vals) == 1 && (bytes.Equal(prop, []byte("outline")) || bytes.Equal(prop, []byte("background")) ||
+		bytes.HasPrefix(prop, []byte("border")) && (len(prop) == len("border") || bytes.Equal(prop, []byte("border-top")) || bytes.Equal(prop, []byte("border-right")) || bytes.Equal(prop, []byte("border-bottom")) || bytes.Equal(prop, []byte("border-left")))) {
+		if n, ok := decl.Vals[0].(*css.TokenNode); ok && bytes.Equal(bytes.ToLower(n.Data), []byte("none")) {
+			decl.Vals[0] = css.NewToken(css.NumberToken, []byte("0"))
 		}
 	}
 }
 
-func shortenToken(token *css.TokenNode) *css.TokenNode {
+func shortenFunction(minifier Minifier, f *css.FunctionNode) css.Node {
+	for j, arg := range f.Args {
+		f.Args[j].Val = shortenToken(minifier, arg.Val)
+	}
+
+	if bytes.Equal(f.Func.Data, []byte("rgba(")) && len(f.Args) == 4 {
+		d, _ := strconv.ParseFloat(string(f.Args[3].Val.Data), 32)
+		if math.Abs(d-1.0) < epsilon {
+			f.Func = css.NewToken(css.FunctionToken, []byte("rgb("))
+			f.Args = f.Args[:len(f.Args)-1]
+		}
+	}
+	var n css.Node = f
+	if bytes.Equal(f.Func.Data, []byte("rgb(")) && len(f.Args) == 3 {
+		var err error
+		rgb := make([]byte, 3)
+		for j := 0; j < 3; j++ {
+			v := f.Args[j].Val
+			if v.TokenType == css.NumberToken {
+				var d int64
+				d, err = strconv.ParseInt(string(v.Data), 10, 32)
+				if d < 0 {
+					d = 0
+				} else if d > 255 {
+					d = 255
+				}
+				rgb[j] = byte(d)
+			} else if v.TokenType == css.PercentageToken {
+				var d float64
+				d, err = strconv.ParseFloat(string(v.Data[:len(v.Data)-1]), 32)
+				if d < 0.0 {
+					d = 0.0
+				} else if d > 100.0 {
+					d = 100.0
+				}
+				rgb[j] = byte((d / 100.0 * 255.0) + 0.5)
+			} else {
+				err = errors.New("")
+				break
+			}
+		}
+		if err == nil {
+			valHex := make([]byte, 6)
+			hex.Encode(valHex, rgb)
+			val := append([]byte("#"), bytes.ToLower(valHex)...)
+			if s, ok := shortenColorHex[string(val)]; ok {
+				n = css.NewToken(css.IdentToken, s)
+			} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
+				n = css.NewToken(css.HashToken, append([]byte("#"), val[1], val[3], val[5]))
+			} else {
+				n = css.NewToken(css.HashToken, val)
+			}
+		}
+	}
+	return n
+}
+
+func shortenToken(minifier Minifier, token *css.TokenNode) *css.TokenNode {
 	if token.TokenType == css.NumberToken || token.TokenType == css.DimensionToken || token.TokenType == css.PercentageToken {
 		token.Data = bytes.ToLower(token.Data)
 		if len(token.Data) > 0 && token.Data[0] == '+' {
@@ -464,6 +455,43 @@ func shortenToken(token *css.TokenNode) *css.TokenNode {
 		token.Data = bytes.Replace(token.Data, []byte("\\\r\n"), []byte(""), -1)
 		token.Data = bytes.Replace(token.Data, []byte("\\\r"), []byte(""), -1)
 		token.Data = bytes.Replace(token.Data, []byte("\\\n"), []byte(""), -1)
+	} else if token.TokenType == css.URLToken {
+		token.Data = append([]byte("url"), token.Data[3:]...)
+		if mediatype, originalData, ok := css.SplitDataURI(token.Data); ok {
+			data := originalData
+			minifiedBuffer := &bytes.Buffer{}
+			if err := minifier.Minify(string(mediatype), minifiedBuffer, bytes.NewBuffer(data)); err == nil {
+				data = minifiedBuffer.Bytes()
+			}
+			base64Len := base64.StdEncoding.EncodedLen(len(data))
+			asciiLen := 7 + minifiedBuffer.Len()
+			for _, c := range data {
+				if 'A' <= c && c <= 'Z' || 'a' <= c && c <= 'z' || '0' <= c && c <= '9' || c == '-' || c == '_' || c == '.' || c == '~' {
+					asciiLen += 2
+				} else if c == '"' {
+					asciiLen++
+				}
+				if asciiLen > base64Len {
+					break
+				}
+			}
+			if asciiLen > base64Len {
+				encoded := make([]byte, base64Len)
+				base64.StdEncoding.Encode(encoded, data)
+				data = encoded
+				mediatype = append(mediatype, []byte(";base64")...)
+			} else {
+				data = []byte(url.QueryEscape(string(data)))
+				data = bytes.Replace(data, []byte("\""), []byte("\\\""), -1)
+			}
+			if len(data) < len(originalData) {
+				token.Data = append(append(append(append([]byte("url(\"data:"), mediatype...), ','), data...), []byte("\")")...)
+			}
+		}
+		s := token.Data[4 : len(token.Data)-1]
+		if len(s) > 2 && (s[0] == '"' || s[0] == '\'') && css.IsUrlUnquoted([]byte(s[1 : len(s)-1])) {
+			token.Data = append(append([]byte("url("), s[1 : len(s)-1]...), ')')
+		}
 	}
 	return token
 }
