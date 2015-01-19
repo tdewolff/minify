@@ -47,7 +47,7 @@ type Func func(Minifier, io.Writer, io.Reader) error
 // Minifier holds a map of mediatype => function to allow recursive minifier calls of the minifier functions.
 type Minifier struct {
 	minify map[string]Func
-	Info map[string]string
+	Info   map[string]string
 }
 
 // NewMinifier returns a new Minifier struct with initialized map.

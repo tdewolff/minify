@@ -512,8 +512,8 @@ func (z errWriter) shortenToken(token *css.TokenNode) *css.TokenNode {
 			}
 		}
 		s := token.Data[4 : len(token.Data)-1]
-		if len(s) > 2 && (s[0] == '"' || s[0] == '\'') && css.IsUrlUnquoted([]byte(s[1 : len(s)-1])) {
-			token.Data = append(append([]byte("url("), s[1 : len(s)-1]...), ')')
+		if len(s) > 2 && (s[0] == '"' || s[0] == '\'') && css.IsUrlUnquoted([]byte(s[1:len(s)-1])) {
+			token.Data = append(append([]byte("url("), s[1:len(s)-1]...), ')')
 		}
 	}
 	return token
