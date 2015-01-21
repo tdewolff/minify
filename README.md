@@ -40,7 +40,7 @@ Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/
 Make sure your HTML doesn't depend on spaces between `block` elements that have been changes to `inline` or `inline-block` elements using CSS. Your layout *should not* depend on those spaces and the minifier will remove them. An example is a list of `&lt;li&gt;`s which have `display:inline-block` applied.
 
 ## CSS
-The CSS minifier is very fast and complete, but will only use safe minifications:
+The CSS minifier is very fast and complete and will only use safe minifications:
 
 - remove comments and (most) whitespace
 - remove trailing semicolon(s)
@@ -58,6 +58,8 @@ The CSS minifier is very fast and complete, but will only use safe minifications
 - remove empty rulesets
 - remove repeated selectors
 - rewrite attribute selectors for IDs and classes (`div[id=a]` &#8594; `div#a`)
+- rewrites data URI's with base64 or ASCII whichever is shorter
+- calls minifier for data URI mediatypes, thus you can compress embedded SVG files if you have that minifier attached for example
 
 It does purposely not use the following techniques:
 
