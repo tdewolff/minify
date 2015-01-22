@@ -95,6 +95,13 @@ var booleanAttrMap = map[string]bool{
 	"visible":         true,
 }
 
+var caseInsensitiveAttrMap = map[string]bool{
+	"enctype":   true,
+	"language":   true,
+	"method":   true,
+	"type":   true,
+}
+
 var urlAttrMap = map[string]bool{
 	"href":       true,
 	"src":        true,
@@ -318,10 +325,10 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			}
 			prevText = nil
 
-			if len(token.Attr) == 0 && (token.Data == "body" || token.Data == "head" || token.Data == "html" || token.Data == "tbody" ||
+			if len(token.Attr) == 0 && (token.Data == "body" || token.Data == "head" || token.Data == "html" ||
 				tt == html.EndTagToken && (token.Data == "colgroup" || token.Data == "dd" || token.Data == "dt" ||
 					token.Data == "option" || token.Data == "td" || token.Data == "tfoot" ||
-					token.Data == "th" || token.Data == "thead" || token.Data == "tr")) {
+					token.Data == "th" || token.Data == "thead" || token.Data == "tbody" || token.Data == "tr")) {
 				break
 			} else if tt == html.EndTagToken && (token.Data == "p" || token.Data == "li") {
 				remove := false
@@ -337,6 +344,13 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					i++
 				}
 				if remove {
+					break
+				}
+			}
+
+			if token.Data == "script" || token.Data == "style" {
+				if nextTt, _, _ := tf.peek(1); nextTt == html.EndTagToken {
+					tf.shift()
 					break
 				}
 			}
@@ -367,6 +381,10 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				val = strings.Replace(val, "&", "&amp;", -1)
 				val = strings.Replace(val, "<", "&lt;", -1)
 
+				if caseInsensitiveAttrMap[attr.Key] {
+					val = strings.ToLower(val)
+				}
+
 				// default attribute values can be ommited
 				if attr.Key == "clear" && val == "none" ||
 					attr.Key == "colspan" && val == "1" ||
@@ -378,7 +396,9 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					attr.Key == "shape" && val == "rect" ||
 					attr.Key == "span" && val == "1" ||
 					attr.Key == "valuetype" && val == "data" ||
-					attr.Key == "type" && (token.Data == "script" && val == "text/javascript" ||
+					attr.Key == "language" && token.Data == "script" && val == "javascript" ||
+					attr.Key == "type" && (
+						token.Data == "script" && val == "text/javascript" ||
 						token.Data == "style" && val == "text/css" ||
 						token.Data == "link" && val == "text/css" ||
 						token.Data == "input" && val == "text" ||
@@ -408,7 +428,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 							return err
 						}
 					} else if strings.HasPrefix(attr.Key, "on") {
-						if strings.HasPrefix(val, "javascript:") {
+						if len(val) >= 11 && strings.ToLower(val[:11]) == "javascript:" {
 							val = val[11:]
 						}
 						val, err = m.MinifyString(defaultScriptType, val)
@@ -416,7 +436,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 							return err
 						}
 					} else if urlAttrMap[attr.Key] {
-						if strings.HasPrefix(val, "http:") {
+						if len(val) >= 5 && strings.ToLower(val[:5]) == "http:" {
 							val = val[5:]
 						}
 					} else if token.Data == "meta" && attr.Key == "content" {

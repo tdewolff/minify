@@ -79,6 +79,23 @@ func TestHTML(t *testing.T) {
 	helperHTML(t, m, "<strong>x </strong> y", "<strong>x</strong> y")
 	helperHTML(t, m, "<p>x </p>y", "<p>x</p>y")
 	helperHTML(t, m, "x <p>y</p>", "x<p>y")
+
+	// from HTML Minifier
+	helperHTML(t, m, "<DIV TITLE=\"blah\">boo</DIV>", "<div title=blah>boo</div>")
+	helperHTML(t, m, "<p title\n\n\t  =\n     \"bar\">foo</p>", "<p title=bar>foo")
+	helperHTML(t, m, "<p class=\" foo      \">foo bar baz</p>", "<p class=foo>foo bar baz")
+	helperHTML(t, m, "<a href=\"   http://example.com  \">x</a>", "<a href=\"//example.com\">x</a>")
+	helperHTML(t, m, "<input maxlength=\"     5 \">", "<input maxlength=5>")
+	helperHTML(t, m, "<input type=\"text\">", "<input>")
+	helperHTML(t, m, "<form method=\"get\">", "<form>")
+	helperHTML(t, m, "<script language=\"Javascript\">alert(1)</script>", "<script>alert(1)</script>")
+	helperHTML(t, m, "<script></script>", "")
+	helperHTML(t, m, "<p onclick=\" JavaScript: x\">x</p>", "<p onclick=\" x\">x")
+	helperHTML(t, m, "<link rel=\"stylesheet\" type=\"text/css\" href=\"http://example.com\">", "<link rel=stylesheet href=\"//example.com\">")
+	helperHTML(t, m, "<span Selected=\"selected\"></span>", "<span selected></span>")
+	helperHTML(t, m, "<table><thead><tr><th>foo</th><th>bar</th></tr></thead><tfoot><tr><th>baz</th><th>qux</th></tr></tfoot><tbody><tr><td>boo</td><td>moo</td></tr></tbody></table>",
+		"<table><thead><tr><th>foo<th>bar<tfoot><tr><th>baz<th>qux<tbody><tr><td>boo<td>moo</table>")
+	helperHTML(t, m, "<select><option>foo</option><option>bar</option></select>", "<select><option>foo<option>bar</select>")
 }
 
 func TestWhitespace(t *testing.T) {
