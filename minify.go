@@ -65,6 +65,7 @@ func NewMinifierDefault() *Minifier {
 		map[string]Func{
 			"text/html": (Minifier).HTML,
 			"text/css":  (Minifier).CSS,
+			"*/*":       (Minifier).Default,
 		},
 		map[string]string{},
 	}
