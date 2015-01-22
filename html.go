@@ -96,10 +96,39 @@ var booleanAttrMap = map[string]bool{
 }
 
 var caseInsensitiveAttrMap = map[string]bool{
-	"enctype":   true,
-	"language":   true,
-	"method":   true,
-	"type":   true,
+	"accept-charset": true,
+	"accept":         true,
+	"align":          true,
+	"alink":          true,
+	"axis":           true,
+	"bgcolor":        true,
+	"charset":        true,
+	"clear":          true,
+	"codetype":       true,
+	"color":          true,
+	"dir":            true,
+	"enctype":        true,
+	"face":           true,
+	"frame":          true,
+	"hreflang":       true,
+	"http-equiv":     true,
+	"lang":           true,
+	"language":       true,
+	"link":           true,
+	"media":          true,
+	"method":         true,
+	"rel":            true,
+	"rev":            true,
+	"rules":          true,
+	"scope":          true,
+	"scrolling":      true,
+	"shape":          true,
+	"target":         true,
+	"text":           true,
+	"type":           true,
+	"valign":         true,
+	"valuetype":      true,
+	"vlink":          true,
 }
 
 var urlAttrMap = map[string]bool{
@@ -397,8 +426,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					attr.Key == "span" && val == "1" ||
 					attr.Key == "valuetype" && val == "data" ||
 					attr.Key == "language" && token.Data == "script" && val == "javascript" ||
-					attr.Key == "type" && (
-						token.Data == "script" && val == "text/javascript" ||
+					attr.Key == "type" && (token.Data == "script" && val == "text/javascript" ||
 						token.Data == "style" && val == "text/css" ||
 						token.Data == "link" && val == "text/css" ||
 						token.Data == "input" && val == "text" ||
