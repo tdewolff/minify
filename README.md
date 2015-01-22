@@ -37,7 +37,7 @@ Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/
 [HTML Compressor](https://code.google.com/p/htmlcompressor/) with all HTML options turned on performs worse in output size and speed. It does not omit the `html`, `head`, `body`, ... tags which explains much of the size difference. Furthermore, the whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower. According to HTML Compressor, it produces smaller files than a couple of other libraries, which means `minify.HTML` does better than all.
 
 ### Beware
-Make sure your HTML doesn't depend on spaces between `block` elements that have been changes to `inline` or `inline-block` elements using CSS. Your layout *should not* depend on those spaces and the minifier will remove them. An example is a list of `&lt;li&gt;`s which have `display:inline-block` applied.
+Make sure your HTML doesn't depend on whitespace between `block` elements that have been changed to `inline` or `inline-block` elements using CSS. Your layout *should not* depend on those whitespaces as the minifier will remove them. An example is a list of `<li>`s which have `display:inline-block` applied and have whitespace inbetween them.
 
 ## CSS
 The CSS minifier is very fast and complete and will only use safe minifications:
