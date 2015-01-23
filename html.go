@@ -47,8 +47,6 @@ var inlineTagMap = map[string]bool{
 	"select":  true,
 }
 
-var invalidAttrChars = " \t\n\f\r\"'`=<>/"
-
 var booleanAttrMap = map[string]bool{
 	"allowfullscreen": true,
 	"async":           true,
@@ -150,6 +148,8 @@ var urlAttrMap = map[string]bool{
 	"data":       true,
 }
 
+////////////////////////////////////////////////////////////////
+
 // replaceMultipleWhitespace replaces any series of whitespace characters by a single space
 func replaceMultipleWhitespace(s []byte) []byte {
 	j := 0
@@ -171,15 +171,27 @@ func replaceMultipleWhitespace(s []byte) []byte {
 	return t[:j]
 }
 
+// isValidUnquotedAttr returns true when the bytes can be unquoted as an HTML attribute
+func isValidUnquotedAttr(s string) bool {
+	for _, x := range s {
+		if x == ' ' || x == '/' || x == '"' || x == '\'' || x == '`' || x >= '<' && x <= '>' || x >= '\n' && x <= '\r' {
+			return false
+		}
+	}
+	return true
+}
+
 // getAttr gets an attribute's value from a token
-func getAttr(token html.Token, k string) string {
+func getAttrVal(token html.Token, k string) string {
 	for _, attr := range token.Attr {
 		if attr.Key == k {
-			return strings.ToLower(attr.Val)
+			return attr.Val
 		}
 	}
 	return ""
 }
+
+////////////////////////////////////////////////////////////////
 
 type token struct {
 	tt    html.TokenType
@@ -214,6 +226,8 @@ func (tf *tokenFeed) peek(pos int) (html.TokenType, html.Token, []byte) {
 	}
 	return tf.buf[pos].tt, tf.buf[pos].token, tf.buf[pos].text
 }
+
+////////////////////////////////////////////////////////////////
 
 // HTML minifies HTML5 files, it reads from r and writes to w.
 // Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 10% in size.
@@ -271,7 +285,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			if len(specialTag) > 0 {
 				tag := specialTag[len(specialTag)-1].Data
 				if tag == "style" || tag == "script" {
-					mime := getAttr(specialTag[len(specialTag)-1], "type")
+					mime := getAttrVal(specialTag[len(specialTag)-1], "type")
 					if mime == "" {
 						// default mime types
 						if tag == "script" {
@@ -396,8 +410,8 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				return err
 			}
 
-			if token.Data == "meta" && getAttr(token, "http-equiv") == "content-type" &&
-				getAttr(token, "content") == "text/html; charset=utf-8" {
+			if token.Data == "meta" && getAttrVal(token, "http-equiv") == "content-type" &&
+				strings.ToLower(getAttrVal(token, "content")) == "text/html; charset=utf-8" {
 				if _, err := w.Write([]byte(" charset=utf-8>")); err != nil {
 					return err
 				}
@@ -407,9 +421,6 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			// output attributes
 			for _, attr := range token.Attr {
 				val := strings.TrimSpace(attr.Val)
-				val = strings.Replace(val, "&", "&amp;", -1)
-				val = strings.Replace(val, "<", "&lt;", -1)
-
 				if caseInsensitiveAttrMap[attr.Key] {
 					val = strings.ToLower(val)
 				}
@@ -455,7 +466,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 						if err != nil && err != ErrNotExist {
 							return err
 						}
-					} else if strings.HasPrefix(attr.Key, "on") {
+					} else if len(attr.Key) > 2 && attr.Key[:2] == "on" {
 						if len(val) >= 11 && strings.ToLower(val[:11]) == "javascript:" {
 							val = val[11:]
 						}
@@ -468,7 +479,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 							val = val[5:]
 						}
 					} else if token.Data == "meta" && attr.Key == "content" {
-						httpEquiv := getAttr(token, "http-equiv")
+						httpEquiv := getAttrVal(token, "http-equiv")
 						if httpEquiv == "content-type" {
 							val = strings.Replace(val, ", ", ",", -1)
 						} else if httpEquiv == "content-style-type" {
@@ -477,7 +488,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 							defaultScriptType = val
 						}
 
-						name := getAttr(token, "name")
+						name := strings.ToLower(getAttrVal(token, "name"))
 						if name == "keywords" {
 							val = strings.Replace(val, ", ", ",", -1)
 						} else if name == "viewport" {
@@ -486,7 +497,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					}
 
 					// no quote if possible, else prefer single or double depending on which occurs more often in value
-					if strings.IndexAny(val, invalidAttrChars) == -1 {
+					if isValidUnquotedAttr(val) {
 						if _, err := w.Write([]byte(val)); err != nil {
 							return err
 						}
