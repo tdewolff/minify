@@ -135,6 +135,23 @@ func replaceMultipleWhitespace(s []byte) []byte {
 	return t[:j]
 }
 
+// replaceFirstMultipleWhitespace replaces any series of whitespace characters by a single space at the beginning
+func replaceFirstMultipleWhitespace(s []byte) []byte {
+	j := 0
+	for _, x := range s {
+		if x == ' ' || x == '\n' || x == '\r' || x == '\t' || x == '\f' {
+			j++
+		} else {
+			break
+		}
+	}
+	if j > 0 {
+		s[j-1] = ' '
+		return s[j-1:]
+	}
+	return s
+}
+
 // isValidUnquotedAttr returns true when the bytes can be unquoted as an HTML attribute
 func isValidUnquotedAttr(s []byte) bool {
 	for _, x := range s {
@@ -218,10 +235,7 @@ func (tf *tokenFeed) peek(pos int) *token {
 		t := &token{tf.z.Next(), 0, nil, nil, nil, nil}
 		switch t.tt {
 		case html.TextToken, html.CommentToken, html.DoctypeToken:
-			t.text = tf.z.Text()
-			if t.tt == html.TextToken {
-				t.text = replaceMultipleWhitespace(t.text)
-			}
+			t.text = replaceFirstMultipleWhitespace(tf.z.Text())
 		case html.StartTagToken, html.SelfClosingTagToken, html.EndTagToken:
 			var moreAttr bool
 			var keyRaw, val []byte
@@ -283,13 +297,12 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			}
 			prevText = nil
 
-			comment := t.text
 			// TODO: ensure that nested comments are handled properly (tokenizer doesn't handle this!)
-			if bytes.HasPrefix(comment, []byte("[if")) {
-				prevText = append(append([]byte("<!--"), comment...), []byte("-->")...)
-			} else if bytes.HasSuffix(comment, []byte("--")) {
+			if bytes.HasPrefix(t.text, []byte("[if")) {
+				prevText = append(append([]byte("<!--"), t.text...), []byte("-->")...)
+			} else if bytes.HasSuffix(t.text, []byte("--")) {
 				// only occurs when mixed up with conditional comments
-				prevText = append(append([]byte("<!"), comment...), []byte(">")...)
+				prevText = append(append([]byte("<!"), t.text...), []byte(">")...)
 			}
 		case html.TextToken:
 			if _, err := w.Write(prevText); err != nil {
@@ -332,7 +345,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			}
 
 			// whitespace removal; if after an inline element, trim left if precededBySpace
-			prevText = t.text
+			prevText = replaceMultipleWhitespace(t.text)
 			if prevTagToken != nil && inlineTagMap[prevTagToken.token] {
 				if precededBySpace && len(prevText) > 0 && prevText[0] == ' ' {
 					prevText = prevText[1:]
