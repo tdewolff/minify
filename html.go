@@ -24,7 +24,6 @@ var inlineTagMap = map[atom.Atom]bool{
 	atom.Small:   true,
 	atom.Tt:      true,
 	atom.Abbr:    true,
-	//atom.Acronym: true,
 	atom.Cite:    true,
 	atom.Dfn:     true,
 	atom.Em:      true,
@@ -48,61 +47,40 @@ var inlineTagMap = map[atom.Atom]bool{
 }
 
 var booleanAttrMap = map[atom.Atom]bool{
-	//atom.Allowfullscreen: true,
 	atom.Async:           true,
 	atom.Autofocus:       true,
 	atom.Autoplay:        true,
 	atom.Checked:         true,
-	//atom.Compact:         true,
 	atom.Controls:        true,
-	//atom.Declare:         true,
 	atom.Default:         true,
-	//atom.DefaultChecked:  true,
-	//atom.DefaultMuted:    true,
-	//atom.DefaultSelected: true,
 	atom.Defer:           true,
 	atom.Disabled:        true,
 	atom.Draggable:       true,
-	//atom.Enabled:         true,
 	atom.Formnovalidate:  true,
 	atom.Hidden:          true,
-	//atom.Undeterminate:   true,
 	atom.Inert:           true,
 	atom.Ismap:           true,
 	atom.Itemscope:       true,
 	atom.Multiple:        true,
 	atom.Muted:           true,
-	//atom.Nohref:          true,
-	//atom.Noresize:        true,
-	//atom.Noshade:         true,
 	atom.Novalidate:      true,
-	//atom.Nowrap:          true,
 	atom.Open:            true,
-	//atom.Pauseonexit:     true,
 	atom.Readonly:        true,
 	atom.Required:        true,
 	atom.Reversed:        true,
 	atom.Scoped:          true,
 	atom.Seamless:        true,
 	atom.Selected:        true,
-	//atom.Sortable:        true,
 	atom.Spellcheck:      true,
 	atom.Translate:       true,
-	//atom.Truespeed:       true,
 	atom.Typemustmatch:   true,
-	//atom.Visible:         true,
 }
 
 var caseInsensitiveAttrMap = map[atom.Atom]bool{
 	atom.AcceptCharset:  true,
 	atom.Accept:         true,
 	atom.Align:          true,
-	//atom.Alink:          true,
-	//atom.Axis:           true,
-	//atom.Bgcolor:        true,
 	atom.Charset:        true,
-	//atom.Clear:          true,
-	//atom.Codetype:       true,
 	atom.Color:          true,
 	atom.Dir:            true,
 	atom.Enctype:        true,
@@ -111,22 +89,14 @@ var caseInsensitiveAttrMap = map[atom.Atom]bool{
 	atom.Hreflang:       true,
 	atom.HttpEquiv:      true,
 	atom.Lang:           true,
-	//atom.Language:       true,
 	atom.Link:           true,
 	atom.Media:          true,
 	atom.Method:         true,
 	atom.Rel:            true,
-	//atom.Rev:            true,
-	//atom.Rules:          true,
 	atom.Scope:          true,
-	//atom.Scrolling:      true,
 	atom.Shape:          true,
 	atom.Target:         true,
-	//atom.Text:           true,
 	atom.Type:           true,
-	//atom.Valign:         true,
-	//atom.Valuetype:      true,
-	//atom.Vlink:          true,
 }
 
 var urlAttrMap = map[atom.Atom]bool{
@@ -134,16 +104,10 @@ var urlAttrMap = map[atom.Atom]bool{
 	atom.Src:        true,
 	atom.Cite:       true,
 	atom.Action:     true,
-	//atom.Profile:    true,
-	//atom.Xmlns:      true,
 	atom.Formaction: true,
 	atom.Poster:     true,
 	atom.Manifest:   true,
 	atom.Icon:       true,
-	//atom.Codebase:   true,
-	//atom.Longdesc:   true,
-	//atom.Background: true,
-	//atom.Classid:    true,
 	atom.Usemap:     true,
 	atom.Data:       true,
 }
@@ -479,16 +443,11 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 
 				// default attribute values can be ommited
 				if key == atom.Colspan && bytes.Equal(val, []byte("1")) ||
-					//bytes.Equal(attr.keyRaw, []byte("clear")) && bytes.Equal(val, []byte("none")) ||
 					key == atom.Enctype && bytes.Equal(val, []byte("application/x-www-form-urlencoded")) ||
-					//bytes.Equal(attr.keyRaw, []byte("frameborder")) && bytes.Equal(val, []byte("1")) ||
 					key == atom.Method && bytes.Equal(val, []byte("get")) ||
 					key == atom.Rowspan && bytes.Equal(val, []byte("1")) ||
-					//bytes.Equal(attr.keyRaw, []byte("scrolling")) && bytes.Equal(val, []byte("auto")) ||
 					key == atom.Shape && bytes.Equal(val, []byte("rect")) ||
 					key == atom.Span && bytes.Equal(val, []byte("1")) ||
-					//bytes.Equal(attr.keyRaw, []byte("valuetype")) && bytes.Equal(val, []byte("data")) ||
-					//bytes.Equal(attr.keyRaw, []byte("language")) && t.token == atom.Script && bytes.Equal(val, []byte("javascript")) ||
 					key == atom.Type && (t.token == atom.Script && bytes.Equal(val, []byte("text/javascript")) ||
 						t.token == atom.Style && bytes.Equal(val, []byte("text/css")) ||
 						t.token == atom.Link && bytes.Equal(val, []byte("text/css")) ||

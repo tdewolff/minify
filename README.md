@@ -8,10 +8,10 @@ It associates minification functions with mime types, allowing embedded resource
 ## Comparison
 Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/) | Minify | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | ------------------------------------------------------------ | ------ | ----- | -----------------------
-[Amazon](http://www.amazon.com/) | 463kB | 457kB | **438kB** | 95%<sup>&#42;&#42;</sup> | 18ms
-[BBC](http://www.bbc.com/) | 113kB | 103kB | **100kB** | 89% | 9ms
-[StackOverflow](http://stackoverflow.com/) | 201kB | 184kB | **183kB** | 91% | 23ms
-[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 423kB | **411kB** | 94%<sup>&#42;&#42;&#42;</sup> | 46ms
+[Amazon](http://www.amazon.com/) | 463kB | 457kB | **438kB** | 95%<sup>&#42;&#42;</sup> | 16ms
+[BBC](http://www.bbc.com/) | 113kB | 103kB | **100kB** | 89% | 8ms
+[StackOverflow](http://stackoverflow.com/) | 201kB | 184kB | **183kB** | 91% | 21ms
+[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 423kB | **411kB** | 94%<sup>&#42;&#42;&#42;</sup> | 43ms
 
 <sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 20ms range! The benchmark uses the HTML and CSS minifier and excludes the time reading from and writing to a file from the measurement.
 
