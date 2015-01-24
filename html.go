@@ -9,107 +9,107 @@ import (
 )
 
 var specialTagMap = map[atom.Atom]bool{
-	atom.Style:    true,
-	atom.Script:   true,
-	atom.Pre:      true,
 	atom.Code:     true,
-	atom.Textarea: true,
 	atom.Noscript: true,
+	atom.Pre:      true,
+	atom.Script:   true,
+	atom.Style:    true,
+	atom.Textarea: true,
 }
 
 var inlineTagMap = map[atom.Atom]bool{
-	atom.B:       true,
-	atom.Big:     true,
-	atom.I:       true,
-	atom.Small:   true,
-	atom.Tt:      true,
-	atom.Abbr:    true,
-	atom.Cite:    true,
-	atom.Dfn:     true,
-	atom.Em:      true,
-	atom.Kbd:     true,
-	atom.Strong:  true,
-	atom.Samp:    true,
-	atom.Var:     true,
-	atom.A:       true,
-	atom.Bdo:     true,
-	atom.Img:     true,
-	atom.Map:     true,
-	atom.Object:  true,
-	atom.Q:       true,
-	atom.Span:    true,
-	atom.Sub:     true,
-	atom.Sup:     true,
-	atom.Button:  true,
-	atom.Input:   true,
-	atom.Label:   true,
-	atom.Select:  true,
+	atom.A:      true,
+	atom.Abbr:   true,
+	atom.B:      true,
+	atom.Bdo:    true,
+	atom.Big:    true,
+	atom.Cite:   true,
+	atom.Button: true,
+	atom.Dfn:    true,
+	atom.Em:     true,
+	atom.I:      true,
+	atom.Img:    true,
+	atom.Input:  true,
+	atom.Kbd:    true,
+	atom.Label:  true,
+	atom.Map:    true,
+	atom.Object: true,
+	atom.Q:      true,
+	atom.Samp:   true,
+	atom.Select: true,
+	atom.Small:  true,
+	atom.Span:   true,
+	atom.Strong: true,
+	atom.Sub:    true,
+	atom.Sup:    true,
+	atom.Tt:     true,
+	atom.Var:    true,
 }
 
 var booleanAttrMap = map[atom.Atom]bool{
-	atom.Async:           true,
-	atom.Autofocus:       true,
-	atom.Autoplay:        true,
-	atom.Checked:         true,
-	atom.Controls:        true,
-	atom.Default:         true,
-	atom.Defer:           true,
-	atom.Disabled:        true,
-	atom.Draggable:       true,
-	atom.Formnovalidate:  true,
-	atom.Hidden:          true,
-	atom.Inert:           true,
-	atom.Ismap:           true,
-	atom.Itemscope:       true,
-	atom.Multiple:        true,
-	atom.Muted:           true,
-	atom.Novalidate:      true,
-	atom.Open:            true,
-	atom.Readonly:        true,
-	atom.Required:        true,
-	atom.Reversed:        true,
-	atom.Scoped:          true,
-	atom.Seamless:        true,
-	atom.Selected:        true,
-	atom.Spellcheck:      true,
-	atom.Translate:       true,
-	atom.Typemustmatch:   true,
+	atom.Async:          true,
+	atom.Autofocus:      true,
+	atom.Autoplay:       true,
+	atom.Checked:        true,
+	atom.Controls:       true,
+	atom.Default:        true,
+	atom.Defer:          true,
+	atom.Disabled:       true,
+	atom.Draggable:      true,
+	atom.Formnovalidate: true,
+	atom.Hidden:         true,
+	atom.Inert:          true,
+	atom.Ismap:          true,
+	atom.Itemscope:      true,
+	atom.Multiple:       true,
+	atom.Muted:          true,
+	atom.Novalidate:     true,
+	atom.Open:           true,
+	atom.Readonly:       true,
+	atom.Required:       true,
+	atom.Reversed:       true,
+	atom.Scoped:         true,
+	atom.Seamless:       true,
+	atom.Selected:       true,
+	atom.Spellcheck:     true,
+	atom.Translate:      true,
+	atom.Typemustmatch:  true,
 }
 
 var caseInsensitiveAttrMap = map[atom.Atom]bool{
-	atom.AcceptCharset:  true,
-	atom.Accept:         true,
-	atom.Align:          true,
-	atom.Charset:        true,
-	atom.Color:          true,
-	atom.Dir:            true,
-	atom.Enctype:        true,
-	atom.Face:           true,
-	atom.Frame:          true,
-	atom.Hreflang:       true,
-	atom.HttpEquiv:      true,
-	atom.Lang:           true,
-	atom.Link:           true,
-	atom.Media:          true,
-	atom.Method:         true,
-	atom.Rel:            true,
-	atom.Scope:          true,
-	atom.Shape:          true,
-	atom.Target:         true,
-	atom.Type:           true,
+	atom.AcceptCharset: true,
+	atom.Accept:        true,
+	atom.Align:         true,
+	atom.Charset:       true,
+	atom.Color:         true,
+	atom.Dir:           true,
+	atom.Enctype:       true,
+	atom.Face:          true,
+	atom.Frame:         true,
+	atom.Hreflang:      true,
+	atom.HttpEquiv:     true,
+	atom.Lang:          true,
+	atom.Link:          true,
+	atom.Media:         true,
+	atom.Method:        true,
+	atom.Rel:           true,
+	atom.Scope:         true,
+	atom.Shape:         true,
+	atom.Target:        true,
+	atom.Type:          true,
 }
 
 var urlAttrMap = map[atom.Atom]bool{
-	atom.Href:       true,
-	atom.Src:        true,
-	atom.Cite:       true,
 	atom.Action:     true,
-	atom.Formaction: true,
-	atom.Poster:     true,
-	atom.Manifest:   true,
-	atom.Icon:       true,
-	atom.Usemap:     true,
+	atom.Cite:       true,
 	atom.Data:       true,
+	atom.Formaction: true,
+	atom.Href:       true,
+	atom.Icon:       true,
+	atom.Manifest:   true,
+	atom.Poster:     true,
+	atom.Src:        true,
+	atom.Usemap:     true,
 }
 
 ////////////////////////////////////////////////////////////////
@@ -149,28 +149,34 @@ func moreDoubleQuotes(s []byte) bool {
 	singles := 0
 	doubles := 0
 	for _, x := range s {
-		if x == '"' {
-			doubles++
-		} else if x == '\'' {
+		if x == '\'' {
 			singles++
+		} else if x == '"' {
+			doubles++
 		}
 	}
 	return doubles > singles
 }
 
+func copyBytes(src []byte) []byte {
+	dst := make([]byte, len(src))
+	copy(dst, src)
+	return dst
+}
+
 ////////////////////////////////////////////////////////////////
 
 type attribute struct {
-	key atom.Atom
+	key         atom.Atom
 	keyRaw, val []byte
 }
 
 type token struct {
-	tt    html.TokenType
-	token atom.Atom
+	tt       html.TokenType
+	token    atom.Atom
 	tokenRaw []byte
-	text  []byte
-	attr  []attribute
+	text     []byte
+	attr     []attribute
 	attrKey  map[atom.Atom]int
 }
 
@@ -197,21 +203,15 @@ func (tf *tokenFeed) shift() *token {
 	return tf.peek(0)
 }
 
-func deepCopy(src []byte) []byte {
-	dst := make([]byte, len(src))
-	copy(dst, src)
-	return dst
-}
-
 func (tf *tokenFeed) peek(pos int) *token {
 	if pos == len(tf.buf) {
 		if len(tf.buf) > 0 {
 			t := tf.buf[len(tf.buf)-1]
-			t.tokenRaw = deepCopy(t.tokenRaw)
-			t.text = deepCopy(t.text)
+			t.tokenRaw = copyBytes(t.tokenRaw)
+			t.text = copyBytes(t.text)
 			for _, attr := range t.attr {
-				attr.keyRaw = deepCopy(attr.keyRaw)
-				attr.val = deepCopy(attr.val)
+				attr.keyRaw = copyBytes(attr.keyRaw)
+				attr.val = copyBytes(attr.val)
 			}
 		}
 
@@ -234,7 +234,7 @@ func (tf *tokenFeed) peek(pos int) *token {
 					keyRaw, val, moreAttr = tf.z.TagAttr()
 					key := atom.Lookup(keyRaw)
 					t.attr = append(t.attr, attribute{key, keyRaw, bytes.TrimSpace(val)})
-					t.attrKey[key] = len(t.attr)-1
+					t.attrKey[key] = len(t.attr) - 1
 				}
 			}
 		}
@@ -249,7 +249,7 @@ func (tf *tokenFeed) peek(pos int) *token {
 // HTML minifies HTML5 files, it reads from r and writes to w.
 // Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 10% in size.
 func (m Minifier) HTML(w io.Writer, r io.Reader) error {
-	var prevText []byte         // write prevText token until next token is received, allows to look forward one token before writing away
+	var prevText []byte     // write prevText token until next token is received, allows to look forward one token before writing away
 	var specialTag []*token // stack array of special tags it is in
 	var prevTagToken *token
 	precededBySpace := true // on true the next prevText token must no start with a space
@@ -383,10 +383,9 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			}
 			prevText = nil
 
-			if t.attr == nil && (t.token == atom.Body || t.token == atom.Head || t.token == atom.Html ||
-				t.tt == html.EndTagToken && (t.token == atom.Colgroup || t.token == atom.Dd || t.token == atom.Dt ||
-					t.token == atom.Option || t.token == atom.Td || t.token == atom.Tfoot ||
-					t.token == atom.Th || t.token == atom.Thead || t.token == atom.Tbody || t.token == atom.Tr)) {
+			if t.attr == nil && (t.token == atom.Html || t.token == atom.Head || t.token == atom.Body ||
+				t.tt == html.EndTagToken && (t.token == atom.Td || t.token == atom.Tr || t.token == atom.Th || t.token == atom.Thead || t.token == atom.Tbody || t.token == atom.Tfoot ||
+					t.token == atom.Option || t.token == atom.Colgroup || t.token == atom.Dd || t.token == atom.Dt)) {
 				break
 			} else if t.tt == html.EndTagToken && (t.token == atom.P || t.token == atom.Li) {
 				remove := false
@@ -396,7 +395,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					// continue if text token is empty or whitespace
 					if nextT.tt != html.TextToken || (len(nextT.text) > 0 && string(nextT.text) != " ") { // TODO: could write len == 1 and byte 0 == space
 						// remove only when encountering EOF, end tag (from parent) or a start tag of the same tag
-						remove = (nextT.tt == html.ErrorToken || nextT.tt == html.EndTagToken || (nextT.tt == html.StartTagToken && nextT.token == t.token))
+						remove = ((nextT.tt == html.StartTagToken && nextT.token == t.token) || nextT.tt == html.EndTagToken || nextT.tt == html.ErrorToken)
 						break
 					}
 					i++
@@ -435,24 +434,23 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 
 			// output attributes
 			for _, attr := range t.attr {
-				key := attr.key
 				val := attr.val
-				if caseInsensitiveAttrMap[key] {
+				if caseInsensitiveAttrMap[attr.key] {
 					val = bytes.ToLower(val)
 				}
 
 				// default attribute values can be ommited
-				if key == atom.Colspan && bytes.Equal(val, []byte("1")) ||
-					key == atom.Enctype && bytes.Equal(val, []byte("application/x-www-form-urlencoded")) ||
-					key == atom.Method && bytes.Equal(val, []byte("get")) ||
-					key == atom.Rowspan && bytes.Equal(val, []byte("1")) ||
-					key == atom.Shape && bytes.Equal(val, []byte("rect")) ||
-					key == atom.Span && bytes.Equal(val, []byte("1")) ||
-					key == atom.Type && (t.token == atom.Script && bytes.Equal(val, []byte("text/javascript")) ||
-						t.token == atom.Style && bytes.Equal(val, []byte("text/css")) ||
-						t.token == atom.Link && bytes.Equal(val, []byte("text/css")) ||
-						t.token == atom.Input && bytes.Equal(val, []byte("text")) ||
-						t.token == atom.Button && bytes.Equal(val, []byte("submit"))) {
+				if attr.key == atom.Type && (t.token == atom.Script && bytes.Equal(val, []byte("text/javascript")) ||
+					t.token == atom.Style && bytes.Equal(val, []byte("text/css")) ||
+					t.token == atom.Link && bytes.Equal(val, []byte("text/css")) ||
+					t.token == atom.Input && bytes.Equal(val, []byte("text")) ||
+					t.token == atom.Button && bytes.Equal(val, []byte("submit"))) ||
+					attr.key == atom.Method && bytes.Equal(val, []byte("get")) ||
+					attr.key == atom.Enctype && bytes.Equal(val, []byte("application/x-www-form-urlencoded")) ||
+					attr.key == atom.Colspan && bytes.Equal(val, []byte("1")) ||
+					attr.key == atom.Rowspan && bytes.Equal(val, []byte("1")) ||
+					attr.key == atom.Shape && bytes.Equal(val, []byte("rect")) ||
+					attr.key == atom.Span && bytes.Equal(val, []byte("1")) {
 					continue
 				}
 				if _, err := w.Write([]byte(" ")); err != nil {
@@ -462,7 +460,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					return err
 				}
 
-				isBoolean := booleanAttrMap[key]
+				isBoolean := booleanAttrMap[attr.key]
 				if len(val) == 0 && !isBoolean {
 					continue
 				}
@@ -475,7 +473,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					}
 
 					// CSS and JS minifiers for attribute inline code
-					if key == atom.Style {
+					if attr.key == atom.Style {
 						val, err = m.MinifyBytes(defaultStyleType, val)
 						if err != nil && err != ErrNotExist {
 							return err
@@ -488,11 +486,11 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 						if err != nil && err != ErrNotExist {
 							return err
 						}
-					} else if urlAttrMap[key] {
+					} else if urlAttrMap[attr.key] {
 						if len(val) >= 5 && bytes.Equal(bytes.ToLower(val[:5]), []byte("http:")) {
 							val = val[5:]
 						}
-					} else if t.token == atom.Meta && key == atom.Content {
+					} else if t.token == atom.Meta && attr.key == atom.Content {
 						httpEquiv := t.getAttrVal(atom.HttpEquiv)
 						if bytes.Equal(httpEquiv, []byte("content-type")) {
 							val = bytes.Replace(val, []byte(", "), []byte(","), -1)
