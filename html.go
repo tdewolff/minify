@@ -3,149 +3,149 @@ package minify
 import (
 	"bytes"
 	"io"
-	"strings"
 
 	"code.google.com/p/go.net/html"
+	"code.google.com/p/go.net/html/atom"
 )
 
-var specialTagMap = map[string]bool{
-	"style":    true,
-	"script":   true,
-	"pre":      true,
-	"code":     true,
-	"textarea": true,
-	"noscript": true,
+var specialTagMap = map[atom.Atom]bool{
+	atom.Style:    true,
+	atom.Script:   true,
+	atom.Pre:      true,
+	atom.Code:     true,
+	atom.Textarea: true,
+	atom.Noscript: true,
 }
 
-var inlineTagMap = map[string]bool{
-	"b":       true,
-	"big":     true,
-	"i":       true,
-	"small":   true,
-	"tt":      true,
-	"abbr":    true,
-	"acronym": true,
-	"cite":    true,
-	"dfn":     true,
-	"em":      true,
-	"kbd":     true,
-	"strong":  true,
-	"samp":    true,
-	"var":     true,
-	"a":       true,
-	"bdo":     true,
-	"img":     true,
-	"map":     true,
-	"object":  true,
-	"q":       true,
-	"span":    true,
-	"sub":     true,
-	"sup":     true,
-	"button":  true,
-	"input":   true,
-	"label":   true,
-	"select":  true,
+var inlineTagMap = map[atom.Atom]bool{
+	atom.B:       true,
+	atom.Big:     true,
+	atom.I:       true,
+	atom.Small:   true,
+	atom.Tt:      true,
+	atom.Abbr:    true,
+	//atom.Acronym: true,
+	atom.Cite:    true,
+	atom.Dfn:     true,
+	atom.Em:      true,
+	atom.Kbd:     true,
+	atom.Strong:  true,
+	atom.Samp:    true,
+	atom.Var:     true,
+	atom.A:       true,
+	atom.Bdo:     true,
+	atom.Img:     true,
+	atom.Map:     true,
+	atom.Object:  true,
+	atom.Q:       true,
+	atom.Span:    true,
+	atom.Sub:     true,
+	atom.Sup:     true,
+	atom.Button:  true,
+	atom.Input:   true,
+	atom.Label:   true,
+	atom.Select:  true,
 }
 
-var booleanAttrMap = map[string]bool{
-	"allowfullscreen": true,
-	"async":           true,
-	"autofocus":       true,
-	"autoplay":        true,
-	"checked":         true,
-	"compact":         true,
-	"controls":        true,
-	"declare":         true,
-	"default":         true,
-	"defaultChecked":  true,
-	"defaultMuted":    true,
-	"defaultSelected": true,
-	"defer":           true,
-	"disabled":        true,
-	"draggable":       true,
-	"enabled":         true,
-	"formnovalidate":  true,
-	"hidden":          true,
-	"undeterminate":   true,
-	"inert":           true,
-	"ismap":           true,
-	"itemscope":       true,
-	"multiple":        true,
-	"muted":           true,
-	"nohref":          true,
-	"noresize":        true,
-	"noshade":         true,
-	"novalidate":      true,
-	"nowrap":          true,
-	"open":            true,
-	"pauseonexit":     true,
-	"readonly":        true,
-	"required":        true,
-	"reversed":        true,
-	"scoped":          true,
-	"seamless":        true,
-	"selected":        true,
-	"sortable":        true,
-	"spellcheck":      true,
-	"translate":       true,
-	"truespeed":       true,
-	"typemustmatch":   true,
-	"visible":         true,
+var booleanAttrMap = map[atom.Atom]bool{
+	//atom.Allowfullscreen: true,
+	atom.Async:           true,
+	atom.Autofocus:       true,
+	atom.Autoplay:        true,
+	atom.Checked:         true,
+	//atom.Compact:         true,
+	atom.Controls:        true,
+	//atom.Declare:         true,
+	atom.Default:         true,
+	//atom.DefaultChecked:  true,
+	//atom.DefaultMuted:    true,
+	//atom.DefaultSelected: true,
+	atom.Defer:           true,
+	atom.Disabled:        true,
+	atom.Draggable:       true,
+	//atom.Enabled:         true,
+	atom.Formnovalidate:  true,
+	atom.Hidden:          true,
+	//atom.Undeterminate:   true,
+	atom.Inert:           true,
+	atom.Ismap:           true,
+	atom.Itemscope:       true,
+	atom.Multiple:        true,
+	atom.Muted:           true,
+	//atom.Nohref:          true,
+	//atom.Noresize:        true,
+	//atom.Noshade:         true,
+	atom.Novalidate:      true,
+	//atom.Nowrap:          true,
+	atom.Open:            true,
+	//atom.Pauseonexit:     true,
+	atom.Readonly:        true,
+	atom.Required:        true,
+	atom.Reversed:        true,
+	atom.Scoped:          true,
+	atom.Seamless:        true,
+	atom.Selected:        true,
+	//atom.Sortable:        true,
+	atom.Spellcheck:      true,
+	atom.Translate:       true,
+	//atom.Truespeed:       true,
+	atom.Typemustmatch:   true,
+	//atom.Visible:         true,
 }
 
-var caseInsensitiveAttrMap = map[string]bool{
-	"accept-charset": true,
-	"accept":         true,
-	"align":          true,
-	"alink":          true,
-	"axis":           true,
-	"bgcolor":        true,
-	"charset":        true,
-	"clear":          true,
-	"codetype":       true,
-	"color":          true,
-	"dir":            true,
-	"enctype":        true,
-	"face":           true,
-	"frame":          true,
-	"hreflang":       true,
-	"http-equiv":     true,
-	"lang":           true,
-	"language":       true,
-	"link":           true,
-	"media":          true,
-	"method":         true,
-	"rel":            true,
-	"rev":            true,
-	"rules":          true,
-	"scope":          true,
-	"scrolling":      true,
-	"shape":          true,
-	"target":         true,
-	"text":           true,
-	"type":           true,
-	"valign":         true,
-	"valuetype":      true,
-	"vlink":          true,
+var caseInsensitiveAttrMap = map[atom.Atom]bool{
+	atom.AcceptCharset:  true,
+	atom.Accept:         true,
+	atom.Align:          true,
+	//atom.Alink:          true,
+	//atom.Axis:           true,
+	//atom.Bgcolor:        true,
+	atom.Charset:        true,
+	//atom.Clear:          true,
+	//atom.Codetype:       true,
+	atom.Color:          true,
+	atom.Dir:            true,
+	atom.Enctype:        true,
+	atom.Face:           true,
+	atom.Frame:          true,
+	atom.Hreflang:       true,
+	atom.HttpEquiv:      true,
+	atom.Lang:           true,
+	//atom.Language:       true,
+	atom.Link:           true,
+	atom.Media:          true,
+	atom.Method:         true,
+	atom.Rel:            true,
+	//atom.Rev:            true,
+	//atom.Rules:          true,
+	atom.Scope:          true,
+	//atom.Scrolling:      true,
+	atom.Shape:          true,
+	atom.Target:         true,
+	//atom.Text:           true,
+	atom.Type:           true,
+	//atom.Valign:         true,
+	//atom.Valuetype:      true,
+	//atom.Vlink:          true,
 }
 
-var urlAttrMap = map[string]bool{
-	"href":       true,
-	"src":        true,
-	"cite":       true,
-	"action":     true,
-	"profile":    true,
-	"xmlns":      true,
-	"formaction": true,
-	"poster":     true,
-	"manifest":   true,
-	"icon":       true,
-	"codebase":   true,
-	"longdesc":   true,
-	"background": true,
-	"classid":    true,
-	"usemap":     true,
-	"data":       true,
+var urlAttrMap = map[atom.Atom]bool{
+	atom.Href:       true,
+	atom.Src:        true,
+	atom.Cite:       true,
+	atom.Action:     true,
+	//atom.Profile:    true,
+	//atom.Xmlns:      true,
+	atom.Formaction: true,
+	atom.Poster:     true,
+	atom.Manifest:   true,
+	atom.Icon:       true,
+	//atom.Codebase:   true,
+	//atom.Longdesc:   true,
+	//atom.Background: true,
+	//atom.Classid:    true,
+	atom.Usemap:     true,
+	atom.Data:       true,
 }
 
 ////////////////////////////////////////////////////////////////
@@ -172,7 +172,7 @@ func replaceMultipleWhitespace(s []byte) []byte {
 }
 
 // isValidUnquotedAttr returns true when the bytes can be unquoted as an HTML attribute
-func isValidUnquotedAttr(s string) bool {
+func isValidUnquotedAttr(s []byte) bool {
 	for _, x := range s {
 		if x == ' ' || x == '/' || x == '"' || x == '\'' || x == '`' || x >= '<' && x <= '>' || x >= '\n' && x <= '\r' {
 			return false
@@ -181,22 +181,40 @@ func isValidUnquotedAttr(s string) bool {
 	return true
 }
 
-// getAttr gets an attribute's value from a token
-func getAttrVal(token html.Token, k string) string {
-	for _, attr := range token.Attr {
-		if attr.Key == k {
-			return attr.Val
+func moreDoubleQuotes(s []byte) bool {
+	singles := 0
+	doubles := 0
+	for _, x := range s {
+		if x == '"' {
+			doubles++
+		} else if x == '\'' {
+			singles++
 		}
 	}
-	return ""
+	return doubles > singles
 }
 
 ////////////////////////////////////////////////////////////////
 
+type attribute struct {
+	key atom.Atom
+	keyRaw, val []byte
+}
+
 type token struct {
 	tt    html.TokenType
-	token html.Token
+	token atom.Atom
+	tokenRaw []byte
 	text  []byte
+	attr  []attribute
+	attrKey  map[atom.Atom]int
+}
+
+func (t *token) getAttrVal(a atom.Atom) []byte {
+	if i, ok := t.attrKey[a]; ok {
+		return t.attr[i].val
+	}
+	return []byte{}
 }
 
 type tokenFeed struct {
@@ -208,23 +226,58 @@ func newTokenFeed(z *html.Tokenizer) *tokenFeed {
 	return &tokenFeed{z: z}
 }
 
-func (tf *tokenFeed) shift() (html.TokenType, html.Token, []byte) {
+func (tf *tokenFeed) shift() *token {
 	if len(tf.buf) > 0 {
 		tf.buf = tf.buf[1:]
 	}
-	tf.peek(0)
-	return tf.buf[0].tt, tf.buf[0].token, tf.buf[0].text
+	return tf.peek(0)
 }
 
-func (tf *tokenFeed) peek(pos int) (html.TokenType, html.Token, []byte) {
-	for i := len(tf.buf); i <= pos; i++ {
-		t := &token{tf.z.Next(), tf.z.Token(), []byte{}}
-		if t.tt == html.TextToken {
-			t.text = replaceMultipleWhitespace([]byte(t.token.Data))
+func deepCopy(src []byte) []byte {
+	dst := make([]byte, len(src))
+	copy(dst, src)
+	return dst
+}
+
+func (tf *tokenFeed) peek(pos int) *token {
+	if pos == len(tf.buf) {
+		if len(tf.buf) > 0 {
+			t := tf.buf[len(tf.buf)-1]
+			t.tokenRaw = deepCopy(t.tokenRaw)
+			t.text = deepCopy(t.text)
+			for _, attr := range t.attr {
+				attr.keyRaw = deepCopy(attr.keyRaw)
+				attr.val = deepCopy(attr.val)
+			}
+		}
+
+		t := &token{tf.z.Next(), 0, nil, nil, nil, nil}
+		switch t.tt {
+		case html.TextToken, html.CommentToken, html.DoctypeToken:
+			t.text = tf.z.Text()
+			if t.tt == html.TextToken {
+				t.text = replaceMultipleWhitespace(t.text)
+			}
+		case html.StartTagToken, html.SelfClosingTagToken, html.EndTagToken:
+			var moreAttr bool
+			var keyRaw, val []byte
+			t.tokenRaw, moreAttr = tf.z.TagName()
+			t.token = atom.Lookup(t.tokenRaw)
+			if moreAttr {
+				t.attr = []attribute{}
+				t.attrKey = make(map[atom.Atom]int)
+				for moreAttr {
+					keyRaw, val, moreAttr = tf.z.TagAttr()
+					key := atom.Lookup(keyRaw)
+					t.attr = append(t.attr, attribute{key, keyRaw, bytes.TrimSpace(val)})
+					t.attrKey[key] = len(t.attr)-1
+				}
+			}
 		}
 		tf.buf = append(tf.buf, t)
+		return t
 	}
-	return tf.buf[pos].tt, tf.buf[pos].token, tf.buf[pos].text
+	return tf.buf[pos]
 }
 
 ////////////////////////////////////////////////////////////////
@@ -233,8 +286,8 @@ func (tf *tokenFeed) peek(pos int) (html.TokenType, html.Token, []byte) {
 // Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 10% in size.
 func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 	var prevText []byte         // write prevText token until next token is received, allows to look forward one token before writing away
-	var specialTag []html.Token // stack array of special tags it is in
-	var prevTagToken html.Token
+	var specialTag []*token // stack array of special tags it is in
+	var prevTagToken *token
 	precededBySpace := true // on true the next prevText token must no start with a space
 	defaultScriptType := "text/javascript"
 	defaultStyleType := "text/css"
@@ -242,8 +295,8 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 	z := html.NewTokenizer(r)
 	tf := newTokenFeed(z)
 	for {
-		tt, token, text := tf.shift()
-		switch tt {
+		t := tf.shift()
+		switch t.tt {
 		case html.ErrorToken:
 			if z.Err() == io.EOF {
 				if _, err := w.Write(prevText); err != nil {
@@ -257,7 +310,6 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				return err
 			}
 			prevText = nil
-
 			if _, err := w.Write([]byte("<!doctype html>")); err != nil {
 				return err
 			}
@@ -267,58 +319,57 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			}
 			prevText = nil
 
-			comment := token.Data
+			comment := t.text
 			// TODO: ensure that nested comments are handled properly (tokenizer doesn't handle this!)
-			if strings.HasPrefix(comment, "[if") {
-				prevText = []byte("<!--" + comment + "-->")
-			} else if strings.HasSuffix(comment, "--") {
+			if bytes.HasPrefix(comment, []byte("[if")) {
+				prevText = append(append([]byte("<!--"), comment...), []byte("-->")...)
+			} else if bytes.HasSuffix(comment, []byte("--")) {
 				// only occurs when mixed up with conditional comments
-				prevText = []byte("<!" + comment + ">")
+				prevText = append(append([]byte("<!"), comment...), []byte(">")...)
 			}
 		case html.TextToken:
 			if _, err := w.Write(prevText); err != nil {
 				return err
 			}
-			prevText = []byte(token.Data)
+			prevText = nil
 
 			// CSS and JS minifiers for inline code
 			if len(specialTag) > 0 {
-				tag := specialTag[len(specialTag)-1].Data
-				if tag == "style" || tag == "script" {
-					mime := getAttrVal(specialTag[len(specialTag)-1], "type")
-					if mime == "" {
-						// default mime types
-						if tag == "script" {
-							mime = defaultScriptType
-						} else {
-							mime = defaultStyleType
-						}
+				token := specialTag[len(specialTag)-1].token
+				if token == atom.Style || token == atom.Script {
+					var mediatype string
+					mediatypeRaw := specialTag[len(specialTag)-1].getAttrVal(atom.Type)
+					if len(mediatypeRaw) > 0 {
+						mediatype = string(mediatypeRaw)
+					} else if token == atom.Script {
+						mediatype = defaultScriptType
+					} else {
+						mediatype = defaultStyleType
 					}
 
-					if err := m.Minify(mime, w, bytes.NewBuffer(prevText)); err != nil {
+					if err := m.Minify(mediatype, w, bytes.NewBuffer(t.text)); err != nil {
 						if err == ErrNotExist {
 							// no minifier, write the original
-							if _, err := w.Write(prevText); err != nil {
+							if _, err := w.Write(t.text); err != nil {
 								return err
 							}
 						} else {
 							return err
 						}
 					}
-				} else if tag == "noscript" {
-					if err := m.HTML(w, bytes.NewBuffer(prevText)); err != nil {
+				} else if token == atom.Noscript {
+					if err := m.HTML(w, bytes.NewBuffer(t.text)); err != nil {
 						return err
 					}
-				} else if _, err := w.Write(prevText); err != nil {
+				} else if _, err := w.Write(t.text); err != nil {
 					return err
 				}
-				prevText = nil
 				break
 			}
 
 			// whitespace removal; if after an inline element, trim left if precededBySpace
-			prevText = text
-			if inlineTagMap[prevTagToken.Data] {
+			prevText = t.text
+			if prevTagToken != nil && inlineTagMap[prevTagToken.token] {
 				if precededBySpace && len(prevText) > 0 && prevText[0] == ' ' {
 					prevText = prevText[1:]
 				}
@@ -327,32 +378,32 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				prevText = prevText[1:]
 			}
 		case html.StartTagToken, html.EndTagToken, html.SelfClosingTagToken:
-			prevTagToken = token
+			prevTagToken = t
 
-			if specialTagMap[token.Data] {
-				if tt == html.StartTagToken {
-					specialTag = append(specialTag, token)
-				} else if tt == html.EndTagToken && len(specialTag) > 0 && specialTag[len(specialTag)-1].Data == token.Data {
+			if specialTagMap[t.token] {
+				if t.tt == html.StartTagToken {
+					specialTag = append(specialTag, t)
+				} else if t.tt == html.EndTagToken && len(specialTag) > 0 && specialTag[len(specialTag)-1].token == t.token {
 					specialTag = specialTag[:len(specialTag)-1]
 				}
 			}
 
 			// whitespace removal; if we encounter a block or a (closing) inline element, trim the right
-			if !inlineTagMap[token.Data] || (tt == html.EndTagToken && len(prevText) > 0 && prevText[len(prevText)-1] == ' ') {
+			if !inlineTagMap[t.token] || (t.tt == html.EndTagToken && len(prevText) > 0 && prevText[len(prevText)-1] == ' ') {
 				precededBySpace = true
 				// do not remove when next token is text and doesn't start with a space
 				if len(prevText) > 0 {
 					trim := false
 					i := 0
 					for {
-						nextTt, nextToken, nextText := tf.peek(i)
+						nextT := tf.peek(i)
 						// remove if the tag is not an inline tag (but a block tag)
-						if nextTt == html.ErrorToken || ((nextTt == html.StartTagToken || nextTt == html.EndTagToken || nextTt == html.SelfClosingTagToken) && !inlineTagMap[nextToken.Data]) {
+						if nextT.tt == html.ErrorToken || ((nextT.tt == html.StartTagToken || nextT.tt == html.EndTagToken || nextT.tt == html.SelfClosingTagToken) && !inlineTagMap[nextT.token]) {
 							trim = true
 							break
-						} else if nextTt == html.TextToken {
+						} else if nextT.tt == html.TextToken {
 							// remove if the text token starts with a whitespace
-							trim = len(nextText) > 0 && nextText[0] == ' '
+							trim = len(nextT.text) > 0 && nextT.text[0] == ' '
 							break
 						}
 						i++
@@ -368,20 +419,20 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			}
 			prevText = nil
 
-			if len(token.Attr) == 0 && (token.Data == "body" || token.Data == "head" || token.Data == "html" ||
-				tt == html.EndTagToken && (token.Data == "colgroup" || token.Data == "dd" || token.Data == "dt" ||
-					token.Data == "option" || token.Data == "td" || token.Data == "tfoot" ||
-					token.Data == "th" || token.Data == "thead" || token.Data == "tbody" || token.Data == "tr")) {
+			if t.attr == nil && (t.token == atom.Body || t.token == atom.Head || t.token == atom.Html ||
+				t.tt == html.EndTagToken && (t.token == atom.Colgroup || t.token == atom.Dd || t.token == atom.Dt ||
+					t.token == atom.Option || t.token == atom.Td || t.token == atom.Tfoot ||
+					t.token == atom.Th || t.token == atom.Thead || t.token == atom.Tbody || t.token == atom.Tr)) {
 				break
-			} else if tt == html.EndTagToken && (token.Data == "p" || token.Data == "li") {
+			} else if t.tt == html.EndTagToken && (t.token == atom.P || t.token == atom.Li) {
 				remove := false
 				i := 1
 				for {
-					nextTt, nextToken, nextText := tf.peek(i)
+					nextT := tf.peek(i)
 					// continue if text token is empty or whitespace
-					if nextTt != html.TextToken || (len(nextText) > 0 && string(nextText) != " ") {
+					if nextT.tt != html.TextToken || (len(nextT.text) > 0 && string(nextT.text) != " ") { // TODO: could write len == 1 and byte 0 == space
 						// remove only when encountering EOF, end tag (from parent) or a start tag of the same tag
-						remove = (nextTt == html.ErrorToken || nextTt == html.EndTagToken || (nextTt == html.StartTagToken && nextToken.Data == token.Data))
+						remove = (nextT.tt == html.ErrorToken || nextT.tt == html.EndTagToken || (nextT.tt == html.StartTagToken && nextT.token == t.token))
 						break
 					}
 					i++
@@ -390,28 +441,28 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					break
 				}
 			}
-
-			if token.Data == "script" || token.Data == "style" {
-				if nextTt, _, _ := tf.peek(1); nextTt == html.EndTagToken {
+			if t.token == atom.Script || t.token == atom.Style {
+				if nextT := tf.peek(1); nextT.tt == html.EndTagToken {
 					tf.shift()
 					break
 				}
 			}
 
-			if _, err := w.Write([]byte("<")); err != nil {
-				return err
-			}
-			if tt == html.EndTagToken {
-				if _, err := w.Write([]byte("/")); err != nil {
+			if t.tt == html.EndTagToken {
+				if _, err := w.Write([]byte("</")); err != nil {
+					return err
+				}
+			} else {
+				if _, err := w.Write([]byte("<")); err != nil {
 					return err
 				}
 			}
-			if _, err := w.Write([]byte(token.Data)); err != nil {
+			if _, err := w.Write(t.tokenRaw); err != nil {
 				return err
 			}
 
-			if token.Data == "meta" && getAttrVal(token, "http-equiv") == "content-type" &&
-				strings.ToLower(getAttrVal(token, "content")) == "text/html; charset=utf-8" {
+			if t.attr != nil && t.token == atom.Meta && bytes.Equal(t.getAttrVal(atom.HttpEquiv), []byte("content-type")) &&
+				bytes.Equal(bytes.ToLower(t.getAttrVal(atom.Content)), []byte("text/html; charset=utf-8")) {
 				if _, err := w.Write([]byte(" charset=utf-8>")); err != nil {
 					return err
 				}
@@ -419,36 +470,40 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			}
 
 			// output attributes
-			for _, attr := range token.Attr {
-				val := strings.TrimSpace(attr.Val)
-				if caseInsensitiveAttrMap[attr.Key] {
-					val = strings.ToLower(val)
+			for _, attr := range t.attr {
+				key := attr.key
+				val := attr.val
+				if caseInsensitiveAttrMap[key] {
+					val = bytes.ToLower(val)
 				}
 
 				// default attribute values can be ommited
-				if attr.Key == "clear" && val == "none" ||
-					attr.Key == "colspan" && val == "1" ||
-					attr.Key == "enctype" && val == "application/x-www-form-urlencoded" ||
-					attr.Key == "frameborder" && val == "1" ||
-					attr.Key == "method" && val == "get" ||
-					attr.Key == "rowspan" && val == "1" ||
-					attr.Key == "scrolling" && val == "auto" ||
-					attr.Key == "shape" && val == "rect" ||
-					attr.Key == "span" && val == "1" ||
-					attr.Key == "valuetype" && val == "data" ||
-					attr.Key == "language" && token.Data == "script" && val == "javascript" ||
-					attr.Key == "type" && (token.Data == "script" && val == "text/javascript" ||
-						token.Data == "style" && val == "text/css" ||
-						token.Data == "link" && val == "text/css" ||
-						token.Data == "input" && val == "text" ||
-						token.Data == "button" && val == "submit") {
+				if key == atom.Colspan && bytes.Equal(val, []byte("1")) ||
+					//bytes.Equal(attr.keyRaw, []byte("clear")) && bytes.Equal(val, []byte("none")) ||
+					key == atom.Enctype && bytes.Equal(val, []byte("application/x-www-form-urlencoded")) ||
+					//bytes.Equal(attr.keyRaw, []byte("frameborder")) && bytes.Equal(val, []byte("1")) ||
+					key == atom.Method && bytes.Equal(val, []byte("get")) ||
+					key == atom.Rowspan && bytes.Equal(val, []byte("1")) ||
+					//bytes.Equal(attr.keyRaw, []byte("scrolling")) && bytes.Equal(val, []byte("auto")) ||
+					key == atom.Shape && bytes.Equal(val, []byte("rect")) ||
+					key == atom.Span && bytes.Equal(val, []byte("1")) ||
+					//bytes.Equal(attr.keyRaw, []byte("valuetype")) && bytes.Equal(val, []byte("data")) ||
+					//bytes.Equal(attr.keyRaw, []byte("language")) && t.token == atom.Script && bytes.Equal(val, []byte("javascript")) ||
+					key == atom.Type && (t.token == atom.Script && bytes.Equal(val, []byte("text/javascript")) ||
+						t.token == atom.Style && bytes.Equal(val, []byte("text/css")) ||
+						t.token == atom.Link && bytes.Equal(val, []byte("text/css")) ||
+						t.token == atom.Input && bytes.Equal(val, []byte("text")) ||
+						t.token == atom.Button && bytes.Equal(val, []byte("submit"))) {
 					continue
 				}
-				if _, err := w.Write([]byte(" " + attr.Key)); err != nil {
+				if _, err := w.Write([]byte(" ")); err != nil {
+					return err
+				}
+				if _, err := w.Write(attr.keyRaw); err != nil {
 					return err
 				}
 
-				isBoolean := booleanAttrMap[attr.Key]
+				isBoolean := booleanAttrMap[key]
 				if len(val) == 0 && !isBoolean {
 					continue
 				}
@@ -461,52 +516,64 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					}
 
 					// CSS and JS minifiers for attribute inline code
-					if attr.Key == "style" {
-						val, err = m.MinifyString(defaultStyleType, val)
+					if key == atom.Style {
+						val, err = m.MinifyBytes(defaultStyleType, val)
 						if err != nil && err != ErrNotExist {
 							return err
 						}
-					} else if len(attr.Key) > 2 && attr.Key[:2] == "on" {
-						if len(val) >= 11 && strings.ToLower(val[:11]) == "javascript:" {
+					} else if len(attr.keyRaw) > 2 && attr.keyRaw[0] == 'o' && attr.keyRaw[1] == 'n' {
+						if len(val) >= 11 && bytes.Equal(bytes.ToLower(val[:11]), []byte("javascript:")) {
 							val = val[11:]
 						}
-						val, err = m.MinifyString(defaultScriptType, val)
+						val, err = m.MinifyBytes(defaultScriptType, val)
 						if err != nil && err != ErrNotExist {
 							return err
 						}
-					} else if urlAttrMap[attr.Key] {
-						if len(val) >= 5 && strings.ToLower(val[:5]) == "http:" {
+					} else if urlAttrMap[key] {
+						if len(val) >= 5 && bytes.Equal(bytes.ToLower(val[:5]), []byte("http:")) {
 							val = val[5:]
 						}
-					} else if token.Data == "meta" && attr.Key == "content" {
-						httpEquiv := getAttrVal(token, "http-equiv")
-						if httpEquiv == "content-type" {
-							val = strings.Replace(val, ", ", ",", -1)
-						} else if httpEquiv == "content-style-type" {
-							defaultStyleType = val
-						} else if httpEquiv == "content-script-type" {
-							defaultScriptType = val
+					} else if t.token == atom.Meta && key == atom.Content {
+						httpEquiv := t.getAttrVal(atom.HttpEquiv)
+						if bytes.Equal(httpEquiv, []byte("content-type")) {
+							val = bytes.Replace(val, []byte(", "), []byte(","), -1)
+						} else if bytes.Equal(httpEquiv, []byte("content-style-type")) {
+							defaultStyleType = string(val)
+						} else if bytes.Equal(httpEquiv, []byte("content-script-type")) {
+							defaultScriptType = string(val)
 						}
 
-						name := strings.ToLower(getAttrVal(token, "name"))
-						if name == "keywords" {
-							val = strings.Replace(val, ", ", ",", -1)
-						} else if name == "viewport" {
-							val = strings.Replace(val, " ", "", -1)
+						name := bytes.ToLower(t.getAttrVal(atom.Name))
+						if bytes.Equal(name, []byte("keywords")) {
+							val = bytes.Replace(val, []byte(", "), []byte(","), -1)
+						} else if bytes.Equal(name, []byte("viewport")) {
+							val = bytes.Replace(val, []byte(" "), []byte(""), -1)
 						}
 					}
 
 					// no quote if possible, else prefer single or double depending on which occurs more often in value
 					if isValidUnquotedAttr(val) {
-						if _, err := w.Write([]byte(val)); err != nil {
+						if _, err := w.Write(val); err != nil {
 							return err
 						}
-					} else if strings.Count(val, "\"") > strings.Count(val, "'") {
-						if _, err := w.Write([]byte("'" + strings.Replace(val, "'", "&#39;", -1) + "'")); err != nil {
+					} else if moreDoubleQuotes(val) {
+						if _, err := w.Write([]byte("'")); err != nil {
+							return err
+						}
+						if _, err := w.Write(bytes.Replace(val, []byte("'"), []byte("&#39;"), -1)); err != nil {
+							return err
+						}
+						if _, err := w.Write([]byte("'")); err != nil {
 							return err
 						}
 					} else {
-						if _, err := w.Write([]byte("\"" + strings.Replace(val, "\"", "&quot;", -1) + "\"")); err != nil {
+						if _, err := w.Write([]byte("\"")); err != nil {
+							return err
+						}
+						if _, err := w.Write(bytes.Replace(val, []byte("\""), []byte("&quot;"), -1)); err != nil {
+							return err
+						}
+						if _, err := w.Write([]byte("\"")); err != nil {
 							return err
 						}
 					}
