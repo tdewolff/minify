@@ -258,21 +258,22 @@ func (tf *tokenFeed) shift() *token {
 
 func (tf *tokenFeed) peek(pos int) *token {
 	if pos == len(tf.buf) {
-		if len(tf.buf) > 0 {
-			t := tf.buf[len(tf.buf)-1]
-			t.tokenRaw = copyBytes(t.tokenRaw)
-			//t.text = copyBytes(t.text)
-			for _, attr := range t.attr {
-				attr.keyRaw = copyBytes(attr.keyRaw)
-				attr.val = copyBytes(attr.val)
-			}
-		}
+		// if len(tf.buf) > 0 {
+		// 	t := tf.buf[len(tf.buf)-1]
+		// 	t.tokenRaw = copyBytes(t.tokenRaw)
+		// 	t.text = copyBytes(t.text)
+		// 	for _, attr := range t.attr {
+		// 		attr.keyRaw = copyBytes(attr.keyRaw)
+		// 		attr.val = copyBytes(attr.val)
+		// 	}
+		// }
 
+		// TODO: fix prevText instead of copy here
 		t := &token{tf.z.Next(), 0, nil, nil, nil, nil}
 		switch t.tt {
 		case html.TextToken, html.CommentToken, html.DoctypeToken:
 			t.text = replaceFirstMultipleWhitespace(tf.z.Text())
-			t.text = copyBytes(t.text) // TODO: fix prevText instead of copy here
+			t.text = copyBytes(t.text)
 		case html.StartTagToken, html.SelfClosingTagToken, html.EndTagToken:
 			var moreAttr bool
 			var keyRaw, val []byte
