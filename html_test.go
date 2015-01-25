@@ -33,6 +33,8 @@ func helperRand(n, m int, chars []byte) []string {
 ////////////////////////////////////////////////////////////////
 
 func TestHTML(t *testing.T) {
+	helperHTML(t, m, "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />", "<meta charset=utf-8>")
+	return
 	m := NewMinifier()
 	helperHTML(t, m, "html", "html")
 	helperHTML(t, m, "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML+RDFa 1.0//EN\" \"http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd\">", "<!doctype html>")
@@ -49,7 +51,7 @@ func TestHTML(t *testing.T) {
 	helperHTML(t, m, "<span attr='test&apos;test'></span>", "<span attr=\"test'test\"></span>")
 	helperHTML(t, m, "<span attr=\"test&quot;test\"></span>", "<span attr='test\"test'></span>")
 	helperHTML(t, m, "<span attr=\"test/test\"></span>", "<span attr=\"test/test\"></span>")
-	helperHTML(t, m, "<span method=GET></span>", "<span></span>")
+	helperHTML(t, m, "<span clear=none method=GET></span>", "<span></span>")
 	helperHTML(t, m, "<span onload=\"javascript:x;\"></span>", "<span onload=x;></span>")
 	helperHTML(t, m, "<span href=\"http://test\"></span>", "<span href=\"//test\"></span>")
 	helperHTML(t, m, "<span selected=\"selected\"></span>", "<span selected></span>")
@@ -89,6 +91,7 @@ func TestHTML(t *testing.T) {
 	helperHTML(t, m, "<input maxlength=\"     5 \">", "<input maxlength=5>")
 	helperHTML(t, m, "<input type=\"text\">", "<input>")
 	helperHTML(t, m, "<form method=\"get\">", "<form>")
+	helperHTML(t, m, "<script language=\"Javascript\">alert(1)</script>", "<script>alert(1)</script>")
 	helperHTML(t, m, "<script></script>", "")
 	helperHTML(t, m, "<p onclick=\" JavaScript: x\">x</p>", "<p onclick=\" x\">x")
 	helperHTML(t, m, "<link rel=\"stylesheet\" type=\"text/css\" href=\"http://example.com\">", "<link rel=stylesheet href=\"//example.com\">")

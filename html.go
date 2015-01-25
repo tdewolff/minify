@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"io"
 
-	"code.google.com/p/go.net/html"
-	"code.google.com/p/go.net/html/atom"
+	"golang.org/x/net/html"
+	"github.com/tdewolff/net/html/atom"
 )
 
 var specialTagMap = map[atom.Atom]bool{
@@ -20,6 +20,7 @@ var specialTagMap = map[atom.Atom]bool{
 var inlineTagMap = map[atom.Atom]bool{
 	atom.A:      true,
 	atom.Abbr:   true,
+	atom.Acronym: true,
 	atom.B:      true,
 	atom.Bdo:    true,
 	atom.Big:    true,
@@ -47,15 +48,22 @@ var inlineTagMap = map[atom.Atom]bool{
 }
 
 var booleanAttrMap = map[atom.Atom]bool{
+	atom.Allowfullscreen: true,
 	atom.Async:          true,
 	atom.Autofocus:      true,
 	atom.Autoplay:       true,
 	atom.Checked:        true,
+	atom.Compact:         true,
 	atom.Controls:       true,
+	atom.Declare:         true,
 	atom.Default:        true,
+	atom.DefaultChecked:  true,
+	atom.DefaultMuted:    true,
+	atom.DefaultSelected: true,
 	atom.Defer:          true,
 	atom.Disabled:       true,
 	atom.Draggable:      true,
+	atom.Enabled:         true,
 	atom.Formnovalidate: true,
 	atom.Hidden:         true,
 	atom.Inert:          true,
@@ -63,24 +71,38 @@ var booleanAttrMap = map[atom.Atom]bool{
 	atom.Itemscope:      true,
 	atom.Multiple:       true,
 	atom.Muted:          true,
+	atom.Nohref:          true,
+	atom.Noresize:        true,
+	atom.Noshade:         true,
 	atom.Novalidate:     true,
+	atom.Nowrap:          true,
 	atom.Open:           true,
+	atom.Pauseonexit:     true,
 	atom.Readonly:       true,
 	atom.Required:       true,
 	atom.Reversed:       true,
 	atom.Scoped:         true,
 	atom.Seamless:       true,
 	atom.Selected:       true,
+	atom.Sortable:        true,
 	atom.Spellcheck:     true,
 	atom.Translate:      true,
+	atom.Truespeed:       true,
 	atom.Typemustmatch:  true,
+	atom.Undeterminate:   true,
+	atom.Visible:         true,
 }
 
 var caseInsensitiveAttrMap = map[atom.Atom]bool{
 	atom.AcceptCharset: true,
 	atom.Accept:        true,
 	atom.Align:         true,
+	atom.Alink:          true,
+	atom.Axis:           true,
+	atom.Bgcolor:        true,
 	atom.Charset:       true,
+	atom.Clear:          true,
+	atom.Codetype:       true,
 	atom.Color:         true,
 	atom.Dir:           true,
 	atom.Enctype:       true,
@@ -89,27 +111,41 @@ var caseInsensitiveAttrMap = map[atom.Atom]bool{
 	atom.Hreflang:      true,
 	atom.HttpEquiv:     true,
 	atom.Lang:          true,
+	atom.Language:       true,
 	atom.Link:          true,
 	atom.Media:         true,
 	atom.Method:        true,
 	atom.Rel:           true,
+	atom.Rev:            true,
+	atom.Rules:          true,
 	atom.Scope:         true,
+	atom.Scrolling:      true,
 	atom.Shape:         true,
 	atom.Target:        true,
+	atom.Text:           true,
 	atom.Type:          true,
+	atom.Valign:         true,
+	atom.Valuetype:      true,
+	atom.Vlink:          true,
 }
 
 var urlAttrMap = map[atom.Atom]bool{
 	atom.Action:     true,
+	atom.Background: true,
 	atom.Cite:       true,
+	atom.Classid:    true,
+	atom.Codebase:   true,
 	atom.Data:       true,
 	atom.Formaction: true,
 	atom.Href:       true,
 	atom.Icon:       true,
+	atom.Longdesc:   true,
 	atom.Manifest:   true,
 	atom.Poster:     true,
+	atom.Profile:    true,
 	atom.Src:        true,
 	atom.Usemap:     true,
+	atom.Xmlns:      true,
 }
 
 ////////////////////////////////////////////////////////////////
@@ -225,7 +261,7 @@ func (tf *tokenFeed) peek(pos int) *token {
 		if len(tf.buf) > 0 {
 			t := tf.buf[len(tf.buf)-1]
 			t.tokenRaw = copyBytes(t.tokenRaw)
-			t.text = copyBytes(t.text)
+			//t.text = copyBytes(t.text)
 			for _, attr := range t.attr {
 				attr.keyRaw = copyBytes(attr.keyRaw)
 				attr.val = copyBytes(attr.val)
@@ -236,16 +272,20 @@ func (tf *tokenFeed) peek(pos int) *token {
 		switch t.tt {
 		case html.TextToken, html.CommentToken, html.DoctypeToken:
 			t.text = replaceFirstMultipleWhitespace(tf.z.Text())
+			t.text = copyBytes(t.text) // TODO: fix prevText instead of copy here
 		case html.StartTagToken, html.SelfClosingTagToken, html.EndTagToken:
 			var moreAttr bool
 			var keyRaw, val []byte
 			t.tokenRaw, moreAttr = tf.z.TagName()
+			t.tokenRaw = copyBytes(t.tokenRaw)
 			t.token = atom.Lookup(t.tokenRaw)
 			if moreAttr {
 				t.attr = []attribute{}
 				t.attrKey = make(map[atom.Atom]int)
 				for moreAttr {
 					keyRaw, val, moreAttr = tf.z.TagAttr()
+					keyRaw = copyBytes(keyRaw)
+					val = copyBytes(val)
 					key := atom.Lookup(keyRaw)
 					t.attr = append(t.attr, attribute{key, keyRaw, bytes.TrimSpace(val)})
 					t.attrKey[key] = len(t.attr) - 1
@@ -437,7 +477,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				return err
 			}
 
-			if t.attr != nil && t.token == atom.Meta && bytes.Equal(t.getAttrVal(atom.HttpEquiv), []byte("content-type")) &&
+			if t.attr != nil && t.token == atom.Meta && bytes.Equal(bytes.ToLower(t.getAttrVal(atom.HttpEquiv)), []byte("content-type")) &&
 				bytes.Equal(bytes.ToLower(t.getAttrVal(atom.Content)), []byte("text/html; charset=utf-8")) {
 				if _, err := w.Write([]byte(" charset=utf-8>")); err != nil {
 					return err
@@ -463,7 +503,12 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					attr.key == atom.Colspan && bytes.Equal(val, []byte("1")) ||
 					attr.key == atom.Rowspan && bytes.Equal(val, []byte("1")) ||
 					attr.key == atom.Shape && bytes.Equal(val, []byte("rect")) ||
-					attr.key == atom.Span && bytes.Equal(val, []byte("1")) {
+					attr.key == atom.Span && bytes.Equal(val, []byte("1")) ||
+					attr.key == atom.Clear && bytes.Equal(val, []byte("none")) ||
+					attr.key == atom.Frameborder && bytes.Equal(val, []byte("1")) ||
+					attr.key == atom.Scrolling && bytes.Equal(val, []byte("auto")) ||
+					attr.key == atom.Valuetype && bytes.Equal(val, []byte("data")) ||
+					attr.key == atom.Language && t.token == atom.Script && bytes.Equal(val, []byte("javascript")) {
 					continue
 				}
 				if _, err := w.Write([]byte(" ")); err != nil {
