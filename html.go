@@ -152,23 +152,62 @@ var urlAttrMap = map[atom.Atom]bool{
 
 // replaceMultipleWhitespace replaces any series of whitespace characters by a single space
 func replaceMultipleWhitespace(s []byte) []byte {
-	j := 0
+	i := 0
 	t := make([]byte, len(s))
 	previousSpace := false
 	for _, x := range s {
 		if isWhitespace(x) {
 			if !previousSpace {
 				previousSpace = true
-				t[j] = ' '
-				j++
+				t[i] = ' '
+				i++
 			}
 		} else {
 			previousSpace = false
-			t[j] = x
-			j++
+			t[i] = x
+			i++
 		}
 	}
-	return t[:j]
+	return t[:i]
+}
+
+func escapeText(s []byte) []byte {
+	t := make([]byte, 0, len(s))
+	i := 0
+	for j, x := range s {
+		if x == '&' {
+			t = append(append(t, s[i:j]...), []byte("&amp;")...)
+			i = j+1
+		}
+	}
+	return append(t, s[i:]...)
+}
+
+func escapeAttrVal(s []byte, quote byte) []byte {
+	t := make([]byte, 0, len(s)+2)
+	if quote != 0x00 {
+		t = append(t, quote)
+	}
+	i := 0
+	for j, x := range s {
+		if x == '&' {
+			t = append(append(t, s[i:j]...), []byte("&amp;")...)
+			i = j+1
+		} else if x == quote {
+			if quote == '"' {
+				t = append(append(t, s[i:j]...), []byte("&#34;")...)
+				i = j+1
+			} else if quote == '\'' {
+				t = append(append(t, s[i:j]...), []byte("&#39;")...)
+				i = j+1
+			}
+		}
+	}
+	t = append(t, s[i:]...)
+	if quote != 0x00 {
+		return append(t, quote)
+	}
+	return t
 }
 
 func isWhitespace(x byte) bool {
@@ -178,14 +217,14 @@ func isWhitespace(x byte) bool {
 // isValidUnquotedAttr returns true when the bytes can be unquoted as an HTML attribute
 func isValidUnquotedAttr(s []byte) bool {
 	for _, x := range s {
-		if x == ' ' || x == '/' || x == '"' || x == '\'' || x == '`' || x >= '<' && x <= '>' || x >= '\n' && x <= '\r' {
+		if x == ' ' || x == '/' || x == '`' || x >= '<' && x <= '>' || x >= '\n' && x <= '\r' {
 			return false
 		}
 	}
 	return true
 }
 
-func moreDoubleQuotes(s []byte) bool {
+func countQuotes(s []byte) (int, int) {
 	singles := 0
 	doubles := 0
 	for _, x := range s {
@@ -195,7 +234,7 @@ func moreDoubleQuotes(s []byte) bool {
 			doubles++
 		}
 	}
-	return doubles > singles
+	return singles, doubles
 }
 
 func copyBytes(src []byte) []byte {
@@ -258,7 +297,7 @@ func (tf *tokenFeed) peek(pos int) *token {
 		t := &token{tf.z.Next(), 0, nil, nil, nil, nil}
 		switch t.tt {
 		case html.TextToken, html.CommentToken, html.DoctypeToken:
-			t.text = tf.z.Text()
+			t.text = escapeText(tf.z.Text())
 		case html.StartTagToken, html.SelfClosingTagToken, html.EndTagToken:
 			var moreAttr bool
 			var keyRaw, val []byte
@@ -541,31 +580,17 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					}
 
 					// no quote if possible, else prefer single or double depending on which occurs more often in value
-					val = bytes.Replace(val, []byte("&"), []byte("&amp;"), -1)
-					if isValidUnquotedAttr(val) {
-						if _, err := w.Write(val); err != nil {
+					singles, doubles := countQuotes(val)
+					if singles == 0 && doubles == 0 && isValidUnquotedAttr(val) {
+						if _, err := w.Write(escapeAttrVal(val, 0x00)); err != nil {
 							return err
 						}
-					} else if moreDoubleQuotes(val) {
-						if _, err := w.Write([]byte("'")); err != nil {
+					} else if doubles > singles {
+						if _, err := w.Write(escapeAttrVal(val, '\'')); err != nil {
 							return err
 						}
-						if _, err := w.Write(bytes.Replace(val, []byte("'"), []byte("&#39;"), -1)); err != nil {
-							return err
-						}
-						if _, err := w.Write([]byte("'")); err != nil {
-							return err
-						}
-					} else {
-						if _, err := w.Write([]byte("\"")); err != nil {
-							return err
-						}
-						if _, err := w.Write(bytes.Replace(val, []byte("\""), []byte("&quot;"), -1)); err != nil {
-							return err
-						}
-						if _, err := w.Write([]byte("\"")); err != nil {
-							return err
-						}
+					} else if _, err := w.Write(escapeAttrVal(val, '"')); err != nil {
+						return err
 					}
 				}
 			}
