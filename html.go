@@ -245,35 +245,30 @@ func (tf *tokenFeed) shift() *token {
 
 func (tf *tokenFeed) peek(pos int) *token {
 	if pos == len(tf.buf) {
-		// if len(tf.buf) > 0 {
-		// 	t := tf.buf[len(tf.buf)-1]
-		// 	t.tokenRaw = copyBytes(t.tokenRaw)
-		// 	t.text = copyBytes(t.text)
-		// 	for _, attr := range t.attr {
-		// 		attr.keyRaw = copyBytes(attr.keyRaw)
-		// 		attr.val = copyBytes(attr.val)
-		// 	}
-		// }
+		if len(tf.buf) > 0 {
+			t := tf.buf[len(tf.buf)-1]
+			t.tokenRaw = copyBytes(t.tokenRaw)
+			t.text = copyBytes(t.text)
+			for _, attr := range t.attr {
+				attr.keyRaw = copyBytes(attr.keyRaw)
+				attr.val = copyBytes(attr.val)
+			}
+		}
 
-		// TODO: fix prevText instead of copy here
 		t := &token{tf.z.Next(), 0, nil, nil, nil, nil}
 		switch t.tt {
 		case html.TextToken, html.CommentToken, html.DoctypeToken:
 			t.text = tf.z.Text()
-			t.text = copyBytes(t.text)
 		case html.StartTagToken, html.SelfClosingTagToken, html.EndTagToken:
 			var moreAttr bool
 			var keyRaw, val []byte
 			t.tokenRaw, moreAttr = tf.z.TagName()
-			t.tokenRaw = copyBytes(t.tokenRaw)
 			t.token = atom.Lookup(t.tokenRaw)
 			if moreAttr {
 				t.attr = []attribute{}
 				t.attrKey = make(map[atom.Atom]int)
 				for moreAttr {
 					keyRaw, val, moreAttr = tf.z.TagAttr()
-					keyRaw = copyBytes(keyRaw)
-					val = copyBytes(val)
 					key := atom.Lookup(keyRaw)
 					t.attr = append(t.attr, attribute{key, keyRaw, bytes.TrimSpace(val)})
 					t.attrKey[key] = len(t.attr) - 1
@@ -378,7 +373,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 							break
 						} else if next.tt == html.TextToken {
 							// remove if the text token starts with a whitespace
-							trim = len(next.text) > 0 && isWhitespace(next.text[0])
+							trim = (len(next.text) > 0 && isWhitespace(next.text[0]))
 							break
 						} else if next.tt == html.StartTagToken || next.tt == html.EndTagToken || next.tt == html.SelfClosingTagToken {
 							if !inlineTagMap[next.token] {
@@ -400,12 +395,9 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				}
 			}
 		case html.StartTagToken, html.EndTagToken, html.SelfClosingTagToken:
-			//prevTagToken = t
-
 			if !inlineTagMap[t.token] {
 				precededBySpace = true
 			}
-
 			if specialTagMap[t.token] {
 				if t.tt == html.StartTagToken {
 					specialTag = append(specialTag, t)
@@ -424,13 +416,13 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				i := 1
 				for {
 					next := tf.peek(i)
-					// continue if text token is empty or whitespace
-					if next.tt != html.TextToken || (len(next.text) > 0 && string(next.text) != " ") { // TODO: could write len == 1 and byte 0 == space
-						// remove only when encountering EOF, end tag (from parent) or a start tag of the same tag
-						remove = ((next.tt == html.StartTagToken && next.token == t.token) || next.tt == html.EndTagToken || next.tt == html.ErrorToken)
-						break
-					}
 					i++
+					// continue if text token is empty or whitespace
+					if next.tt == html.TextToken && (len(next.text) == 0 || isWhitespace(next.text[0]) && len(replaceMultipleWhitespace(next.text)) == 1) {
+						continue
+					}
+					remove = (next.tt == html.ErrorToken || next.tt == html.EndTagToken || next.tt == html.StartTagToken && next.token == t.token)
+					break
 				}
 				if remove {
 					break
