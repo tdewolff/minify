@@ -33,8 +33,6 @@ func helperRand(n, m int, chars []byte) []string {
 ////////////////////////////////////////////////////////////////
 
 func TestHTML(t *testing.T) {
-	helperHTML(t, m, "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />", "<meta charset=utf-8>")
-	return
 	m := NewMinifier()
 	helperHTML(t, m, "html", "html")
 	helperHTML(t, m, "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML+RDFa 1.0//EN\" \"http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd\">", "<!doctype html>")

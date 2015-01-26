@@ -156,7 +156,7 @@ func replaceMultipleWhitespace(s []byte) []byte {
 	t := make([]byte, len(s))
 	previousSpace := false
 	for _, x := range s {
-		if x == ' ' || x == '\n' || x == '\r' || x == '\t' || x == '\f' {
+		if isWhitespace(x) {
 			if !previousSpace {
 				previousSpace = true
 				t[j] = ' '
@@ -171,21 +171,8 @@ func replaceMultipleWhitespace(s []byte) []byte {
 	return t[:j]
 }
 
-// replaceFirstMultipleWhitespace replaces any series of whitespace characters by a single space at the beginning
-func replaceFirstMultipleWhitespace(s []byte) []byte {
-	j := 0
-	for _, x := range s {
-		if x == ' ' || x == '\n' || x == '\r' || x == '\t' || x == '\f' {
-			j++
-		} else {
-			break
-		}
-	}
-	if j > 0 {
-		s[j-1] = ' '
-		return s[j-1:]
-	}
-	return s
+func isWhitespace(x byte) bool {
+	return x == ' ' || x == '\n' || x == '\r' || x == '\t' || x == '\f'
 }
 
 // isValidUnquotedAttr returns true when the bytes can be unquoted as an HTML attribute
@@ -272,7 +259,7 @@ func (tf *tokenFeed) peek(pos int) *token {
 		t := &token{tf.z.Next(), 0, nil, nil, nil, nil}
 		switch t.tt {
 		case html.TextToken, html.CommentToken, html.DoctypeToken:
-			t.text = replaceFirstMultipleWhitespace(tf.z.Text())
+			t.text = tf.z.Text()
 			t.text = copyBytes(t.text)
 		case html.StartTagToken, html.SelfClosingTagToken, html.EndTagToken:
 			var moreAttr bool
@@ -299,58 +286,46 @@ func (tf *tokenFeed) peek(pos int) *token {
 	return tf.buf[pos]
 }
 
+func (tf tokenFeed) err() error {
+	return tf.z.Err()
+}
+
 ////////////////////////////////////////////////////////////////
 
 // HTML minifies HTML5 files, it reads from r and writes to w.
 // Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 10% in size.
 func (m Minifier) HTML(w io.Writer, r io.Reader) error {
-	var prevText []byte     // write prevText token until next token is received, allows to look forward one token before writing away
 	var specialTag []*token // stack array of special tags it is in
-	var prevTagToken *token
-	precededBySpace := true // on true the next prevText token must no start with a space
+	precededBySpace := true // on true the next text token must not start with a space
 	defaultScriptType := "text/javascript"
 	defaultStyleType := "text/css"
 
-	z := html.NewTokenizer(r)
-	tf := newTokenFeed(z)
+	tf := newTokenFeed(html.NewTokenizer(r))
 	for {
 		t := tf.shift()
 		switch t.tt {
 		case html.ErrorToken:
-			if z.Err() == io.EOF {
-				if _, err := w.Write(prevText); err != nil {
-					return err
-				}
+			if tf.err() == io.EOF {
 				return nil
 			}
-			return z.Err()
+			return tf.err()
 		case html.DoctypeToken:
-			if _, err := w.Write(bytes.TrimSpace(prevText)); err != nil {
-				return err
-			}
-			prevText = nil
 			if _, err := w.Write([]byte("<!doctype html>")); err != nil {
 				return err
 			}
 		case html.CommentToken:
-			if _, err := w.Write(prevText); err != nil {
-				return err
-			}
-			prevText = nil
-
 			// TODO: ensure that nested comments are handled properly (tokenizer doesn't handle this!)
+			var text []byte
 			if bytes.HasPrefix(t.text, []byte("[if")) {
-				prevText = append(append([]byte("<!--"), t.text...), []byte("-->")...)
+				text = append(append([]byte("<!--"), t.text...), []byte("-->")...)
 			} else if bytes.HasSuffix(t.text, []byte("--")) {
 				// only occurs when mixed up with conditional comments
-				prevText = append(append([]byte("<!"), t.text...), []byte(">")...)
+				text = append(append([]byte("<!"), t.text...), '>')
 			}
-		case html.TextToken:
-			if _, err := w.Write(prevText); err != nil {
+			if _, err := w.Write(text); err != nil {
 				return err
 			}
-			prevText = nil
-
+		case html.TextToken:
 			// CSS and JS minifiers for inline code
 			if len(specialTag) > 0 {
 				token := specialTag[len(specialTag)-1].token
@@ -364,7 +339,6 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					} else {
 						mediatype = defaultStyleType
 					}
-
 					if err := m.Minify(mediatype, w, bytes.NewBuffer(t.text)); err != nil {
 						if err == ErrNotExist {
 							// no minifier, write the original
@@ -382,21 +356,55 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				} else if _, err := w.Write(t.text); err != nil {
 					return err
 				}
-				break
-			}
-
-			// whitespace removal; if after an inline element, trim left if precededBySpace
-			prevText = replaceMultipleWhitespace(t.text)
-			if prevTagToken != nil && inlineTagMap[prevTagToken.token] {
-				if precededBySpace && len(prevText) > 0 && prevText[0] == ' ' {
-					prevText = prevText[1:]
+			} else if t.text = replaceMultipleWhitespace(t.text); len(t.text) > 0 {
+				// whitespace removal; trim left
+				if t.text[0] == ' ' && precededBySpace {
+					t.text = t.text[1:]
 				}
-				precededBySpace = len(prevText) > 0 && prevText[len(prevText)-1] == ' '
-			} else if len(prevText) > 0 && prevText[0] == ' ' {
-				prevText = prevText[1:]
+
+				// whitespace removal; trim right
+				precededBySpace = false
+				if len(t.text) == 0 {
+					precededBySpace = true
+				} else if t.text[len(t.text)-1] == ' ' {
+					precededBySpace = true
+					trim := false
+					i := 1
+					for {
+						next := tf.peek(i)
+						// trim if EOF, text token with whitespace begin or block token
+						if next.tt == html.ErrorToken {
+							trim = true
+							break
+						} else if next.tt == html.TextToken {
+							// remove if the text token starts with a whitespace
+							trim = len(next.text) > 0 && isWhitespace(next.text[0])
+							break
+						} else if next.tt == html.StartTagToken || next.tt == html.EndTagToken || next.tt == html.SelfClosingTagToken {
+							if !inlineTagMap[next.token] {
+								trim = true
+								break
+							} else if next.tt == html.StartTagToken {
+								break
+							}
+						}
+						i++
+					}
+					if trim {
+						t.text = t.text[:len(t.text)-1]
+						precededBySpace = false
+					}
+				}
+				if _, err := w.Write(t.text); err != nil {
+					return err
+				}
 			}
 		case html.StartTagToken, html.EndTagToken, html.SelfClosingTagToken:
-			prevTagToken = t
+			//prevTagToken = t
+
+			if !inlineTagMap[t.token] {
+				precededBySpace = true
+			}
 
 			if specialTagMap[t.token] {
 				if t.tt == html.StartTagToken {
@@ -406,37 +414,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				}
 			}
 
-			// whitespace removal; if we encounter a block or a (closing) inline element, trim the right
-			if !inlineTagMap[t.token] || (t.tt == html.EndTagToken && len(prevText) > 0 && prevText[len(prevText)-1] == ' ') {
-				precededBySpace = true
-				// do not remove when next token is text and doesn't start with a space
-				if len(prevText) > 0 {
-					trim := false
-					i := 0
-					for {
-						nextT := tf.peek(i)
-						// remove if the tag is not an inline tag (but a block tag)
-						if nextT.tt == html.ErrorToken || ((nextT.tt == html.StartTagToken || nextT.tt == html.EndTagToken || nextT.tt == html.SelfClosingTagToken) && !inlineTagMap[nextT.token]) {
-							trim = true
-							break
-						} else if nextT.tt == html.TextToken {
-							// remove if the text token starts with a whitespace
-							trim = len(nextT.text) > 0 && nextT.text[0] == ' '
-							break
-						}
-						i++
-					}
-					if trim {
-						prevText = bytes.TrimRight(prevText, " ")
-						precededBySpace = false
-					}
-				}
-			}
-			if _, err := w.Write(prevText); err != nil {
-				return err
-			}
-			prevText = nil
-
+			// remove superfluous ending tags
 			if t.attr == nil && (t.token == atom.Html || t.token == atom.Head || t.token == atom.Body ||
 				t.tt == html.EndTagToken && (t.token == atom.Td || t.token == atom.Tr || t.token == atom.Th || t.token == atom.Thead || t.token == atom.Tbody || t.token == atom.Tfoot ||
 					t.token == atom.Option || t.token == atom.Colgroup || t.token == atom.Dd || t.token == atom.Dt)) {
@@ -445,11 +423,11 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				remove := false
 				i := 1
 				for {
-					nextT := tf.peek(i)
+					next := tf.peek(i)
 					// continue if text token is empty or whitespace
-					if nextT.tt != html.TextToken || (len(nextT.text) > 0 && string(nextT.text) != " ") { // TODO: could write len == 1 and byte 0 == space
+					if next.tt != html.TextToken || (len(next.text) > 0 && string(next.text) != " ") { // TODO: could write len == 1 and byte 0 == space
 						// remove only when encountering EOF, end tag (from parent) or a start tag of the same tag
-						remove = ((nextT.tt == html.StartTagToken && nextT.token == t.token) || nextT.tt == html.EndTagToken || nextT.tt == html.ErrorToken)
+						remove = ((next.tt == html.StartTagToken && next.token == t.token) || next.tt == html.EndTagToken || next.tt == html.ErrorToken)
 						break
 					}
 					i++
@@ -458,13 +436,16 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					break
 				}
 			}
-			if t.token == atom.Script || t.token == atom.Style {
-				if nextT := tf.peek(1); nextT.tt == html.EndTagToken {
+
+			// ignore empty script and style tags
+			if t.attr == nil && (t.token == atom.Script || t.token == atom.Style) {
+				if next := tf.peek(1); next.tt == html.EndTagToken {
 					tf.shift()
 					break
 				}
 			}
 
+			// write tag
 			if t.tt == html.EndTagToken {
 				if _, err := w.Write([]byte("</")); err != nil {
 					return err
@@ -478,6 +459,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				return err
 			}
 
+			// rewrite meta tag with charset
 			if t.attr != nil && t.token == atom.Meta && bytes.Equal(bytes.ToLower(t.getAttrVal(atom.HttpEquiv)), []byte("content-type")) &&
 				bytes.Equal(bytes.ToLower(t.getAttrVal(atom.Content)), []byte("text/html; charset=utf-8")) {
 				if _, err := w.Write([]byte(" charset=utf-8>")); err != nil {
@@ -486,7 +468,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				break
 			}
 
-			// output attributes
+			// write attributes
 			for _, attr := range t.attr {
 				val := attr.val
 				if caseInsensitiveAttrMap[attr.key] {
@@ -519,13 +501,12 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					return err
 				}
 
-				isBoolean := booleanAttrMap[attr.key]
-				if len(val) == 0 && !isBoolean {
-					continue
-				}
-
 				// booleans have no value
-				if !isBoolean {
+				if !booleanAttrMap[attr.key] {
+					if len(val) == 0 {
+						continue
+					}
+
 					var err error
 					if _, err := w.Write([]byte("=")); err != nil {
 						return err
