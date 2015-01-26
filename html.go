@@ -541,6 +541,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					}
 
 					// no quote if possible, else prefer single or double depending on which occurs more often in value
+					val = bytes.Replace(val, []byte("&"), []byte("&amp;"), -1)
 					if isValidUnquotedAttr(val) {
 						if _, err := w.Write(val); err != nil {
 							return err

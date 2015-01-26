@@ -48,6 +48,7 @@ func TestHTML(t *testing.T) {
 	helperHTML(t, m, "<span attr=\"test\"></span>", "<span attr=test></span>")
 	helperHTML(t, m, "<span attr='test&apos;test'></span>", "<span attr=\"test'test\"></span>")
 	helperHTML(t, m, "<span attr=\"test&quot;test\"></span>", "<span attr='test\"test'></span>")
+	helperHTML(t, m, "<span attr='test\"\"&apos;&amp;test'></span>", "<span attr='test\"\"&#39;&amp;test'></span>")
 	helperHTML(t, m, "<span attr=\"test/test\"></span>", "<span attr=\"test/test\"></span>")
 	helperHTML(t, m, "<span clear=none method=GET></span>", "<span></span>")
 	helperHTML(t, m, "<span onload=\"javascript:x;\"></span>", "<span onload=x;></span>")
