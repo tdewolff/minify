@@ -4,148 +4,148 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/tdewolff/net/html/atom"
+	hash "github.com/tdewolff/parse/html"
 	"golang.org/x/net/html"
 )
 
-var specialTagMap = map[atom.Atom]bool{
-	atom.Code:     true,
-	atom.Noscript: true,
-	atom.Pre:      true,
-	atom.Script:   true,
-	atom.Style:    true,
-	atom.Textarea: true,
+var specialTagMap = map[hash.Hash]bool{
+	hash.Code:     true,
+	hash.Noscript: true,
+	hash.Pre:      true,
+	hash.Script:   true,
+	hash.Style:    true,
+	hash.Textarea: true,
 }
 
-var inlineTagMap = map[atom.Atom]bool{
-	atom.A:       true,
-	atom.Abbr:    true,
-	atom.Acronym: true,
-	atom.B:       true,
-	atom.Bdo:     true,
-	atom.Big:     true,
-	atom.Cite:    true,
-	atom.Button:  true,
-	atom.Dfn:     true,
-	atom.Em:      true,
-	atom.I:       true,
-	atom.Img:     true,
-	atom.Input:   true,
-	atom.Kbd:     true,
-	atom.Label:   true,
-	atom.Map:     true,
-	atom.Object:  true,
-	atom.Q:       true,
-	atom.Samp:    true,
-	atom.Select:  true,
-	atom.Small:   true,
-	atom.Span:    true,
-	atom.Strong:  true,
-	atom.Sub:     true,
-	atom.Sup:     true,
-	atom.Tt:      true,
-	atom.Var:     true,
+var inlineTagMap = map[hash.Hash]bool{
+	hash.A:       true,
+	hash.Abbr:    true,
+	hash.Acronym: true,
+	hash.B:       true,
+	hash.Bdo:     true,
+	hash.Big:     true,
+	hash.Cite:    true,
+	hash.Button:  true,
+	hash.Dfn:     true,
+	hash.Em:      true,
+	hash.I:       true,
+	hash.Img:     true,
+	hash.Input:   true,
+	hash.Kbd:     true,
+	hash.Label:   true,
+	hash.Map:     true,
+	hash.Object:  true,
+	hash.Q:       true,
+	hash.Samp:    true,
+	hash.Select:  true,
+	hash.Small:   true,
+	hash.Span:    true,
+	hash.Strong:  true,
+	hash.Sub:     true,
+	hash.Sup:     true,
+	hash.Tt:      true,
+	hash.Var:     true,
 }
 
-var booleanAttrMap = map[atom.Atom]bool{
-	atom.Allowfullscreen: true,
-	atom.Async:           true,
-	atom.Autofocus:       true,
-	atom.Autoplay:        true,
-	atom.Checked:         true,
-	atom.Compact:         true,
-	atom.Controls:        true,
-	atom.Declare:         true,
-	atom.Default:         true,
-	atom.DefaultChecked:  true,
-	atom.DefaultMuted:    true,
-	atom.DefaultSelected: true,
-	atom.Defer:           true,
-	atom.Disabled:        true,
-	atom.Draggable:       true,
-	atom.Enabled:         true,
-	atom.Formnovalidate:  true,
-	atom.Hidden:          true,
-	atom.Inert:           true,
-	atom.Ismap:           true,
-	atom.Itemscope:       true,
-	atom.Multiple:        true,
-	atom.Muted:           true,
-	atom.Nohref:          true,
-	atom.Noresize:        true,
-	atom.Noshade:         true,
-	atom.Novalidate:      true,
-	atom.Nowrap:          true,
-	atom.Open:            true,
-	atom.Pauseonexit:     true,
-	atom.Readonly:        true,
-	atom.Required:        true,
-	atom.Reversed:        true,
-	atom.Scoped:          true,
-	atom.Seamless:        true,
-	atom.Selected:        true,
-	atom.Sortable:        true,
-	atom.Spellcheck:      true,
-	atom.Translate:       true,
-	atom.Truespeed:       true,
-	atom.Typemustmatch:   true,
-	atom.Undeterminate:   true,
-	atom.Visible:         true,
+var booleanAttrMap = map[hash.Hash]bool{
+	hash.Allowfullscreen: true,
+	hash.Async:           true,
+	hash.Autofocus:       true,
+	hash.Autoplay:        true,
+	hash.Checked:         true,
+	hash.Compact:         true,
+	hash.Controls:        true,
+	hash.Declare:         true,
+	hash.Default:         true,
+	hash.DefaultChecked:  true,
+	hash.DefaultMuted:    true,
+	hash.DefaultSelected: true,
+	hash.Defer:           true,
+	hash.Disabled:        true,
+	hash.Draggable:       true,
+	hash.Enabled:         true,
+	hash.Formnovalidate:  true,
+	hash.Hidden:          true,
+	hash.Inert:           true,
+	hash.Ismap:           true,
+	hash.Itemscope:       true,
+	hash.Multiple:        true,
+	hash.Muted:           true,
+	hash.Nohref:          true,
+	hash.Noresize:        true,
+	hash.Noshade:         true,
+	hash.Novalidate:      true,
+	hash.Nowrap:          true,
+	hash.Open:            true,
+	hash.Pauseonexit:     true,
+	hash.Readonly:        true,
+	hash.Required:        true,
+	hash.Reversed:        true,
+	hash.Scoped:          true,
+	hash.Seamless:        true,
+	hash.Selected:        true,
+	hash.Sortable:        true,
+	hash.Spellcheck:      true,
+	hash.Translate:       true,
+	hash.Truespeed:       true,
+	hash.Typemustmatch:   true,
+	hash.Undeterminate:   true,
+	hash.Visible:         true,
 }
 
-var caseInsensitiveAttrMap = map[atom.Atom]bool{
-	atom.AcceptCharset: true,
-	atom.Accept:        true,
-	atom.Align:         true,
-	atom.Alink:         true,
-	atom.Axis:          true,
-	atom.Bgcolor:       true,
-	atom.Charset:       true,
-	atom.Clear:         true,
-	atom.Codetype:      true,
-	atom.Color:         true,
-	atom.Dir:           true,
-	atom.Enctype:       true,
-	atom.Face:          true,
-	atom.Frame:         true,
-	atom.Hreflang:      true,
-	atom.HttpEquiv:     true,
-	atom.Lang:          true,
-	atom.Language:      true,
-	atom.Link:          true,
-	atom.Media:         true,
-	atom.Method:        true,
-	atom.Rel:           true,
-	atom.Rev:           true,
-	atom.Rules:         true,
-	atom.Scope:         true,
-	atom.Scrolling:     true,
-	atom.Shape:         true,
-	atom.Target:        true,
-	atom.Text:          true,
-	atom.Type:          true,
-	atom.Valign:        true,
-	atom.Valuetype:     true,
-	atom.Vlink:         true,
+var caseInsensitiveAttrMap = map[hash.Hash]bool{
+	hash.Accept_Charset: true,
+	hash.Accept:        true,
+	hash.Align:         true,
+	hash.Alink:         true,
+	hash.Axis:          true,
+	hash.Bgcolor:       true,
+	hash.Charset:       true,
+	hash.Clear:         true,
+	hash.Codetype:      true,
+	hash.Color:         true,
+	hash.Dir:           true,
+	hash.Enctype:       true,
+	hash.Face:          true,
+	hash.Frame:         true,
+	hash.Hreflang:      true,
+	hash.Http_Equiv:     true,
+	hash.Lang:          true,
+	hash.Language:      true,
+	hash.Link:          true,
+	hash.Media:         true,
+	hash.Method:        true,
+	hash.Rel:           true,
+	hash.Rev:           true,
+	hash.Rules:         true,
+	hash.Scope:         true,
+	hash.Scrolling:     true,
+	hash.Shape:         true,
+	hash.Target:        true,
+	hash.Text:          true,
+	hash.Type:          true,
+	hash.Valign:        true,
+	hash.Valuetype:     true,
+	hash.Vlink:         true,
 }
 
-var urlAttrMap = map[atom.Atom]bool{
-	atom.Action:     true,
-	atom.Background: true,
-	atom.Cite:       true,
-	atom.Classid:    true,
-	atom.Codebase:   true,
-	atom.Data:       true,
-	atom.Formaction: true,
-	atom.Href:       true,
-	atom.Icon:       true,
-	atom.Longdesc:   true,
-	atom.Manifest:   true,
-	atom.Poster:     true,
-	atom.Profile:    true,
-	atom.Src:        true,
-	atom.Usemap:     true,
-	atom.Xmlns:      true,
+var urlAttrMap = map[hash.Hash]bool{
+	hash.Action:     true,
+	hash.Background: true,
+	hash.Cite:       true,
+	hash.Classid:    true,
+	hash.Codebase:   true,
+	hash.Data:       true,
+	hash.Formaction: true,
+	hash.Href:       true,
+	hash.Icon:       true,
+	hash.Longdesc:   true,
+	hash.Manifest:   true,
+	hash.Poster:     true,
+	hash.Profile:    true,
+	hash.Src:        true,
+	hash.Usemap:     true,
+	hash.Xmlns:      true,
 }
 
 ////////////////////////////////////////////////////////////////
@@ -171,75 +171,118 @@ func replaceMultipleWhitespace(s []byte) []byte {
 	return t[:i]
 }
 
-// escapeText escapes ampersands.
-func escapeText(s []byte) []byte {
-	t := make([]byte, 0, len(s))
-	i := 0
+func normalizeContentType(s []byte) []byte {
+	s = bytes.ToLower(bytes.TrimSpace(replaceMultipleWhitespace(s)))
+	t := make([]byte, len(s))
+	w := 0
+	start := 0
 	for j, x := range s {
-		if x == '&' {
-			t = append(append(t, s[i:j]...), []byte("&amp;")...)
-			i = j + 1
+		if x == ' ' && (s[j-1] == ';' || s[j-1] == ',') {
+			w += copy(t[w:], s[start:j])
+			start = j + 1
 		}
 	}
-	return append(t, s[i:]...)
+	w += copy(t[w:], s[start:])
+	return t[:w]
 }
 
-// escapeAttrVal returns the escape attribute value bytes for a certain quote, quote equals 0x00 means no quotes.
-func escapeAttrVal(s []byte, quote byte) []byte {
-	t := make([]byte, 0, len(s)+2)
-	if quote != 0x00 {
-		t = append(t, quote)
-	}
-	i := 0
-	for j, x := range s {
+// escapeText escapes ampersands.
+func escapeText(s []byte) []byte {
+	amps := 0
+	for _, x := range s {
 		if x == '&' {
-			t = append(append(t, s[i:j]...), []byte("&amp;")...)
-			i = j + 1
-		} else if x == quote {
-			if quote == '"' {
-				t = append(append(t, s[i:j]...), []byte("&#34;")...)
-				i = j + 1
-			} else if quote == '\'' {
-				t = append(append(t, s[i:j]...), []byte("&#39;")...)
-				i = j + 1
-			}
+			amps++
 		}
 	}
-	t = append(t, s[i:]...)
-	if quote != 0x00 {
-		return append(t, quote)
+
+	t := make([]byte, len(s)+amps*4)
+	w := 0
+	start := 0
+	for j, x := range s {
+		if x == '&' {
+			w += copy(t[w:], s[start:j])
+			w += copy(t[w:], []byte("&amp;"))
+			start = j + 1
+		}
 	}
+	copy(t[w:], s[start:])
 	return t
+}
+
+// escapeAttrVal returns the escape attribute value bytes without quotes.
+func escapeAttrVal(s []byte) []byte {
+	if len(s) == 0 {
+		return []byte("\"\"")
+	}
+
+	amps := 0
+	singles := 0
+	doubles := 0
+	unquoted := true
+	for _, x := range s {
+		if x == '&' {
+			amps++
+		} else if x == '"' {
+			doubles++
+		} else if x == '\'' {
+			singles++
+		} else if unquoted && (x == '/' || x == '`' || x == '<' || x == '=' || x == '>' || isWhitespace(x)) {
+			// no slash either because it causes difficulties!
+			unquoted = false
+		}
+	}
+
+	if !unquoted || doubles > 0 || singles > 0 {
+		// quoted
+		c := amps + doubles
+		quote := byte('"')
+		escapedQuote := []byte("&#34;")
+		if doubles > singles {
+			c = amps + singles
+			quote = byte('\'')
+			escapedQuote = []byte("&#39;")
+		}
+
+		t := make([]byte, len(s) + c*4 + 2)
+		t[0] = quote
+		w := 1
+		start := 0
+		for j, x := range s {
+			if x == '&' {
+				w += copy(t[w:], s[start:j])
+				w += copy(t[w:], []byte("&amp;"))
+				start = j + 1
+			} else if x == quote {
+				w += copy(t[w:], s[start:j])
+				w += copy(t[w:], escapedQuote)
+				start = j + 1
+			}
+		}
+		copy(t[w:], s[start:])
+		t[len(t)-1] = quote
+		return t
+	} else {
+		// unquoted
+		c := amps
+
+		t := make([]byte, len(s) + c*4)
+		w := 0
+		start := 0
+		for j, x := range s {
+			if x == '&' {
+				w += copy(t[w:], s[start:j])
+				w += copy(t[w:], []byte("&amp;"))
+				start = j + 1
+			}
+		}
+		copy(t[w:], s[start:])
+		return t
+	}
 }
 
 // isWhitespace returns true for space, \n, \t, \f, \r.
 func isWhitespace(x byte) bool {
 	return x == ' ' || x == '\t' || x == '\n' || x == '\r' || x == '\f'
-}
-
-// isValidUnquotedAttr returns true when the bytes can be unquoted as an HTML attribute.
-func isValidUnquotedAttr(s []byte) bool {
-	for _, x := range s {
-		// no slash either because it causes difficulties!
-		if x == '/' || x == '"' || x == '\'' || x == '`' || x == '<' || x == '=' || x == '>' || isWhitespace(x) {
-			return false
-		}
-	}
-	return len(s) > 0
-}
-
-// hasMoreDoubleQuotes returns true if the bytes contain more double quotes than single quotes.
-func hasMoreDoubleQuotes(s []byte) bool {
-	singles := 0
-	doubles := 0
-	for _, x := range s {
-		if x == '\'' {
-			singles++
-		} else if x == '"' {
-			doubles++
-		}
-	}
-	return doubles > singles
 }
 
 // copyBytes copies bytes to the same position.
@@ -253,20 +296,20 @@ func copyBytes(src []byte) []byte {
 ////////////////////////////////////////////////////////////////
 
 type attribute struct {
-	key         atom.Atom
+	key         hash.Hash
 	keyRaw, val []byte
 }
 
 type token struct {
 	tt       html.TokenType
-	token    atom.Atom
+	token    hash.Hash
 	tokenRaw []byte
 	text     []byte
 	attr     []attribute
-	attrKey  map[atom.Atom]int
+	attrKey  map[hash.Hash]int
 }
 
-func (t *token) getAttrVal(a atom.Atom) []byte {
+func (t *token) getAttrVal(a hash.Hash) []byte {
 	if i, ok := t.attrKey[a]; ok {
 		return t.attr[i].val
 	}
@@ -304,18 +347,18 @@ func (tf *tokenFeed) peek(pos int) *token {
 		t := &token{tf.z.Next(), 0, nil, nil, nil, nil}
 		switch t.tt {
 		case html.TextToken, html.CommentToken, html.DoctypeToken:
-			t.text = escapeText(tf.z.Text())
+			t.text = tf.z.Text()
 		case html.StartTagToken, html.SelfClosingTagToken, html.EndTagToken:
 			var moreAttr bool
 			var keyRaw, val []byte
 			t.tokenRaw, moreAttr = tf.z.TagName()
-			t.token = atom.Lookup(t.tokenRaw)
+			t.token = hash.ToHash(t.tokenRaw)
 			if moreAttr {
-				t.attr = []attribute{}
-				t.attrKey = make(map[atom.Atom]int)
+				t.attr = make([]attribute, 0, 3)
+				t.attrKey = make(map[hash.Hash]int)
 				for moreAttr {
 					keyRaw, val, moreAttr = tf.z.TagAttr()
-					key := atom.Lookup(keyRaw)
+					key := hash.ToHash(keyRaw)
 					t.attr = append(t.attr, attribute{key, keyRaw, bytes.TrimSpace(val)})
 					t.attrKey[key] = len(t.attr) - 1
 				}
@@ -370,12 +413,12 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 			// CSS and JS minifiers for inline code
 			if len(specialTag) > 0 {
 				token := specialTag[len(specialTag)-1].token
-				if token == atom.Style || token == atom.Script {
+				if token == hash.Style || token == hash.Script {
 					var mediatype string
-					mediatypeRaw := specialTag[len(specialTag)-1].getAttrVal(atom.Type)
+					mediatypeRaw := specialTag[len(specialTag)-1].getAttrVal(hash.Type)
 					if len(mediatypeRaw) > 0 {
 						mediatype = string(mediatypeRaw)
-					} else if token == atom.Script {
+					} else if token == hash.Script {
 						mediatype = defaultScriptType
 					} else {
 						mediatype = defaultStyleType
@@ -390,14 +433,14 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 							return err
 						}
 					}
-				} else if token == atom.Noscript {
+				} else if token == hash.Noscript {
 					if err := m.HTML(w, bytes.NewBuffer(t.text)); err != nil {
 						return err
 					}
 				} else if _, err := w.Write(t.text); err != nil {
 					return err
 				}
-			} else if t.text = replaceMultipleWhitespace(t.text); len(t.text) > 0 {
+			} else if t.text = escapeText(replaceMultipleWhitespace(t.text)); len(t.text) > 0 {
 				// whitespace removal; trim left
 				if t.text[0] == ' ' && precededBySpace {
 					t.text = t.text[1:]
@@ -443,43 +486,58 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 		case html.StartTagToken, html.EndTagToken, html.SelfClosingTagToken:
 			if !inlineTagMap[t.token] {
 				precededBySpace = true
-			}
-			if specialTagMap[t.token] {
-				if t.tt == html.StartTagToken {
-					specialTag = append(specialTag, t)
-				} else if t.tt == html.EndTagToken && len(specialTag) > 0 && specialTag[len(specialTag)-1].token == t.token {
-					specialTag = specialTag[:len(specialTag)-1]
-				}
-			}
-
-			// remove superfluous ending tags
-			if t.attr == nil && (t.token == atom.Html || t.token == atom.Head || t.token == atom.Body ||
-				t.tt == html.EndTagToken && (t.token == atom.Td || t.token == atom.Tr || t.token == atom.Th || t.token == atom.Thead || t.token == atom.Tbody || t.token == atom.Tfoot ||
-					t.token == atom.Option || t.token == atom.Colgroup || t.token == atom.Dd || t.token == atom.Dt)) {
-				break
-			} else if t.tt == html.EndTagToken && (t.token == atom.P || t.token == atom.Li) {
-				remove := false
-				i := 1
-				for {
-					next := tf.peek(i)
-					i++
-					// continue if text token is empty or whitespace
-					if next.tt == html.TextToken && (len(next.text) == 0 || isWhitespace(next.text[0]) && len(replaceMultipleWhitespace(next.text)) == 1) {
-						continue
+				if specialTagMap[t.token] {
+					if t.tt == html.StartTagToken {
+						specialTag = append(specialTag, t)
+					} else if t.tt == html.EndTagToken && len(specialTag) > 0 && specialTag[len(specialTag)-1].token == t.token {
+						specialTag = specialTag[:len(specialTag)-1]
 					}
-					remove = (next.tt == html.ErrorToken || next.tt == html.EndTagToken || next.tt == html.StartTagToken && next.token == t.token)
-					break
-				}
-				if remove {
-					break
-				}
-			}
 
-			// ignore empty script and style tags
-			if t.attr == nil && (t.token == atom.Script || t.token == atom.Style) {
-				if next := tf.peek(1); next.tt == html.EndTagToken {
-					tf.shift()
+					// ignore empty script and style tags
+					if t.attr == nil && (t.token == hash.Script || t.token == hash.Style) {
+						if next := tf.peek(1); next.tt == html.EndTagToken {
+							tf.shift()
+							break
+						}
+					}
+				}
+
+				// remove superfluous ending tags
+				if t.attr == nil && (t.token == hash.Html || t.token == hash.Head || t.token == hash.Body ||
+					t.tt == html.EndTagToken && (t.token == hash.Td || t.token == hash.Tr || t.token == hash.Th || t.token == hash.Thead || t.token == hash.Tbody || t.token == hash.Tfoot ||
+						t.token == hash.Option || t.token == hash.Colgroup || t.token == hash.Dd || t.token == hash.Dt)) {
 					break
+				} else if t.tt == html.EndTagToken && (t.token == hash.P || t.token == hash.Li) {
+					remove := false
+					i := 1
+					for {
+						next := tf.peek(i)
+						i++
+						// continue if text token is empty or whitespace
+						if next.tt == html.TextToken && (len(next.text) == 0 || isWhitespace(next.text[0]) && len(replaceMultipleWhitespace(next.text)) == 1) {
+							continue
+						}
+						remove = (next.tt == html.ErrorToken || next.tt == html.EndTagToken || next.tt == html.StartTagToken && next.token == t.token)
+						break
+					}
+					if remove {
+						break
+					}
+				}
+
+				// rewrite meta tag with charset
+				if t.attr != nil && t.token == hash.Meta {
+					if _, ok := t.attrKey[hash.Charset]; !ok {
+						if iHttpEquiv, ok := t.attrKey[hash.Http_Equiv]; ok && bytes.Equal(bytes.ToLower(t.attr[iHttpEquiv].val), []byte("content-type")) {
+							if iContent, ok := t.attrKey[hash.Content]; ok && bytes.Equal(normalizeContentType(t.attr[iContent].val), []byte("text/html;charset=utf-8")) {
+								delete(t.attrKey, hash.Http_Equiv)
+								delete(t.attrKey, hash.Content)
+								t.attr = append(t.attr[:iContent], t.attr[iContent+1:]...)
+								t.attr[iHttpEquiv] = attribute{hash.Charset, []byte("charset"), []byte("utf-8")}
+								t.attrKey[hash.Charset] = iHttpEquiv
+							}
+						}
+					}
 				}
 			}
 
@@ -497,39 +555,34 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				return err
 			}
 
-			// rewrite meta tag with charset
-			if t.attr != nil && t.token == atom.Meta && bytes.Equal(bytes.ToLower(t.getAttrVal(atom.HttpEquiv)), []byte("content-type")) &&
-				bytes.Equal(bytes.ToLower(t.getAttrVal(atom.Content)), []byte("text/html; charset=utf-8")) {
-				if _, err := w.Write([]byte(" charset=utf-8>")); err != nil {
-					return err
-				}
-				break
-			}
-
 			// write attributes
 			for _, attr := range t.attr {
 				val := attr.val
 				if caseInsensitiveAttrMap[attr.key] {
 					val = bytes.ToLower(val)
+					if attr.key == hash.Enctype || attr.key == hash.Codetype || attr.key == hash.Accept || attr.key == hash.Type && (
+						t.token == hash.A || t.token == hash.Link || t.token == hash.Object || t.token == hash.Param || t.token == hash.Script || t.token == hash.Style) {
+						val = normalizeContentType(val)
+					}
 				}
 
 				// default attribute values can be ommited
-				if attr.key == atom.Type && (t.token == atom.Script && bytes.Equal(val, []byte("text/javascript")) ||
-					t.token == atom.Style && bytes.Equal(val, []byte("text/css")) ||
-					t.token == atom.Link && bytes.Equal(val, []byte("text/css")) ||
-					t.token == atom.Input && bytes.Equal(val, []byte("text")) ||
-					t.token == atom.Button && bytes.Equal(val, []byte("submit"))) ||
-					attr.key == atom.Method && bytes.Equal(val, []byte("get")) ||
-					attr.key == atom.Enctype && bytes.Equal(val, []byte("application/x-www-form-urlencoded")) ||
-					attr.key == atom.Colspan && bytes.Equal(val, []byte("1")) ||
-					attr.key == atom.Rowspan && bytes.Equal(val, []byte("1")) ||
-					attr.key == atom.Shape && bytes.Equal(val, []byte("rect")) ||
-					attr.key == atom.Span && bytes.Equal(val, []byte("1")) ||
-					attr.key == atom.Clear && bytes.Equal(val, []byte("none")) ||
-					attr.key == atom.Frameborder && bytes.Equal(val, []byte("1")) ||
-					attr.key == atom.Scrolling && bytes.Equal(val, []byte("auto")) ||
-					attr.key == atom.Valuetype && bytes.Equal(val, []byte("data")) ||
-					attr.key == atom.Language && t.token == atom.Script && bytes.Equal(val, []byte("javascript")) {
+				if attr.key == hash.Type && (t.token == hash.Script && bytes.Equal(val, []byte("text/javascript")) ||
+					t.token == hash.Style && bytes.Equal(val, []byte("text/css")) ||
+					t.token == hash.Link && bytes.Equal(val, []byte("text/css")) ||
+					t.token == hash.Input && bytes.Equal(val, []byte("text")) ||
+					t.token == hash.Button && bytes.Equal(val, []byte("submit"))) ||
+					attr.key == hash.Method && bytes.Equal(val, []byte("get")) ||
+					attr.key == hash.Enctype && bytes.Equal(val, []byte("application/x-www-form-urlencoded")) ||
+					attr.key == hash.Colspan && bytes.Equal(val, []byte("1")) ||
+					attr.key == hash.Rowspan && bytes.Equal(val, []byte("1")) ||
+					attr.key == hash.Shape && bytes.Equal(val, []byte("rect")) ||
+					attr.key == hash.Span && bytes.Equal(val, []byte("1")) ||
+					attr.key == hash.Clear && bytes.Equal(val, []byte("none")) ||
+					attr.key == hash.Frameborder && bytes.Equal(val, []byte("1")) ||
+					attr.key == hash.Scrolling && bytes.Equal(val, []byte("auto")) ||
+					attr.key == hash.Valuetype && bytes.Equal(val, []byte("data")) ||
+					attr.key == hash.Language && t.token == hash.Script && bytes.Equal(val, []byte("javascript")) {
 					continue
 				}
 				if _, err := w.Write([]byte(" ")); err != nil {
@@ -551,7 +604,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					}
 
 					// CSS and JS minifiers for attribute inline code
-					if attr.key == atom.Style {
+					if attr.key == hash.Style {
 						val, err = m.MinifyBytes(defaultStyleType, val)
 						if err != nil && err != ErrNotExist {
 							return err
@@ -568,17 +621,17 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 						if len(val) >= 5 && bytes.Equal(bytes.ToLower(val[:5]), []byte("http:")) {
 							val = val[5:]
 						}
-					} else if t.token == atom.Meta && attr.key == atom.Content {
-						httpEquiv := t.getAttrVal(atom.HttpEquiv)
+					} else if t.token == hash.Meta && attr.key == hash.Content {
+						httpEquiv := t.getAttrVal(hash.Http_Equiv)
 						if bytes.Equal(httpEquiv, []byte("content-type")) {
-							val = bytes.Replace(val, []byte(", "), []byte(","), -1)
+							val = normalizeContentType(val)
 						} else if bytes.Equal(httpEquiv, []byte("content-style-type")) {
-							defaultStyleType = string(val)
+							defaultStyleType = string(normalizeContentType(val))
 						} else if bytes.Equal(httpEquiv, []byte("content-script-type")) {
-							defaultScriptType = string(val)
+							defaultScriptType = string(normalizeContentType(val))
 						}
 
-						name := bytes.ToLower(t.getAttrVal(atom.Name))
+						name := bytes.ToLower(t.getAttrVal(hash.Name))
 						if bytes.Equal(name, []byte("keywords")) {
 							val = bytes.Replace(val, []byte(", "), []byte(","), -1)
 						} else if bytes.Equal(name, []byte("viewport")) {
@@ -587,15 +640,8 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 					}
 
 					// no quotes if possible, else prefer single or double depending on which occurs more often in value
-					if isValidUnquotedAttr(val) {
-						if _, err := w.Write(escapeAttrVal(val, 0x00)); err != nil {
-							return err
-						}
-					} else if hasMoreDoubleQuotes(val) {
-						if _, err := w.Write(escapeAttrVal(val, '\'')); err != nil {
-							return err
-						}
-					} else if _, err := w.Write(escapeAttrVal(val, '"')); err != nil {
+					val = escapeAttrVal(val)
+					if _, err := w.Write(val); err != nil {
 						return err
 					}
 				}
