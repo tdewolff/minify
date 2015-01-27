@@ -561,7 +561,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				if caseInsensitiveAttrMap[attr.key] {
 					val = bytes.ToLower(val)
 					if attr.key == hash.Enctype || attr.key == hash.Codetype || attr.key == hash.Accept || attr.key == hash.Type && (
-						t.token == hash.A || t.token == hash.Link || t.token == hash.Object || t.token == hash.Param || t.token == hash.Script || t.token == hash.Style) {
+						t.token == hash.A || t.token == hash.Link || t.token == hash.Object || t.token == hash.Param || t.token == hash.Script || t.token == hash.Style || t.token == hash.Source) {
 						val = normalizeContentType(val)
 					}
 				}
