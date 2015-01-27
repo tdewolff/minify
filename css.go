@@ -1,4 +1,4 @@
-package minify
+package minify // import "github.com/tdewolff/minify"
 
 /* TODO: (non-exhaustive)
 - remove space before !important
