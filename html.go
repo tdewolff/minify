@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"io"
 
-	"golang.org/x/net/html"
 	"github.com/tdewolff/net/html/atom"
+	"golang.org/x/net/html"
 )
 
 var specialTagMap = map[atom.Atom]bool{
@@ -18,77 +18,77 @@ var specialTagMap = map[atom.Atom]bool{
 }
 
 var inlineTagMap = map[atom.Atom]bool{
-	atom.A:      true,
-	atom.Abbr:   true,
+	atom.A:       true,
+	atom.Abbr:    true,
 	atom.Acronym: true,
-	atom.B:      true,
-	atom.Bdo:    true,
-	atom.Big:    true,
-	atom.Cite:   true,
-	atom.Button: true,
-	atom.Dfn:    true,
-	atom.Em:     true,
-	atom.I:      true,
-	atom.Img:    true,
-	atom.Input:  true,
-	atom.Kbd:    true,
-	atom.Label:  true,
-	atom.Map:    true,
-	atom.Object: true,
-	atom.Q:      true,
-	atom.Samp:   true,
-	atom.Select: true,
-	atom.Small:  true,
-	atom.Span:   true,
-	atom.Strong: true,
-	atom.Sub:    true,
-	atom.Sup:    true,
-	atom.Tt:     true,
-	atom.Var:    true,
+	atom.B:       true,
+	atom.Bdo:     true,
+	atom.Big:     true,
+	atom.Cite:    true,
+	atom.Button:  true,
+	atom.Dfn:     true,
+	atom.Em:      true,
+	atom.I:       true,
+	atom.Img:     true,
+	atom.Input:   true,
+	atom.Kbd:     true,
+	atom.Label:   true,
+	atom.Map:     true,
+	atom.Object:  true,
+	atom.Q:       true,
+	atom.Samp:    true,
+	atom.Select:  true,
+	atom.Small:   true,
+	atom.Span:    true,
+	atom.Strong:  true,
+	atom.Sub:     true,
+	atom.Sup:     true,
+	atom.Tt:      true,
+	atom.Var:     true,
 }
 
 var booleanAttrMap = map[atom.Atom]bool{
 	atom.Allowfullscreen: true,
-	atom.Async:          true,
-	atom.Autofocus:      true,
-	atom.Autoplay:       true,
-	atom.Checked:        true,
+	atom.Async:           true,
+	atom.Autofocus:       true,
+	atom.Autoplay:        true,
+	atom.Checked:         true,
 	atom.Compact:         true,
-	atom.Controls:       true,
+	atom.Controls:        true,
 	atom.Declare:         true,
-	atom.Default:        true,
+	atom.Default:         true,
 	atom.DefaultChecked:  true,
 	atom.DefaultMuted:    true,
 	atom.DefaultSelected: true,
-	atom.Defer:          true,
-	atom.Disabled:       true,
-	atom.Draggable:      true,
+	atom.Defer:           true,
+	atom.Disabled:        true,
+	atom.Draggable:       true,
 	atom.Enabled:         true,
-	atom.Formnovalidate: true,
-	atom.Hidden:         true,
-	atom.Inert:          true,
-	atom.Ismap:          true,
-	atom.Itemscope:      true,
-	atom.Multiple:       true,
-	atom.Muted:          true,
+	atom.Formnovalidate:  true,
+	atom.Hidden:          true,
+	atom.Inert:           true,
+	atom.Ismap:           true,
+	atom.Itemscope:       true,
+	atom.Multiple:        true,
+	atom.Muted:           true,
 	atom.Nohref:          true,
 	atom.Noresize:        true,
 	atom.Noshade:         true,
-	atom.Novalidate:     true,
+	atom.Novalidate:      true,
 	atom.Nowrap:          true,
-	atom.Open:           true,
+	atom.Open:            true,
 	atom.Pauseonexit:     true,
-	atom.Readonly:       true,
-	atom.Required:       true,
-	atom.Reversed:       true,
-	atom.Scoped:         true,
-	atom.Seamless:       true,
-	atom.Selected:       true,
+	atom.Readonly:        true,
+	atom.Required:        true,
+	atom.Reversed:        true,
+	atom.Scoped:          true,
+	atom.Seamless:        true,
+	atom.Selected:        true,
 	atom.Sortable:        true,
-	atom.Spellcheck:     true,
-	atom.Translate:      true,
+	atom.Spellcheck:      true,
+	atom.Translate:       true,
 	atom.Truespeed:       true,
-	atom.Typemustmatch:  true,
+	atom.Typemustmatch:   true,
 	atom.Undeterminate:   true,
 	atom.Visible:         true,
 }
@@ -97,12 +97,12 @@ var caseInsensitiveAttrMap = map[atom.Atom]bool{
 	atom.AcceptCharset: true,
 	atom.Accept:        true,
 	atom.Align:         true,
-	atom.Alink:          true,
-	atom.Axis:           true,
-	atom.Bgcolor:        true,
+	atom.Alink:         true,
+	atom.Axis:          true,
+	atom.Bgcolor:       true,
 	atom.Charset:       true,
-	atom.Clear:          true,
-	atom.Codetype:       true,
+	atom.Clear:         true,
+	atom.Codetype:      true,
 	atom.Color:         true,
 	atom.Dir:           true,
 	atom.Enctype:       true,
@@ -111,22 +111,22 @@ var caseInsensitiveAttrMap = map[atom.Atom]bool{
 	atom.Hreflang:      true,
 	atom.HttpEquiv:     true,
 	atom.Lang:          true,
-	atom.Language:       true,
+	atom.Language:      true,
 	atom.Link:          true,
 	atom.Media:         true,
 	atom.Method:        true,
 	atom.Rel:           true,
-	atom.Rev:            true,
-	atom.Rules:          true,
+	atom.Rev:           true,
+	atom.Rules:         true,
 	atom.Scope:         true,
-	atom.Scrolling:      true,
+	atom.Scrolling:     true,
 	atom.Shape:         true,
 	atom.Target:        true,
-	atom.Text:           true,
+	atom.Text:          true,
 	atom.Type:          true,
-	atom.Valign:         true,
-	atom.Valuetype:      true,
-	atom.Vlink:          true,
+	atom.Valign:        true,
+	atom.Valuetype:     true,
+	atom.Vlink:         true,
 }
 
 var urlAttrMap = map[atom.Atom]bool{
@@ -178,7 +178,7 @@ func escapeText(s []byte) []byte {
 	for j, x := range s {
 		if x == '&' {
 			t = append(append(t, s[i:j]...), []byte("&amp;")...)
-			i = j+1
+			i = j + 1
 		}
 	}
 	return append(t, s[i:]...)
@@ -194,14 +194,14 @@ func escapeAttrVal(s []byte, quote byte) []byte {
 	for j, x := range s {
 		if x == '&' {
 			t = append(append(t, s[i:j]...), []byte("&amp;")...)
-			i = j+1
+			i = j + 1
 		} else if x == quote {
 			if quote == '"' {
 				t = append(append(t, s[i:j]...), []byte("&#34;")...)
-				i = j+1
+				i = j + 1
 			} else if quote == '\'' {
 				t = append(append(t, s[i:j]...), []byte("&#39;")...)
-				i = j+1
+				i = j + 1
 			}
 		}
 	}
