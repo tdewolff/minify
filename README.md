@@ -153,7 +153,7 @@ m.AddCmd(mediatype, exec.Command(cmd, args...))
 ```
 
 ### Mediatypes
-Mediatypes can contain wildcards `*` and parameters. For example a minifier with `image/*` will match any image mime.
+Mediatypes can contain wildcards (`*`) and parameters (`;key1=val2,key2=val2`). For example a minifier with `image/*` will match any image mime.
 
 Data such as `text/plain; charset=ASCII` will be processed by `text/plain` or `text/*` or `*/*` whichever exists and will pass the parameter `"charset":"ASCII"` in the `Info` field in `Minifier`.
 
