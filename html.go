@@ -150,7 +150,7 @@ var urlAttrMap = map[atom.Atom]bool{
 
 ////////////////////////////////////////////////////////////////
 
-// replaceMultipleWhitespace replaces any series of whitespace characters by a single space
+// replaceMultipleWhitespace replaces any series of whitespace characters by a single space.
 func replaceMultipleWhitespace(s []byte) []byte {
 	i := 0
 	t := make([]byte, len(s))
@@ -171,6 +171,7 @@ func replaceMultipleWhitespace(s []byte) []byte {
 	return t[:i]
 }
 
+// escapeText escapes ampersands.
 func escapeText(s []byte) []byte {
 	t := make([]byte, 0, len(s))
 	i := 0
@@ -183,6 +184,7 @@ func escapeText(s []byte) []byte {
 	return append(t, s[i:]...)
 }
 
+// escapeAttrVal returns the escape attribute value bytes for a certain quote, quote equals 0x00 means no quotes.
 func escapeAttrVal(s []byte, quote byte) []byte {
 	t := make([]byte, 0, len(s)+2)
 	if quote != 0x00 {
@@ -210,21 +212,24 @@ func escapeAttrVal(s []byte, quote byte) []byte {
 	return t
 }
 
+// isWhitespace returns true for space, \n, \t, \f, \r.
 func isWhitespace(x byte) bool {
-	return x == ' ' || x == '\n' || x == '\r' || x == '\t' || x == '\f'
+	return x == ' ' || x == '\t' || x == '\n' || x == '\r' || x == '\f'
 }
 
-// isValidUnquotedAttr returns true when the bytes can be unquoted as an HTML attribute
+// isValidUnquotedAttr returns true when the bytes can be unquoted as an HTML attribute.
 func isValidUnquotedAttr(s []byte) bool {
 	for _, x := range s {
-		if x == ' ' || x == '/' || x == '`' || x >= '<' && x <= '>' || x >= '\n' && x <= '\r' {
+		// no slash either because it causes difficulties!
+		if x == '/' || x == '"' || x == '\'' || x == '`' || x == '<' || x == '=' || x == '>' || isWhitespace(x) {
 			return false
 		}
 	}
-	return true
+	return len(s) > 0
 }
 
-func countQuotes(s []byte) (int, int) {
+// hasMoreDoubleQuotes returns true if the bytes contain more double quotes than single quotes.
+func hasMoreDoubleQuotes(s []byte) bool {
 	singles := 0
 	doubles := 0
 	for _, x := range s {
@@ -234,9 +239,11 @@ func countQuotes(s []byte) (int, int) {
 			doubles++
 		}
 	}
-	return singles, doubles
+	return doubles > singles
 }
 
+// copyBytes copies bytes to the same position.
+// This is required because the referenced slices from the tokenizer might be overwritten on subsequent Next calls.
 func copyBytes(src []byte) []byte {
 	dst := make([]byte, len(src))
 	copy(dst, src)
@@ -579,13 +586,12 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 						}
 					}
 
-					// no quote if possible, else prefer single or double depending on which occurs more often in value
-					singles, doubles := countQuotes(val)
-					if singles == 0 && doubles == 0 && isValidUnquotedAttr(val) {
+					// no quotes if possible, else prefer single or double depending on which occurs more often in value
+					if isValidUnquotedAttr(val) {
 						if _, err := w.Write(escapeAttrVal(val, 0x00)); err != nil {
 							return err
 						}
-					} else if doubles > singles {
+					} else if hasMoreDoubleQuotes(val) {
 						if _, err := w.Write(escapeAttrVal(val, '\'')); err != nil {
 							return err
 						}
