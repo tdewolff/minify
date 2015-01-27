@@ -21,7 +21,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/tdewolff/css"
+	"github.com/tdewolff/parse/css"
 )
 
 var epsilon = 0.00001
