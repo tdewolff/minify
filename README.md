@@ -31,14 +31,14 @@ The HTML5 minifier is rather complete and really fast, it:
 - strips default protocols (`http:` and `javascript:`)
 - strips comments (except conditional comments)
 - strips long `doctype` or `meta` charset
-- makes tags, attributes and some values lower case to enhace GZIP compression
+- makes tags, attributes and some values lowercase to enhance GZIP compression
 
-After recent benchmarking and profiling it is really fast and minifies pages in the 10ms range, making it viable for on-the-fly minification.
+After recent benchmarking and profiling it became really fast and minifies pages in the 20ms range, making it viable for on-the-fly minification.
 
 However, be careful when doing on-the-fly minification. A simple site would typically have HTML pages of 5kB which ideally are compressed to say 4kB. If this would take about 10ms to minify, one has to download slower than 100kB/s to make minification effective. There is a lot of handwaving in this example but it's hardly effective to minify on-the-fly. Rather use caching!
 
 ### Beware
-Make sure your HTML doesn't depend on whitespace between `block` elements that have been changed to `inline` or `inline-block` elements using CSS. Your layout *should not* depend on those whitespaces as the minifier will remove them. An example is a list of `<li>`s which have `display:inline-block` applied and have whitespace inbetween them.
+Make sure your HTML doesn't depend on whitespace between `block` elements that have been changed to `inline` or `inline-block` elements using CSS. Your layout *should not* depend on those whitespaces as the minifier will remove them. An example is a list of `<li>`s which have `display:inline-block` applied and have whitespace in between them.
 
 ## CSS
 The CSS minifier is very fast and complete and will only use safe minifications:
@@ -88,7 +88,7 @@ import (
 
 ## Usage
 ### New
-Retrieve a minifier struct which holds a map of mime &#8594; minifier functions.
+Retrieve a minifier struct which holds a map of mediatype &#8594; minifier functions.
 ``` go
 m := minify.NewMinifier()
 ```
@@ -99,58 +99,63 @@ m := minify.NewMinifierDefault()
 ```
 
 ### From reader
-Minify from an `io.Reader` to an `io.Writer` with mime type `mime`.
+Minify from an `io.Reader` to an `io.Writer` with mediatype `mediatype`.
 ``` go
-if err := m.Minify(mime, w, r); err != nil {
-	fmt.Println("Minify:", err)
+if err := m.Minify(mediatype, w, r); err != nil {
+	log.Fatal("Minify:", err)
 }
 ```
 
 Minify *HTML* directly from an `io.Reader` to an `io.Writer`.
 ``` go
 if err := m.HTML(w, r); err != nil {
-	fmt.Println("HTML:", err)
+	log.Fatal("HTML:", err)
 }
 ```
 
 Minify *CSS* directly from an `io.Reader` to an `io.Writer`.
 ``` go
 if err := m.CSS(w, r); err != nil {
-	fmt.Println("CSS:", err)
+	log.Fatal("CSS:", err)
 }
 ```
 
 ### From bytes
-Minify from and to a `[]byte` with mime type `mime`.
+Minify from and to a `[]byte` with mediatype type `mediatype`.
 ``` go
-b, err := m.MinifyBytes(mime, b)
+b, err := m.MinifyBytes(mediatype, b)
 if err != nil {
-	fmt.Println("MinifyBytes:", err)
+	log.Fatal("MinifyBytes:", err)
 }
 ```
 
 ### From string
-Minify from and to a `string` with mime type `mime`.
+Minify from and to a `string` with mediatype type `mediatype`.
 ``` go
-s, err := m.MinifyString(mime, s)
+s, err := m.MinifyString(mediatype, s)
 if err != nil {
-	fmt.Println("MinifyString:", err)
+	log.Fatal("MinifyString:", err)
 }
 ```
 
 ### Custom minifier
-Add a function for a specific mime type `mime`.
+Add a function for a specific mediatype type `mediatype`.
 ``` go
-m.Add(mime, func(m minify.Minifier, w io.Writer, r io.Reader) error {
+m.Add(mediatype, func(m minify.Minifier, w io.Writer, r io.Reader) error {
 	// ...
 	return nil
 })
 ```
 
-Add a command `cmd` with arguments `args` for a specific mime type `mime`.
+Add a command `cmd` with arguments `args` for a specific mediatype type `mediatype`.
 ``` go
-m.AddCmd(mime, exec.Command(cmd, args...))
+m.AddCmd(mediatype, exec.Command(cmd, args...))
 ```
+
+### Mediatypes
+Mediatypes can contain wildcards `*` and parameters. For example a minifier with `image/*` will match any image mime.
+
+Data such as `text/plain; charset=ASCII` will be processed by `text/plain` or `text/*` or `*/*` whichever exists and will pass the parameter `"charset":"ASCII"` in the `Info` field in `Minifier`.
 
 ## Examples
 Basic example that minifies from stdin to stdout and loads the default HTML and CSS minifiers. Additionally, a JS minifier is set to run `java -jar build/compiler.jar` (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/)). Note that reading the file into a buffer first and writing to a buffer would be faster.
@@ -158,7 +163,7 @@ Basic example that minifies from stdin to stdout and loads the default HTML and 
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
 	"os/exec"
 
@@ -170,7 +175,7 @@ func main() {
 	m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
 
 	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
-		fmt.Println("Minify:", err)
+		log.Fatal("Minify:", err)
 	}
 }
 ```
@@ -183,6 +188,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 
 	"github.com/tdewolff/minify"
@@ -212,7 +218,7 @@ func main() {
 
 	out, err := m.MinifyString("text/plain", "Because my coffee was too cold, I heated it in the microwave.")
 	if err != nil {
-		fmt.Println("Minify:", err)
+		log.Fatal("Minify:", err)
 	}
 	fmt.Println(out)
 }
