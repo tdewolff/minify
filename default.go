@@ -13,7 +13,9 @@ const bufSize = 1024
 // Default is a default minifier used to minify an unknown media type.
 // It remove all whitespace at the beginning and end of the strea.
 func (m Minifier) Default(w io.Writer, r io.Reader) error {
-	if fr, ok := r.(interface{ Bytes() []byte }); ok {
+	if fr, ok := r.(interface {
+		Bytes() []byte
+	}); ok {
 		b := bytes.TrimSpace(fr.Bytes())
 		if _, errWrite := w.Write(b); errWrite != nil {
 			return errWrite
