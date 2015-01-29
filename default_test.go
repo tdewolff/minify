@@ -2,13 +2,32 @@ package minify // import "github.com/tdewolff/minify"
 
 import (
 	"bytes"
+	"io"
 	"testing"
+
+	"github.com/tdewolff/parse"
 )
 
-func helperDefault(t *testing.T, m *Minifier, input, expected string) {
+// Don't implement Bytes() to test for buffer exceeding.
+type readerMockup struct {
+	r io.Reader
+}
+
+func (r *readerMockup) Read(p []byte) (int, error) {
+	n, err := r.r.Read(p)
+	if n < len(p) {
+		err = io.EOF
+	}
+	return n, err
+}
+
+////////////////////////////////////////////////////////////////
+
+func helperTestDefault(t *testing.T, m *Minifier, input, expected string) {
 	b := &bytes.Buffer{}
-	if err := m.Default(b, bytes.NewBufferString(input)); err != nil {
+	if err := m.Default(b, &readerMockup{bytes.NewBufferString(input)}); err != nil {
 		t.Error(err)
+		return
 	}
 
 	if b.String() != expected {
@@ -16,9 +35,23 @@ func helperDefault(t *testing.T, m *Minifier, input, expected string) {
 	}
 }
 
+func helperTestDefaultError(t *testing.T, m *Minifier, input string, expErr error) {
+	b := &bytes.Buffer{}
+	if err := m.Default(b, &readerMockup{bytes.NewBufferString(input)}); err != expErr {
+		t.Error(err, "!=", expErr, "for", input)
+	}
+}
+
 ////////////////////////////////////////////////////////////////
 
 func TestDefault(t *testing.T) {
 	m := NewMinifier()
-	helperDefault(t, m, "  x  ", "x")
+	helperTestDefault(t, m, "  x  ", "x")
+
+	parse.MinBuf = 2
+	parse.MaxBuf = 4
+	helperTestDefault(t, m, "  y  ", "y")
+	helperTestDefaultError(t, m, "  y   ", nil) // EOF
+	helperTestDefaultError(t, m, "  y    ", parse.ErrBufferExceeded)
+	helperTestDefaultError(t, m, "    y  ", parse.ErrBufferExceeded)
 }
