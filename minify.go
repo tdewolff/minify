@@ -114,12 +114,11 @@ func (m *Minifier) AddCmd(mediatype string, cmd *exec.Cmd) error {
 // Mediatype may take the form of 'text', 'text/css', 'text/css;utf8'
 func (m Minifier) Minify(mediatype string, w io.Writer, r io.Reader) error {
 	parentInfo := m.Info
-	m.Info = make(map[string]string)
 	defer func() {
 		m.Info = parentInfo
 	}()
 
-	m.Info["mediatype"] = mediatype
+	m.Info = map[string]string{"mediatype": mediatype}
 	params := strings.Split(mediatype, ";")
 	for _, p := range params[1:] {
 		if i := strings.IndexByte(p, '='); i != -1 {
@@ -152,7 +151,8 @@ func (m Minifier) Minify(mediatype string, w io.Writer, r io.Reader) error {
 // It return an error when no such mediatype exists (ErrNotExist) or any error occurred in the minifier function.
 func (m Minifier) MinifyBytes(mediatype string, v []byte) ([]byte, error) {
 	b := &bytes.Buffer{}
-	if err := m.Minify(mediatype, b, bytes.NewBuffer(v)); err != nil {
+	b.Grow(len(v))
+	if err := m.Minify(mediatype, b, bytes.NewReader(v)); err != nil {
 		return v, err
 	}
 	return b.Bytes(), nil
@@ -162,7 +162,8 @@ func (m Minifier) MinifyBytes(mediatype string, v []byte) ([]byte, error) {
 // It return an error when no such mediatype exists (ErrNotExist) or any error occurred in the minifier function.
 func (m Minifier) MinifyString(mediatype string, v string) (string, error) {
 	b := &bytes.Buffer{}
-	if err := m.Minify(mediatype, b, bytes.NewBufferString(v)); err != nil {
+	b.Grow(len(v))
+	if err := m.Minify(mediatype, b, bytes.NewReader([]byte(v))); err != nil {
 		return v, err
 	}
 	return b.String(), nil
