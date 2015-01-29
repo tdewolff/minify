@@ -95,38 +95,38 @@ var booleanAttrMap = map[hash.Hash]bool{
 
 var caseInsensitiveAttrMap = map[hash.Hash]bool{
 	hash.Accept_Charset: true,
-	hash.Accept:        true,
-	hash.Align:         true,
-	hash.Alink:         true,
-	hash.Axis:          true,
-	hash.Bgcolor:       true,
-	hash.Charset:       true,
-	hash.Clear:         true,
-	hash.Codetype:      true,
-	hash.Color:         true,
-	hash.Dir:           true,
-	hash.Enctype:       true,
-	hash.Face:          true,
-	hash.Frame:         true,
-	hash.Hreflang:      true,
+	hash.Accept:         true,
+	hash.Align:          true,
+	hash.Alink:          true,
+	hash.Axis:           true,
+	hash.Bgcolor:        true,
+	hash.Charset:        true,
+	hash.Clear:          true,
+	hash.Codetype:       true,
+	hash.Color:          true,
+	hash.Dir:            true,
+	hash.Enctype:        true,
+	hash.Face:           true,
+	hash.Frame:          true,
+	hash.Hreflang:       true,
 	hash.Http_Equiv:     true,
-	hash.Lang:          true,
-	hash.Language:      true,
-	hash.Link:          true,
-	hash.Media:         true,
-	hash.Method:        true,
-	hash.Rel:           true,
-	hash.Rev:           true,
-	hash.Rules:         true,
-	hash.Scope:         true,
-	hash.Scrolling:     true,
-	hash.Shape:         true,
-	hash.Target:        true,
-	hash.Text:          true,
-	hash.Type:          true,
-	hash.Valign:        true,
-	hash.Valuetype:     true,
-	hash.Vlink:         true,
+	hash.Lang:           true,
+	hash.Language:       true,
+	hash.Link:           true,
+	hash.Media:          true,
+	hash.Method:         true,
+	hash.Rel:            true,
+	hash.Rev:            true,
+	hash.Rules:          true,
+	hash.Scope:          true,
+	hash.Scrolling:      true,
+	hash.Shape:          true,
+	hash.Target:         true,
+	hash.Text:           true,
+	hash.Type:           true,
+	hash.Valign:         true,
+	hash.Valuetype:      true,
+	hash.Vlink:          true,
 }
 
 var urlAttrMap = map[hash.Hash]bool{
@@ -243,7 +243,7 @@ func escapeAttrVal(s []byte) []byte {
 			escapedQuote = []byte("&#39;")
 		}
 
-		t := make([]byte, len(s) + c*4 + 2)
+		t := make([]byte, len(s)+c*4+2)
 		t[0] = quote
 		w := 1
 		start := 0
@@ -265,7 +265,7 @@ func escapeAttrVal(s []byte) []byte {
 		// unquoted
 		c := amps
 
-		t := make([]byte, len(s) + c*4)
+		t := make([]byte, len(s)+c*4)
 		w := 0
 		start := 0
 		for j, x := range s {
@@ -560,8 +560,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 				val := attr.val
 				if caseInsensitiveAttrMap[attr.key] {
 					val = bytes.ToLower(val)
-					if attr.key == hash.Enctype || attr.key == hash.Codetype || attr.key == hash.Accept || attr.key == hash.Type && (
-						t.token == hash.A || t.token == hash.Link || t.token == hash.Object || t.token == hash.Param || t.token == hash.Script || t.token == hash.Style || t.token == hash.Source) {
+					if attr.key == hash.Enctype || attr.key == hash.Codetype || attr.key == hash.Accept || attr.key == hash.Type && (t.token == hash.A || t.token == hash.Link || t.token == hash.Object || t.token == hash.Param || t.token == hash.Script || t.token == hash.Style || t.token == hash.Source) {
 						val = normalizeContentType(val)
 					}
 				}
