@@ -78,11 +78,14 @@ It does purposely not use the following techniques:
 It's great that so many other tools make comparison tables: [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html), [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). From the last link, this CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented and often unsafe techniques, so that's fine.
 
 ## Installation
-Run the following command
+Run the following commands
 
 	go get github.com/tdewolff/minify
+	go get github.com/tdewolff/minify/html
+	go get github.com/tdewolff/minify/css
+	go get github.com/tdewolff/minify/trim
 
-or add the following import and run project with `go get`
+or add the following import and run the project with `go get`
 ``` go
 import (
 	"github.com/tdewolff/minify"
@@ -164,7 +167,7 @@ m.AddCmd(mediatype, exec.Command(cmd, args...))
 ### Mediatypes
 Mediatypes can contain wildcards (`*`) and parameters (`; key1=val2; key2=val2`). For example a minifier with `image/*` will match any image mime.
 
-Data such as `text/plain; charset=UTF-8` will be processed by `text/plain` or `text/*` or `*/*` whichever exists and will pass the parameter `"charset":"ASCII"` which is retrievable by calling `Param(string) string` on the `Minifier` interface.
+Data such as `text/plain; charset=UTF-8` will be processed by `text/plain` or `text/*` or `*/*` whichever exists and will pass the parameter `"charset":"UTF-8"` which is retrievable by calling `Param(string) string` on the `Minifier` interface.
 
 ## Examples
 Basic example that minifies from stdin to stdout and loads the default HTML and CSS minifiers. Additionally, a JS minifier is set to run `java -jar build/compiler.jar` (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/)). Note that reading the file into a buffer first and writing to a buffer would be faster.
