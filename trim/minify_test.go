@@ -5,6 +5,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/tdewolff/minify"
 	"github.com/tdewolff/parse"
 )
 
@@ -23,9 +24,9 @@ func (r *readerMockup) Read(p []byte) (int, error) {
 
 ////////////////////////////////////////////////////////////////
 
-func helperTestDefault(t *testing.T, m *Minifier, input, expected string) {
+func helperTestDefault(t *testing.T, m minify.Minifier, input, expected string) {
 	b := &bytes.Buffer{}
-	if err := m.Default(b, &readerMockup{bytes.NewBufferString(input)}); err != nil {
+	if err := Minify(m, b, &readerMockup{bytes.NewBufferString(input)}); err != nil {
 		t.Error(err)
 		return
 	}
@@ -35,9 +36,9 @@ func helperTestDefault(t *testing.T, m *Minifier, input, expected string) {
 	}
 }
 
-func helperTestDefaultError(t *testing.T, m *Minifier, input string, expErr error) {
+func helperTestDefaultError(t *testing.T, m minify.Minifier, input string, expErr error) {
 	b := &bytes.Buffer{}
-	if err := m.Default(b, &readerMockup{bytes.NewBufferString(input)}); err != expErr {
+	if err := Minify(m, b, &readerMockup{bytes.NewBufferString(input)}); err != expErr {
 		t.Error(err, "!=", expErr, "for", input)
 	}
 }
@@ -45,7 +46,7 @@ func helperTestDefaultError(t *testing.T, m *Minifier, input string, expErr erro
 ////////////////////////////////////////////////////////////////
 
 func TestDefault(t *testing.T) {
-	m := NewMinifier()
+	m := minify.NewMinifier()
 	helperTestDefault(t, m, "  x  ", "x")
 
 	parse.MinBuf = 2

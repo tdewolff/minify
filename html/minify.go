@@ -607,20 +607,26 @@ func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
 					if attr.key == hash.Style {
 						b := &bytes.Buffer{}
 						b.Grow(len(val))
-						if err = m.Minify(defaultStyleType, b, bytes.NewReader(val)); err != nil && err != minify.ErrNotExist {
-							return err
+						if err = m.Minify(defaultStyleType, b, bytes.NewReader(val)); err != nil {
+							if err != minify.ErrNotExist {
+								return err
+							}
+						} else {
+							val = b.Bytes()
 						}
-						val = b.Bytes()
 					} else if len(attr.keyRaw) > 2 && attr.keyRaw[0] == 'o' && attr.keyRaw[1] == 'n' {
 						if len(val) >= 11 && bytes.Equal(bytes.ToLower(val[:11]), []byte("javascript:")) {
 							val = val[11:]
 						}
 						b := &bytes.Buffer{}
 						b.Grow(len(val))
-						if err = m.Minify(defaultScriptType, b, bytes.NewReader(val)); err != nil && err != minify.ErrNotExist {
-							return err
+						if err = m.Minify(defaultScriptType, b, bytes.NewReader(val)); err != nil {
+							if err != minify.ErrNotExist {
+								return err
+							}
+						} else {
+							val = b.Bytes()
 						}
-						val = b.Bytes()
 					} else if urlAttrMap[attr.key] {
 						if len(val) >= 5 && bytes.Equal(bytes.ToLower(val[:5]), []byte("http:")) {
 							val = val[5:]

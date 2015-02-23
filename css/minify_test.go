@@ -3,12 +3,14 @@ package css // import "github.com/tdewolff/minify/css"
 import (
 	"bytes"
 	"testing"
+
+	"github.com/tdewolff/minify"
 )
 
 func helperCSS(t *testing.T, input, expected string) {
-	m := NewMinifier()
+	m := minify.NewMinifier()
 	b := &bytes.Buffer{}
-	if err := m.CSS(b, bytes.NewBufferString(input)); err != nil {
+	if err := Minify(m, b, bytes.NewBufferString(input)); err != nil {
 		t.Error(err)
 	}
 

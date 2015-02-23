@@ -8,12 +8,13 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/tdewolff/minify"
 	hash "github.com/tdewolff/parse/html"
 )
 
-func helperTestHTML(t *testing.T, m *Minifier, input, expected string) {
+func helperTestHTML(t *testing.T, m minify.Minifier, input, expected string) {
 	b := &bytes.Buffer{}
-	if err := m.HTML(b, bytes.NewBufferString(input)); err != nil {
+	if err := Minify(m, b, bytes.NewBufferString(input)); err != nil {
 		t.Error(err)
 	}
 
@@ -45,7 +46,7 @@ func helperRand(n, m int, chars []byte) []string {
 ////////////////////////////////////////////////////////////////
 
 func TestHTML(t *testing.T) {
-	m := NewMinifier()
+	m := minify.NewMinifier()
 	helperTestHTML(t, m, "html", "html")
 	helperTestHTML(t, m, "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML+RDFa 1.0//EN\" \"http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd\">", "<!doctype html>")
 	helperTestHTML(t, m, "<!-- comment -->", "")
@@ -128,8 +129,8 @@ func TestWhitespace(t *testing.T) {
 }
 
 func TestSpecialTagClosing(t *testing.T) {
-	m := NewMinifier()
-	m.Add("text/css", func(m Minifier, w io.Writer, r io.Reader) error {
+	m := minify.NewMinifier()
+	m.Add("text/css", func(m minify.Minifier, w io.Writer, r io.Reader) error {
 		b, _ := ioutil.ReadAll(r)
 		if string(b) != "</script>" {
 			t.Error(string(b), "!= </script>")
