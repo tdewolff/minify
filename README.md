@@ -86,6 +86,9 @@ or add the following import and run project with `go get`
 ``` go
 import (
 	"github.com/tdewolff/minify"
+	"github.com/tdewolff/minify/html"
+	"github.com/tdewolff/minify/css"
+	"github.com/tdewolff/minify/trim"
 )
 ```
 
@@ -96,9 +99,12 @@ Retrieve a minifier struct which holds a map of mediatype &#8594; minifier funct
 m := minify.NewMinifier()
 ```
 
-The following loads the default HTML and CSS minifiers.
+The following loads all provided minifiers.
 ``` go
-m := minify.NewMinifierDefault()
+m := minify.NewMinifier()
+m.Add("text/html", html.Minify)
+m.Add("text/css", css.Minify)
+m.Add("*/*", trim.Minify)
 ```
 
 ### From reader
@@ -111,15 +117,15 @@ if err := m.Minify(mediatype, w, r); err != nil {
 
 Minify *HTML* directly from an `io.Reader` to an `io.Writer`.
 ``` go
-if err := m.HTML(w, r); err != nil {
-	log.Fatal("HTML:", err)
+if err := html.Minify(m, w, r); err != nil {
+	log.Fatal("Minify:", err)
 }
 ```
 
 Minify *CSS* directly from an `io.Reader` to an `io.Writer`.
 ``` go
-if err := m.CSS(w, r); err != nil {
-	log.Fatal("CSS:", err)
+if err := css.Minify(m, w, r); err != nil {
+	log.Fatal("Minify:", err)
 }
 ```
 
@@ -158,7 +164,7 @@ m.AddCmd(mediatype, exec.Command(cmd, args...))
 ### Mediatypes
 Mediatypes can contain wildcards (`*`) and parameters (`; key1=val2; key2=val2`). For example a minifier with `image/*` will match any image mime.
 
-Data such as `text/plain; charset=UTF-8` will be processed by `text/plain` or `text/*` or `*/*` whichever exists and will pass the parameter `"charset":"ASCII"` in the `Info` field in `Minifier`.
+Data such as `text/plain; charset=UTF-8` will be processed by `text/plain` or `text/*` or `*/*` whichever exists and will pass the parameter `"charset":"ASCII"` which is retrievable by calling `Param(string) string` on the `Minifier` interface.
 
 ## Examples
 Basic example that minifies from stdin to stdout and loads the default HTML and CSS minifiers. Additionally, a JS minifier is set to run `java -jar build/compiler.jar` (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/)). Note that reading the file into a buffer first and writing to a buffer would be faster.
@@ -171,10 +177,16 @@ import (
 	"os/exec"
 
 	"github.com/tdewolff/minify"
+	"github.com/tdewolff/minify/html"
+	"github.com/tdewolff/minify/css"
+	"github.com/tdewolff/minify/trim"
 )
 
 func main() {
-	m := minify.NewMinifierDefault()
+	m := minify.NewMinifier()
+	m.Add("text/html", html.Minify)
+	m.Add("text/css", css.Minify)
+	m.Add("*/*", trim.Minify)
 	m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
 
 	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {

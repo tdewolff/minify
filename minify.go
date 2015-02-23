@@ -11,12 +11,18 @@ Usage example:
 		"os/exec"
 
 		"github.com/tdewolff/minify"
+		"github.com/tdewolff/minify/html"
+		"github.com/tdewolff/minify/css"
+		"github.com/tdewolff/minify/trim"
 	)
 
 	// Minifies HTML code from stdin to stdout
 	// Note that reading the file into a buffer first and writing to a buffer would be faster.
 	func main() {
-		m := minify.NewMinifierDefault()
+		m := minify.NewMinifier()
+		m.Add("text/html", html.Minify)
+		m.Add("text/css", css.Minify)
+		m.Add("*\/*", trim.Minify) // remove backslash
 		m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
 
 		if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
