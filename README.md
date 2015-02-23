@@ -22,7 +22,7 @@ Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/
 [HTML Compressor](https://code.google.com/p/htmlcompressor/) with options `--remove-attribute-quotes --remove-redundant-attributes --use-short-doctype --remove-optional-tags --minify-css --minify-urls --collapse-whitespace --remove-comments --remove-comments-from-cdata` performs worse in output size and speed. Its whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower. According to HTML Compressor, it produces smaller files than a couple of other libraries, which means this minifier does better than all.
 
 ### Alternatives
-An alternative library written in Go is [https://github.com/dchest/htmlmin](https://github.com/dchest/htmlmin). It is written using regular expressions and is therefore a lot simpler (and thus fast, less bugs, not handling edge-cases) but about twice as slow. Other alternatives are bindings for existing minifiers written in other languages. These are inevitably more robust and tested but will always be slower.
+An alternative library written in Go is [https://github.com/dchest/htmlmin](https://github.com/dchest/htmlmin). It is written using regular expressions and is therefore a lot simpler (and thus fast, less bugs, not handling edge-cases) but about twice as slow. Other alternatives are bindings for existing minifiers written in other languages. These are inevitably more robust and tested but will often be slower.
 
 ## HTML
 The HTML5 minifier is rather complete and really fast, it:
