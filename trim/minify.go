@@ -1,18 +1,19 @@
-package minify // import "github.com/tdewolff/minify"
+package trim // import "github.com/tdewolff/minify/trim"
 
 import (
 	"bytes"
 	"io"
 	"unicode"
 
+	"github.com/tdewolff/minify"
 	"github.com/tdewolff/parse"
 )
 
 const bufSize = 1024
 
-// Default is a default minifier used to minify an unknown media type.
-// It remove all whitespace at the beginning and end of the strea.
-func (m Minifier) Default(w io.Writer, r io.Reader) error {
+// Minify is a default minifier used to trim an unknown media type.
+// It remove all whitespace at the beginning and end of the stream.
+func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
 	if fr, ok := r.(interface {
 		Bytes() []byte
 	}); ok {

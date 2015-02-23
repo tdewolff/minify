@@ -1,9 +1,10 @@
-package minify // import "github.com/tdewolff/minify"
+package html // import "github.com/tdewolff/minify/html"
 
 import (
 	"bytes"
 	"io"
 
+	"github.com/tdewolff/minify"
 	hash "github.com/tdewolff/parse/html"
 	"golang.org/x/net/html"
 )
@@ -376,9 +377,9 @@ func (tf tokenFeed) err() error {
 
 ////////////////////////////////////////////////////////////////
 
-// HTML minifies HTML5 files, it reads from r and writes to w.
+// Minify minifies HTML5 files, it reads from r and writes to w.
 // Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 10% in size.
-func (m Minifier) HTML(w io.Writer, r io.Reader) error {
+func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
 	var specialTag []*token // stack array of special tags it is in
 	precededBySpace := true // on true the next text token must not start with a space
 	defaultScriptType := "text/javascript"
@@ -424,7 +425,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 						mediatype = defaultStyleType
 					}
 					if err := m.Minify(mediatype, w, bytes.NewBuffer(t.text)); err != nil {
-						if err == ErrNotExist {
+						if err == minify.ErrNotExist {
 							// no minifier, write the original
 							if _, err := w.Write(t.text); err != nil {
 								return err
@@ -434,7 +435,7 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 						}
 					}
 				} else if token == hash.Noscript {
-					if err := m.HTML(w, bytes.NewBuffer(t.text)); err != nil {
+					if err := Minify(m, w, bytes.NewBuffer(t.text)); err != nil {
 						return err
 					}
 				} else if _, err := w.Write(t.text); err != nil {
@@ -604,18 +605,22 @@ func (m Minifier) HTML(w io.Writer, r io.Reader) error {
 
 					// CSS and JS minifiers for attribute inline code
 					if attr.key == hash.Style {
-						val, err = m.MinifyBytes(defaultStyleType, val)
-						if err != nil && err != ErrNotExist {
+						b := &bytes.Buffer{}
+						b.Grow(len(val))
+						if err = m.Minify(defaultStyleType, b, bytes.NewReader(val)); err != nil && err != minify.ErrNotExist {
 							return err
 						}
+						val = b.Bytes()
 					} else if len(attr.keyRaw) > 2 && attr.keyRaw[0] == 'o' && attr.keyRaw[1] == 'n' {
 						if len(val) >= 11 && bytes.Equal(bytes.ToLower(val[:11]), []byte("javascript:")) {
 							val = val[11:]
 						}
-						val, err = m.MinifyBytes(defaultScriptType, val)
-						if err != nil && err != ErrNotExist {
+						b := &bytes.Buffer{}
+						b.Grow(len(val))
+						if err = m.Minify(defaultScriptType, b, bytes.NewReader(val)); err != nil && err != minify.ErrNotExist {
 							return err
 						}
+						val = b.Bytes()
 					} else if urlAttrMap[attr.key] {
 						if len(val) >= 5 && bytes.Equal(bytes.ToLower(val[:5]), []byte("http:")) {
 							val = val[5:]

@@ -1,4 +1,4 @@
-package minify // import "github.com/tdewolff/minify"
+package css // import "github.com/tdewolff/minify/css"
 
 /* TODO: (non-exhaustive)
 - remove space before !important
@@ -21,6 +21,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/tdewolff/minify"
 	"github.com/tdewolff/parse/css"
 )
 
@@ -164,8 +165,8 @@ var shortenColorName = map[string][]byte{
 
 ////////////////////////////////////////////////////////////////
 
-// CSS minifies CSS files, it reads from r and writes to w.
-func (m Minifier) CSS(w io.Writer, r io.Reader) error {
+// Minify minifies CSS files, it reads from r and writes to w.
+func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
 	stylesheet, err := css.Parse(r)
 	if err != nil {
 		return err
@@ -177,7 +178,7 @@ func (m Minifier) CSS(w io.Writer, r io.Reader) error {
 
 ////////////////////////////////////////////////////////////////
 
-func shortenNodes(minifier Minifier, nodes []css.Node) {
+func shortenNodes(minifier minify.Minifier, nodes []css.Node) {
 	inHeader := true
 	for i, n := range nodes {
 		if _, ok := n.(*css.AtRuleNode); inHeader && !ok {
@@ -206,7 +207,7 @@ func shortenNodes(minifier Minifier, nodes []css.Node) {
 	}
 }
 
-func shortenSelector(minifier Minifier, sel *css.SelectorNode) {
+func shortenSelector(minifier minify.Minifier, sel *css.SelectorNode) {
 	class := false
 	for i, n := range sel.Nodes {
 		switch m := n.(type) {
@@ -241,7 +242,7 @@ func shortenSelector(minifier Minifier, sel *css.SelectorNode) {
 	}
 }
 
-func shortenDecl(minifier Minifier, decl *css.DeclarationNode) {
+func shortenDecl(minifier minify.Minifier, decl *css.DeclarationNode) {
 	// shorten zeros
 	progid := false
 	for i, n := range decl.Vals {
@@ -355,7 +356,7 @@ func shortenDecl(minifier Minifier, decl *css.DeclarationNode) {
 	}
 }
 
-func shortenFunction(minifier Minifier, f *css.FunctionNode) css.Node {
+func shortenFunction(minifier minify.Minifier, f *css.FunctionNode) css.Node {
 	for j, arg := range f.Args {
 		f.Args[j].Val = shortenToken(minifier, arg.Val)
 	}
@@ -412,7 +413,7 @@ func shortenFunction(minifier Minifier, f *css.FunctionNode) css.Node {
 	return n
 }
 
-func shortenToken(minifier Minifier, token *css.TokenNode) *css.TokenNode {
+func shortenToken(minifier minify.Minifier, token *css.TokenNode) *css.TokenNode {
 	if token.TokenType == css.NumberToken || token.TokenType == css.DimensionToken || token.TokenType == css.PercentageToken {
 		token.Data = bytes.ToLower(token.Data)
 		if len(token.Data) > 0 && token.Data[0] == '+' {

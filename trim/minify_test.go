@@ -1,4 +1,4 @@
-package minify // import "github.com/tdewolff/minify"
+package trim // import "github.com/tdewolff/minify/trim"
 
 import (
 	"bytes"

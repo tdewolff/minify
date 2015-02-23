@@ -1,4 +1,4 @@
-package minify // import "github.com/tdewolff/minify"
+package html // import "github.com/tdewolff/minify/html"
 
 import (
 	"bytes"
