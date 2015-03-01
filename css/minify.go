@@ -209,7 +209,7 @@ func shortenNodes(minifier minify.Minifier, nodes []css.Node) {
 
 func shortenSelector(minifier minify.Minifier, sel *css.SelectorNode) {
 	class := false
-	for i, n := range sel.Nodes {
+	for _, n := range sel.Nodes {
 		switch m := n.(type) {
 		case *css.TokenNode:
 			if m.TokenType == css.DelimToken && m.Data[0] == '.' {
@@ -227,15 +227,6 @@ func shortenSelector(minifier minify.Minifier, sel *css.SelectorNode) {
 					if css.IsIdent([]byte(s)) {
 						m.Vals[j] = css.NewToken(css.IdentToken, s)
 					}
-				}
-			}
-			if (bytes.Equal(m.Key.Data, []byte("id")) || bytes.Equal(m.Key.Data, []byte("class"))) && m.Op != nil && bytes.Equal(m.Op.Data, []byte("=")) && len(m.Vals) == 1 && css.IsIdent(m.Vals[0].Data) {
-				if bytes.Equal(m.Key.Data, []byte("id")) {
-					sel.Nodes[i] = css.NewToken(css.HashToken, append([]byte("#"), m.Vals[0].Data...))
-				} else {
-					sel.Nodes[i] = css.NewToken(css.DelimToken, []byte("."))
-					sel.Nodes = append(append(sel.Nodes[:i+1], css.NewToken(css.IdentToken, m.Vals[0].Data)), sel.Nodes[i+1:]...)
-					class = true
 				}
 			}
 		}

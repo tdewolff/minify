@@ -78,10 +78,6 @@ func TestCSS(t *testing.T) {
 	helperCSS(t, "@media only screen and (max-width:800px)", "@media only screen and (max-width:800px)")
 	helperCSS(t, "@media (-webkit-min-device-pixel-ratio:1.5),(min-resolution:1.5dppx)", "@media (-webkit-min-device-pixel-ratio:1.5),(min-resolution:1.5dppx)")
 
-	// advanced
-	helperCSS(t, "test[id=a]{x:y;}", "test#a{x:y}")
-	helperCSS(t, "test[class='b']{x:y;}", "test.b{x:y}")
-
 	// coverage
 	helperCSS(t, "margin: 1 1;", "margin:1")
 	helperCSS(t, "margin: 1 2;", "margin:1 2")

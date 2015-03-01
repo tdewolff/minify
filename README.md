@@ -61,7 +61,6 @@ The CSS minifier is very fast and complete and will only use safe minifications:
 - shorten MS alpha function
 - remove empty rulesets
 - remove repeated selectors
-- rewrite attribute selectors for IDs and classes (`div[id=a]` &#8594; `div#a`)
 - rewrites data URI's with base64 or ASCII whichever is shorter
 - calls minifier for data URI mediatypes, thus you can compress embedded SVG files if you have that minifier attached for example
 
@@ -73,6 +72,7 @@ It does purposely not use the following techniques:
 - remove overwritten properties in ruleset (this not always overwrites it, for example with `!important`)
 - rewrite properties into one in ruleset if possible (like `margin-top`, `margin-right`, `margin-bottom` and `margin-left` &#8594; `margin`)
 - put nested ID selector at the front (`body > div#elem p` &#8594; `#elem p`, unsafe)
+- rewrite attribute selectors for IDs and classes (`div[id=a]` &#8594; `div#a`)
 - put space after pseudo-selectors (IE6 is old, move on!)
 
 It's great that so many other tools make comparison tables: [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html), [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). From the last link, this CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented and often unsafe techniques, so that's fine.
