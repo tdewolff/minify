@@ -37,6 +37,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"mime"
 	"os/exec"
 	"strings"
 )
@@ -126,24 +127,20 @@ func (m DefaultMinifier) Minify(mediatype string, w io.Writer, r io.Reader) erro
 		m.params = parentParams
 	}()
 
-	m.params = map[string]string{"mediatype": mediatype}
-	params := strings.Split(mediatype, ";")
-	for _, p := range params[1:] {
-		if i := strings.IndexByte(p, '='); i != -1 {
-			m.params[strings.TrimSpace(p[:i])] = strings.TrimSpace(p[i+1:])
-		} else {
-			p = strings.TrimSpace(p)
-			m.params[p] = p
-		}
+	var err error
+	mediatype, m.params, err = mime.ParseMediaType(mediatype)
+	if err != nil {
+		return ErrNotExist
 	}
+	m.params["mediatype"] = mediatype
 
-	if f, ok := m.minify[params[0]]; ok {
+	if f, ok := m.minify[mediatype]; ok {
 		if err := f(m, w, r); err != nil {
 			return err
 		}
 		return nil
-	} else if i := strings.IndexByte(params[0], '/'); i != -1 {
-		if f, ok := m.minify[params[0][:i]+"/*"]; ok {
+	} else if i := strings.IndexByte(mediatype, '/'); i != -1 {
+		if f, ok := m.minify[mediatype[:i]+"/*"]; ok {
 			if err := f(m, w, r); err != nil {
 				return err
 			}
