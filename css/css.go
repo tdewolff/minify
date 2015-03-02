@@ -349,22 +349,24 @@ func shortenDecl(minifier minify.Minifier, decl *css.DeclarationNode) {
 
 func shortenFunction(minifier minify.Minifier, f *css.FunctionNode) css.Node {
 	for j, arg := range f.Args {
-		f.Args[j].Val = shortenToken(minifier, arg.Val)
+		for k, val := range arg.Vals {
+			f.Args[j].Vals[k] = shortenToken(minifier, val)
+		}
 	}
 
-	if bytes.Equal(f.Func.Data, []byte("rgba(")) && len(f.Args) == 4 {
-		d, _ := strconv.ParseFloat(string(f.Args[3].Val.Data), 32)
+	if bytes.Equal(f.Func.Data, []byte("rgba(")) && len(f.Args) == 4 && len(f.Args[3].Vals) == 1 {
+		d, _ := strconv.ParseFloat(string(f.Args[3].Vals[0].Data), 32)
 		if math.Abs(d-1.0) < epsilon {
 			f.Func = css.NewToken(css.FunctionToken, []byte("rgb("))
 			f.Args = f.Args[:len(f.Args)-1]
 		}
 	}
 	var n css.Node = f
-	if bytes.Equal(f.Func.Data, []byte("rgb(")) && len(f.Args) == 3 {
+	if bytes.Equal(f.Func.Data, []byte("rgb(")) && len(f.Args) == 3 && len(f.Args[0].Vals) == 1 && len(f.Args[1].Vals) == 1 && len(f.Args[2].Vals) == 1 {
 		var err error
 		rgb := make([]byte, 3)
 		for j := 0; j < 3; j++ {
-			v := f.Args[j].Val
+			v := f.Args[j].Vals[0]
 			if v.TokenType == css.NumberToken {
 				var d int64
 				d, err = strconv.ParseInt(string(v.Data), 10, 32)
