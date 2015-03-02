@@ -5,16 +5,17 @@ import (
 	"io"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/parse"
 )
 
 // Don't implement Bytes() to test for buffer exceeding.
-type readerMockup struct {
+type ReaderMockup struct {
 	r io.Reader
 }
 
-func (r *readerMockup) Read(p []byte) (int, error) {
+func (r *ReaderMockup) Read(p []byte) (int, error) {
 	n, err := r.r.Read(p)
 	if n < len(p) {
 		err = io.EOF
@@ -26,21 +27,12 @@ func (r *readerMockup) Read(p []byte) (int, error) {
 
 func helperTestDefault(t *testing.T, m minify.Minifier, input, expected string) {
 	b := &bytes.Buffer{}
-	if err := Minify(m, b, &readerMockup{bytes.NewBufferString(input)}); err != nil {
-		t.Error(err)
-		return
-	}
-
-	if b.String() != expected {
-		t.Error(b.String(), "!=", expected)
-	}
+	assert.Nil(t, Minify(m, b, &ReaderMockup{bytes.NewBufferString(input)}), "Minify must not return error in "+input)
+	assert.Equal(t, expected, b.String(), "Minify must give expected result in "+input)
 }
 
 func helperTestDefaultError(t *testing.T, m minify.Minifier, input string, expErr error) {
-	b := &bytes.Buffer{}
-	if err := Minify(m, b, &readerMockup{bytes.NewBufferString(input)}); err != expErr {
-		t.Error(err, "!=", expErr, "for", input)
-	}
+	assert.Equal(t, expErr, Minify(m, &bytes.Buffer{}, &ReaderMockup{bytes.NewBufferString(input)}), "Minify must give expected error in "+input)
 }
 
 ////////////////////////////////////////////////////////////////
