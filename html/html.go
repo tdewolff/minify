@@ -335,24 +335,15 @@ func (tf *tokenFeed) shift() *token {
 
 func (tf *tokenFeed) peek(pos int) *token {
 	if pos == len(tf.buf) {
-		if len(tf.buf) > 0 {
-			t := tf.buf[len(tf.buf)-1]
-			t.tokenRaw = copyBytes(t.tokenRaw)
-			t.text = copyBytes(t.text)
-			for _, attr := range t.attr {
-				attr.keyRaw = copyBytes(attr.keyRaw)
-				attr.val = copyBytes(attr.val)
-			}
-		}
-
 		t := &token{tf.z.Next(), 0, nil, nil, nil, nil}
 		switch t.tt {
 		case html.TextToken, html.CommentToken, html.DoctypeToken:
-			t.text = tf.z.Text()
+			t.text = copyBytes(tf.z.Text())
 		case html.StartTagToken, html.SelfClosingTagToken, html.EndTagToken:
 			var moreAttr bool
 			var keyRaw, val []byte
 			t.tokenRaw, moreAttr = tf.z.TagName()
+			t.tokenRaw = copyBytes(t.tokenRaw)
 			t.token = hash.ToHash(t.tokenRaw)
 			if moreAttr {
 				t.attr = make([]attribute, 0, 3)
@@ -360,7 +351,7 @@ func (tf *tokenFeed) peek(pos int) *token {
 				for moreAttr {
 					keyRaw, val, moreAttr = tf.z.TagAttr()
 					key := hash.ToHash(keyRaw)
-					t.attr = append(t.attr, attribute{key, keyRaw, bytes.TrimSpace(val)})
+					t.attr = append(t.attr, attribute{key, copyBytes(keyRaw), copyBytes(bytes.TrimSpace(val))})
 					t.attrKey[key] = len(t.attr) - 1
 				}
 			}
