@@ -11,7 +11,7 @@ Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/
 [Amazon](http://www.amazon.com/) | 463kB | 448kB | **438kB** | 95%<sup>&#42;&#42;</sup> | 16ms
 [BBC](http://www.bbc.com/) | 113kB | 105kB | **101kB** | 89% | 6ms
 [StackOverflow](http://stackoverflow.com/) | 201kB | 184kB | **184kB** | 91% | 14ms
-[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 417kB | **413kB** | 95%<sup>&#42;&#42;&#42;</sup> | 32ms
+[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 417kB | **413kB** | 95%<sup>&#42;&#42;&#42;</sup> | 31ms
 
 <sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 20ms range! The benchmark uses the HTML and CSS minifier and excludes the time reading from and writing to a file from the measurement.
 
