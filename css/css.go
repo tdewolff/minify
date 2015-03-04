@@ -20,6 +20,7 @@ import (
 	"math"
 	"net/url"
 	"strconv"
+	"os"
 
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/parse/css"
@@ -188,10 +189,8 @@ func shortenNodes(minifier minify.Minifier, nodes []css.Node) {
 		case *css.DeclarationNode:
 			shortenDecl(minifier, m)
 		case *css.RulesetNode:
-			for _, selGroup := range m.SelGroups {
-				for _, sel := range selGroup.Selectors {
-					shortenSelector(minifier, sel)
-				}
+			for _, sel := range m.Selectors {
+				shortenSelector(minifier, sel)
 			}
 			for _, decl := range m.Decls {
 				shortenDecl(minifier, decl)
@@ -200,8 +199,8 @@ func shortenNodes(minifier minify.Minifier, nodes []css.Node) {
 			if !inHeader && (bytes.Equal(m.At.Data, []byte("@charset")) || bytes.Equal(m.At.Data, []byte("@import"))) {
 				nodes[i] = css.NewToken(css.DelimToken, []byte(""))
 			}
-			if m.Block != nil {
-				shortenNodes(minifier, m.Block.Nodes)
+			if m.Rules != nil {
+				shortenNodes(minifier, m.Rules)
 			}
 		}
 	}
@@ -209,9 +208,9 @@ func shortenNodes(minifier minify.Minifier, nodes []css.Node) {
 
 func shortenSelector(minifier minify.Minifier, sel *css.SelectorNode) {
 	class := false
-	for _, n := range sel.Nodes {
-		switch m := n.(type) {
-		case *css.TokenNode:
+	for _, m := range sel.Elems {
+		//switch m := n.(type) {
+		//case *css.TokenNode:
 			if m.TokenType == css.DelimToken && m.Data[0] == '.' {
 				class = true
 			} else if m.TokenType == css.IdentToken {
@@ -220,16 +219,16 @@ func shortenSelector(minifier minify.Minifier, sel *css.SelectorNode) {
 				}
 				class = false
 			}
-		case *css.AttributeSelectorNode:
-			for j, val := range m.Vals {
-				if val.TokenType == css.StringToken {
-					s := val.Data[1 : len(val.Data)-1]
-					if css.IsIdent([]byte(s)) {
-						m.Vals[j] = css.NewToken(css.IdentToken, s)
-					}
-				}
-			}
-		}
+		// case *css.AttributeSelectorNode:
+		// 	for j, val := range m.Vals {
+		// 		if val.TokenType == css.StringToken {
+		// 			s := val.Data[1 : len(val.Data)-1]
+		// 			if css.IsIdent([]byte(s)) {
+		// 				m.Vals[j] = css.NewToken(css.IdentToken, s)
+		// 			}
+		// 		}
+		// 	}
+		// }
 	}
 }
 
@@ -325,12 +324,13 @@ func shortenDecl(minifier minify.Minifier, decl *css.DeclarationNode) {
 				}
 			}
 			f := decl.Vals[6].(*css.FunctionNode)
-			if bytes.Equal(tokens, []byte("progid:DXImageTransform.Microsoft.")) && len(f.Args) == 1 && bytes.Equal(f.Args[0].Key.Data, []byte("Opacity")) {
-				newF := css.NewFunction(css.NewToken(css.FunctionToken, []byte("alpha(")))
-				newF.Args = f.Args
-				newF.Args[0].Key.Data = bytes.ToLower(newF.Args[0].Key.Data)
-				decl.Vals = []css.Node{newF}
-			}
+			f.Serialize(os.Stdout)
+			// if bytes.Equal(tokens, []byte("progid:DXImageTransform.Microsoft.")) && len(f.Args) == 1 && len(f.Args[0].Vals) > 0 && bytes.HasPrefix(f.Args[0].Vals[0], []byte("Opacity=")) {
+			// 	newF := css.NewFunction(css.NewToken(css.FunctionToken, []byte("alpha(")))
+			// 	newF.Args = f.Args
+			// 	newF.Args[0].Key.Data = bytes.ToLower(newF.Args[0].Key.Data)
+			// 	decl.Vals = []css.Node{newF}
+			// }
 		}
 	} else if len(decl.Vals) == 1 && bytes.Equal(prop, []byte("-ms-filter")) {
 		if n, ok := decl.Vals[0].(*css.TokenNode); ok {
@@ -348,62 +348,73 @@ func shortenDecl(minifier minify.Minifier, decl *css.DeclarationNode) {
 }
 
 func shortenFunction(minifier minify.Minifier, f *css.FunctionNode) css.Node {
+	simpleFunction := true
 	for j, arg := range f.Args {
 		for k, val := range arg.Vals {
-			f.Args[j].Vals[k] = shortenToken(minifier, val)
+			if tVal, ok := val.(*css.TokenNode); ok {
+				f.Args[j].Vals[k] = shortenToken(minifier, tVal)
+				if k > 1 {
+					simpleFunction = false
+				}
+			} else {
+				simpleFunction = false
+			}
 		}
 	}
 
-	if bytes.Equal(f.Func.Data, []byte("rgba(")) && len(f.Args) == 4 && len(f.Args[3].Vals) == 1 {
-		d, _ := strconv.ParseFloat(string(f.Args[3].Vals[0].Data), 32)
-		if math.Abs(d-1.0) < epsilon {
-			f.Func = css.NewToken(css.FunctionToken, []byte("rgb("))
-			f.Args = f.Args[:len(f.Args)-1]
-		}
-	}
-	var n css.Node = f
-	if bytes.Equal(f.Func.Data, []byte("rgb(")) && len(f.Args) == 3 && len(f.Args[0].Vals) == 1 && len(f.Args[1].Vals) == 1 && len(f.Args[2].Vals) == 1 {
-		var err error
-		rgb := make([]byte, 3)
-		for j := 0; j < 3; j++ {
-			v := f.Args[j].Vals[0]
-			if v.TokenType == css.NumberToken {
-				var d int64
-				d, err = strconv.ParseInt(string(v.Data), 10, 32)
-				if d < 0 {
-					d = 0
-				} else if d > 255 {
-					d = 255
-				}
-				rgb[j] = byte(d)
-			} else if v.TokenType == css.PercentageToken {
-				var d float64
-				d, err = strconv.ParseFloat(string(v.Data[:len(v.Data)-1]), 32)
-				if d < 0.0 {
-					d = 0.0
-				} else if d > 100.0 {
-					d = 100.0
-				}
-				rgb[j] = byte((d / 100.0 * 255.0) + 0.5)
-			} else {
-				err = errors.New("")
-				break
+	if simpleFunction {
+		if bytes.Equal(f.Func.Data, []byte("rgba(")) && len(f.Args) == 4 {
+			d, _ := strconv.ParseFloat(string(f.Args[3].Vals[0].(*css.TokenNode).Data), 32)
+			if math.Abs(d-1.0) < epsilon {
+				f.Func = css.NewToken(css.FunctionToken, []byte("rgb("))
+				f.Args = f.Args[:len(f.Args)-1]
 			}
 		}
-		if err == nil {
-			valHex := make([]byte, 6)
-			hex.Encode(valHex, rgb)
-			val := append([]byte("#"), bytes.ToLower(valHex)...)
-			if s, ok := shortenColorHex[string(val)]; ok {
-				n = css.NewToken(css.IdentToken, s)
-			} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
-				n = css.NewToken(css.HashToken, append([]byte("#"), val[1], val[3], val[5]))
-			} else {
-				n = css.NewToken(css.HashToken, val)
+		var n css.Node = f
+		if bytes.Equal(f.Func.Data, []byte("rgb(")) && len(f.Args) == 3 {
+			var err error
+			rgb := make([]byte, 3)
+			for j := 0; j < 3; j++ {
+				v := f.Args[j].Vals[0].(*css.TokenNode)
+				if v.TokenType == css.NumberToken {
+					var d int64
+					d, err = strconv.ParseInt(string(v.Data), 10, 32)
+					if d < 0 {
+						d = 0
+					} else if d > 255 {
+						d = 255
+					}
+					rgb[j] = byte(d)
+				} else if v.TokenType == css.PercentageToken {
+					var d float64
+					d, err = strconv.ParseFloat(string(v.Data[:len(v.Data)-1]), 32)
+					if d < 0.0 {
+						d = 0.0
+					} else if d > 100.0 {
+						d = 100.0
+					}
+					rgb[j] = byte((d / 100.0 * 255.0) + 0.5)
+				} else {
+					err = errors.New("")
+					break
+				}
+			}
+			if err == nil {
+				valHex := make([]byte, 6)
+				hex.Encode(valHex, rgb)
+				val := append([]byte("#"), bytes.ToLower(valHex)...)
+				if s, ok := shortenColorHex[string(val)]; ok {
+					n = css.NewToken(css.IdentToken, s)
+				} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
+					n = css.NewToken(css.HashToken, append([]byte("#"), val[1], val[3], val[5]))
+				} else {
+					n = css.NewToken(css.HashToken, val)
+				}
 			}
 		}
+		return n
 	}
-	return n
+	return f
 }
 
 func shortenToken(minifier minify.Minifier, token *css.TokenNode) *css.TokenNode {
@@ -512,38 +523,40 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 			}
 			semicolonQueued = true
 		case *css.RulesetNode:
-			for i, selGroup := range m.SelGroups {
+			for i, sel := range m.Selectors {
 				if i > 0 {
 					if _, err := w.Write([]byte(",")); err != nil {
 						return err
 					}
 				}
-				skipSpace := false
-				for j, sel := range selGroup.Selectors {
-					if len(sel.Nodes) == 1 {
-						if token, ok := sel.Nodes[0].(*css.TokenNode); ok {
-							if token.TokenType == css.DelimToken && (token.Data[0] == '>' || token.Data[0] == '+' || token.Data[0] == '~') || token.TokenType == css.IncludeMatchToken || token.TokenType == css.DashMatchToken ||
-								token.TokenType == css.PrefixMatchToken || token.TokenType == css.SuffixMatchToken || token.TokenType == css.SubstringMatchToken {
-								if err := token.Serialize(w); err != nil {
-									return err
-								}
-								skipSpace = true
-								continue
-							}
-						}
-					}
-					if j > 0 && !skipSpace {
-						if _, err := w.Write([]byte(" ")); err != nil {
-							return err
-						}
-					}
-					for _, node := range sel.Nodes {
-						if err := node.Serialize(w); err != nil {
-							return err
-						}
-					}
-					skipSpace = false
+				if err := sel.Serialize(w); err != nil {
+					return err
 				}
+				//skipSpace := false
+				//for _, sel := range selGroup.Selectors {
+					// if len(sel.Elems) == 1 {
+					// 	token := sel.Elems[0]
+					// 	if token.TokenType == css.DelimToken && (token.Data[0] == '>' || token.Data[0] == '+' || token.Data[0] == '~') || token.TokenType == css.IncludeMatchToken || token.TokenType == css.DashMatchToken ||
+					// 		token.TokenType == css.PrefixMatchToken || token.TokenType == css.SuffixMatchToken || token.TokenType == css.SubstringMatchToken {
+					// 		if err := token.Serialize(w); err != nil {
+					// 			return err
+					// 		}
+					// 		skipSpace = true
+					// 		continue
+					// 	}
+					// }
+					// if j > 0 && !skipSpace {
+					// 	if _, err := w.Write([]byte(" ")); err != nil {
+					// 		return err
+					// 	}
+					// }
+					// for _, node := range sel.Elems {
+					// 	if err := node.Serialize(w); err != nil {
+					// 		return err
+					// 	}
+					// }
+					//skipSpace = false
+				//}
 			}
 			if _, err := w.Write([]byte("{")); err != nil {
 				return err
@@ -562,38 +575,40 @@ func writeNodes(w io.Writer, nodes []css.Node) error {
 				return err
 			}
 		case *css.AtRuleNode:
-			if len(m.Nodes) == 0 && m.Block == nil {
+			if len(m.Nodes) == 0 && len(m.Rules) == 0 {
 				break
 			}
 			if err := m.At.Serialize(w); err != nil {
 				return err
 			}
 			skipSpace := false
-			for _, token := range m.Nodes {
-				if token.TokenType == css.RightParenthesisToken || token.TokenType == css.ColonToken || token.TokenType == css.CommaToken {
-					skipSpace = true
-				} else if !skipSpace {
-					if _, err := w.Write([]byte(" ")); err != nil {
-						return err
+			for _, k := range m.Nodes {
+				if token, ok := k.(*css.TokenNode); ok {
+					if token.TokenType == css.RightParenthesisToken || token.TokenType == css.ColonToken || token.TokenType == css.CommaToken {
+						skipSpace = true
+					} else if !skipSpace {
+						if _, err := w.Write([]byte(" ")); err != nil {
+							return err
+						}
+					} else {
+						skipSpace = false
 					}
-				} else {
-					skipSpace = false
+					if token.TokenType == css.LeftParenthesisToken {
+						skipSpace = true
+					}
 				}
-				if token.TokenType == css.LeftParenthesisToken {
-					skipSpace = true
-				}
-				if err := token.Serialize(w); err != nil {
+				if err := k.Serialize(w); err != nil {
 					return err
 				}
 			}
-			if m.Block != nil {
-				if err := m.Block.Open.Serialize(w); err != nil {
+			if len(m.Rules) > 0 {
+				if _, err := w.Write([]byte("{")); err != nil {
 					return err
 				}
-				if err := writeNodes(w, m.Block.Nodes); err != nil {
+				if err := writeNodes(w, m.Rules); err != nil {
 					return err
 				}
-				if err := m.Block.Close.Serialize(w); err != nil {
+				if _, err := w.Write([]byte("}")); err != nil {
 					return err
 				}
 			} else {
