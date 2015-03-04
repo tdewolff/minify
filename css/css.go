@@ -1,12 +1,5 @@
 package css // import "github.com/tdewolff/minify/css"
 
-/* TODO: (non-exhaustive)
-- remove space before !important
-- collapse margin/padding/border/background/list/etc. definitions into one
-- remove duplicate selector blocks
-- remove quotes within url()?
-*/
-
 /*
 Uses http://www.w3.org/TR/2010/PR-css3-color-20101028/ for colors
 */
@@ -20,7 +13,6 @@ import (
 	"math"
 	"net/url"
 	"strconv"
-	"os"
 
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/parse/css"
@@ -166,74 +158,190 @@ var shortenColorName = map[string][]byte{
 
 ////////////////////////////////////////////////////////////////
 
+type cssMinifier struct {
+	m minify.Minifier
+	w io.Writer
+	p *css.Parser
+
+	semicolonQueued bool
+}
+
 // Minify minifies CSS files, it reads from r and writes to w.
 func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
-	stylesheet, err := css.Parse(r)
-	if err != nil {
+	c := &cssMinifier{
+		m,
+		w,
+		css.NewParser(css.NewTokenizer(r)),
+		false,
+	}
+	var err error
+	for {
+		gt, n := c.p.Next()
+		if gt == css.ErrorGrammar {
+			err = c.p.Err()
+			break
+		} else if err = c.minifyRecursively(gt, n); err != nil {
+			break
+		}
+	}
+	if err != io.EOF {
+		return err
+	}
+	return nil
+}
+
+func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, n css.Node) error {
+	if rootGt != css.ErrorGrammar && rootGt != css.TokenGrammar && c.semicolonQueued { // it is only TokenGrammar for CDO and CDC
+		if err := c.write([]byte(";")); err != nil {
+			return err
+		}
+		c.semicolonQueued = false
+	}
+
+	if rootGt == css.AtRuleGrammar {
+		atRule := n.(*css.AtRuleNode)
+		if err := c.write(atRule.At.Data); err != nil {
+			return err
+		}
+		if err := c.minifyAtRuleNodes(atRule.Nodes); err != nil {
+			return err
+		}
+		hasRules := false
+		for {
+			gt, m := c.p.Next()
+			if gt == css.ErrorGrammar {
+				return c.p.Err()
+			} else if gt == css.EndAtRuleGrammar {
+				break
+			} else if !hasRules {
+				if err := c.write([]byte("{")); err != nil {
+					return err
+				}
+				hasRules = true
+			}
+			if err := c.minifyRecursively(gt, m); err != nil {
+				return err
+			}
+		}
+		if hasRules {
+			if err := c.write([]byte("}")); err != nil {
+				return err
+			}
+			c.semicolonQueued = false
+		} else {
+			c.semicolonQueued = true
+		}
+	} else if rootGt == css.RulesetGrammar {
+		ruleset := n.(*css.RulesetNode)
+		hasRules := false
+		for {
+			gt, m := c.p.Next()
+			if gt == css.ErrorGrammar {
+				return c.p.Err()
+			} else if gt == css.EndRulesetGrammar {
+				break
+			} else if !hasRules {
+				if err := c.minifySelectors(ruleset.Selectors); err != nil {
+					return err
+				}
+				if err := c.write([]byte("{")); err != nil {
+					return err
+				}
+				hasRules = true
+			}
+			if err := c.minifyRecursively(gt, m); err != nil {
+				return err
+			}
+		}
+		if hasRules {
+			if err := c.write([]byte("}")); err != nil {
+				return err
+			}
+			c.semicolonQueued = false
+		}
+	} else if rootGt == css.DeclarationGrammar {
+		if err := c.minifyDeclaration(n.(*css.DeclarationNode)); err != nil {
+			return err
+		}
+	} else if rootGt == css.TokenGrammar {
+		if err := c.write(n.(*css.TokenNode).Data); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c cssMinifier) minifyAtRuleNodes(atRuleNodes []css.Node) error {
+	for i, atRuleNode := range atRuleNodes {
+		if i != 0 {
+			var t *css.TokenNode
+			if k, ok := atRuleNodes[i-1].(*css.TokenNode); ok && len(k.Data) == 1 {
+				t = k
+			} else if k, ok := atRuleNodes[i].(*css.TokenNode); ok && len(k.Data) == 1 {
+				t = k
+			}
+			if t == nil || t.Data[0] != ',' {
+				if err := c.write([]byte(" ")); err != nil {
+					return err
+				}
+			}
+		} else {
+			if err := c.write([]byte(" ")); err != nil {
+				return err
+			}
+		}
+		if err := atRuleNode.Serialize(c.w); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c cssMinifier) minifySelectors(selectors []*css.SelectorNode) error {
+	for i, selector := range selectors {
+		if i != 0 {
+			if err := c.write([]byte(",")); err != nil {
+				return err
+			}
+		}
+		inAttr := false
+		isClass := false
+		for _, elem := range selector.Elems {
+			if !inAttr && elem.TokenType == css.LeftBracketToken {
+				inAttr = true
+			} else if inAttr && elem.TokenType == css.RightBracketToken {
+				inAttr = false
+			} else if inAttr && elem.TokenType == css.StringToken {
+				s := elem.Data[1 : len(elem.Data)-1]
+				if css.IsIdent([]byte(s)) {
+					if err := c.write(s); err != nil {
+						return err
+					}
+					continue
+				}
+			} else if !inAttr && elem.TokenType == css.DelimToken && elem.Data[0] == '.' {
+				isClass = true
+			} else if !inAttr && elem.TokenType == css.IdentToken {
+				if !isClass {
+					elem.Data = bytes.ToLower(elem.Data)
+				}
+				isClass = false
+			}
+			if err := c.write(elem.Data); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
+	decl.Prop.Data = bytes.ToLower(decl.Prop.Data)
+	if err := c.write(decl.Prop.Data, []byte(":")); err != nil {
 		return err
 	}
 
-	shortenNodes(m, stylesheet.Nodes)
-	return writeNodes(w, stylesheet.Nodes)
-}
-
-////////////////////////////////////////////////////////////////
-
-func shortenNodes(minifier minify.Minifier, nodes []css.Node) {
-	inHeader := true
-	for i, n := range nodes {
-		if _, ok := n.(*css.AtRuleNode); inHeader && !ok {
-			inHeader = false
-		}
-		switch m := n.(type) {
-		case *css.DeclarationNode:
-			shortenDecl(minifier, m)
-		case *css.RulesetNode:
-			for _, sel := range m.Selectors {
-				shortenSelector(minifier, sel)
-			}
-			for _, decl := range m.Decls {
-				shortenDecl(minifier, decl)
-			}
-		case *css.AtRuleNode:
-			if !inHeader && (bytes.Equal(m.At.Data, []byte("@charset")) || bytes.Equal(m.At.Data, []byte("@import"))) {
-				nodes[i] = css.NewToken(css.DelimToken, []byte(""))
-			}
-			if m.Rules != nil {
-				shortenNodes(minifier, m.Rules)
-			}
-		}
-	}
-}
-
-func shortenSelector(minifier minify.Minifier, sel *css.SelectorNode) {
-	class := false
-	for _, m := range sel.Elems {
-		//switch m := n.(type) {
-		//case *css.TokenNode:
-			if m.TokenType == css.DelimToken && m.Data[0] == '.' {
-				class = true
-			} else if m.TokenType == css.IdentToken {
-				if !class {
-					m.Data = bytes.ToLower(m.Data)
-				}
-				class = false
-			}
-		// case *css.AttributeSelectorNode:
-		// 	for j, val := range m.Vals {
-		// 		if val.TokenType == css.StringToken {
-		// 			s := val.Data[1 : len(val.Data)-1]
-		// 			if css.IsIdent([]byte(s)) {
-		// 				m.Vals[j] = css.NewToken(css.IdentToken, s)
-		// 			}
-		// 		}
-		// 	}
-		// }
-	}
-}
-
-func shortenDecl(minifier minify.Minifier, decl *css.DeclarationNode) {
-	// shorten zeros
+	 // shorten values
 	progid := false
 	for i, n := range decl.Vals {
 		switch m := n.(type) {
@@ -243,17 +351,16 @@ func shortenDecl(minifier minify.Minifier, decl *css.DeclarationNode) {
 					progid = true
 					continue
 				}
-				decl.Vals[i] = shortenToken(minifier, m)
+				decl.Vals[i] = c.shortenToken(m)
 			}
 		case *css.FunctionNode:
 			if !progid {
 				m.Func.Data = bytes.ToLower(m.Func.Data)
 			}
-			decl.Vals[i] = shortenFunction(minifier, m)
+			decl.Vals[i] = c.shortenFunction(m)
 		}
 	}
 
-	decl.Prop.Data = bytes.ToLower(decl.Prop.Data)
 	prop := decl.Prop.Data
 	if bytes.Equal(prop, []byte("margin")) || bytes.Equal(prop, []byte("padding")) {
 		tokens := make([]*css.TokenNode, 0, 4)
@@ -324,13 +431,16 @@ func shortenDecl(minifier minify.Minifier, decl *css.DeclarationNode) {
 				}
 			}
 			f := decl.Vals[6].(*css.FunctionNode)
-			f.Serialize(os.Stdout)
-			// if bytes.Equal(tokens, []byte("progid:DXImageTransform.Microsoft.")) && len(f.Args) == 1 && len(f.Args[0].Vals) > 0 && bytes.HasPrefix(f.Args[0].Vals[0], []byte("Opacity=")) {
-			// 	newF := css.NewFunction(css.NewToken(css.FunctionToken, []byte("alpha(")))
-			// 	newF.Args = f.Args
-			// 	newF.Args[0].Key.Data = bytes.ToLower(newF.Args[0].Key.Data)
-			// 	decl.Vals = []css.Node{newF}
-			// }
+			if bytes.Equal(tokens, []byte("progid:DXImageTransform.Microsoft.")) && len(f.Args) == 1 && len(f.Args[0].Vals) == 3 {
+				if opacity, ok := f.Args[0].Vals[0].(*css.TokenNode); ok {
+					opacity.Data = bytes.ToLower(opacity.Data)
+					if is, ok := f.Args[0].Vals[1].(*css.TokenNode); ok && is.Data[0] == '=' && bytes.Equal(opacity.Data, []byte("opacity")) {
+						newF := css.NewFunction(css.NewToken(css.FunctionToken, []byte("alpha(")))
+						newF.Args = f.Args
+						decl.Vals = []css.Node{newF}
+					}
+				}
+			}
 		}
 	} else if len(decl.Vals) == 1 && bytes.Equal(prop, []byte("-ms-filter")) {
 		if n, ok := decl.Vals[0].(*css.TokenNode); ok {
@@ -345,14 +455,40 @@ func shortenDecl(minifier minify.Minifier, decl *css.DeclarationNode) {
 			decl.Vals[0] = css.NewToken(css.NumberToken, []byte("0"))
 		}
 	}
+
+	for i, m := range decl.Vals {
+		if i != 0 {
+			var t *css.TokenNode
+			if k, ok := decl.Vals[i-1].(*css.TokenNode); ok && len(k.Data) == 1 {
+				t = k
+			} else if k, ok := decl.Vals[i].(*css.TokenNode); ok && len(k.Data) == 1 {
+				t = k
+			}
+			if t == nil || (t.Data[0] != ',' && t.Data[0] != '/' && t.Data[0] != ':' && t.Data[0] != '.') {
+				if err := c.write([]byte(" ")); err != nil {
+					return err
+				}
+			}
+		}
+		if err := m.Serialize(c.w); err != nil {
+			return err
+		}
+	}
+	if decl.Important {
+		if err := c.write([]byte("!important")); err != nil {
+			return err
+		}
+	}
+	c.semicolonQueued = true
+	return nil
 }
 
-func shortenFunction(minifier minify.Minifier, f *css.FunctionNode) css.Node {
+func (c cssMinifier) shortenFunction(f *css.FunctionNode) css.Node {
 	simpleFunction := true
 	for j, arg := range f.Args {
 		for k, val := range arg.Vals {
 			if tVal, ok := val.(*css.TokenNode); ok {
-				f.Args[j].Vals[k] = shortenToken(minifier, tVal)
+				f.Args[j].Vals[k] = c.shortenToken(tVal)
 				if k > 1 {
 					simpleFunction = false
 				}
@@ -362,6 +498,7 @@ func shortenFunction(minifier minify.Minifier, f *css.FunctionNode) css.Node {
 		}
 	}
 
+	var n css.Node = f
 	if simpleFunction {
 		if bytes.Equal(f.Func.Data, []byte("rgba(")) && len(f.Args) == 4 {
 			d, _ := strconv.ParseFloat(string(f.Args[3].Vals[0].(*css.TokenNode).Data), 32)
@@ -370,7 +507,6 @@ func shortenFunction(minifier minify.Minifier, f *css.FunctionNode) css.Node {
 				f.Args = f.Args[:len(f.Args)-1]
 			}
 		}
-		var n css.Node = f
 		if bytes.Equal(f.Func.Data, []byte("rgb(")) && len(f.Args) == 3 {
 			var err error
 			rgb := make([]byte, 3)
@@ -412,25 +548,24 @@ func shortenFunction(minifier minify.Minifier, f *css.FunctionNode) css.Node {
 				}
 			}
 		}
-		return n
 	}
-	return f
+	return n
 }
 
-func shortenToken(minifier minify.Minifier, token *css.TokenNode) *css.TokenNode {
-	if token.TokenType == css.NumberToken || token.TokenType == css.DimensionToken || token.TokenType == css.PercentageToken {
-		token.Data = bytes.ToLower(token.Data)
-		if len(token.Data) > 0 && token.Data[0] == '+' {
-			token.Data = token.Data[1:]
+func (c cssMinifier) shortenToken(t *css.TokenNode) *css.TokenNode {
+	if t.TokenType == css.NumberToken || t.TokenType == css.DimensionToken || t.TokenType == css.PercentageToken {
+		t.Data = bytes.ToLower(t.Data)
+		if len(t.Data) > 0 && t.Data[0] == '+' {
+			t.Data = t.Data[1:]
 		}
 
-		num, dim := css.SplitNumberToken(token.Data)
+		num, dim := css.SplitNumberToken(t.Data)
 		f, err := strconv.ParseFloat(string(num), 64)
 		if err != nil {
-			return token
+			return t
 		}
 		if math.Abs(f) < epsilon {
-			token.Data = []byte("0")
+			t.Data = []byte("0")
 		} else {
 			if len(num) > 0 && num[0] == '-' {
 				num = append([]byte{'-'}, bytes.TrimLeft(num[1:], "0")...)
@@ -443,32 +578,32 @@ func shortenToken(minifier minify.Minifier, token *css.TokenNode) *css.TokenNode
 					num = num[:len(num)-1]
 				}
 			}
-			token.Data = append(num, dim...)
+			t.Data = append(num, dim...)
 		}
-	} else if token.TokenType == css.IdentToken {
-		token.Data = bytes.ToLower(token.Data)
-		if h, ok := shortenColorName[string(token.Data)]; ok {
-			token = css.NewToken(css.HashToken, h)
+	} else if t.TokenType == css.IdentToken {
+		t.Data = bytes.ToLower(t.Data)
+		if h, ok := shortenColorName[string(t.Data)]; ok {
+			t = css.NewToken(css.HashToken, h)
 		}
-	} else if token.TokenType == css.HashToken {
-		val := bytes.ToLower(token.Data)
+	} else if t.TokenType == css.HashToken {
+		val := bytes.ToLower(t.Data)
 		if i, ok := shortenColorHex[string(val)]; ok {
-			token = css.NewToken(css.IdentToken, i)
+			t = css.NewToken(css.IdentToken, i)
 		} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
-			token = css.NewToken(css.HashToken, append([]byte("#"), bytes.ToLower(append([]byte{val[1]}, val[3], val[5]))...))
+			t = css.NewToken(css.HashToken, append([]byte("#"), bytes.ToLower(append([]byte{val[1]}, val[3], val[5]))...))
 		} else {
-			token.Data = bytes.ToLower(token.Data)
+			t.Data = bytes.ToLower(t.Data)
 		}
-	} else if token.TokenType == css.StringToken {
-		token.Data = bytes.Replace(token.Data, []byte("\\\r\n"), []byte(""), -1)
-		token.Data = bytes.Replace(token.Data, []byte("\\\r"), []byte(""), -1)
-		token.Data = bytes.Replace(token.Data, []byte("\\\n"), []byte(""), -1)
-	} else if token.TokenType == css.URLToken {
-		token.Data = append([]byte("url"), token.Data[3:]...)
-		if mediatype, originalData, ok := css.SplitDataURI(token.Data); ok {
+	} else if t.TokenType == css.StringToken {
+		t.Data = bytes.Replace(t.Data, []byte("\\\r\n"), []byte(""), -1)
+		t.Data = bytes.Replace(t.Data, []byte("\\\r"), []byte(""), -1)
+		t.Data = bytes.Replace(t.Data, []byte("\\\n"), []byte(""), -1)
+	} else if t.TokenType == css.URLToken {
+		t.Data = append([]byte("url"), t.Data[3:]...)
+		if mediatype, originalData, ok := css.SplitDataURI(t.Data); ok {
 			data := originalData
 			minifiedBuffer := &bytes.Buffer{}
-			if err := minifier.Minify(string(mediatype), minifiedBuffer, bytes.NewBuffer(data)); err == nil {
+			if err := c.m.Minify(string(mediatype), minifiedBuffer, bytes.NewBuffer(data)); err == nil {
 				data = minifiedBuffer.Bytes()
 			}
 			base64Len := base64.StdEncoding.EncodedLen(len(data))
@@ -493,156 +628,24 @@ func shortenToken(minifier minify.Minifier, token *css.TokenNode) *css.TokenNode
 				data = bytes.Replace(data, []byte("\""), []byte("\\\""), -1)
 			}
 			if len(data) < len(originalData) {
-				token.Data = append(append(append(append([]byte("url(\"data:"), mediatype...), ','), data...), []byte("\")")...)
+				t.Data = append(append(append(append([]byte("url(\"data:"), mediatype...), ','), data...), []byte("\")")...)
 			}
 		}
-		s := token.Data[4 : len(token.Data)-1]
+		s := t.Data[4 : len(t.Data)-1]
 		if len(s) > 2 && (s[0] == '"' || s[0] == '\'') && css.IsUrlUnquoted([]byte(s[1:len(s)-1])) {
-			token.Data = append(append([]byte("url("), s[1:len(s)-1]...), ')')
+			t.Data = append(append([]byte("url("), s[1:len(s)-1]...), ')')
 		}
 	}
-	return token
+	return t
 }
 
 ////////////////////////////////////////////////////////////////
 
-func writeNodes(w io.Writer, nodes []css.Node) error {
-	semicolonQueued := false
-	for _, n := range nodes {
-		if _, ok := n.(*css.TokenNode); semicolonQueued && !ok { // it is only TokenNode for CDO and CDC (<!-- and --> respectively)
-			if _, err := w.Write([]byte(";")); err != nil {
-				return err
-			}
-			semicolonQueued = false
-		}
-
-		switch m := n.(type) {
-		case *css.DeclarationNode:
-			if err := writeDecl(w, m); err != nil {
-				return err
-			}
-			semicolonQueued = true
-		case *css.RulesetNode:
-			for i, sel := range m.Selectors {
-				if i > 0 {
-					if _, err := w.Write([]byte(",")); err != nil {
-						return err
-					}
-				}
-				if err := sel.Serialize(w); err != nil {
-					return err
-				}
-				//skipSpace := false
-				//for _, sel := range selGroup.Selectors {
-					// if len(sel.Elems) == 1 {
-					// 	token := sel.Elems[0]
-					// 	if token.TokenType == css.DelimToken && (token.Data[0] == '>' || token.Data[0] == '+' || token.Data[0] == '~') || token.TokenType == css.IncludeMatchToken || token.TokenType == css.DashMatchToken ||
-					// 		token.TokenType == css.PrefixMatchToken || token.TokenType == css.SuffixMatchToken || token.TokenType == css.SubstringMatchToken {
-					// 		if err := token.Serialize(w); err != nil {
-					// 			return err
-					// 		}
-					// 		skipSpace = true
-					// 		continue
-					// 	}
-					// }
-					// if j > 0 && !skipSpace {
-					// 	if _, err := w.Write([]byte(" ")); err != nil {
-					// 		return err
-					// 	}
-					// }
-					// for _, node := range sel.Elems {
-					// 	if err := node.Serialize(w); err != nil {
-					// 		return err
-					// 	}
-					// }
-					//skipSpace = false
-				//}
-			}
-			if _, err := w.Write([]byte("{")); err != nil {
-				return err
-			}
-			for i, decl := range m.Decls {
-				if i > 0 {
-					if _, err := w.Write([]byte(";")); err != nil {
-						return err
-					}
-				}
-				if err := writeDecl(w, decl); err != nil {
-					return err
-				}
-			}
-			if _, err := w.Write([]byte("}")); err != nil {
-				return err
-			}
-		case *css.AtRuleNode:
-			if len(m.Nodes) == 0 && len(m.Rules) == 0 {
-				break
-			}
-			if err := m.At.Serialize(w); err != nil {
-				return err
-			}
-			skipSpace := false
-			for _, k := range m.Nodes {
-				if token, ok := k.(*css.TokenNode); ok {
-					if token.TokenType == css.RightParenthesisToken || token.TokenType == css.ColonToken || token.TokenType == css.CommaToken {
-						skipSpace = true
-					} else if !skipSpace {
-						if _, err := w.Write([]byte(" ")); err != nil {
-							return err
-						}
-					} else {
-						skipSpace = false
-					}
-					if token.TokenType == css.LeftParenthesisToken {
-						skipSpace = true
-					}
-				}
-				if err := k.Serialize(w); err != nil {
-					return err
-				}
-			}
-			if len(m.Rules) > 0 {
-				if _, err := w.Write([]byte("{")); err != nil {
-					return err
-				}
-				if err := writeNodes(w, m.Rules); err != nil {
-					return err
-				}
-				if _, err := w.Write([]byte("}")); err != nil {
-					return err
-				}
-			} else {
-				semicolonQueued = true
-			}
-		default:
-			if err := n.Serialize(w); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func writeDecl(w io.Writer, decl *css.DeclarationNode) error {
-	if err := decl.Prop.Serialize(w); err != nil {
-		return err
-	}
-	if _, err := w.Write([]byte(":")); err != nil {
-		return err
-	}
-	prevDelim := false
-	for j, val := range decl.Vals {
-		token, ok := val.(*css.TokenNode)
-		currDelim := (ok && (token.TokenType == css.DelimToken || token.TokenType == css.CommaToken || token.TokenType == css.ColonToken))
-		if j > 0 && !currDelim && !prevDelim {
-			if _, err := w.Write([]byte(" ")); err != nil {
-				return err
-			}
-		}
-		if err := val.Serialize(w); err != nil {
+func (c cssMinifier) write(bs ...[]byte) error {
+	for _, b := range bs {
+		if _, err := c.w.Write(b); err != nil {
 			return err
 		}
-		prevDelim = currDelim
 	}
 	return nil
 }
