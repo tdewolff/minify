@@ -171,7 +171,7 @@ func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
 	c := &cssMinifier{
 		m,
 		w,
-		css.NewParser(css.NewTokenizer(r)),
+		css.NewParser(r),
 		false,
 	}
 	var err error
