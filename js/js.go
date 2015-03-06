@@ -7,7 +7,7 @@ import (
 	"github.com/tdewolff/parse/js"
 )
 
-// Minify minifies CSS files, it reads from r and writes to w.
+// Minify minifies JS files, it reads from r and writes to w.
 func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
 	z := js.NewTokenizer(r)
 	lineTerminatorQueued := false
