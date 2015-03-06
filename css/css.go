@@ -336,7 +336,6 @@ func (c cssMinifier) minifySelectors(selectors []*css.SelectorNode) error {
 }
 
 func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
-	decl.Prop.Data = bytes.ToLower(decl.Prop.Data)
 	if err := c.write(decl.Prop.Data, []byte(":")); err != nil {
 		return err
 	}
@@ -420,7 +419,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 			}
 		}
 	} else if len(decl.Vals) == 7 && bytes.Equal(prop, []byte("filter")) {
-		if n, ok := decl.Vals[6].(*css.FunctionNode); ok && bytes.Equal(n.Func.Data, []byte("Alpha(")) {
+		if n, ok := decl.Vals[6].(*css.FunctionNode); ok && bytes.Equal(n.Func.Data, []byte("Alpha")) {
 			tokens := []byte{}
 			for _, val := range decl.Vals[:len(decl.Vals)-1] {
 				if m, ok := val.(*css.TokenNode); ok {
@@ -500,14 +499,14 @@ func (c cssMinifier) shortenFunction(f *css.FunctionNode) css.Node {
 
 	var n css.Node = f
 	if simpleFunction {
-		if bytes.Equal(f.Func.Data, []byte("rgba(")) && len(f.Args) == 4 {
+		if bytes.Equal(f.Func.Data, []byte("rgba")) && len(f.Args) == 4 {
 			d, _ := strconv.ParseFloat(string(f.Args[3].Vals[0].(*css.TokenNode).Data), 32)
 			if math.Abs(d-1.0) < epsilon {
-				f.Func = css.NewToken(css.FunctionToken, []byte("rgb("))
+				f.Func = css.NewToken(css.FunctionToken, []byte("rgb"))
 				f.Args = f.Args[:len(f.Args)-1]
 			}
 		}
-		if bytes.Equal(f.Func.Data, []byte("rgb(")) && len(f.Args) == 3 {
+		if bytes.Equal(f.Func.Data, []byte("rgb")) && len(f.Args) == 3 {
 			var err error
 			rgb := make([]byte, 3)
 			for j := 0; j < 3; j++ {
