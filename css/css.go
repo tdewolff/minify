@@ -55,105 +55,105 @@ var shortenColorHex = map[string][]byte{
 	"#f00":    []byte("red"),
 }
 
-var shortenColorName = map[string][]byte{
-	"black":                []byte("#000"),
-	"darkblue":             []byte("#00008b"),
-	"mediumblue":           []byte("#0000cd"),
-	"darkgreen":            []byte("#006400"),
-	"darkcyan":             []byte("#008b8b"),
-	"deepskyblue":          []byte("#00bfff"),
-	"darkturquoise":        []byte("#00ced1"),
-	"mediumspringgreen":    []byte("#00fa9a"),
-	"springgreen":          []byte("#00ff7f"),
-	"midnightblue":         []byte("#191970"),
-	"dodgerblue":           []byte("#1e90ff"),
-	"lightseagreen":        []byte("#20b2aa"),
-	"forestgreen":          []byte("#228b22"),
-	"seagreen":             []byte("#2e8b57"),
-	"darkslategray":        []byte("#2f4f4f"),
-	"limegreen":            []byte("#32cd32"),
-	"mediumseagreen":       []byte("#3cb371"),
-	"turquoise":            []byte("#40e0d0"),
-	"royalblue":            []byte("#4169e1"),
-	"steelblue":            []byte("#4682b4"),
-	"darkslateblue":        []byte("#483d8b"),
-	"mediumturquoise":      []byte("#48d1cc"),
-	"darkolivegreen":       []byte("#556b2f"),
-	"cadetblue":            []byte("#5f9ea0"),
-	"cornflowerblue":       []byte("#6495ed"),
-	"mediumaquamarine":     []byte("#66cdaa"),
-	"slateblue":            []byte("#6a5acd"),
-	"olivedrab":            []byte("#6b8e23"),
-	"slategray":            []byte("#708090"),
-	"lightslateblue":       []byte("#789"),
-	"mediumslateblue":      []byte("#7b68ee"),
-	"lawngreen":            []byte("#7cfc00"),
-	"chartreuse":           []byte("#7fff00"),
-	"aquamarine":           []byte("#7fffd4"),
-	"lightskyblue":         []byte("#87cefa"),
-	"blueviolet":           []byte("#8a2be2"),
-	"darkmagenta":          []byte("#8b008b"),
-	"saddlebrown":          []byte("#8b4513"),
-	"darkseagreen":         []byte("#8fbc8f"),
-	"lightgreen":           []byte("#90ee90"),
-	"mediumpurple":         []byte("#9370db"),
-	"darkviolet":           []byte("#9400d3"),
-	"palegreen":            []byte("#98fb98"),
-	"darkorchid":           []byte("#9932cc"),
-	"yellowgreen":          []byte("#9acd32"),
-	"darkgray":             []byte("#a9a9a9"),
-	"lightblue":            []byte("#add8e6"),
-	"greenyellow":          []byte("#adff2f"),
-	"paleturquoise":        []byte("#afeeee"),
-	"lightsteelblue":       []byte("#b0c4de"),
-	"powderblue":           []byte("#b0e0e6"),
-	"firebrick":            []byte("#b22222"),
-	"darkgoldenrod":        []byte("#b8860b"),
-	"mediumorchid":         []byte("#ba55d3"),
-	"rosybrown":            []byte("#bc8f8f"),
-	"darkkhaki":            []byte("#bdb76b"),
-	"mediumvioletred":      []byte("#c71585"),
-	"indianred":            []byte("#cd5c5c"),
-	"chocolate":            []byte("#d2691e"),
-	"lightgray":            []byte("#d3d3d3"),
-	"goldenrod":            []byte("#daa520"),
-	"palevioletred":        []byte("#db7093"),
-	"gainsboro":            []byte("#dcdcdc"),
-	"burlywood":            []byte("#deb887"),
-	"lightcyan":            []byte("#e0ffff"),
-	"lavender":             []byte("#e6e6fa"),
-	"darksalmon":           []byte("#e9967a"),
-	"palegoldenrod":        []byte("#eee8aa"),
-	"lightcoral":           []byte("#f08080"),
-	"aliceblue":            []byte("#f0f8ff"),
-	"honeydew":             []byte("#f0fff0"),
-	"sandybrown":           []byte("#f4a460"),
-	"whitesmoke":           []byte("#f5f5f5"),
-	"mintcream":            []byte("#f5fffa"),
-	"ghostwhite":           []byte("#f8f8ff"),
-	"antiquewhite":         []byte("#faebd7"),
-	"lightgoldenrodyellow": []byte("#fafad2"),
-	"fuchsia":              []byte("#f0f"),
-	"magenta":              []byte("#f0f"),
-	"deeppink":             []byte("#ff1493"),
-	"orangered":            []byte("#ff4500"),
-	"darkorange":           []byte("#ff8c00"),
-	"lightsalmon":          []byte("#ffa07a"),
-	"lightpink":            []byte("#ffb6c1"),
-	"peachpuff":            []byte("#ffdab9"),
-	"navajowhite":          []byte("#ffdead"),
-	"moccasin":             []byte("#ffe4b5"),
-	"mistyrose":            []byte("#ffe4e1"),
-	"blanchedalmond":       []byte("#ffebcd"),
-	"papayawhip":           []byte("#ffefd5"),
-	"lavenderblush":        []byte("#fff0f5"),
-	"seashell":             []byte("#fff5ee"),
-	"cornsilk":             []byte("#fff8dc"),
-	"lemonchiffon":         []byte("#fffacd"),
-	"floralwhite":          []byte("#fffaf0"),
-	"yellow":               []byte("#ff0"),
-	"lightyellow":          []byte("#ffffe0"),
-	"white":                []byte("#fff"),
+var shortenColorName = map[css.Hash][]byte{
+	css.Black:                []byte("#000"),
+	css.Darkblue:             []byte("#00008b"),
+	css.Mediumblue:           []byte("#0000cd"),
+	css.Darkgreen:            []byte("#006400"),
+	css.Darkcyan:             []byte("#008b8b"),
+	css.Deepskyblue:          []byte("#00bfff"),
+	css.Darkturquoise:        []byte("#00ced1"),
+	css.Mediumspringgreen:    []byte("#00fa9a"),
+	css.Springgreen:          []byte("#00ff7f"),
+	css.Midnightblue:         []byte("#191970"),
+	css.Dodgerblue:           []byte("#1e90ff"),
+	css.Lightseagreen:        []byte("#20b2aa"),
+	css.Forestgreen:          []byte("#228b22"),
+	css.Seagreen:             []byte("#2e8b57"),
+	css.Darkslategray:        []byte("#2f4f4f"),
+	css.Limegreen:            []byte("#32cd32"),
+	css.Mediumseagreen:       []byte("#3cb371"),
+	css.Turquoise:            []byte("#40e0d0"),
+	css.Royalblue:            []byte("#4169e1"),
+	css.Steelblue:            []byte("#4682b4"),
+	css.Darkslateblue:        []byte("#483d8b"),
+	css.Mediumturquoise:      []byte("#48d1cc"),
+	css.Darkolivegreen:       []byte("#556b2f"),
+	css.Cadetblue:            []byte("#5f9ea0"),
+	css.Cornflowerblue:       []byte("#6495ed"),
+	css.Mediumaquamarine:     []byte("#66cdaa"),
+	css.Slateblue:            []byte("#6a5acd"),
+	css.Olivedrab:            []byte("#6b8e23"),
+	css.Slategray:            []byte("#708090"),
+	css.Lightslateblue:       []byte("#789"),
+	css.Mediumslateblue:      []byte("#7b68ee"),
+	css.Lawngreen:            []byte("#7cfc00"),
+	css.Chartreuse:           []byte("#7fff00"),
+	css.Aquamarine:           []byte("#7fffd4"),
+	css.Lightskyblue:         []byte("#87cefa"),
+	css.Blueviolet:           []byte("#8a2be2"),
+	css.Darkmagenta:          []byte("#8b008b"),
+	css.Saddlebrown:          []byte("#8b4513"),
+	css.Darkseagreen:         []byte("#8fbc8f"),
+	css.Lightgreen:           []byte("#90ee90"),
+	css.Mediumpurple:         []byte("#9370db"),
+	css.Darkviolet:           []byte("#9400d3"),
+	css.Palegreen:            []byte("#98fb98"),
+	css.Darkorchid:           []byte("#9932cc"),
+	css.Yellowgreen:          []byte("#9acd32"),
+	css.Darkgray:             []byte("#a9a9a9"),
+	css.Lightblue:            []byte("#add8e6"),
+	css.Greenyellow:          []byte("#adff2f"),
+	css.Paleturquoise:        []byte("#afeeee"),
+	css.Lightsteelblue:       []byte("#b0c4de"),
+	css.Powderblue:           []byte("#b0e0e6"),
+	css.Firebrick:            []byte("#b22222"),
+	css.Darkgoldenrod:        []byte("#b8860b"),
+	css.Mediumorchid:         []byte("#ba55d3"),
+	css.Rosybrown:            []byte("#bc8f8f"),
+	css.Darkkhaki:            []byte("#bdb76b"),
+	css.Mediumvioletred:      []byte("#c71585"),
+	css.Indianred:            []byte("#cd5c5c"),
+	css.Chocolate:            []byte("#d2691e"),
+	css.Lightgray:            []byte("#d3d3d3"),
+	css.Goldenrod:            []byte("#daa520"),
+	css.Palevioletred:        []byte("#db7093"),
+	css.Gainsboro:            []byte("#dcdcdc"),
+	css.Burlywood:            []byte("#deb887"),
+	css.Lightcyan:            []byte("#e0ffff"),
+	css.Lavender:             []byte("#e6e6fa"),
+	css.Darksalmon:           []byte("#e9967a"),
+	css.Palegoldenrod:        []byte("#eee8aa"),
+	css.Lightcoral:           []byte("#f08080"),
+	css.Aliceblue:            []byte("#f0f8ff"),
+	css.Honeydew:             []byte("#f0fff0"),
+	css.Sandybrown:           []byte("#f4a460"),
+	css.Whitesmoke:           []byte("#f5f5f5"),
+	css.Mintcream:            []byte("#f5fffa"),
+	css.Ghostwhite:           []byte("#f8f8ff"),
+	css.Antiquewhite:         []byte("#faebd7"),
+	css.Lightgoldenrodyellow: []byte("#fafad2"),
+	css.Fuchsia:              []byte("#f0f"),
+	css.Magenta:              []byte("#f0f"),
+	css.Deeppink:             []byte("#ff1493"),
+	css.Orangered:            []byte("#ff4500"),
+	css.Darkorange:           []byte("#ff8c00"),
+	css.Lightsalmon:          []byte("#ffa07a"),
+	css.Lightpink:            []byte("#ffb6c1"),
+	css.Peachpuff:            []byte("#ffdab9"),
+	css.Navajowhite:          []byte("#ffdead"),
+	css.Moccasin:             []byte("#ffe4b5"),
+	css.Mistyrose:            []byte("#ffe4e1"),
+	css.Blanchedalmond:       []byte("#ffebcd"),
+	css.Papayawhip:           []byte("#ffefd5"),
+	css.Lavenderblush:        []byte("#fff0f5"),
+	css.Seashell:             []byte("#fff5ee"),
+	css.Cornsilk:             []byte("#fff8dc"),
+	css.Lemonchiffon:         []byte("#fffacd"),
+	css.Floralwhite:          []byte("#fffaf0"),
+	css.Yellow:               []byte("#ff0"),
+	css.Lightyellow:          []byte("#ffffe0"),
+	css.White:                []byte("#fff"),
 }
 
 ////////////////////////////////////////////////////////////////
@@ -360,8 +360,8 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 		}
 	}
 
-	prop := decl.Prop.Data
-	if bytes.Equal(prop, []byte("margin")) || bytes.Equal(prop, []byte("padding")) {
+	prop := css.ToHash(decl.Prop.Data)
+	if prop == css.Margin || prop == css.Padding {
 		tokens := make([]*css.TokenNode, 0, 4)
 		for _, n := range decl.Vals {
 			if m, ok := n.(*css.TokenNode); ok {
@@ -390,24 +390,26 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 				decl.Vals = []css.Node{decl.Vals[0], decl.Vals[1], decl.Vals[2]}
 			}
 		}
-	} else if bytes.HasPrefix(prop, []byte("font")) {
+	} else if prop == css.Font || prop == css.Font_Family || prop == css.Font_Weight {
 		for i, n := range decl.Vals {
 			if m, ok := n.(*css.TokenNode); ok {
-				if m.TokenType == css.IdentToken && (len(prop) == len("font") || bytes.Equal(prop, []byte("font-weight"))) {
-					if bytes.Equal(m.Data, []byte("normal")) && bytes.Equal(prop, []byte("font-weight")) {
+				if m.TokenType == css.IdentToken && (prop == css.Font || prop == css.Font_Weight) {
+					val := css.ToHash(m.Data)
+					if val == css.Normal && prop == css.Font_Weight {
 						// normal could also be specified for font-variant, not just font-weight
 						decl.Vals[i] = css.NewToken(css.NumberToken, []byte("400"))
-					} else if bytes.Equal(m.Data, []byte("bold")) {
+					} else if val == css.Bold {
 						decl.Vals[i] = css.NewToken(css.NumberToken, []byte("700"))
 					}
-				} else if m.TokenType == css.StringToken && (len(prop) == len("font") || bytes.Equal(prop, []byte("font-family"))) {
+				} else if m.TokenType == css.StringToken && (prop == css.Font || prop == css.Font_Family) {
 					m.Data = bytes.ToLower(m.Data)
 					s := m.Data[1 : len(m.Data)-1]
 					unquote := true
-					for _, fontName := range bytes.Split(s, []byte(" ")) {
+					for _, split := range bytes.Split(s, []byte(" ")) {
+						val := css.ToHash(split)
 						// if len is zero, it contains two consecutive spaces
-						if len(fontName) == 0 || !css.IsIdent(fontName) || bytes.Equal(fontName, []byte("inherit")) || bytes.Equal(fontName, []byte("serif")) || bytes.Equal(fontName, []byte("sans-serif")) || bytes.Equal(fontName, []byte("monospace")) ||
-							bytes.Equal(fontName, []byte("fantasy")) || bytes.Equal(fontName, []byte("cursive")) || bytes.Equal(fontName, []byte("initial")) || bytes.Equal(fontName, []byte("default")) {
+						if val == css.Inherit || val == css.Serif || val == css.Sans_Serif || val == css.Monospace || val == css.Fantasy || val == css.Cursive || val == css.Initial || val == css.Default ||
+							len(split) == 0 || !css.IsIdent(split) {
 							unquote = false
 							break
 						}
@@ -418,7 +420,11 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 				}
 			}
 		}
-	} else if len(decl.Vals) == 7 && bytes.Equal(prop, []byte("filter")) {
+	} else if (prop == css.Outline || prop == css.Background || prop == css.Border || prop == css.Border_Bottom || prop == css.Border_Left || prop == css.Border_Right || prop == css.Border_Top) && len(decl.Vals) == 1 {
+		if n, ok := decl.Vals[0].(*css.TokenNode); ok && css.ToHash(n.Data) == css.None {
+			decl.Vals[0] = css.NewToken(css.NumberToken, []byte("0"))
+		}
+	} else if prop == css.Filter && len(decl.Vals) == 7 {
 		if n, ok := decl.Vals[6].(*css.FunctionNode); ok && bytes.Equal(n.Func.Data, []byte("Alpha")) {
 			tokens := []byte{}
 			for _, val := range decl.Vals[:len(decl.Vals)-1] {
@@ -441,17 +447,12 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 				}
 			}
 		}
-	} else if len(decl.Vals) == 1 && bytes.Equal(prop, []byte("-ms-filter")) {
+	} else if len(decl.Vals) == 1 && bytes.Equal(decl.Prop.Data, []byte("-ms-filter")) {
 		if n, ok := decl.Vals[0].(*css.TokenNode); ok {
 			alpha := []byte("progid:DXImageTransform.Microsoft.Alpha(Opacity=")
 			if n.TokenType == css.StringToken && bytes.HasPrefix(n.Data[1:len(n.Data)-1], alpha) {
 				n.Data = append(append([]byte{n.Data[0]}, []byte("alpha(opacity=")...), n.Data[1+len(alpha):]...)
 			}
-		}
-	} else if len(decl.Vals) == 1 && (bytes.Equal(prop, []byte("outline")) || bytes.Equal(prop, []byte("background")) ||
-		bytes.HasPrefix(prop, []byte("border")) && (len(prop) == len("border") || bytes.Equal(prop, []byte("border-top")) || bytes.Equal(prop, []byte("border-right")) || bytes.Equal(prop, []byte("border-bottom")) || bytes.Equal(prop, []byte("border-left")))) {
-		if n, ok := decl.Vals[0].(*css.TokenNode); ok && bytes.Equal(bytes.ToLower(n.Data), []byte("none")) {
-			decl.Vals[0] = css.NewToken(css.NumberToken, []byte("0"))
 		}
 	}
 
@@ -499,14 +500,16 @@ func (c cssMinifier) shortenFunction(f *css.FunctionNode) css.Node {
 
 	var n css.Node = f
 	if simpleFunction {
-		if bytes.Equal(f.Func.Data, []byte("rgba")) && len(f.Args) == 4 {
+		fun := css.ToHash(f.Func.Data)
+		if fun == css.Rgba && len(f.Args) == 4 {
 			d, _ := strconv.ParseFloat(string(f.Args[3].Vals[0].(*css.TokenNode).Data), 32)
 			if math.Abs(d-1.0) < epsilon {
 				f.Func = css.NewToken(css.FunctionToken, []byte("rgb"))
 				f.Args = f.Args[:len(f.Args)-1]
+				fun = css.Rgb
 			}
 		}
-		if bytes.Equal(f.Func.Data, []byte("rgb")) && len(f.Args) == 3 {
+		if fun == css.Rgb && len(f.Args) == 3 {
 			var err error
 			rgb := make([]byte, 3)
 			for j := 0; j < 3; j++ {
@@ -581,7 +584,7 @@ func (c cssMinifier) shortenToken(t *css.TokenNode) *css.TokenNode {
 		}
 	} else if t.TokenType == css.IdentToken {
 		t.Data = bytes.ToLower(t.Data)
-		if h, ok := shortenColorName[string(t.Data)]; ok {
+		if h, ok := shortenColorName[css.ToHash(t.Data)]; ok {
 			t = css.NewToken(css.HashToken, h)
 		}
 	} else if t.TokenType == css.HashToken {
