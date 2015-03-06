@@ -1,7 +1,7 @@
 [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify)](http://gocover.io/github.com/tdewolff/minify)
 
 # Minify
-Minify is a minifier package written in [Go][1]. It has a build-in HTML5 and CSS3 minifier and provides an interface to implement any minifier.
+Minify is a minifier package written in [Go][1]. It has a build-in HTML5, CSS3 and JS minifiers and provides an interface to implement any minifier.
 
 It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...).
 
@@ -25,16 +25,16 @@ Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/
 An alternative library written in Go is [https://github.com/dchest/htmlmin](https://github.com/dchest/htmlmin). It is written using regular expressions and is therefore a lot simpler (and thus fast, less bugs, not handling edge-cases) but about twice as slow. Other alternatives are bindings for existing minifiers written in other languages. These are inevitably more robust and tested but will often be slower.
 
 ## HTML
-The HTML5 minifier is rather complete and really fast, it:
+The HTML5 minifier uses these minifications:
 
-- strips unnecessary whitespace
-- strips superfluous quotes, or uses single/double quotes whichever requires fewer escapes
-- strips default attribute values and attribute boolean values
-- strips unrequired tags (`html`, `head`, `body`, ...)
-- strips default protocols (`http:` and `javascript:`)
-- strips comments (except conditional comments)
-- strips long `doctype` or `meta` charset
-- makes tags, attributes and some values lowercase to enhance GZIP compression
+- strip unnecessary whitespace
+- strip superfluous quotes, or uses single/double quotes whichever requires fewer escapes
+- strip default attribute values and attribute boolean values
+- strip unrequired tags (`html`, `head`, `body`, ...)
+- strip default protocols (`http:` and `javascript:`)
+- strip comments (except conditional comments)
+- strip long `doctype` or `meta` charset
+- lowercase tags, attributes and some values to enhance gzip compression
 
 After recent benchmarking and profiling it became really fast and minifies pages in the 20ms range, making it viable for on-the-fly minification.
 
@@ -44,7 +44,7 @@ However, be careful when doing on-the-fly minification. A simple site would typi
 Make sure your HTML doesn't depend on whitespace between `block` elements that have been changed to `inline` or `inline-block` elements using CSS. Your layout *should not* depend on those whitespaces as the minifier will remove them. An example is a list of `<li>`s which have `display:inline-block` applied and have whitespace in between them.
 
 ## CSS
-The CSS minifier is very fast and complete and will only use safe minifications:
+The CSS minifier will only use safe minifications:
 
 - remove comments and (most) whitespace
 - remove trailing semicolon(s)
@@ -76,6 +76,9 @@ It does purposely not use the following techniques:
 - put space after pseudo-selectors (IE6 is old, move on!)
 
 It's great that so many other tools make comparison tables: [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html), [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). From the last link, this CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented and often unsafe techniques, so that's fine.
+
+## JS
+The JS minifier is pretty basic. It removes comments, whitespace and line breaks whenever it can. It follows the rules by [JSMin](http://www.crockford.com/javascript/jsmin.html) but additionally fixes the error in the 'caution' section.
 
 ## Installation
 Run the following commands
