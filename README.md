@@ -6,8 +6,10 @@ Minify is a minifier package written in [Go][1]. It has a build-in HTML5, CSS3 a
 It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...).
 
 ## Comparison
-Website | Original | Minify | Ratio | Time<sup>&#42;</sup>
-------- | -------- | ------ | ----- | -----------------------
+Minification typically runs at about 10-20MB/s ~= 35-70GB/h, depeding on the composition of the file.
+
+Website | Original | Minified | Ratio | Time<sup>&#42;</sup>
+------- | -------- | -------- | ----- | -----------------------
 [Amazon](http://www.amazon.com/) | 463kB | **418kB** | 90% | 14ms
 [BBC](http://www.bbc.com/) | 113kB | **96kB** | 85% | 9ms
 [StackOverflow](http://stackoverflow.com/) | 201kB | **183kB** | 91% | 15ms
@@ -20,7 +22,7 @@ Website | Original | Minify | Ratio | Time<sup>&#42;</sup>
 [HTML Compressor](https://code.google.com/p/htmlcompressor/) performs worse in output size (for HTML and CSS) and speed, it is a magnitude slower. Its whitespace removal is not precise or the user must provide the tags around which can be trimmed. According to HTML Compressor, it produces smaller files than a couple of other libraries. With HTML and CSS compression this package is better, but JS compression it is still too basic.
 
 ### Alternatives
-An alternative library written in Go is [https://github.com/dchest/htmlmin](https://github.com/dchest/htmlmin). It is written using regular expressions and is therefore a lot simpler (and thus fast, less bugs, not handling edge-cases) but about twice as slow. Other alternatives are bindings for existing minifiers written in other languages. These are inevitably more robust and tested but will often be slower.
+An alternative library written in Go is [https://github.com/dchest/htmlmin](https://github.com/dchest/htmlmin). It is written using regular expressions and is therefore a lot simpler (and thus less bugs, not handling edge-cases) but about twice as slow. Other alternatives are bindings for existing minifiers written in other languages. These are inevitably more robust and tested but will often be slower.
 
 ## HTML
 The HTML5 minifier uses these minifications:
