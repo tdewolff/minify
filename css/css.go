@@ -340,7 +340,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 		return err
 	}
 
-	 // shorten values
+	// shorten values
 	progid := false
 	for i, n := range decl.Vals {
 		switch m := n.(type) {

@@ -102,7 +102,7 @@ func TestAdd(t *testing.T) {
 	assert.Nil(t, m.Minify("dummy/copy", w, r), "must return nil for dummy/copy command")
 	assert.Equal(t, "test", w.String(), "must return input string for dummy/copy command")
 	assert.Nil(t, m.AddCmd("dummy/err", helperCommand(t, "dummy/err")), "must return nil for dummy/err command")
-	assert.Equal(t, "exit status 1", m.Minify("dummy/err", w, r).Error() , "must return proper exit status when command encounters error")
+	assert.Equal(t, "exit status 1", m.Minify("dummy/err", w, r).Error(), "must return proper exit status when command encounters error")
 }
 
 func TestWildcard(t *testing.T) {
