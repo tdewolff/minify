@@ -6,20 +6,18 @@ Minify is a minifier package written in [Go][1]. It has a build-in HTML5, CSS3 a
 It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...).
 
 ## Comparison
-Website | Original | [HTML Compressor](https://code.google.com/p/htmlcompressor/) | Minify | Ratio | Time<sup>&#42;</sup>
-------- | -------- | ------------------------------------------------------------ | ------ | ----- | -----------------------
-[Amazon](http://www.amazon.com/) | 463kB | 448kB | **438kB** | 95%<sup>&#42;&#42;</sup> | 16ms
-[BBC](http://www.bbc.com/) | 113kB | 105kB | **101kB** | 89% | 6ms
-[StackOverflow](http://stackoverflow.com/) | 201kB | 184kB | **184kB** | 91% | 14ms
-[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | 417kB | **413kB** | 95%<sup>&#42;&#42;&#42;</sup> | 31ms
+Website | Original | Minify | Ratio | Time<sup>&#42;</sup>
+------- | -------- | ------ | ----- | -----------------------
+[Amazon](http://www.amazon.com/) | 463kB | **418kB** | 90% | 14ms
+[BBC](http://www.bbc.com/) | 113kB | **96kB** | 85% | 9ms
+[StackOverflow](http://stackoverflow.com/) | 201kB | **183kB** | 91% | 15ms
+[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | **413kB** | 95%<sup>&#42;&#42;</sup> | 32ms
 
-<sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 20ms range! The benchmark uses the HTML and CSS minifier and excludes the time reading from and writing to a file from the measurement.
+<sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 20ms range! The benchmark uses the HTML, CSS and JS minifiers and excludes the time reading from and writing to a file from the measurement.
 
-<sup>&#42;&#42;</sup>Contains alot of internal JS blocks so this does not represent the ratio of HTML+CSS minification.
+<sup>&#42;&#42;</sup>Is already somewhat minified, so this doesn't reflect the full potential of this minifier.
 
-<sup>&#42;&#42;&#42;</sup>Is already somewhat minified, so this doesn't reflect the full potential of this minifier.
-
-[HTML Compressor](https://code.google.com/p/htmlcompressor/) with options `--remove-attribute-quotes --remove-redundant-attributes --use-short-doctype --remove-optional-tags --minify-css --minify-urls --collapse-whitespace --remove-comments --remove-comments-from-cdata` performs worse in output size and speed. Its whitespace removal is not precise or the user must provide the tags around which can be trimmed. HTML compressor is also an order of magnitude slower. According to HTML Compressor, it produces smaller files than a couple of other libraries, which means this minifier does better than all.
+[HTML Compressor](https://code.google.com/p/htmlcompressor/) performs worse in output size (for HTML and CSS) and speed, it is a magnitude slower. Its whitespace removal is not precise or the user must provide the tags around which can be trimmed. According to HTML Compressor, it produces smaller files than a couple of other libraries. With HTML and CSS compression this package is better, but JS compression it is still too basic.
 
 ### Alternatives
 An alternative library written in Go is [https://github.com/dchest/htmlmin](https://github.com/dchest/htmlmin). It is written using regular expressions and is therefore a lot simpler (and thus fast, less bugs, not handling edge-cases) but about twice as slow. Other alternatives are bindings for existing minifiers written in other languages. These are inevitably more robust and tested but will often be slower.
