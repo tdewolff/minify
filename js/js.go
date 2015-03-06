@@ -13,7 +13,7 @@ func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
 	lineTerminatorQueued := false
 	whitespaceQueued := false
 	prev := js.LineTerminatorToken
-	prevFirst := byte(' ')
+	prevLast := byte(' ')
 	for {
 		tt, text := z.Next()
 		if tt == js.ErrorToken {
@@ -33,12 +33,12 @@ func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
 			continue
 		} else {
 			first := text[0]
-			if (prev == js.IdentifierToken || prev == js.NumericToken) && (tt == js.IdentifierToken || tt == js.NumericToken) || prev == js.PunctuatorToken && tt == js.PunctuatorToken {
-				if lineTerminatorQueued && (tt != js.PunctuatorToken || (prevFirst == '{' || prevFirst == '[' || prevFirst == '(' || prevFirst == '+' || prevFirst == '-') && (first == '}' || first == ']' || first == ')' || first == '+' || first == '-' || first == '"' || first == '\'')) {
+			if (prev == js.IdentifierToken || prev == js.NumericToken || prev == js.PunctuatorToken || prev == js.StringToken) && (tt == js.IdentifierToken || tt == js.NumericToken || tt == js.PunctuatorToken) {
+				if lineTerminatorQueued && (tt != js.PunctuatorToken || first == '{' || first == '[' || first == '(' || first == '+' || first == '-') && (prev != js.PunctuatorToken || prevLast == '}' || prevLast == ']' || prevLast == ')' || prevLast == '+' || prevLast == '-' || prevLast == '"' || prevLast == '\'') {
 					if _, err := w.Write([]byte("\n")); err != nil {
 						return err
 					}
-				} else if whitespaceQueued && (tt != js.PunctuatorToken || first == prevFirst && (prevFirst == '+' || prevFirst == '-')) {
+				} else if whitespaceQueued && (prev != js.StringToken && prev != js.PunctuatorToken && tt != js.PunctuatorToken || first == prevLast && (prevLast == '+' || prevLast == '-')) {
 					if _, err := w.Write([]byte(" ")); err != nil {
 						return err
 					}
@@ -47,7 +47,7 @@ func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
 			lineTerminatorQueued = false
 			whitespaceQueued = false
 			prev = tt
-			prevFirst = text[0]
+			prevLast = text[len(text)-1]
 		}
 		if _, err := w.Write(text); err != nil {
 			return err
