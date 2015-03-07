@@ -271,7 +271,7 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, n css.Node) erro
 	return nil
 }
 
-func (c cssMinifier) minifyAtRuleNodes(atRuleNodes []css.Node) error {
+func (c *cssMinifier) minifyAtRuleNodes(atRuleNodes []css.Node) error {
 	for i, atRuleNode := range atRuleNodes {
 		if i != 0 {
 			var t *css.TokenNode
@@ -297,7 +297,7 @@ func (c cssMinifier) minifyAtRuleNodes(atRuleNodes []css.Node) error {
 	return nil
 }
 
-func (c cssMinifier) minifySelectors(selectors []*css.SelectorNode) error {
+func (c *cssMinifier) minifySelectors(selectors []*css.SelectorNode) error {
 	for i, selector := range selectors {
 		if i != 0 {
 			if err := c.write([]byte(",")); err != nil {
@@ -483,7 +483,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 	return nil
 }
 
-func (c cssMinifier) shortenFunction(f *css.FunctionNode) css.Node {
+func (c *cssMinifier) shortenFunction(f *css.FunctionNode) css.Node {
 	simpleFunction := true
 	for j, arg := range f.Args {
 		for k, val := range arg.Vals {
@@ -554,7 +554,7 @@ func (c cssMinifier) shortenFunction(f *css.FunctionNode) css.Node {
 	return n
 }
 
-func (c cssMinifier) shortenToken(t *css.TokenNode) *css.TokenNode {
+func (c *cssMinifier) shortenToken(t *css.TokenNode) *css.TokenNode {
 	if t.TokenType == css.NumberToken || t.TokenType == css.DimensionToken || t.TokenType == css.PercentageToken {
 		if len(t.Data) > 0 && t.Data[0] == '+' {
 			t.Data = t.Data[1:]
@@ -686,7 +686,7 @@ func (c cssMinifier) shortenToken(t *css.TokenNode) *css.TokenNode {
 
 ////////////////////////////////////////////////////////////////
 
-func (c cssMinifier) write(bs ...[]byte) error {
+func (c *cssMinifier) write(bs ...[]byte) error {
 	for _, b := range bs {
 		if _, err := c.w.Write(b); err != nil {
 			return err
