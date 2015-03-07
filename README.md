@@ -26,6 +26,7 @@ An alternative library written in Go is [https://github.com/dchest/htmlmin](http
 
 ## HTML
 [![GoDoc](http://godoc.org/github.com/tdewolff/minify/html?status.svg)](http://godoc.org/github.com/tdewolff/minify/html) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/html)](http://gocover.io/github.com/tdewolff/minify/html)
+
 The HTML5 minifier uses these minifications:
 
 - strip unnecessary whitespace
@@ -46,6 +47,7 @@ Make sure your HTML doesn't depend on whitespace between `block` elements that h
 
 ## CSS
 [![GoDoc](http://godoc.org/github.com/tdewolff/minify/css?status.svg)](http://godoc.org/github.com/tdewolff/minify/css) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/css)](http://gocover.io/github.com/tdewolff/minify/css)
+
 The CSS minifier will only use safe minifications:
 
 - remove comments and (most) whitespace
@@ -81,6 +83,7 @@ It's great that so many other tools make comparison tables: [CSS Minifier Compar
 
 ## JS
 [![GoDoc](http://godoc.org/github.com/tdewolff/minify/js?status.svg)](http://godoc.org/github.com/tdewolff/minify/js) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/js)](http://gocover.io/github.com/tdewolff/minify/js)
+
 The JS minifier is pretty basic. It removes comments, whitespace and line breaks whenever it can. It follows the rules by [JSMin](http://www.crockford.com/javascript/jsmin.html) but additionally fixes the error in the 'caution' section.
 
 ## Installation
