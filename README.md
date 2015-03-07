@@ -10,10 +10,10 @@ Minification typically runs at about 10-20MB/s ~= 35-70GB/h, depeding on the com
 
 Website | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
-[Amazon](http://www.amazon.com/) | 463kB | **418kB** | 90% | 14ms
-[BBC](http://www.bbc.com/) | 113kB | **96kB** | 85% | 9ms
+[Amazon](http://www.amazon.com/) | 463kB | **418kB** | 90% | 22ms
+[BBC](http://www.bbc.com/) | 113kB | **96kB** | 85% | 7ms
 [StackOverflow](http://stackoverflow.com/) | 201kB | **183kB** | 91% | 15ms
-[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | **413kB** | 95%<sup>&#42;&#42;</sup> | 32ms
+[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | **413kB** | 95%<sup>&#42;&#42;</sup> | 31ms
 
 <sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 20ms range! The benchmark uses the HTML, CSS and JS minifiers and excludes the time reading from and writing to a file from the measurement.
 
