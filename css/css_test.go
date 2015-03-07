@@ -47,6 +47,7 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, "filter: progid : DXImageTransform.Microsoft.BasicImage(rotation=1);", "filter:progid:DXImageTransform.Microsoft.BasicImage(rotation=1)")
 	assertCSS(t, "filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=0);", "filter:alpha(opacity=0)")
 	assertCSS(t, "content: \"a\\\nb\";", "content:\"ab\"")
+	assertCSS(t, "content: \"a\\\r\nb\\\rc\";", "content:\"abc\"")
 	// assertCSS(t, "color:#fff;@charset x;", "color:#fff")
 	// assertCSS(t, "color:#fff;@import x;", "color:#fff")
 	// assertCSS(t, "@charset x;@import x;", "@charset x;@import x")

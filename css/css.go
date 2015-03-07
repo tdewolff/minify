@@ -346,7 +346,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 		switch m := n.(type) {
 		case *css.TokenNode:
 			if !progid {
-				if i == 0 && bytes.Equal(m.Data, []byte("progid")) {
+				if i == 0 && css.ToHash(m.Data) == css.Progid {
 					progid = true
 					continue
 				}
@@ -556,11 +556,9 @@ func (c cssMinifier) shortenFunction(f *css.FunctionNode) css.Node {
 
 func (c cssMinifier) shortenToken(t *css.TokenNode) *css.TokenNode {
 	if t.TokenType == css.NumberToken || t.TokenType == css.DimensionToken || t.TokenType == css.PercentageToken {
-		t.Data = bytes.ToLower(t.Data)
 		if len(t.Data) > 0 && t.Data[0] == '+' {
 			t.Data = t.Data[1:]
 		}
-
 		num, dim := css.SplitNumberToken(t.Data)
 		f, err := strconv.ParseFloat(string(num), 64)
 		if err != nil {
@@ -568,17 +566,39 @@ func (c cssMinifier) shortenToken(t *css.TokenNode) *css.TokenNode {
 		}
 		if math.Abs(f) < epsilon {
 			t.Data = []byte("0")
-		} else {
-			if len(num) > 0 && num[0] == '-' {
-				num = append([]byte{'-'}, bytes.TrimLeft(num[1:], "0")...)
-			} else {
-				num = bytes.TrimLeft(num, "0")
-			}
-			if bytes.Index(num, []byte(".")) != -1 {
-				num = bytes.TrimRight(num, "0")
-				if num[len(num)-1] == '.' {
-					num = num[:len(num)-1]
+		} else if len(num) > 0 {
+			if num[0] == '-' {
+				num = num[1:]
+				// trim 0 left
+				for len(num) > 0 && num[0] == '0' {
+					num = num[1:]
 				}
+				num = append([]byte{'-'}, num...)
+			} else {
+				// trim 0 left
+				for len(num) > 0 && num[0] == '0' {
+					num = num[1:]
+				}
+			}
+			// trim 0 right
+			for i, digit := range num {
+				if digit == '.' {
+					j := len(num)-1
+					for ; j > i; j-- {
+						if num[j] == '0' {
+							num = num[:len(num)-1]
+						} else {
+							break
+						}
+					}
+					if j == i {
+						num = num[:len(num)-1] // remove .
+					}
+					break
+				}
+			}
+			if len(dim) > 1 { // only percentage is length 1
+				dim = bytes.ToLower(dim)
 			}
 			t.Data = append(num, dim...)
 		}
@@ -597,9 +617,32 @@ func (c cssMinifier) shortenToken(t *css.TokenNode) *css.TokenNode {
 			t.Data = bytes.ToLower(t.Data)
 		}
 	} else if t.TokenType == css.StringToken {
-		t.Data = bytes.Replace(t.Data, []byte("\\\r\n"), []byte(""), -1)
-		t.Data = bytes.Replace(t.Data, []byte("\\\r"), []byte(""), -1)
-		t.Data = bytes.Replace(t.Data, []byte("\\\n"), []byte(""), -1)
+		// remove any \\\r\n \\\r \\\n
+		for i := 1; i < len(t.Data)-2; i++ {
+			if t.Data[i] == '\\' && (t.Data[i+1] == '\n' || t.Data[i+1] == '\r') {
+				// encountered first replacee, now start to move bytes to the front
+				j := i + 2
+				if t.Data[i+1] == '\r' && len(t.Data) > i+2 && t.Data[i+2] == '\n' {
+					j++
+				}
+				for ; j < len(t.Data); j++ {
+					if t.Data[j] == '\\' && len(t.Data) > j+1 && (t.Data[j+1] == '\n' || t.Data[j+1] == '\r') {
+						if t.Data[j+1] == '\r' && len(t.Data) > j+2 && t.Data[j+2] == '\n' {
+							j++
+						}
+						j++
+					} else {
+						t.Data[i] = t.Data[j]
+						i++
+					}
+				}
+				t.Data = t.Data[:i]
+				break
+			}
+		}
+		//t.Data = bytes.Replace(t.Data, []byte("\\\r\n"), []byte(""), -1)
+		//t.Data = bytes.Replace(t.Data, []byte("\\\r"), []byte(""), -1)
+		//t.Data = bytes.Replace(t.Data, []byte("\\\n"), []byte(""), -1)
 	} else if t.TokenType == css.URLToken {
 		t.Data = append([]byte("url"), t.Data[3:]...)
 		if mediatype, originalData, ok := css.SplitDataURI(t.Data); ok {
