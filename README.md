@@ -1,9 +1,9 @@
 [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify)](http://gocover.io/github.com/tdewolff/minify)
 
 # Minify
-Minify is a minifier package written in [Go][1]. It has a build-in HTML5, CSS3 and JS minifiers and provides an interface to implement any minifier.
+Minify is a minifier package written in [Go][1]. It has a build-in HTML5, CSS3 and JS minifiers and provides an interface to implement any minifier. The implemented minifiers have high performance and are streaming, but having the buffer loaded into memory first (by having `Bytes() []byte` available) does speed up the process.
 
-It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...).
+It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...). It is possible to pass parameters through the mimetype to specify the charset for example for future minifiers.
 
 ## Comparison
 Minification typically runs at about 10-20MB/s ~= 35-70GB/h, depeding on the composition of the file.
@@ -25,6 +25,7 @@ Website | Original | Minified | Ratio | Time<sup>&#42;</sup>
 An alternative library written in Go is [https://github.com/dchest/htmlmin](https://github.com/dchest/htmlmin). It is written using regular expressions and is therefore a lot simpler (and thus less bugs, not handling edge-cases) but about twice as slow. Other alternatives are bindings for existing minifiers written in other languages. These are inevitably more robust and tested but will often be slower.
 
 ## HTML
+[![GoDoc](http://godoc.org/github.com/tdewolff/minify/html?status.svg)](http://godoc.org/github.com/tdewolff/minify/html) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/html)](http://gocover.io/github.com/tdewolff/minify/html)
 The HTML5 minifier uses these minifications:
 
 - strip unnecessary whitespace
@@ -44,6 +45,7 @@ However, be careful when doing on-the-fly minification. A simple site would typi
 Make sure your HTML doesn't depend on whitespace between `block` elements that have been changed to `inline` or `inline-block` elements using CSS. Your layout *should not* depend on those whitespaces as the minifier will remove them. An example is a list of `<li>`s which have `display:inline-block` applied and have whitespace in between them.
 
 ## CSS
+[![GoDoc](http://godoc.org/github.com/tdewolff/minify/css?status.svg)](http://godoc.org/github.com/tdewolff/minify/css) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/css)](http://gocover.io/github.com/tdewolff/minify/css)
 The CSS minifier will only use safe minifications:
 
 - remove comments and (most) whitespace
@@ -78,6 +80,7 @@ It does purposely not use the following techniques:
 It's great that so many other tools make comparison tables: [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html), [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). From the last link, this CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented and often unsafe techniques, so that's fine.
 
 ## JS
+[![GoDoc](http://godoc.org/github.com/tdewolff/minify/js?status.svg)](http://godoc.org/github.com/tdewolff/minify/js) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/js)](http://gocover.io/github.com/tdewolff/minify/js)
 The JS minifier is pretty basic. It removes comments, whitespace and line breaks whenever it can. It follows the rules by [JSMin](http://www.crockford.com/javascript/jsmin.html) but additionally fixes the error in the 'caution' section.
 
 ## Installation
@@ -86,14 +89,16 @@ Run the following commands
 	go get github.com/tdewolff/minify
 	go get github.com/tdewolff/minify/html
 	go get github.com/tdewolff/minify/css
+	go get github.com/tdewolff/minify/js
 	go get github.com/tdewolff/minify/trim
 
-or add the following import and run the project with `go get`
+or add the following imports and run the project with `go get`
 ``` go
 import (
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/html"
 	"github.com/tdewolff/minify/css"
+	"github.com/tdewolff/minify/js"
 	"github.com/tdewolff/minify/trim"
 )
 ```
@@ -110,6 +115,7 @@ The following loads all provided minifiers.
 m := minify.NewMinifier()
 m.Add("text/html", html.Minify)
 m.Add("text/css", css.Minify)
+m.Add("text/js", css.Minify)
 m.Add("*/*", trim.Minify)
 ```
 
@@ -121,16 +127,17 @@ if err := m.Minify(mediatype, w, r); err != nil {
 }
 ```
 
-Minify *HTML* directly from an `io.Reader` to an `io.Writer`.
+Minify HTML, CSS or JS directly from an `io.Reader` to an `io.Writer`.
 ``` go
 if err := html.Minify(m, w, r); err != nil {
 	log.Fatal("Minify:", err)
 }
-```
 
-Minify *CSS* directly from an `io.Reader` to an `io.Writer`.
-``` go
 if err := css.Minify(m, w, r); err != nil {
+	log.Fatal("Minify:", err)
+}
+
+if err := js.Minify(m, w, r); err != nil {
 	log.Fatal("Minify:", err)
 }
 ```
