@@ -86,6 +86,11 @@ It's great that so many other tools make comparison tables: [CSS Minifier Compar
 
 The JS minifier is pretty basic. It removes comments, whitespace and line breaks whenever it can. It follows the rules by [JSMin](http://www.crockford.com/javascript/jsmin.html) but additionally fixes the error in the 'caution' section.
 
+## Trim
+[![GoDoc](http://godoc.org/github.com/tdewolff/minify/trim?status.svg)](http://godoc.org/github.com/tdewolff/minify/trim) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/trim)](http://gocover.io/github.com/tdewolff/minify/trim)
+
+The trim minifier strips the whitespace at the beginning and end of the stream, it can be used as a general purpose minifier for any mimetype.
+
 ## Installation
 Run the following commands
 
