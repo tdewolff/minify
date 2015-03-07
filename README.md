@@ -86,6 +86,15 @@ It's great that so many other tools make comparison tables: [CSS Minifier Compar
 
 The JS minifier is pretty basic. It removes comments, whitespace and line breaks whenever it can. It follows the rules by [JSMin](http://www.crockford.com/javascript/jsmin.html) but additionally fixes the error in the 'caution' section.
 
+Minification typically runs at about 40MB/s ~= 145GB/h.
+
+Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
+------- | -------- | -------- | ----- | -----------------------
+[jQuery](http://jquery.com/download/) | 242kB | **130kB** | 54% | 6ms
+[jQuery UI](http://jqueryui.com/download/) | 459kB | **300kB** | 65% | 12ms
+
+<sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.
+
 ## Trim
 [![GoDoc](http://godoc.org/github.com/tdewolff/minify/trim?status.svg)](http://godoc.org/github.com/tdewolff/minify/trim) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/trim)](http://gocover.io/github.com/tdewolff/minify/trim)
 
