@@ -640,9 +640,6 @@ func (c *cssMinifier) shortenToken(t *css.TokenNode) *css.TokenNode {
 				break
 			}
 		}
-		//t.Data = bytes.Replace(t.Data, []byte("\\\r\n"), []byte(""), -1)
-		//t.Data = bytes.Replace(t.Data, []byte("\\\r"), []byte(""), -1)
-		//t.Data = bytes.Replace(t.Data, []byte("\\\n"), []byte(""), -1)
 	} else if t.TokenType == css.URLToken {
 		t.Data = append([]byte("url"), t.Data[3:]...)
 		if mediatype, originalData, ok := css.SplitDataURI(t.Data); ok {
