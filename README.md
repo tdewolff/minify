@@ -141,7 +141,7 @@ The following loads all provided minifiers.
 m := minify.NewMinifier()
 m.Add("text/html", html.Minify)
 m.Add("text/css", css.Minify)
-m.Add("text/js", css.Minify)
+m.Add("text/javascript", js.Minify)
 m.Add("*/*", trim.Minify)
 ```
 
