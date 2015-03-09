@@ -81,12 +81,12 @@ It does purposely not use the following techniques:
 
 It's great that so many other tools make comparison tables: [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html), [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). From the last link, this CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented and often unsafe techniques, so that's fine.
 
-Minification typically runs at about 8MB/s ~= 30GB/h.
+Minification typically runs at about 9MB/s ~= 30GB/h.
 
 Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
-[Bootstrap](http://getbootstrap.com/) | 134kB | **111kB** | 83% | 17ms
-[Gumby](http://gumbyframework.com/) | 182kB | **167kB** | 92% | 23ms
+[Bootstrap](http://getbootstrap.com/) | 134kB | **111kB** | 83% | 15ms
+[Gumby](http://gumbyframework.com/) | 182kB | **167kB** | 92% | 20ms
 
 <sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.
 
