@@ -160,7 +160,7 @@ func (m DefaultMinifier) Minify(mediatype string, w io.Writer, r io.Reader) erro
 func (m DefaultMinifier) MinifyBytes(mediatype string, v []byte) ([]byte, error) {
 	b := &bytes.Buffer{}
 	b.Grow(len(v))
-	if err := m.Minify(mediatype, b, bytes.NewReader(v)); err != nil {
+	if err := m.Minify(mediatype, b, bytes.NewBuffer(v)); err != nil {
 		return v, err
 	}
 	return b.Bytes(), nil
@@ -171,7 +171,7 @@ func (m DefaultMinifier) MinifyBytes(mediatype string, v []byte) ([]byte, error)
 func (m DefaultMinifier) MinifyString(mediatype string, v string) (string, error) {
 	b := &bytes.Buffer{}
 	b.Grow(len(v))
-	if err := m.Minify(mediatype, b, bytes.NewReader([]byte(v))); err != nil {
+	if err := m.Minify(mediatype, b, bytes.NewBufferString(v)); err != nil {
 		return v, err
 	}
 	return b.String(), nil
