@@ -176,11 +176,11 @@ func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
 	}
 	var err error
 	for {
-		gt, n := c.p.Next()
+		gt, node := c.p.Next()
 		if gt == css.ErrorGrammar {
 			err = c.p.Err()
 			break
-		} else if err = c.minifyRecursively(gt, n); err != nil {
+		} else if err = c.minifyRecursively(gt, node); err != nil {
 			break
 		}
 	}
@@ -190,7 +190,7 @@ func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
 	return nil
 }
 
-func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, n css.Node) error {
+func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, rootNode css.Node) error {
 	if rootGt != css.ErrorGrammar && rootGt != css.TokenGrammar && c.semicolonQueued { // it is only TokenGrammar for CDO and CDC
 		if err := c.write([]byte(";")); err != nil {
 			return err
@@ -199,8 +199,8 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, n css.Node) erro
 	}
 
 	if rootGt == css.AtRuleGrammar {
-		atRule := n.(*css.AtRuleNode)
-		if err := c.write(atRule.At.Data); err != nil {
+		atRule := rootNode.(*css.AtRuleNode)
+		if err := c.write(atRule.Name.Data); err != nil {
 			return err
 		}
 		if err := c.minifyAtRuleNodes(atRule.Nodes); err != nil {
@@ -208,7 +208,7 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, n css.Node) erro
 		}
 		hasRules := false
 		for {
-			gt, m := c.p.Next()
+			gt, node := c.p.Next()
 			if gt == css.ErrorGrammar {
 				return c.p.Err()
 			} else if gt == css.EndAtRuleGrammar {
@@ -219,7 +219,7 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, n css.Node) erro
 				}
 				hasRules = true
 			}
-			if err := c.minifyRecursively(gt, m); err != nil {
+			if err := c.minifyRecursively(gt, node); err != nil {
 				return err
 			}
 		}
@@ -232,10 +232,10 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, n css.Node) erro
 			c.semicolonQueued = true
 		}
 	} else if rootGt == css.RulesetGrammar {
-		ruleset := n.(*css.RulesetNode)
+		ruleset := rootNode.(*css.RulesetNode)
 		hasRules := false
 		for {
-			gt, m := c.p.Next()
+			gt, node := c.p.Next()
 			if gt == css.ErrorGrammar {
 				return c.p.Err()
 			} else if gt == css.EndRulesetGrammar {
@@ -249,7 +249,7 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, n css.Node) erro
 				}
 				hasRules = true
 			}
-			if err := c.minifyRecursively(gt, m); err != nil {
+			if err := c.minifyRecursively(gt, node); err != nil {
 				return err
 			}
 		}
@@ -260,24 +260,24 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, n css.Node) erro
 			c.semicolonQueued = false
 		}
 	} else if rootGt == css.DeclarationGrammar {
-		if err := c.minifyDeclaration(n.(*css.DeclarationNode)); err != nil {
+		if err := c.minifyDeclaration(rootNode.(*css.DeclarationNode)); err != nil {
 			return err
 		}
 	} else if rootGt == css.TokenGrammar {
-		if err := c.write(n.(*css.TokenNode).Data); err != nil {
+		if err := c.write(rootNode.(*css.TokenNode).Data); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (c *cssMinifier) minifyAtRuleNodes(atRuleNodes []css.Node) error {
-	for i, atRuleNode := range atRuleNodes {
+func (c *cssMinifier) minifyAtRuleNodes(nodes []css.Node) error {
+	for i, node := range nodes {
 		if i != 0 {
 			var t *css.TokenNode
-			if k, ok := atRuleNodes[i-1].(*css.TokenNode); ok && len(k.Data) == 1 {
+			if k, ok := nodes[i-1].(*css.TokenNode); ok && len(k.Data) == 1 {
 				t = k
-			} else if k, ok := atRuleNodes[i].(*css.TokenNode); ok && len(k.Data) == 1 {
+			} else if k, ok := nodes[i].(*css.TokenNode); ok && len(k.Data) == 1 {
 				t = k
 			}
 			if t == nil || t.Data[0] != ',' {
@@ -290,7 +290,7 @@ func (c *cssMinifier) minifyAtRuleNodes(atRuleNodes []css.Node) error {
 				return err
 			}
 		}
-		if _, err := atRuleNode.WriteTo(c.w); err != nil {
+		if _, err := node.WriteTo(c.w); err != nil {
 			return err
 		}
 	}
@@ -298,7 +298,7 @@ func (c *cssMinifier) minifyAtRuleNodes(atRuleNodes []css.Node) error {
 }
 
 func (c *cssMinifier) minifySelectors(selectors []*css.SelectorNode) error {
-	for i, selector := range selectors {
+	for i, sel := range selectors {
 		if i != 0 {
 			if err := c.write([]byte(",")); err != nil {
 				return err
@@ -306,7 +306,7 @@ func (c *cssMinifier) minifySelectors(selectors []*css.SelectorNode) error {
 		}
 		inAttr := false
 		isClass := false
-		for _, elem := range selector.Elems {
+		for _, elem := range sel.Elems {
 			if !inAttr && elem.TokenType == css.LeftBracketToken {
 				inAttr = true
 			} else if inAttr && elem.TokenType == css.RightBracketToken {
@@ -342,30 +342,30 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 
 	// shorten values
 	progid := false
-	for i, n := range decl.Vals {
-		switch m := n.(type) {
+	for i, val := range decl.Vals {
+		switch node := val.(type) {
 		case *css.TokenNode:
 			if !progid {
-				if i == 0 && css.ToHash(m.Data) == css.Progid {
+				if i == 0 && css.ToHash(node.Data) == css.Progid {
 					progid = true
 					continue
 				}
-				decl.Vals[i] = c.shortenToken(m)
+				decl.Vals[i] = c.shortenToken(node)
 			}
 		case *css.FunctionNode:
 			if !progid {
-				m.Func.Data = bytes.ToLower(m.Func.Data)
+				node.Name.Data = bytes.ToLower(node.Name.Data)
 			}
-			decl.Vals[i] = c.shortenFunction(m)
+			decl.Vals[i] = c.shortenFunction(node)
 		}
 	}
 
 	prop := css.ToHash(decl.Prop.Data)
 	if prop == css.Margin || prop == css.Padding {
 		tokens := make([]*css.TokenNode, 0, 4)
-		for _, n := range decl.Vals {
-			if m, ok := n.(*css.TokenNode); ok {
-				tokens = append(tokens, m)
+		for _, val := range decl.Vals {
+			if t, ok := val.(*css.TokenNode); ok {
+				tokens = append(tokens, t)
 			} else {
 				tokens = []*css.TokenNode{}
 				break
@@ -391,19 +391,19 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 			}
 		}
 	} else if prop == css.Font || prop == css.Font_Family || prop == css.Font_Weight {
-		for i, n := range decl.Vals {
-			if m, ok := n.(*css.TokenNode); ok {
-				if m.TokenType == css.IdentToken && (prop == css.Font || prop == css.Font_Weight) {
-					val := css.ToHash(m.Data)
+		for i, val := range decl.Vals {
+			if t, ok := val.(*css.TokenNode); ok {
+				if t.TokenType == css.IdentToken && (prop == css.Font || prop == css.Font_Weight) {
+					val := css.ToHash(t.Data)
 					if val == css.Normal && prop == css.Font_Weight {
 						// normal could also be specified for font-variant, not just font-weight
-						decl.Vals[i] = css.NewToken(css.NumberToken, []byte("400"))
+						decl.Vals[i] = &css.TokenNode{css.NumberToken, []byte("400")}
 					} else if val == css.Bold {
-						decl.Vals[i] = css.NewToken(css.NumberToken, []byte("700"))
+						decl.Vals[i] = &css.TokenNode{css.NumberToken, []byte("700")}
 					}
-				} else if m.TokenType == css.StringToken && (prop == css.Font || prop == css.Font_Family) {
-					m.Data = bytes.ToLower(m.Data)
-					s := m.Data[1 : len(m.Data)-1]
+				} else if t.TokenType == css.StringToken && (prop == css.Font || prop == css.Font_Family) {
+					t.Data = bytes.ToLower(t.Data)
+					s := t.Data[1 : len(t.Data)-1]
 					unquote := true
 					for _, split := range bytes.Split(s, []byte(" ")) {
 						val := css.ToHash(split)
@@ -415,48 +415,49 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 						}
 					}
 					if unquote {
-						m.Data = s
+						t.Data = s
 					}
 				}
 			}
 		}
 	} else if (prop == css.Outline || prop == css.Background || prop == css.Border || prop == css.Border_Bottom || prop == css.Border_Left || prop == css.Border_Right || prop == css.Border_Top) && len(decl.Vals) == 1 {
-		if n, ok := decl.Vals[0].(*css.TokenNode); ok && css.ToHash(n.Data) == css.None {
-			decl.Vals[0] = css.NewToken(css.NumberToken, []byte("0"))
+		if t, ok := decl.Vals[0].(*css.TokenNode); ok && css.ToHash(t.Data) == css.None {
+			decl.Vals[0] = &css.TokenNode{css.NumberToken, []byte("0")}
 		}
 	} else if prop == css.Filter && len(decl.Vals) == 7 {
-		if n, ok := decl.Vals[6].(*css.FunctionNode); ok && bytes.Equal(n.Func.Data, []byte("Alpha")) {
+		if fun, ok := decl.Vals[6].(*css.FunctionNode); ok && bytes.Equal(fun.Name.Data, []byte("Alpha")) {
 			tokens := []byte{}
 			for _, val := range decl.Vals[:len(decl.Vals)-1] {
-				if m, ok := val.(*css.TokenNode); ok {
-					tokens = append(tokens, m.Data...)
+				if t, ok := val.(*css.TokenNode); ok {
+					tokens = append(tokens, t.Data...)
 				} else {
 					tokens = []byte{}
 					break
 				}
 			}
-			f := decl.Vals[6].(*css.FunctionNode)
-			if bytes.Equal(tokens, []byte("progid:DXImageTransform.Microsoft.")) && len(f.Args) == 1 && len(f.Args[0].Vals) == 3 {
-				if opacity, ok := f.Args[0].Vals[0].(*css.TokenNode); ok {
+			if bytes.Equal(tokens, []byte("progid:DXImageTransform.Microsoft.")) && len(fun.Args) == 1 && len(fun.Args[0].Vals) == 3 {
+				if opacity, ok := fun.Args[0].Vals[0].(*css.TokenNode); ok {
 					opacity.Data = bytes.ToLower(opacity.Data)
-					if is, ok := f.Args[0].Vals[1].(*css.TokenNode); ok && is.Data[0] == '=' && bytes.Equal(opacity.Data, []byte("opacity")) {
-						newF := css.NewFunction(css.NewToken(css.FunctionToken, []byte("alpha(")))
-						newF.Args = f.Args
+					if is, ok := fun.Args[0].Vals[1].(*css.TokenNode); ok && is.Data[0] == '=' && bytes.Equal(opacity.Data, []byte("opacity")) {
+						newF := &css.FunctionNode{
+							Name: &css.TokenNode{css.FunctionToken, []byte("alpha(")},
+						}
+						newF.Args = fun.Args
 						decl.Vals = []css.Node{newF}
 					}
 				}
 			}
 		}
 	} else if len(decl.Vals) == 1 && bytes.Equal(decl.Prop.Data, []byte("-ms-filter")) {
-		if n, ok := decl.Vals[0].(*css.TokenNode); ok {
+		if t, ok := decl.Vals[0].(*css.TokenNode); ok {
 			alpha := []byte("progid:DXImageTransform.Microsoft.Alpha(Opacity=")
-			if n.TokenType == css.StringToken && bytes.HasPrefix(n.Data[1:len(n.Data)-1], alpha) {
-				n.Data = append(append([]byte{n.Data[0]}, []byte("alpha(opacity=")...), n.Data[1+len(alpha):]...)
+			if t.TokenType == css.StringToken && bytes.HasPrefix(t.Data[1:len(t.Data)-1], alpha) {
+				t.Data = append(append([]byte{t.Data[0]}, []byte("alpha(opacity=")...), t.Data[1+len(alpha):]...)
 			}
 		}
 	}
 
-	for i, m := range decl.Vals {
+	for i, val := range decl.Vals {
 		if i != 0 {
 			var t *css.TokenNode
 			if k, ok := decl.Vals[i-1].(*css.TokenNode); ok && len(k.Data) == 1 {
@@ -470,7 +471,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 				}
 			}
 		}
-		if _, err := m.WriteTo(c.w); err != nil {
+		if _, err := val.WriteTo(c.w); err != nil {
 			return err
 		}
 	}
@@ -483,13 +484,13 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 	return nil
 }
 
-func (c *cssMinifier) shortenFunction(f *css.FunctionNode) css.Node {
+func (c *cssMinifier) shortenFunction(fun *css.FunctionNode) css.Node {
 	simpleFunction := true
-	for j, arg := range f.Args {
-		for k, val := range arg.Vals {
-			if tVal, ok := val.(*css.TokenNode); ok {
-				f.Args[j].Vals[k] = c.shortenToken(tVal)
-				if k > 1 {
+	for i, arg := range fun.Args {
+		for j, val := range arg.Vals {
+			if t, ok := val.(*css.TokenNode); ok {
+				fun.Args[i].Vals[j] = c.shortenToken(t)
+				if j > 1 {
 					simpleFunction = false
 				}
 			} else {
@@ -498,34 +499,34 @@ func (c *cssMinifier) shortenFunction(f *css.FunctionNode) css.Node {
 		}
 	}
 
-	var n css.Node = f
+	var node css.Node = fun
 	if simpleFunction {
-		fun := css.ToHash(f.Func.Data)
-		if fun == css.Rgba && len(f.Args) == 4 {
-			d, _ := strconv.ParseFloat(string(f.Args[3].Vals[0].(*css.TokenNode).Data), 32)
+		name := css.ToHash(fun.Name.Data)
+		if name == css.Rgba && len(fun.Args) == 4 {
+			d, _ := strconv.ParseFloat(string(fun.Args[3].Vals[0].(*css.TokenNode).Data), 32)
 			if math.Abs(d-1.0) < epsilon {
-				f.Func = css.NewToken(css.FunctionToken, []byte("rgb"))
-				f.Args = f.Args[:len(f.Args)-1]
-				fun = css.Rgb
+				fun.Name = &css.TokenNode{css.FunctionToken, []byte("rgb")}
+				fun.Args = fun.Args[:len(fun.Args)-1]
+				name = css.Rgb
 			}
 		}
-		if fun == css.Rgb && len(f.Args) == 3 {
+		if name == css.Rgb && len(fun.Args) == 3 {
 			var err error
 			rgb := make([]byte, 3)
 			for j := 0; j < 3; j++ {
-				v := f.Args[j].Vals[0].(*css.TokenNode)
-				if v.TokenType == css.NumberToken {
+				val := fun.Args[j].Vals[0].(*css.TokenNode)
+				if val.TokenType == css.NumberToken {
 					var d int64
-					d, err = strconv.ParseInt(string(v.Data), 10, 32)
+					d, err = strconv.ParseInt(string(val.Data), 10, 32)
 					if d < 0 {
 						d = 0
 					} else if d > 255 {
 						d = 255
 					}
 					rgb[j] = byte(d)
-				} else if v.TokenType == css.PercentageToken {
+				} else if val.TokenType == css.PercentageToken {
 					var d float64
-					d, err = strconv.ParseFloat(string(v.Data[:len(v.Data)-1]), 32)
+					d, err = strconv.ParseFloat(string(val.Data[:len(val.Data)-1]), 32)
 					if d < 0.0 {
 						d = 0.0
 					} else if d > 100.0 {
@@ -542,16 +543,16 @@ func (c *cssMinifier) shortenFunction(f *css.FunctionNode) css.Node {
 				hex.Encode(valHex, rgb)
 				val := append([]byte("#"), bytes.ToLower(valHex)...)
 				if s, ok := shortenColorHex[string(val)]; ok {
-					n = css.NewToken(css.IdentToken, s)
+					node = &css.TokenNode{css.IdentToken, s}
 				} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
-					n = css.NewToken(css.HashToken, append([]byte("#"), val[1], val[3], val[5]))
+					node = &css.TokenNode{css.HashToken, append([]byte("#"), val[1], val[3], val[5])}
 				} else {
-					n = css.NewToken(css.HashToken, val)
+					node = &css.TokenNode{css.HashToken, val}
 				}
 			}
 		}
 	}
-	return n
+	return node
 }
 
 func (c *cssMinifier) shortenToken(t *css.TokenNode) *css.TokenNode {
@@ -605,14 +606,14 @@ func (c *cssMinifier) shortenToken(t *css.TokenNode) *css.TokenNode {
 	} else if t.TokenType == css.IdentToken {
 		t.Data = bytes.ToLower(t.Data)
 		if h, ok := shortenColorName[css.ToHash(t.Data)]; ok {
-			t = css.NewToken(css.HashToken, h)
+			t = &css.TokenNode{css.HashToken, h}
 		}
 	} else if t.TokenType == css.HashToken {
 		val := bytes.ToLower(t.Data)
 		if i, ok := shortenColorHex[string(val)]; ok {
-			t = css.NewToken(css.IdentToken, i)
+			t = &css.TokenNode{css.IdentToken, i}
 		} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
-			t = css.NewToken(css.HashToken, append([]byte("#"), bytes.ToLower(append([]byte{val[1]}, val[3], val[5]))...))
+			t = &css.TokenNode{css.HashToken, append([]byte("#"), bytes.ToLower(append([]byte{val[1]}, val[3], val[5]))...)}
 		} else {
 			t.Data = bytes.ToLower(t.Data)
 		}
