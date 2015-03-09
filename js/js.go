@@ -33,7 +33,7 @@ func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
 			continue
 		} else {
 			first := text[0]
-			if (prev == js.IdentifierToken || prev == js.NumericToken || prev == js.PunctuatorToken || prev == js.StringToken) && (tt == js.IdentifierToken || tt == js.NumericToken || tt == js.PunctuatorToken) {
+			if (prev == js.IdentifierToken || prev == js.NumericToken || prev == js.PunctuatorToken || prev == js.StringToken || prev == js.RegexpToken) && (tt == js.IdentifierToken || tt == js.NumericToken || tt == js.PunctuatorToken || tt == js.RegexpToken) {
 				if lineTerminatorQueued && (tt != js.PunctuatorToken || first == '{' || first == '[' || first == '(' || first == '+' || first == '-') && (prev != js.PunctuatorToken || prevLast == '}' || prevLast == ']' || prevLast == ')' || prevLast == '+' || prevLast == '-' || prevLast == '"' || prevLast == '\'') {
 					if _, err := w.Write([]byte("\n")); err != nil {
 						return err
