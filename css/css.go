@@ -290,7 +290,7 @@ func (c *cssMinifier) minifyAtRuleNodes(atRuleNodes []css.Node) error {
 				return err
 			}
 		}
-		if err := atRuleNode.Serialize(c.w); err != nil {
+		if _, err := atRuleNode.WriteTo(c.w); err != nil {
 			return err
 		}
 	}
@@ -470,7 +470,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 				}
 			}
 		}
-		if err := m.Serialize(c.w); err != nil {
+		if _, err := m.WriteTo(c.w); err != nil {
 			return err
 		}
 	}
