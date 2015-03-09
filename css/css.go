@@ -233,32 +233,27 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, rootNode css.Nod
 		}
 	} else if rootGt == css.RulesetGrammar {
 		ruleset := rootNode.(*css.RulesetNode)
-		hasRules := false
+		if err := c.minifySelectors(ruleset.Selectors); err != nil {
+			return err
+		}
+		if err := c.write([]byte("{")); err != nil {
+			return err
+		}
 		for {
 			gt, node := c.p.Next()
 			if gt == css.ErrorGrammar {
 				return c.p.Err()
 			} else if gt == css.EndRulesetGrammar {
 				break
-			} else if !hasRules {
-				if err := c.minifySelectors(ruleset.Selectors); err != nil {
-					return err
-				}
-				if err := c.write([]byte("{")); err != nil {
-					return err
-				}
-				hasRules = true
 			}
 			if err := c.minifyRecursively(gt, node); err != nil {
 				return err
 			}
 		}
-		if hasRules {
-			if err := c.write([]byte("}")); err != nil {
-				return err
-			}
-			c.semicolonQueued = false
+		if err := c.write([]byte("}")); err != nil {
+			return err
 		}
+		c.semicolonQueued = false
 	} else if rootGt == css.DeclarationGrammar {
 		if err := c.minifyDeclaration(rootNode.(*css.DeclarationNode)); err != nil {
 			return err
@@ -440,7 +435,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 					opacity.Data = bytes.ToLower(opacity.Data)
 					if is, ok := fun.Args[0].Vals[1].(*css.TokenNode); ok && is.Data[0] == '=' && bytes.Equal(opacity.Data, []byte("opacity")) {
 						newF := &css.FunctionNode{
-							Name: &css.TokenNode{css.FunctionToken, []byte("alpha(")},
+							Name: &css.TokenNode{css.FunctionToken, []byte("alpha")},
 						}
 						newF.Args = fun.Args
 						decl.Vals = []css.Node{newF}

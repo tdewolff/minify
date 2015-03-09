@@ -17,7 +17,6 @@ func assertCSS(t *testing.T, input, expected string) {
 
 func TestCSS(t *testing.T) {
 	assertCSS(t, "/*comment*/", "")
-	assertCSS(t, "css{}", "")
 	assertCSS(t, "key: value;", "key:value")
 	assertCSS(t, "margin: 0 1; padding: 0 1;", "margin:0 1;padding:0 1")
 	assertCSS(t, "i { key: value; key2: value; }", "i{key:value;key2:value}")
@@ -48,10 +47,6 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, "filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=0);", "filter:alpha(opacity=0)")
 	assertCSS(t, "content: \"a\\\nb\";", "content:\"ab\"")
 	assertCSS(t, "content: \"a\\\r\nb\\\rc\";", "content:\"abc\"")
-	// assertCSS(t, "color:#fff;@charset x;", "color:#fff")
-	// assertCSS(t, "color:#fff;@import x;", "color:#fff")
-	// assertCSS(t, "@charset x;@import x;", "@charset x;@import x")
-	// assertCSS(t, "@charset;@import;", "")
 
 	assertCSS(t, "font:27px/13px arial,sans-serif", "font:27px/13px arial,sans-serif")
 	assertCSS(t, "text-decoration: none !important", "text-decoration:none!important")
