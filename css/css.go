@@ -192,7 +192,7 @@ func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
 
 func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, rootNode css.Node) error {
 	if rootGt != css.ErrorGrammar && rootGt != css.TokenGrammar && c.semicolonQueued { // it is only TokenGrammar for CDO and CDC
-		if err := c.write([]byte(";")); err != nil {
+		if _, err := c.w.Write([]byte(";")); err != nil {
 			return err
 		}
 		c.semicolonQueued = false
@@ -200,7 +200,7 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, rootNode css.Nod
 
 	if rootGt == css.AtRuleGrammar {
 		atRule := rootNode.(*css.AtRuleNode)
-		if err := c.write(atRule.Name.Data); err != nil {
+		if _, err := c.w.Write(atRule.Name.Data); err != nil {
 			return err
 		}
 		if err := c.minifyAtRuleNodes(atRule.Nodes); err != nil {
@@ -214,7 +214,7 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, rootNode css.Nod
 			} else if gt == css.EndAtRuleGrammar {
 				break
 			} else if !hasRules {
-				if err := c.write([]byte("{")); err != nil {
+				if _, err := c.w.Write([]byte("{")); err != nil {
 					return err
 				}
 				hasRules = true
@@ -224,7 +224,7 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, rootNode css.Nod
 			}
 		}
 		if hasRules {
-			if err := c.write([]byte("}")); err != nil {
+			if _, err := c.w.Write([]byte("}")); err != nil {
 				return err
 			}
 			c.semicolonQueued = false
@@ -236,7 +236,7 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, rootNode css.Nod
 		if err := c.minifySelectors(ruleset.Selectors); err != nil {
 			return err
 		}
-		if err := c.write([]byte("{")); err != nil {
+		if _, err := c.w.Write([]byte("{")); err != nil {
 			return err
 		}
 		for {
@@ -250,7 +250,7 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, rootNode css.Nod
 				return err
 			}
 		}
-		if err := c.write([]byte("}")); err != nil {
+		if _, err := c.w.Write([]byte("}")); err != nil {
 			return err
 		}
 		c.semicolonQueued = false
@@ -259,7 +259,7 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, rootNode css.Nod
 			return err
 		}
 	} else if rootGt == css.TokenGrammar {
-		if err := c.write(rootNode.(*css.TokenNode).Data); err != nil {
+		if _, err := c.w.Write(rootNode.(*css.TokenNode).Data); err != nil {
 			return err
 		}
 	}
@@ -276,12 +276,12 @@ func (c *cssMinifier) minifyAtRuleNodes(nodes []css.Node) error {
 				t = k
 			}
 			if t == nil || t.Data[0] != ',' {
-				if err := c.write([]byte(" ")); err != nil {
+				if _, err := c.w.Write([]byte(" ")); err != nil {
 					return err
 				}
 			}
 		} else {
-			if err := c.write([]byte(" ")); err != nil {
+			if _, err := c.w.Write([]byte(" ")); err != nil {
 				return err
 			}
 		}
@@ -295,7 +295,7 @@ func (c *cssMinifier) minifyAtRuleNodes(nodes []css.Node) error {
 func (c *cssMinifier) minifySelectors(selectors []*css.SelectorNode) error {
 	for i, sel := range selectors {
 		if i != 0 {
-			if err := c.write([]byte(",")); err != nil {
+			if _, err := c.w.Write([]byte(",")); err != nil {
 				return err
 			}
 		}
@@ -309,7 +309,7 @@ func (c *cssMinifier) minifySelectors(selectors []*css.SelectorNode) error {
 			} else if inAttr && elem.TokenType == css.StringToken {
 				s := elem.Data[1 : len(elem.Data)-1]
 				if css.IsIdent([]byte(s)) {
-					if err := c.write(s); err != nil {
+					if _, err := c.w.Write(s); err != nil {
 						return err
 					}
 					continue
@@ -322,7 +322,7 @@ func (c *cssMinifier) minifySelectors(selectors []*css.SelectorNode) error {
 				}
 				isClass = false
 			}
-			if err := c.write(elem.Data); err != nil {
+			if _, err := c.w.Write(elem.Data); err != nil {
 				return err
 			}
 		}
@@ -331,7 +331,7 @@ func (c *cssMinifier) minifySelectors(selectors []*css.SelectorNode) error {
 }
 
 func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
-	if err := c.write(decl.Prop.Data, []byte(":")); err != nil {
+	if _, err := c.w.Write(append(decl.Prop.Data, ':')); err != nil {
 		return err
 	}
 
@@ -345,7 +345,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 					progid = true
 					continue
 				}
-				decl.Vals[i] = c.shortenToken(node)
+				c.shortenToken(node)
 			}
 		case *css.FunctionNode:
 			if !progid {
@@ -386,15 +386,17 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 			}
 		}
 	} else if prop == css.Font || prop == css.Font_Family || prop == css.Font_Weight {
-		for i, val := range decl.Vals {
+		for _, val := range decl.Vals {
 			if t, ok := val.(*css.TokenNode); ok {
 				if t.TokenType == css.IdentToken && (prop == css.Font || prop == css.Font_Weight) {
 					val := css.ToHash(t.Data)
 					if val == css.Normal && prop == css.Font_Weight {
 						// normal could also be specified for font-variant, not just font-weight
-						decl.Vals[i] = &css.TokenNode{css.NumberToken, []byte("400")}
+						t.TokenType = css.NumberToken
+						t.Data = []byte("400")
 					} else if val == css.Bold {
-						decl.Vals[i] = &css.TokenNode{css.NumberToken, []byte("700")}
+						t.TokenType = css.NumberToken
+						t.Data = []byte("700")
 					}
 				} else if t.TokenType == css.StringToken && (prop == css.Font || prop == css.Font_Family) {
 					t.Data = bytes.ToLower(t.Data)
@@ -417,7 +419,8 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 		}
 	} else if (prop == css.Outline || prop == css.Background || prop == css.Border || prop == css.Border_Bottom || prop == css.Border_Left || prop == css.Border_Right || prop == css.Border_Top) && len(decl.Vals) == 1 {
 		if t, ok := decl.Vals[0].(*css.TokenNode); ok && css.ToHash(t.Data) == css.None {
-			decl.Vals[0] = &css.TokenNode{css.NumberToken, []byte("0")}
+			t.TokenType = css.NumberToken
+			t.Data = []byte("0")
 		}
 	} else if prop == css.Filter && len(decl.Vals) == 7 {
 		if fun, ok := decl.Vals[6].(*css.FunctionNode); ok && bytes.Equal(fun.Name.Data, []byte("Alpha")) {
@@ -434,11 +437,9 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 				if opacity, ok := fun.Args[0].Vals[0].(*css.TokenNode); ok {
 					opacity.Data = bytes.ToLower(opacity.Data)
 					if is, ok := fun.Args[0].Vals[1].(*css.TokenNode); ok && is.Data[0] == '=' && bytes.Equal(opacity.Data, []byte("opacity")) {
-						newF := &css.FunctionNode{
-							Name: &css.TokenNode{css.FunctionToken, []byte("alpha")},
-						}
-						newF.Args = fun.Args
-						decl.Vals = []css.Node{newF}
+						fun.Name.TokenType = css.FunctionToken
+						fun.Name.Data = []byte("alpha")
+						decl.Vals = []css.Node{fun}
 					}
 				}
 			}
@@ -461,7 +462,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 				t = k
 			}
 			if t == nil || (t.Data[0] != ',' && t.Data[0] != '/' && t.Data[0] != ':' && t.Data[0] != '.') {
-				if err := c.write([]byte(" ")); err != nil {
+				if _, err := c.w.Write([]byte(" ")); err != nil {
 					return err
 				}
 			}
@@ -471,7 +472,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 		}
 	}
 	if decl.Important {
-		if err := c.write([]byte("!important")); err != nil {
+		if _, err := c.w.Write([]byte("!important")); err != nil {
 			return err
 		}
 	}
@@ -481,10 +482,10 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 
 func (c *cssMinifier) shortenFunction(fun *css.FunctionNode) css.Node {
 	simpleFunction := true
-	for i, arg := range fun.Args {
+	for _, arg := range fun.Args {
 		for j, val := range arg.Vals {
 			if t, ok := val.(*css.TokenNode); ok {
-				fun.Args[i].Vals[j] = c.shortenToken(t)
+				c.shortenToken(t)
 				if j > 1 {
 					simpleFunction = false
 				}
@@ -500,7 +501,7 @@ func (c *cssMinifier) shortenFunction(fun *css.FunctionNode) css.Node {
 		if name == css.Rgba && len(fun.Args) == 4 {
 			d, _ := strconv.ParseFloat(string(fun.Args[3].Vals[0].(*css.TokenNode).Data), 32)
 			if math.Abs(d-1.0) < epsilon {
-				fun.Name = &css.TokenNode{css.FunctionToken, []byte("rgb")}
+				fun.Name.Data = []byte("rgb")
 				fun.Args = fun.Args[:len(fun.Args)-1]
 				name = css.Rgb
 			}
@@ -550,7 +551,7 @@ func (c *cssMinifier) shortenFunction(fun *css.FunctionNode) css.Node {
 	return node
 }
 
-func (c *cssMinifier) shortenToken(t *css.TokenNode) *css.TokenNode {
+func (c *cssMinifier) shortenToken(t *css.TokenNode) {
 	if t.TokenType == css.NumberToken || t.TokenType == css.DimensionToken || t.TokenType == css.PercentageToken {
 		if len(t.Data) > 0 && t.Data[0] == '+' {
 			t.Data = t.Data[1:]
@@ -558,7 +559,7 @@ func (c *cssMinifier) shortenToken(t *css.TokenNode) *css.TokenNode {
 		num, dim := css.SplitNumberToken(t.Data)
 		f, err := strconv.ParseFloat(string(num), 64)
 		if err != nil {
-			return t
+			return
 		}
 		if math.Abs(f) < epsilon {
 			t.Data = []byte("0")
@@ -600,17 +601,20 @@ func (c *cssMinifier) shortenToken(t *css.TokenNode) *css.TokenNode {
 		}
 	} else if t.TokenType == css.IdentToken {
 		t.Data = bytes.ToLower(t.Data)
-		if h, ok := shortenColorName[css.ToHash(t.Data)]; ok {
-			t = &css.TokenNode{css.HashToken, h}
+		if hash, ok := shortenColorName[css.ToHash(t.Data)]; ok {
+			t.TokenType = css.HashToken
+			t.Data = hash
 		}
 	} else if t.TokenType == css.HashToken {
 		val := bytes.ToLower(t.Data)
-		if i, ok := shortenColorHex[string(val)]; ok {
-			t = &css.TokenNode{css.IdentToken, i}
+		if ident, ok := shortenColorHex[string(val)]; ok {
+			t.TokenType = css.IdentToken
+			t.Data = ident
 		} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
-			t = &css.TokenNode{css.HashToken, append([]byte("#"), bytes.ToLower(append([]byte{val[1]}, val[3], val[5]))...)}
+			t.TokenType = css.HashToken
+			t.Data = append([]byte("#"), bytes.ToLower(append([]byte{val[1]}, val[3], val[5]))...)
 		} else {
-			t.Data = bytes.ToLower(t.Data)
+			t.Data = val
 		}
 	} else if t.TokenType == css.StringToken {
 		// remove any \\\r\n \\\r \\\n
@@ -674,16 +678,4 @@ func (c *cssMinifier) shortenToken(t *css.TokenNode) *css.TokenNode {
 			t.Data = append(append([]byte("url("), s[1:len(s)-1]...), ')')
 		}
 	}
-	return t
-}
-
-////////////////////////////////////////////////////////////////
-
-func (c *cssMinifier) write(bs ...[]byte) error {
-	for _, b := range bs {
-		if _, err := c.w.Write(b); err != nil {
-			return err
-		}
-	}
-	return nil
 }
