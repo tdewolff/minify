@@ -99,8 +99,10 @@ Minification typically runs at about 40MB/s ~= 145GB/h.
 
 Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
+[ACE](https://github.com/ajaxorg/ace-builds/blob/master/src/ace.js) | 616kB | **433kB** | 70% | 15ms
 [jQuery](http://jquery.com/download/) | 242kB | **130kB** | 54% | 6ms
 [jQuery UI](http://jqueryui.com/download/) | 459kB | **300kB** | 65% | 12ms
+[Moment](http://momentjs.com/) | 97kB | **51kB** | 52% | 2ms
 
 <sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.
 
