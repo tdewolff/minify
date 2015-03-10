@@ -29,6 +29,6 @@ func TestCSS(t *testing.T) {
 	assertJS(t, "a\n{", "a\n{")
 	assertJS(t, ";\na", ";a")
 	assertJS(t, ",\na", ",a")
-	assertJS(t, "a + ++b", "a+ ++b") // JSMin caution
+	assertJS(t, "a + ++b", "a+ ++b")                                          // JSMin caution
 	assertJS(t, "var a=/\\s?auto?\\s?/i\nvar", "var a=/\\s?auto?\\s?/i\nvar") // #14
 }

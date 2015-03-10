@@ -580,7 +580,7 @@ func (c *cssMinifier) shortenToken(t *css.TokenNode) {
 			// trim 0 right
 			for i, digit := range num {
 				if digit == '.' {
-					j := len(num)-1
+					j := len(num) - 1
 					for ; j > i; j-- {
 						if num[j] == '0' {
 							num = num[:len(num)-1]
