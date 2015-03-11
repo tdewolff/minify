@@ -140,7 +140,7 @@ m.Add("text/javascript", js.Minify)
 ```
 
 ### From reader
-Minify from an `io.Reader` to an `io.Writer` with mediatype `mediatype`.
+Minify from an `io.Reader` to an `io.Writer` for a specific mediatype.
 ``` go
 if err := m.Minify(mediatype, w, r); err != nil {
 	log.Fatal("Minify:", err)
@@ -163,7 +163,7 @@ if err := js.Minify(m, "text/javascript", w, r); err != nil {
 ```
 
 ### From bytes
-Minify from and to a `[]byte` with mediatype type `mediatype`.
+Minify from and to a `[]byte` for a specific mediatype `mediatype`.
 ``` go
 b, err := m.MinifyBytes(mediatype, b)
 if err != nil {
@@ -172,7 +172,7 @@ if err != nil {
 ```
 
 ### From string
-Minify from and to a `string` with mediatype type `mediatype`.
+Minify from and to a `string` for a specific mediatype.
 ``` go
 s, err := m.MinifyString(mediatype, s)
 if err != nil {
@@ -181,7 +181,7 @@ if err != nil {
 ```
 
 ### Custom minifier
-Add a function for a specific mediatype type `mediatype`.
+Add a function for a specific mediatype.
 ``` go
 m.Add(mediatype, func(m minify.Minifier, mediatype string, w io.Writer, r io.Reader) error {
 	// ...
@@ -189,7 +189,7 @@ m.Add(mediatype, func(m minify.Minifier, mediatype string, w io.Writer, r io.Rea
 })
 ```
 
-Add a command `cmd` with arguments `args` for a specific mediatype type `mediatype`.
+Add a command `cmd` with arguments `args` for a specific mediatype.
 ``` go
 m.AddCmd(mediatype, exec.Command(cmd, args...))
 ```
@@ -229,7 +229,7 @@ func main() {
 }
 ```
 
-Custom minifier showing an example that implements the minifier function interface.  Within a custom minifier, it is possible to call any minifier function (through `m minify.Minifier`) recursively when dealing with embedded resources.
+Custom minifier showing an example that implements the minifier function interface. Within a custom minifier, it is possible to call any minifier function (through `m minify.Minifier`) recursively when dealing with embedded resources.
 ``` go
 package main
 
