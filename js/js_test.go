@@ -11,7 +11,7 @@ import (
 func assertJS(t *testing.T, input, expected string) {
 	m := minify.NewMinifier()
 	b := &bytes.Buffer{}
-	assert.Nil(t, Minify(m, b, bytes.NewBufferString(input)), "Minify must not return error in "+input)
+	assert.Nil(t, Minify(m, "text/javascript", b, bytes.NewBufferString(input)), "Minify must not return error in "+input)
 	assert.Equal(t, expected, b.String(), "Minify must give expected result in "+input)
 }
 

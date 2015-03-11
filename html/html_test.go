@@ -14,7 +14,7 @@ import (
 
 func assertHTML(t *testing.T, m minify.Minifier, input, expected string) {
 	b := &bytes.Buffer{}
-	assert.Nil(t, Minify(m, b, bytes.NewBufferString(input)), "Minify must not return error in "+input)
+	assert.Nil(t, Minify(m, "text/html", b, bytes.NewBufferString(input)), "Minify must not return error in "+input)
 	assert.Equal(t, expected, b.String(), "Minify must give expected result in "+input)
 }
 
@@ -81,7 +81,7 @@ func TestHTML(t *testing.T) {
 	assertHTML(t, m, "<strong>x </strong>\ny", "<strong>x</strong> y")
 	assertHTML(t, m, "<p>x </p>y", "<p>x</p>y")
 	assertHTML(t, m, "x <p>y</p>", "x<p>y")
-	assertHTML(t, m, " <!doctype> <!--comment--> <html> <body></body></html>", "<!doctype><html><body></body></html") // spaces before html and at the start of html are dropped
+	assertHTML(t, m, " <!doctype html> <!--comment--> <html> <body><p></p></body></html>", "<!doctype html><p>") // spaces before html and at the start of html are dropped
 
 	// from HTML Minifier
 	assertHTML(t, m, "<DIV TITLE=\"blah\">boo</DIV>", "<div title=blah>boo</div>")
@@ -112,7 +112,7 @@ func TestWhitespace(t *testing.T) {
 
 func TestSpecialTagClosing(t *testing.T) {
 	m := minify.NewMinifier()
-	m.Add("text/css", func(m minify.Minifier, w io.Writer, r io.Reader) error {
+	m.Add("text/css", func(m minify.Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		b, _ := ioutil.ReadAll(r)
 		assert.Equal(t, "</script>", string(b))
 		w.Write(b)
