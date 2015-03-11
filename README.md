@@ -183,7 +183,7 @@ if err != nil {
 ### Custom minifier
 Add a function for a specific mediatype type `mediatype`.
 ``` go
-m.Add(mediatype, func(m minify.Minifier, w io.Writer, r io.Reader) error {
+m.Add(mediatype, func(m minify.Minifier, mediatype string, w io.Writer, r io.Reader) error {
 	// ...
 	return nil
 })
@@ -197,10 +197,10 @@ m.AddCmd(mediatype, exec.Command(cmd, args...))
 ### Mediatypes
 Mediatypes can contain wildcards (`*`) and parameters (`; key1=val2; key2=val2`). For example a minifier with `image/*` will match any image mime.
 
-Data such as `text/plain; charset=UTF-8` will be processed by `text/plain` or `text/*` or `*/*` whichever exists and will pass the parameter `"charset":"UTF-8"` which is retrievable by calling `Param(string) string` on the `Minifier` interface.
+Mediatypes such as `text/plain; charset=UTF-8` will be processed by `text/plain` or `text/*` or `*/*` whichever exists. The mediatype string is passed to the minifier function that can retrieve the parameters using `mime.ParseMediaType`.
 
 ## Examples
-Basic example that minifies from stdin to stdout and loads the default HTML and CSS minifiers. Additionally, a JS minifier is set to run `java -jar build/compiler.jar` (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/)). Note that reading the file into a buffer first and writing to a buffer would be faster.
+Basic example that minifies from stdin to stdout and loads the default HTML, CSS and JS minifiers. Optionally, one can enable `java -jar build/compiler.jar` to run for JS (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/)). Note that reading the file into a buffer first and writing to a pre-allocated buffer would be faster (but not streaming).
 ``` go
 package main
 
@@ -220,7 +220,7 @@ func main() {
 	m.Add("text/html", html.Minify)
 	m.Add("text/css", css.Minify)
 	m.Add("text/javascript", js.Minify)
-	// Or use the following for better minification for lower speed:
+	// Or use the following for better minification of JS but lower speed:
 	// m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
 
 	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
@@ -248,7 +248,7 @@ func main() {
 	m := minify.NewMinifier()
 
 	// remove newline and space bytes
-	m.Add("text/plain", func(m minify.Minifier, w io.Writer, r io.Reader) error {
+	m.Add("text/plain", func(m minify.Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		rb := bufio.NewReader(r)
 		for {
 			line, err := rb.ReadString('\n')
