@@ -212,13 +212,16 @@ import (
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/html"
 	"github.com/tdewolff/minify/css"
+	"github.com/tdewolff/minify/js"
 )
 
 func main() {
 	m := minify.NewMinifier()
 	m.Add("text/html", html.Minify)
 	m.Add("text/css", css.Minify)
-	m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
+	m.Add("text/javascript", js.Minify)
+	// Or use the following for better minification for lower speed:
+	// m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
 
 	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
 		log.Fatal("Minify:", err)
