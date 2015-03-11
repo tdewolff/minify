@@ -106,11 +106,6 @@ Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 
 <sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.
 
-## Trim
-[![GoDoc](http://godoc.org/github.com/tdewolff/minify/trim?status.svg)](http://godoc.org/github.com/tdewolff/minify/trim) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/trim)](http://gocover.io/github.com/tdewolff/minify/trim)
-
-The trim minifier strips the whitespace at the beginning and end of the stream, it can be used as a general purpose minifier for any mimetype.
-
 ## Installation
 Run the following commands
 
@@ -118,7 +113,6 @@ Run the following commands
 	go get github.com/tdewolff/minify/html
 	go get github.com/tdewolff/minify/css
 	go get github.com/tdewolff/minify/js
-	go get github.com/tdewolff/minify/trim
 
 or add the following imports and run the project with `go get`
 ``` go
@@ -127,7 +121,6 @@ import (
 	"github.com/tdewolff/minify/html"
 	"github.com/tdewolff/minify/css"
 	"github.com/tdewolff/minify/js"
-	"github.com/tdewolff/minify/trim"
 )
 ```
 
@@ -144,7 +137,6 @@ m := minify.NewMinifier()
 m.Add("text/html", html.Minify)
 m.Add("text/css", css.Minify)
 m.Add("text/javascript", js.Minify)
-m.Add("*/*", trim.Minify)
 ```
 
 ### From reader
@@ -220,14 +212,12 @@ import (
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/html"
 	"github.com/tdewolff/minify/css"
-	"github.com/tdewolff/minify/trim"
 )
 
 func main() {
 	m := minify.NewMinifier()
 	m.Add("text/html", html.Minify)
 	m.Add("text/css", css.Minify)
-	m.Add("*/*", trim.Minify)
 	m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
 
 	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
