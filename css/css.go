@@ -461,18 +461,13 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 			} else if k, ok := decl.Vals[i].(*css.TokenNode); ok && len(k.Data) == 1 && k.TokenType != css.IdentToken {
 				t = k
 			}
-			if t == nil || (t.Data[0] != ',' && t.Data[0] != '/' && t.Data[0] != ':' && t.Data[0] != '.') {
+			if t == nil || (t.Data[0] != ',' && t.Data[0] != '/' && t.Data[0] != ':' && t.Data[0] != '.' && t.Data[0] != '!') {
 				if _, err := c.w.Write([]byte(" ")); err != nil {
 					return err
 				}
 			}
 		}
 		if _, err := val.WriteTo(c.w); err != nil {
-			return err
-		}
-	}
-	if decl.Important {
-		if _, err := c.w.Write([]byte("!important")); err != nil {
 			return err
 		}
 	}
