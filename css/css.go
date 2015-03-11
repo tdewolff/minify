@@ -649,7 +649,7 @@ func (c *cssMinifier) shortenToken(t *css.TokenNode) {
 				data = minifiedBuffer.Bytes()
 			}
 			base64Len := len(";base64") + base64.StdEncoding.EncodedLen(len(data))
-			asciiLen := minifiedBuffer.Len()
+			asciiLen := len(data)
 			for _, c := range data {
 				if 'A' <= c && c <= 'Z' || 'a' <= c && c <= 'z' || '0' <= c && c <= '9' || c == '-' || c == '_' || c == '.' || c == '~' || c == ' ' {
 					asciiLen++

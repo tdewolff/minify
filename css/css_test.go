@@ -47,7 +47,7 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, "filter: progid : DXImageTransform.Microsoft.BasicImage(rotation=1);", "filter:progid:DXImageTransform.Microsoft.BasicImage(rotation=1)")
 	assertCSS(t, "filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=0);", "filter:alpha(opacity=0)")
 	assertCSS(t, "content: \"a\\\nb\";", "content:\"ab\"")
-	assertCSS(t, "content: \"a\\\rb\\\r\nc\";", "content:\"abc\"")
+	assertCSS(t, "content: \"a\\\r\nb\\\r\nc\";", "content:\"abc\"")
 
 	assertCSS(t, "font:27px/13px arial,sans-serif", "font:27px/13px arial,sans-serif")
 	assertCSS(t, "text-decoration: none !important", "text-decoration:none!important")
@@ -80,6 +80,8 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, "background:url(data:text/xml;version=2.0,content)", "background:url(data:text/xml;version=2.0,content)")
 	assertCSS(t, "background:url('data:text/xml; version = 2.0,content')", "background:url(data:text/xml;version=2.0,content)")
 	assertCSS(t, "background:url(data:text/css,color%3A#ff0000;)", "background:url(data:text/css,color%3Ared)")
+	assertCSS(t, "background:url(data:text/plain,=====)", "background:url(data:,%3D%3D%3D%3D%3D)")
+	assertCSS(t, "background:url(data:text/plain,======)", "background:url(data:;base64,PT09PT09)")
 
 	// coverage
 	assertCSS(t, "margin: 1 1;", "margin:1")
