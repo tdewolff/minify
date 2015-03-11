@@ -167,7 +167,7 @@ type cssMinifier struct {
 }
 
 // Minify minifies CSS files, it reads from r and writes to w.
-func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
+func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	c := &cssMinifier{
 		m,
 		w,

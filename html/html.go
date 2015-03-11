@@ -370,7 +370,7 @@ func (tf tokenFeed) err() error {
 
 // Minify minifies HTML5 files, it reads from r and writes to w.
 // Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 10% in size.
-func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
+func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	var specialTag []*token // stack array of special tags it is in
 	precededBySpace := true // on true the next text token must not start with a space
 	defaultScriptType := "text/javascript"
@@ -426,7 +426,7 @@ func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
 						}
 					}
 				} else if token == hash.Noscript {
-					if err := Minify(m, w, bytes.NewBuffer(t.text)); err != nil {
+					if err := Minify(m, "text/html", w, bytes.NewBuffer(t.text)); err != nil {
 						return err
 					}
 				} else if _, err := w.Write(t.text); err != nil {

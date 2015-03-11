@@ -37,9 +37,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"mime"
 	"os/exec"
-	"strings"
 )
 
 // ErrNotExist is returned when no minifier exists for a given mediatype
@@ -49,42 +47,36 @@ var ErrNotExist = errors.New("minifier does not exist for mediatype")
 
 // Func is the function interface for minifiers.
 // The Minifier parameter is used for embedded resources, such as JS within HTML.
-type Func func(Minifier, io.Writer, io.Reader) error
+// The mediatype string is for wildcard minifiers so they know what they minify and for parameter passing (charset for example).
+type Func func(Minifier, string, io.Writer, io.Reader) error
 
 // Minifier is the interface which all minifier functions accept as first parameter.
 // It's used to extract parameter values of the mediatype and to recursively call other minifier functions.
 type Minifier interface {
-	Param(string) string
 	Minify(string, io.Writer, io.Reader) error
 }
 
 ////////////////////////////////////////////////////////////////
 
 // DefaultMinifier holds a map of mediatype => function to allow recursive minifier calls of the minifier functions.
-type DefaultMinifier struct {
-	minify map[string]Func
-	params map[string]string
-}
+type DefaultMinifier map[string]Func
 
 // NewMinifier returns a new Minifier.
-func NewMinifier() *DefaultMinifier {
-	return &DefaultMinifier{
-		map[string]Func{},
-		map[string]string{},
-	}
+func NewMinifier() DefaultMinifier {
+	return DefaultMinifier{}
 }
 
-// Add adds a minify function to the mediatype => function map.
+// Add adds a minify function to the mediatype => function map (unsafe for concurrent use).
 // It allows one to implement a custom minifier for a specific mediatype.
-func (m *DefaultMinifier) Add(mediatype string, f Func) {
-	m.minify[mediatype] = f
+func (m DefaultMinifier) Add(mediatype string, f Func) {
+	m[mediatype] = f
 }
 
-// AddCmd adds a minify function that executes a command to process the minification.
+// AddCmd adds a minify function to the mediatype => function map (unsafe for concurrent use) that executes a command to process the minification.
 // It allows the use of external tools like ClosureCompiler, UglifyCSS, etc.
 // Be aware that running external tools will slow down minification a lot!
-func (m *DefaultMinifier) AddCmd(mediatype string, cmd *exec.Cmd) error {
-	m.minify[mediatype] = func(m Minifier, w io.Writer, r io.Reader) error {
+func (m DefaultMinifier) AddCmd(mediatype string, cmd *exec.Cmd) error {
+	m[mediatype] = func(_ Minifier, _ string, w io.Writer, r io.Reader) error {
 		stdOut, err := cmd.StdoutPipe()
 		if err != nil {
 			return err
@@ -112,41 +104,34 @@ func (m *DefaultMinifier) AddCmd(mediatype string, cmd *exec.Cmd) error {
 	return nil
 }
 
-// Param returns the parameter value of the given key.
-// If the key exists it returns a non-zero length string. If the value is an empty string, the key is returned.
-func (m DefaultMinifier) Param(key string) string {
-	return m.params[key]
-}
-
-// Minify minifies the content of a Reader and writes it to a Writer.
-// An error is returned when no such mediatype exists (ErrNotExist) or any error occurred in the minifier function.
-// Mediatype may take the form of 'text', 'text/css', 'text/css;utf8'
+// Minify minifies the content of a Reader and writes it to a Writer (safe for concurrent use).
+// An error is returned when no such mediatype exists (ErrNotExist) or when an error occurred in the minifier function.
+// Mediatype may take the form of 'text/plain', 'text/*', '*/*' or 'text/plain; charset=UTF-8; version=2.0'.
 func (m DefaultMinifier) Minify(mediatype string, w io.Writer, r io.Reader) error {
-	parentParams := m.params
-	defer func() {
-		m.params = parentParams
-	}()
-
-	var err error
-	mediatype, m.params, err = mime.ParseMediaType(mediatype)
-	if err != nil {
-		return ErrNotExist
+	mimetype := mediatype
+	slashPos := -1
+	for i, c := range mediatype {
+		if c == '/' {
+			slashPos = i
+		} else if c == ';' {
+			mimetype = mediatype[:i]
+			break
+		}
 	}
-	m.params["mediatype"] = mediatype
 
-	if f, ok := m.minify[mediatype]; ok {
-		if err := f(m, w, r); err != nil {
+	if f, ok := m[mimetype]; ok {
+		if err := f(m, mediatype, w, r); err != nil {
 			return err
 		}
 		return nil
-	} else if i := strings.IndexByte(mediatype, '/'); i != -1 {
-		if f, ok := m.minify[mediatype[:i]+"/*"]; ok {
-			if err := f(m, w, r); err != nil {
+	} else if slashPos != -1 {
+		if f, ok := m[mimetype[:slashPos]+"/*"]; ok {
+			if err := f(m, mediatype, w, r); err != nil {
 				return err
 			}
 			return nil
-		} else if f, ok := m.minify["*/*"]; ok {
-			if err := f(m, w, r); err != nil {
+		} else if f, ok := m["*/*"]; ok {
+			if err := f(m, mediatype, w, r); err != nil {
 				return err
 			}
 			return nil
@@ -155,7 +140,7 @@ func (m DefaultMinifier) Minify(mediatype string, w io.Writer, r io.Reader) erro
 	return ErrNotExist
 }
 
-// MinifyBytes minifies an array of bytes. When an error occurs it return the original array and the error.
+// MinifyBytes minifies an array of bytes (safe for concurrent use). When an error occurs it return the original array and the error.
 // It return an error when no such mediatype exists (ErrNotExist) or any error occurred in the minifier function.
 func (m DefaultMinifier) MinifyBytes(mediatype string, v []byte) ([]byte, error) {
 	b := &bytes.Buffer{}
@@ -166,7 +151,7 @@ func (m DefaultMinifier) MinifyBytes(mediatype string, v []byte) ([]byte, error)
 	return b.Bytes(), nil
 }
 
-// MinifyString minifies a string. When an error occurs it return the original string and the error.
+// MinifyString minifies a string (safe for concurrent use). When an error occurs it return the original string and the error.
 // It return an error when no such mediatype exists (ErrNotExist) or any error occurred in the minifier function.
 func (m DefaultMinifier) MinifyString(mediatype string, v string) (string, error) {
 	b := &bytes.Buffer{}

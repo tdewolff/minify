@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"testing"
+	"mime"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -23,7 +24,7 @@ func helperCommand(t *testing.T, s ...string) *exec.Cmd {
 	return cmd
 }
 
-func helperMinifyString(t *testing.T, m *DefaultMinifier, mediatype string) string {
+func helperMinifyString(t *testing.T, m DefaultMinifier, mediatype string) string {
 	s, err := m.MinifyString(mediatype, "")
 	assert.Nil(t, err, "minifier must not return error")
 	return s
@@ -31,41 +32,38 @@ func helperMinifyString(t *testing.T, m *DefaultMinifier, mediatype string) stri
 
 ////////////////////////////////////////////////////////////////
 
-var m = &DefaultMinifier{map[string]Func{
-	"dummy/copy": func(m Minifier, w io.Writer, r io.Reader) error {
+var m = DefaultMinifier(map[string]Func{
+	"dummy/copy": func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		io.Copy(w, r)
 		return nil
 	},
-	"dummy/nil": func(m Minifier, w io.Writer, r io.Reader) error {
+	"dummy/nil": func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		return nil
 	},
-	"dummy/err": func(m Minifier, w io.Writer, r io.Reader) error {
+	"dummy/err": func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		return errDummy
 	},
-	"dummy/param": func(m Minifier, w io.Writer, r io.Reader) error {
-		if cs := m.Param("charset"); cs != "" {
-			w.Write([]byte(cs))
-		} else {
-			w.Write([]byte(m.Param("mediatype")))
-		}
+	"dummy/charset": func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
+		_, param, _ := mime.ParseMediaType(mediatype)
+		w.Write([]byte(param["charset"]))
 		return nil
 	},
-	"dummy/param2": func(m Minifier, w io.Writer, r io.Reader) error {
-		return m.Minify(m.Param("type")+"/"+m.Param("sub"), w, r)
+	"dummy/params": func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
+		_, param, _ := mime.ParseMediaType(mediatype)
+		return m.Minify(param["type"]+"/"+param["sub"], w, r)
 	},
-	"type/sub": func(m Minifier, w io.Writer, r io.Reader) error {
+	"type/sub": func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		w.Write([]byte("type/sub"))
 		return nil
 	},
-	"type/*": func(m Minifier, w io.Writer, r io.Reader) error {
+	"type/*": func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		w.Write([]byte("type/*"))
 		return nil
 	},
-	"*/*": func(m Minifier, w io.Writer, r io.Reader) error {
+	"*/*": func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		w.Write([]byte("*/*"))
 		return nil
-	},
-}, map[string]string{}}
+	}})
 
 func TestMinify(t *testing.T) {
 	assert.Equal(t, ErrNotExist, m.Minify("?", nil, nil), "must return ErrNotExist when minifier doesn't exist")
@@ -93,7 +91,7 @@ func TestAdd(t *testing.T) {
 	m := NewMinifier()
 	w := &bytes.Buffer{}
 	r := bytes.NewBufferString("test")
-	m.Add("dummy/err", func(m Minifier, w io.Writer, r io.Reader) error {
+	m.Add("dummy/err", func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		return errDummy
 	})
 
@@ -111,9 +109,9 @@ func TestWildcard(t *testing.T) {
 	assert.Equal(t, "*/*", helperMinifyString(t, m, "*/*"), "must return */* for */*")
 	assert.Equal(t, "type/*", helperMinifyString(t, m, "type/sub2"), "must return type/* for type/sub2")
 	assert.Equal(t, "*/*", helperMinifyString(t, m, "type2/sub"), "must return */* for type2/sub")
-	assert.Equal(t, "UTF-8", helperMinifyString(t, m, "dummy/param;charset=UTF-8"), "must return dummy/param with charset=UTF-8 for dummy/param;charset=UTF-8")
-	assert.Equal(t, "UTF-8", helperMinifyString(t, m, " dummy/param ; charset = UTF-8 "), "must return dummy/param with charset=UTF-8 for ' dummy/param ; charset = UTF-8 '")
-	assert.Equal(t, "dummy/param", helperMinifyString(t, m, "dummy/param2;type=dummy;sub=param"), "must return dummy/param inside dummy/param2 for dummy/param2;type=dummy;sub=param")
+	assert.Equal(t, "UTF-8", helperMinifyString(t, m, "dummy/charset;charset=UTF-8"), "must return UTF-8 for dummy/charset;charset=UTF-8")
+	assert.Equal(t, "UTF-8", helperMinifyString(t, m, "dummy/charset; charset = UTF-8 "), "must return UTF-8 for ' dummy/charset; charset = UTF-8 '")
+	assert.Equal(t, "type/sub", helperMinifyString(t, m, "dummy/params;type=type;sub=sub"), "must return type/sub for dummy/params;type=type;sub=sub")
 }
 
 func TestHelperProcess(*testing.T) {

@@ -8,7 +8,7 @@ import (
 )
 
 // Minify minifies JS files, it reads from r and writes to w.
-func Minify(m minify.Minifier, w io.Writer, r io.Reader) error {
+func Minify(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	z := js.NewTokenizer(r)
 	lineTerminatorQueued := false
 	whitespaceQueued := false
