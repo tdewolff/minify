@@ -645,23 +645,23 @@ func (c *cssMinifier) shortenToken(t *css.TokenNode) {
 		if mediatype, originalData, ok := css.SplitDataURI(t.Data); ok {
 			data := originalData
 			minifiedBuffer := &bytes.Buffer{}
-			if err := c.m.Minify(string(mediatype), minifiedBuffer, bytes.NewBuffer(data)); err == nil {
+			if c.m.Minify(string(mediatype), minifiedBuffer, bytes.NewBuffer(data)) == nil {
 				data = minifiedBuffer.Bytes()
 			}
-			base64Len := base64.StdEncoding.EncodedLen(len(data))
-			asciiLen := 7 + minifiedBuffer.Len()
+			base64Len := len(";base64") + base64.StdEncoding.EncodedLen(len(data))
+			asciiLen := minifiedBuffer.Len()
 			for _, c := range data {
-				if 'A' <= c && c <= 'Z' || 'a' <= c && c <= 'z' || '0' <= c && c <= '9' || c == '-' || c == '_' || c == '.' || c == '~' {
-					asciiLen += 2
-				} else if c == '"' {
+				if 'A' <= c && c <= 'Z' || 'a' <= c && c <= 'z' || '0' <= c && c <= '9' || c == '-' || c == '_' || c == '.' || c == '~' || c == ' ' {
 					asciiLen++
+				} else {
+					asciiLen += 2
 				}
 				if asciiLen > base64Len {
 					break
 				}
 			}
 			if asciiLen > base64Len {
-				encoded := make([]byte, base64Len)
+				encoded := make([]byte, base64Len - len(";base64"))
 				base64.StdEncoding.Encode(encoded, data)
 				data = encoded
 				mediatype = append(mediatype, []byte(";base64")...)
@@ -669,9 +669,10 @@ func (c *cssMinifier) shortenToken(t *css.TokenNode) {
 				data = []byte(url.QueryEscape(string(data)))
 				data = bytes.Replace(data, []byte("\""), []byte("\\\""), -1)
 			}
-			if len(data) < len(originalData) {
-				t.Data = append(append(append(append([]byte("url(\"data:"), mediatype...), ','), data...), []byte("\")")...)
+			if len(mediatype) >= len("text/plain") && bytes.HasPrefix(mediatype, []byte("text/plain")) {
+				mediatype = mediatype[len("text/plain"):]
 			}
+			t.Data = append(append(append(append([]byte("url(\"data:"), mediatype...), ','), data...), []byte("\")")...)
 		}
 		s := t.Data[4 : len(t.Data)-1]
 		if len(s) > 2 && (s[0] == '"' || s[0] == '\'') && css.IsUrlUnquoted([]byte(s[1:len(s)-1])) {
