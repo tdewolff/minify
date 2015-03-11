@@ -77,11 +77,12 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, "background:url(/*nocomment*/)", "background:url(/*nocomment*/)")
 	assertCSS(t, "background:url(data:,text)", "background:url(data:,text)")
 	assertCSS(t, "background:url(data:;base64,dGV4dA==)", "background:url(data:,text)")
+	assertCSS(t, "background:url(data:text/svg+xml;base64,PT09PT09)", "background:url(data:text/svg+xml;base64,PT09PT09)")
 	assertCSS(t, "background:url(data:text/xml;version=2.0,content)", "background:url(data:text/xml;version=2.0,content)")
 	assertCSS(t, "background:url('data:text/xml; version = 2.0,content')", "background:url(data:text/xml;version=2.0,content)")
 	assertCSS(t, "background:url(data:text/css,color%3A#ff0000;)", "background:url(data:text/css,color%3Ared)")
-	assertCSS(t, "background:url(data:text/plain,=====)", "background:url(data:,%3D%3D%3D%3D%3D)")
-	assertCSS(t, "background:url(data:text/plain,======)", "background:url(data:;base64,PT09PT09)")
+	assertCSS(t, "background:url(data:,=====)", "background:url(data:,%3D%3D%3D%3D%3D)")
+	assertCSS(t, "background:url(data:,======)", "background:url(data:;base64,PT09PT09)")
 
 	// coverage
 	assertCSS(t, "margin: 1 1;", "margin:1")
@@ -97,5 +98,5 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, "a, b + c { x:y; }", "a,b+c{x:y}")
 	assertCSS(t, "color: rgb(ident);", "color:rgb(ident)")
 	assertCSS(t, "margin: rgb(ident);", "margin:rgb(ident)")
-	assertCSS(t, "filter: rgb(rgba(x));", "filter:rgb(rgba(x))")
+	assertCSS(t, "filter: progid:b().c.Alpha(rgba(x));", "filter:progid:b().c.Alpha(rgba(x))")
 }

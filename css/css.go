@@ -456,9 +456,9 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 	for i, val := range decl.Vals {
 		if i != 0 {
 			var t *css.TokenNode
-			if k, ok := decl.Vals[i-1].(*css.TokenNode); ok && len(k.Data) == 1 {
+			if k, ok := decl.Vals[i-1].(*css.TokenNode); ok && len(k.Data) == 1 && k.TokenType != css.IdentToken {
 				t = k
-			} else if k, ok := decl.Vals[i].(*css.TokenNode); ok && len(k.Data) == 1 {
+			} else if k, ok := decl.Vals[i].(*css.TokenNode); ok && len(k.Data) == 1 && k.TokenType != css.IdentToken {
 				t = k
 			}
 			if t == nil || (t.Data[0] != ',' && t.Data[0] != '/' && t.Data[0] != ':' && t.Data[0] != '.') {
