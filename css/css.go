@@ -318,7 +318,7 @@ func (c *cssMinifier) minifySelectors(selectors []*css.SelectorNode) error {
 				isClass = true
 			} else if !inAttr && elem.TokenType == css.IdentToken {
 				if !isClass {
-					elem.Data = bytes.ToLower(elem.Data)
+					elem.Data = css.ToLower(elem.Data)
 				}
 				isClass = false
 			}
@@ -349,7 +349,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 			}
 		case *css.FunctionNode:
 			if !progid {
-				node.Name.Data = bytes.ToLower(node.Name.Data)
+				node.Name.Data = css.ToLower(node.Name.Data)
 			}
 			decl.Vals[i] = c.shortenFunction(node)
 		}
@@ -399,7 +399,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 						t.Data = []byte("700")
 					}
 				} else if t.TokenType == css.StringToken && (prop == css.Font || prop == css.Font_Family) {
-					t.Data = bytes.ToLower(t.Data)
+					t.Data = css.ToLower(t.Data)
 					s := t.Data[1 : len(t.Data)-1]
 					unquote := true
 					for _, split := range bytes.Split(s, []byte(" ")) {
@@ -435,7 +435,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 			}
 			if bytes.Equal(tokens, []byte("progid:DXImageTransform.Microsoft.")) && len(fun.Args) == 1 && len(fun.Args[0].Vals) == 3 {
 				if opacity, ok := fun.Args[0].Vals[0].(*css.TokenNode); ok {
-					opacity.Data = bytes.ToLower(opacity.Data)
+					opacity.Data = css.ToLower(opacity.Data)
 					if is, ok := fun.Args[0].Vals[1].(*css.TokenNode); ok && is.Data[0] == '=' && bytes.Equal(opacity.Data, []byte("opacity")) {
 						fun.Name.TokenType = css.FunctionToken
 						fun.Name.Data = []byte("alpha")
@@ -532,7 +532,7 @@ func (c *cssMinifier) shortenFunction(fun *css.FunctionNode) css.Node {
 			if err == nil {
 				valHex := make([]byte, 6)
 				hex.Encode(valHex, rgb)
-				val := append([]byte("#"), bytes.ToLower(valHex)...)
+				val := append([]byte("#"), css.ToLower(valHex)...)
 				if s, ok := shortenColorHex[string(val)]; ok {
 					node = &css.TokenNode{css.IdentToken, s}
 				} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
@@ -590,24 +590,24 @@ func (c *cssMinifier) shortenToken(t *css.TokenNode) {
 				}
 			}
 			if len(dim) > 1 { // only percentage is length 1
-				dim = bytes.ToLower(dim)
+				dim = css.ToLower(dim)
 			}
 			t.Data = append(num, dim...)
 		}
 	} else if t.TokenType == css.IdentToken {
-		t.Data = bytes.ToLower(t.Data)
+		t.Data = css.ToLower(t.Data)
 		if hash, ok := shortenColorName[css.ToHash(t.Data)]; ok {
 			t.TokenType = css.HashToken
 			t.Data = hash
 		}
 	} else if t.TokenType == css.HashToken {
-		val := bytes.ToLower(t.Data)
+		val := css.ToLower(t.Data)
 		if ident, ok := shortenColorHex[string(val)]; ok {
 			t.TokenType = css.IdentToken
 			t.Data = ident
 		} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
 			t.TokenType = css.HashToken
-			t.Data = append([]byte("#"), bytes.ToLower(append([]byte{val[1]}, val[3], val[5]))...)
+			t.Data = append([]byte("#"), css.ToLower(append([]byte{val[1]}, val[3], val[5]))...)
 		} else {
 			t.Data = val
 		}
