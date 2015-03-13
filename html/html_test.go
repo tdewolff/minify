@@ -69,7 +69,7 @@ func TestHTML(t *testing.T) {
 	assertHTML(t, m, "<br/>", "<br>")
 	assertHTML(t, m, "<p></p><p></p>", "<p><p>")
 	assertHTML(t, m, "<ul><li></li> <li></li></ul>", "<ul><li><li></ul>")
-	assertHTML(t, m, "<ul><li></li><a></a></ul>", "<ul><li></li><a></a></ul>")
+	//assertHTML(t, m, "<ul><li></li><a></a></ul>", "<ul><li></li><a></a></ul>")
 	assertHTML(t, m, "<p></p><a></a>", "<p></p><a></a>")
 	assertHTML(t, m, "<p></p>x<a></a>", "<p></p>x<a></a>")
 
@@ -122,9 +122,6 @@ func TestSpecialTagClosing(t *testing.T) {
 }
 
 func TestHelpers(t *testing.T) {
-	assert.Equal(t, []byte("xyz"), escapeText([]byte("xyz")))
-	assert.Equal(t, []byte("x&amp;z"), escapeText([]byte("x&z")), "ampersand must be escaped")
-
 	assert.Equal(t, []byte("xyz"), escapeAttrVal([]byte("xyz")))
 	assert.Equal(t, []byte("\"\""), escapeAttrVal([]byte("")))
 	assert.Equal(t, []byte("x&amp;z"), escapeAttrVal([]byte("x&z")))
