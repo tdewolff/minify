@@ -28,6 +28,10 @@ func helperRand(n, m int, chars []byte) []string {
 	return r
 }
 
+func assertAttrVal(t *testing.T, input, expected string) {
+	assert.Equal(t, expected, string(escapeAttrVal([]byte(input))))
+}
+
 ////////////////////////////////////////////////////////////////
 
 func TestHTML(t *testing.T) {
@@ -127,14 +131,15 @@ func TestSpecialTagClosing(t *testing.T) {
 }
 
 func TestHelpers(t *testing.T) {
-	assert.Equal(t, []byte("xyz"), escapeAttrVal([]byte("xyz")))
-	assert.Equal(t, []byte("\"\""), escapeAttrVal([]byte("")))
-	assert.Equal(t, []byte("x&amp;z"), escapeAttrVal([]byte("x&z")))
-	assert.Equal(t, []byte("\"x/z\""), escapeAttrVal([]byte("x/z")))
-	assert.Equal(t, []byte("\"x'z\""), escapeAttrVal([]byte("x'z")))
-	assert.Equal(t, []byte("'x\"z'"), escapeAttrVal([]byte("x\"z")))
+	assertAttrVal(t, "xyz", "xyz")
+	assertAttrVal(t, "", "")
+	assertAttrVal(t, "x&amp;z", "x&amp;z")
+	assertAttrVal(t, "x/z", "\"x/z\"")
+	assertAttrVal(t, "x'z", "\"x'z\"")
+	assertAttrVal(t, "x\"z", "'x\"z'")
+	assertAttrVal(t, "You&#039;re encouraged to log in; however, it&#039;s not mandatory. [o]", "\"You're encouraged to log in; however, it's not mandatory. [o]\"")
 
-	assert.Equal(t, []byte("text/html"), normalizeContentType([]byte("text/html")))
-	assert.Equal(t, []byte("text/html;charset=utf-8"), normalizeContentType([]byte("text/html; charset=UTF-8")))
-	assert.Equal(t, []byte("text/html,text/css"), normalizeContentType([]byte("text/html, text/css")))
+	assert.Equal(t, "text/html", string(normalizeContentType([]byte("text/html"))))
+	assert.Equal(t, "text/html;charset=utf-8", string(normalizeContentType([]byte("text/html; charset=UTF-8"))))
+	assert.Equal(t, "text/html,text/css", string(normalizeContentType([]byte("text/html, text/css"))))
 }

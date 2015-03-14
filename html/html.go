@@ -3,6 +3,7 @@ package html // import "github.com/tdewolff/minify/html"
 import (
 	"bytes"
 	"io"
+	gohtml "html"
 
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/parse"
@@ -181,62 +182,77 @@ var urlAttrMap = map[html.Hash]bool{
 ////////////////////////////////////////////////////////////////
 
 // replaceMultipleWhitespace replaces any series of whitespace characters by a single space.
-func replaceMultipleWhitespace(s []byte) []byte {
-	i := 0
-	t := make([]byte, len(s))
-	previousSpace := false
-	for _, x := range s {
-		if isWhitespace(x) {
-			if !previousSpace {
-				previousSpace = true
-				t[i] = ' '
-				i++
+func replaceMultipleWhitespace(b []byte) []byte {
+	j := 0
+	start := 0
+	prevSpace := false
+	for i, c := range b {
+		if isWhitespace(c) {
+			if !prevSpace {
+				prevSpace = true
+				b[i] = ' '
+			} else {
+				if start < i {
+					if start != 0 {
+						j += copy(b[j:], b[start:i])
+					} else {
+						j += i-start
+					}
+				}
+				start = i + 1
 			}
 		} else {
-			previousSpace = false
-			t[i] = x
-			i++
+			prevSpace = false
 		}
 	}
-	return t[:i]
+	if start != 0 {
+		j += copy(b[j:], b[start:])
+		return b[:j]
+	}
+	return b
 }
 
-func normalizeContentType(s []byte) []byte {
-	s = parse.CopyToLower(bytes.TrimSpace(replaceMultipleWhitespace(s)))
-	t := make([]byte, len(s))
-	w := 0
+func normalizeContentType(b []byte) []byte {
+	j := 0
 	start := 0
-	for j, x := range s {
-		if x == ' ' && (s[j-1] == ';' || s[j-1] == ',') {
-			w += copy(t[w:], s[start:j])
-			start = j + 1
+	b = parse.ToLower(bytes.TrimSpace(replaceMultipleWhitespace(b)))
+	for i, c := range b {
+		if c == ' ' && (b[i-1] == ';' || b[i-1] == ',') {
+			if start != 0 {
+				j += copy(b[j:], b[start:i])
+			} else {
+				j += i-start
+			}
+			start = i + 1
 		}
 	}
-	w += copy(t[w:], s[start:])
-	return t[:w]
+	if start != 0 {
+		j += copy(b[j:], b[start:])
+		return b[:j]
+	}
+	return b
 }
 
 // escapeAttrVal returns the escape attribute value bytes without quotes.
 func escapeAttrVal(s []byte) []byte {
-	if len(s) == 0 {
-		return []byte("\"\"")
+	if len(s) < 2 {
+		return s
 	}
-	// TODO: only for &apos; &quot; &#34; and &#39;
-	s = html.Unescape(s)
+	s = []byte(gohtml.UnescapeString(string(s)))
 
 	amps := 0
 	singles := 0
 	doubles := 0
 	unquoted := true
-	for _, c := range s {
-		if c == '&' {
+	for _, x := range s {
+		if x == '&' {
 			amps++
-		} else if c == '"' {
+		} else if x == '"' {
 			doubles++
-		} else if c == '\'' {
+		} else if x == '\'' {
 			singles++
-		} else if unquoted && (c == '/' || c == '`' || c == '<' || c == '=' || c == '>' || isWhitespace(c)) {
-			// TODO: allow slash
+		} else if unquoted && (x == '/' || x == '`' || x == '<' || x == '=' || x == '>' || isWhitespace(x)) {
+			// no slash either because it causes difficulties!
 			unquoted = false
 		}
 	}
@@ -559,8 +575,9 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						// removed attribute
 						continue
 					}
+
 					val := attr.attrVal
-					if len(val) > 1 && val[0] == '"' || val[0] == '\'' {
+					if len(val) > 1 && (val[0] == '"' || val[0] == '\'') {
 						val = bytes.TrimSpace(val[1:len(val)-1])
 					}
 					if caseInsensitiveAttrMap[attr.hash] {
@@ -604,17 +621,14 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						if len(val) == 0 {
 							continue
 						}
-
-						var err error
 						if _, err := w.Write([]byte("=")); err != nil {
 							return err
 						}
-
 						// CSS and JS minifiers for attribute inline code
 						if attr.hash == html.Style {
 							b := &bytes.Buffer{}
 							b.Grow(len(val))
-							if err = m.Minify(defaultStyleType, b, bytes.NewReader(val)); err != nil {
+							if err := m.Minify(defaultStyleType, b, bytes.NewReader(val)); err != nil {
 								if err != minify.ErrNotExist {
 									return err
 								}
@@ -627,7 +641,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							}
 							b := &bytes.Buffer{}
 							b.Grow(len(val))
-							if err = m.Minify(defaultScriptType, b, bytes.NewReader(val)); err != nil {
+							if err := m.Minify(defaultScriptType, b, bytes.NewReader(val)); err != nil {
 								if err != minify.ErrNotExist {
 									return err
 								}
