@@ -216,6 +216,31 @@ func normalizeContentType(s []byte) []byte {
 	return t[:w]
 }
 
+// unescapeText escapes ampersands.
+func unescapeText(s []byte) []byte {
+	s = html.Unescape(s)
+
+	amps := 0
+	for _, x := range s {
+		if x == '&' {
+			amps++
+		}
+	}
+
+	t := make([]byte, len(s)+amps*4)
+	w := 0
+	start := 0
+	for j, x := range s {
+		if x == '&' {
+			w += copy(t[w:], s[start:j])
+			w += copy(t[w:], []byte("&amp;"))
+			start = j + 1
+		}
+	}
+	copy(t[w:], s[start:])
+	return t
+}
+
 // escapeAttrVal returns the escape attribute value bytes without quotes.
 func escapeAttrVal(s []byte) []byte {
 	if len(s) == 0 {
@@ -309,6 +334,21 @@ func attrValEqual(attrVal, match []byte) bool {
 	return bytes.Equal(attrVal, match)
 }
 
+func attrValCaseInsensitiveEqual(attrVal, match []byte) bool {
+	if len(attrVal) > 0 && (attrVal[0] == '"' || attrVal[0] == '\'') {
+		attrVal = attrVal[1:len(attrVal)-1]
+	}
+	if len(attrVal) != len(match) {
+		return false
+	}
+	for i, c := range attrVal {
+		if c != match[i] && (c | ('a' - 'A')) != match[i] {
+			return false
+		}
+	}
+	return true
+}
+
 ////////////////////////////////////////////////////////////////
 
 // Minify minifies HTML5 files, it reads from r and writes to w.
@@ -330,11 +370,6 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 			return tb.err()
 		case html.DoctypeToken:
-			for {
-				if attr := tb.shift(); attr.tt == html.StartTagCloseToken || attr.tt == html.StartTagVoidToken || attr.tt == html.ErrorToken {
-					break
-				}
-			}
 			if _, err := w.Write([]byte("<!doctype html>")); err != nil {
 				return err
 			}
@@ -355,7 +390,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			if rawTag != 0 {
 				if rawTag == html.Style || rawTag == html.Script {
 					var mediatype string
-					if rawTagMediatype != nil {
+					if len(rawTagMediatype) > 0 {
 						mediatype = string(rawTagMediatype)
 					} else if rawTag == html.Script {
 						mediatype = defaultScriptType
@@ -379,7 +414,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				} else if _, err := w.Write(t.data); err != nil {
 					return err
 				}
-			} else if t.data = replaceMultipleWhitespace(t.data); len(t.data) > 0 {
+			} else if t.data = unescapeText(replaceMultipleWhitespace(t.data)); len(t.data) > 0 {
 				// whitespace removal; trim left
 				if t.data[0] == ' ' && precededBySpace {
 					t.data = t.data[1:]
@@ -475,46 +510,48 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 				// rewrite meta tag with charset
 				if hasAttributes && t.hash == html.Meta {
-					var httpEquiv *token
-					var name *token
-					var content *token
+					iHttpEquiv := -1
+					iName := -1
+					iContent := -1
 					hasCharset := false
 					i := 0
 					for {
 						attr := tb.peek(i)
-						i++
 						if attr.tt != html.AttributeToken {
 							break
 						}
-						if attr.hash == html.Content {
-							content = attr
-						} else if attr.hash == html.Http_Equiv {
-							httpEquiv = attr
+						if attr.hash == html.Http_Equiv {
+							iHttpEquiv = i
 						} else if attr.hash == html.Name {
-							name = attr
+							iName = i
+						} else if attr.hash == html.Content {
+							iContent = i
 						} else if attr.hash == html.Charset {
 							hasCharset = true
 						}
+						i++
 					}
-					if content != nil {
-						content.attrVal = normalizeContentType(content.attrVal)
-						if httpEquiv != nil {
-							if !hasCharset && attrValEqual(httpEquiv.attrVal, []byte("content-type")) && attrValEqual(content.attrVal, []byte("text/html;charset=utf-8")) {
+					if iContent != -1 {
+						content := tb.peek(iContent)
+						if iHttpEquiv != -1 {
+							httpEquiv := tb.peek(iHttpEquiv)
+							content.attrVal = normalizeContentType(content.attrVal)
+							if !hasCharset && attrValCaseInsensitiveEqual(httpEquiv.attrVal, []byte("content-type")) && attrValEqual(content.attrVal, []byte("text/html;charset=utf-8")) {
 								httpEquiv.data = nil
 								content.data = []byte("charset")
 								content.hash = html.Charset
 								content.attrVal = []byte("utf-8")
-							} else if attrValEqual(httpEquiv.attrVal, []byte("content-style-type")) {
+							} else if attrValCaseInsensitiveEqual(httpEquiv.attrVal, []byte("content-style-type")) {
 								defaultStyleType = string(content.attrVal)
-							} else if attrValEqual(httpEquiv.attrVal, []byte("content-script-type")) {
+							} else if attrValCaseInsensitiveEqual(httpEquiv.attrVal, []byte("content-script-type")) {
 								defaultScriptType = string(content.attrVal)
 							}
 						}
-						if name != nil {
-							parse.ToLower(name.attrVal)
-							if attrValEqual(name.attrVal, []byte("keywords")) {
+						if iName != -1 {
+							name := tb.peek(iName)
+							if attrValCaseInsensitiveEqual(name.attrVal, []byte("keywords")) {
 								content.attrVal = bytes.Replace(content.attrVal, []byte(", "), []byte(","), -1)
-							} else if attrValEqual(name.attrVal, []byte("viewport")) {
+							} else if attrValCaseInsensitiveEqual(name.attrVal, []byte("viewport")) {
 								content.attrVal = bytes.Replace(content.attrVal, []byte(" "), []byte(""), -1)
 							}
 						}

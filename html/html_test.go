@@ -42,6 +42,7 @@ func TestHTML(t *testing.T) {
 	assertHTML(t, m, "<style>&</style>", "<style>&</style>")
 	assertHTML(t, m, "<html><head></head><body>x</body></html>", "x")
 	assertHTML(t, m, "<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\">", "<meta charset=utf-8>")
+	assertHTML(t, m, "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />", "<meta charset=utf-8>")
 	assertHTML(t, m, "<meta name=\"keywords\" content=\"a, b\">", "<meta name=keywords content=a,b>")
 	assertHTML(t, m, "<meta name=\"viewport\" content=\"width = 996\" />", "<meta name=viewport content=\"width=996\">")
 	assertHTML(t, m, "<span attr=\"test\"></span>", "<span attr=test></span>")
@@ -99,7 +100,11 @@ func TestHTML(t *testing.T) {
 	assertHTML(t, m, "<table><thead><tr><th>foo</th><th>bar</th></tr></thead><tfoot><tr><th>baz</th><th>qux</th></tr></tfoot><tbody><tr><td>boo</td><td>moo</td></tr></tbody></table>",
 		"<table><thead><tr><th>foo<th>bar<tfoot><tr><th>baz<th>qux<tbody><tr><td>boo<td>moo</table>")
 	assertHTML(t, m, "<select><option>foo</option><option>bar</option></select>", "<select><option>foo<option>bar</select>")
+
+	assertHTML(t, m, `<!doctype html> <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"> <head profile="http://dublincore.org/documents/dcq-html/"> <!-- Barlesque 2.75.0 --> <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`, `<!doctype html><html xmlns="//www.w3.org/1999/xhtml" xml:lang=en><head profile="//dublincore.org/documents/dcq-html/"><meta charset=utf-8>`)
+	assertHTML(t, m, `<meta name="keywords" content="A, B">`, `<meta name=keywords content=A,B>`)
 }
+
 
 func TestWhitespace(t *testing.T) {
 	multipleWhitespaceRegexp := regexp.MustCompile("\\s+")
