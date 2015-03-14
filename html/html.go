@@ -216,36 +216,12 @@ func normalizeContentType(s []byte) []byte {
 	return t[:w]
 }
 
-// unescapeText escapes ampersands.
-func unescapeText(s []byte) []byte {
-	s = html.Unescape(s)
-
-	amps := 0
-	for _, x := range s {
-		if x == '&' {
-			amps++
-		}
-	}
-
-	t := make([]byte, len(s)+amps*4)
-	w := 0
-	start := 0
-	for j, x := range s {
-		if x == '&' {
-			w += copy(t[w:], s[start:j])
-			w += copy(t[w:], []byte("&amp;"))
-			start = j + 1
-		}
-	}
-	copy(t[w:], s[start:])
-	return t
-}
-
 // escapeAttrVal returns the escape attribute value bytes without quotes.
 func escapeAttrVal(s []byte) []byte {
 	if len(s) == 0 {
 		return []byte("\"\"")
 	}
+	// TODO: only for &apos; &quot; &#34; and &#39;
 	s = html.Unescape(s)
 
 	amps := 0
@@ -414,7 +390,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				} else if _, err := w.Write(t.data); err != nil {
 					return err
 				}
-			} else if t.data = unescapeText(replaceMultipleWhitespace(t.data)); len(t.data) > 0 {
+			} else if t.data = replaceMultipleWhitespace(t.data); len(t.data) > 0 {
 				// whitespace removal; trim left
 				if t.data[0] == ' ' && precededBySpace {
 					t.data = t.data[1:]
