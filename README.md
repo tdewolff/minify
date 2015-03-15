@@ -15,7 +15,7 @@ Website | Original | Minified | Ratio | Time<sup>&#42;</sup>
 [StackOverflow](http://stackoverflow.com/) | 201kB | **182kB** | 91% | 8ms
 [Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | **410kB** | 94%<sup>&#42;&#42;</sup> | 17ms
 
-<sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 20ms range! The benchmark uses the HTML, CSS and JS minifiers and excludes the time reading from and writing to a file from the measurement.
+<sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 10ms range! The benchmark uses the HTML, CSS and JS minifiers and excludes the time reading from and writing to a file from the measurement.
 
 <sup>&#42;&#42;</sup>Is already somewhat minified, so this doesn't reflect the full potential of this minifier.
 
@@ -38,7 +38,7 @@ The HTML5 minifier uses these minifications:
 - strip long `doctype` or `meta` charset
 - lowercase tags, attributes and some values to enhance gzip compression
 
-After recent benchmarking and profiling it became really fast and minifies pages in the 20ms range, making it viable for on-the-fly minification.
+After recent benchmarking and profiling it became really fast and minifies pages in the 10ms range, making it viable for on-the-fly minification.
 
 However, be careful when doing on-the-fly minification. A simple site would typically have HTML pages of 5kB which ideally are compressed to say 4kB. If this would take about 10ms to minify, one has to download slower than 100kB/s to make minification effective. There is a lot of handwaving in this example but it's hardly effective to minify on-the-fly. Rather use caching!
 
