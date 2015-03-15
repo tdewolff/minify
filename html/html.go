@@ -3,7 +3,6 @@ package html // import "github.com/tdewolff/minify/html"
 import (
 	"bytes"
 	"io"
-	gohtml "html"
 
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/parse"
@@ -233,75 +232,111 @@ func normalizeContentType(b []byte) []byte {
 	return b
 }
 
-// escapeAttrVal returns the escape attribute value bytes without quotes.
-func escapeAttrVal(s []byte) []byte {
-	if len(s) < 2 {
-		return s
+// it is assumed that b[0] equals '&'
+func isAtQuoteEntity(b []byte) (quote byte, n int, ok bool) {
+	if len(b) < 5 {
+		return 0, 0, false
 	}
-	s = []byte(gohtml.UnescapeString(string(s)))
+	if b[1] == '#' {
+		if b[2] == 'x' {
+			i := 3
+			for i < len(b) && b[i] == '0' {
+				i++
+			}
+			if i+2 < len(b) && b[i] == '2' && b[i+2] == ';' {
+				if b[i+1] == '2' {
+					return '"', i+3, true // &#x22;
+				} else if b[i+1] == '7' {
+					return '\'', i+3, true // &#x27;
+				}
+			}
+		} else {
+			i := 2
+			for i < len(b) && b[i] == '0' {
+				i++
+			}
+			if i+2 < len(b) && b[i] == '3' && b[i+2] == ';' {
+				if b[i+1] == '4' {
+					return '"', i+3, true // &#34;
+				} else if b[i+1] == '9' {
+					return '\'', i+3, true // &#39;
+				}
+			}
+		}
+	} else if len(b) >= 6 && b[5] == ';' {
+		if parse.EqualCaseInsensitive(b[1:5], []byte{'q', 'u', 'o', 't'}) {
+			return '"', 6, true // &quot;
+		} else if parse.EqualCaseInsensitive(b[1:5], []byte{'a', 'p', 'o', 's'}) {
+			return '\'', 6, true // &apos;
+		}
+	}
+	return 0, 0, false
+}
 
-	amps := 0
+// escapeAttrVal returns the escape attribute value bytes without quotes.
+func escapeAttrVal(b []byte) []byte {
 	singles := 0
 	doubles := 0
 	unquoted := true
-	for _, x := range s {
-		if x == '&' {
-			amps++
-		} else if x == '"' {
+	for i, c := range b {
+		if c == '&' {
+			if quote, _, ok := isAtQuoteEntity(b[i:]); ok {
+				if quote == '"' {
+					doubles++
+					unquoted = false
+				} else {
+					singles++
+					unquoted = false
+				}
+			}
+		} else if c == '"' {
 			doubles++
-		} else if x == '\'' {
+			unquoted = false
+		} else if c == '\'' {
 			singles++
-		} else if unquoted && (x == '`' || x == '<' || x == '=' || x == '>' || isWhitespace(x)) {
-			// no slash either because it causes difficulties!
+			unquoted = false
+		} else if unquoted && (c == '`' || c == '<' || c == '=' || c == '>' || isWhitespace(c)) {
 			unquoted = false
 		}
 	}
 
-	if !unquoted || doubles > 0 || singles > 0 {
-		// quoted
-		c := amps + doubles
-		quote := byte('"')
-		escapedQuote := []byte("&#34;")
-		if doubles > singles {
-			c = amps + singles
-			quote = byte('\'')
-			escapedQuote = []byte("&#39;")
-		}
-
-		t := make([]byte, len(s)+c*4+2)
-		t[0] = quote
-		w := 1
-		start := 0
-		for j, x := range s {
-			if x == '&' {
-				w += copy(t[w:], s[start:j])
-				w += copy(t[w:], []byte("&amp;"))
-				start = j + 1
-			} else if x == quote {
-				w += copy(t[w:], s[start:j])
-				w += copy(t[w:], escapedQuote)
-				start = j + 1
-			}
-		}
-		copy(t[w:], s[start:])
-		t[len(t)-1] = quote
-		return t
+	if unquoted {
+		return b
 	} else {
-		// unquoted
-		c := amps
+		var quote byte
+		var escapedQuote []byte
+		if doubles > singles {
+			quote = '\''
+			escapedQuote = []byte("&#39;")
+		} else {
+			quote = '"'
+			escapedQuote = []byte("&#34;")
+		}
 
-		t := make([]byte, len(s)+c*4)
-		w := 0
+		t := make([]byte, len(b)+2) // maximum size, not actual size
+		t[0] = quote
+		j := 1
 		start := 0
-		for j, x := range s {
-			if x == '&' {
-				w += copy(t[w:], s[start:j])
-				w += copy(t[w:], []byte("&amp;"))
-				start = j + 1
+		for i, c := range b {
+			if c == '&' {
+				if entityQuote, n, ok := isAtQuoteEntity(b[i:]); ok {
+					j += copy(t[j:], b[start:i])
+					if entityQuote != quote {
+						j += copy(t[j:], []byte{entityQuote})
+					} else {
+						j += copy(t[j:], escapedQuote)
+					}
+					start = i + n
+				}
+			} else if c == quote {
+				j += copy(t[j:], b[start:i])
+				j += copy(t[j:], escapedQuote)
+				start = i + 1
 			}
 		}
-		copy(t[w:], s[start:])
-		return t
+		j += copy(t[j:], b[start:])
+		t[j] = quote
+		return t[:j+1]
 	}
 }
 
