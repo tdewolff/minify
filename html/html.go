@@ -251,7 +251,7 @@ func escapeAttrVal(s []byte) []byte {
 			doubles++
 		} else if x == '\'' {
 			singles++
-		} else if unquoted && (x == '/' || x == '`' || x == '<' || x == '=' || x == '>' || isWhitespace(x)) {
+		} else if unquoted && (x == '`' || x == '<' || x == '=' || x == '>' || isWhitespace(x)) {
 			// no slash either because it causes difficulties!
 			unquoted = false
 		}
