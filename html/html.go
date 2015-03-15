@@ -321,24 +321,16 @@ func isAllWhitespace(b []byte) bool {
 
 func attrValEqual(attrVal, match []byte) bool {
 	if len(attrVal) > 0 && (attrVal[0] == '"' || attrVal[0] == '\'') {
-		return bytes.Equal(attrVal[1:len(attrVal)-1], match)
+		attrVal = attrVal[1:len(attrVal)-1]
 	}
-	return bytes.Equal(attrVal, match)
+	return parse.Equal(attrVal, match)
 }
 
-func attrValCaseInsensitiveEqual(attrVal, match []byte) bool {
+func attrValEqualCaseInsensitive(attrVal, match []byte) bool {
 	if len(attrVal) > 0 && (attrVal[0] == '"' || attrVal[0] == '\'') {
 		attrVal = attrVal[1:len(attrVal)-1]
 	}
-	if len(attrVal) != len(match) {
-		return false
-	}
-	for i, c := range attrVal {
-		if c != match[i] && (c | ('a' - 'A')) != match[i] {
-			return false
-		}
-	}
-	return true
+	return parse.EqualCaseInsensitive(attrVal, match)
 }
 
 ////////////////////////////////////////////////////////////////
@@ -528,22 +520,22 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						if iHttpEquiv != -1 {
 							httpEquiv := tb.peek(iHttpEquiv)
 							content.attrVal = normalizeContentType(content.attrVal)
-							if !hasCharset && attrValCaseInsensitiveEqual(httpEquiv.attrVal, []byte("content-type")) && attrValEqual(content.attrVal, []byte("text/html;charset=utf-8")) {
+							if !hasCharset && attrValEqualCaseInsensitive(httpEquiv.attrVal, []byte("content-type")) && attrValEqual(content.attrVal, []byte("text/html;charset=utf-8")) {
 								httpEquiv.data = nil
 								content.data = []byte("charset")
 								content.hash = html.Charset
 								content.attrVal = []byte("utf-8")
-							} else if attrValCaseInsensitiveEqual(httpEquiv.attrVal, []byte("content-style-type")) {
+							} else if attrValEqualCaseInsensitive(httpEquiv.attrVal, []byte("content-style-type")) {
 								defaultStyleType = string(content.attrVal)
-							} else if attrValCaseInsensitiveEqual(httpEquiv.attrVal, []byte("content-script-type")) {
+							} else if attrValEqualCaseInsensitive(httpEquiv.attrVal, []byte("content-script-type")) {
 								defaultScriptType = string(content.attrVal)
 							}
 						}
 						if iName != -1 {
 							name := tb.peek(iName)
-							if attrValCaseInsensitiveEqual(name.attrVal, []byte("keywords")) {
+							if attrValEqualCaseInsensitive(name.attrVal, []byte("keywords")) {
 								content.attrVal = bytes.Replace(content.attrVal, []byte(", "), []byte(","), -1)
-							} else if attrValCaseInsensitiveEqual(name.attrVal, []byte("viewport")) {
+							} else if attrValEqualCaseInsensitive(name.attrVal, []byte("viewport")) {
 								content.attrVal = bytes.Replace(content.attrVal, []byte(" "), []byte(""), -1)
 							}
 						}
@@ -553,11 +545,11 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 			// write tag
 			if t.tt == html.EndTagToken {
-				if _, err := w.Write([]byte("</")); err != nil {
+				if _, err := w.Write([]byte{'<', '/'}); err != nil {
 					return err
 				}
 			} else {
-				if _, err := w.Write([]byte("<")); err != nil {
+				if _, err := w.Write([]byte{'<'}); err != nil {
 					return err
 				}
 			}
@@ -581,7 +573,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						val = bytes.TrimSpace(val[1:len(val)-1])
 					}
 					if caseInsensitiveAttrMap[attr.hash] {
-						parse.ToLower(val)
+						val = parse.ToLower(val)
 						if attr.hash == html.Enctype || attr.hash == html.Codetype || attr.hash == html.Accept || attr.hash == html.Type && (t.hash == html.A || t.hash == html.Link || t.hash == html.Object || t.hash == html.Param || t.hash == html.Script || t.hash == html.Style || t.hash == html.Source) {
 							val = normalizeContentType(val)
 						}
@@ -591,25 +583,25 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					}
 
 					// default attribute values can be ommited
-					if attr.hash == html.Type && (t.hash == html.Script && bytes.Equal(val, []byte("text/javascript")) ||
-						t.hash == html.Style && bytes.Equal(val, []byte("text/css")) ||
-						t.hash == html.Link && bytes.Equal(val, []byte("text/css")) ||
-						t.hash == html.Input && bytes.Equal(val, []byte("text")) ||
-						t.hash == html.Button && bytes.Equal(val, []byte("submit"))) ||
-						attr.hash == html.Method && bytes.Equal(val, []byte("get")) ||
-						attr.hash == html.Enctype && bytes.Equal(val, []byte("application/x-www-form-urlencoded")) ||
-						attr.hash == html.Colspan && bytes.Equal(val, []byte("1")) ||
-						attr.hash == html.Rowspan && bytes.Equal(val, []byte("1")) ||
-						attr.hash == html.Shape && bytes.Equal(val, []byte("rect")) ||
-						attr.hash == html.Span && bytes.Equal(val, []byte("1")) ||
-						attr.hash == html.Clear && bytes.Equal(val, []byte("none")) ||
-						attr.hash == html.Frameborder && bytes.Equal(val, []byte("1")) ||
-						attr.hash == html.Scrolling && bytes.Equal(val, []byte("auto")) ||
-						attr.hash == html.Valuetype && bytes.Equal(val, []byte("data")) ||
-						attr.hash == html.Language && t.hash == html.Script && bytes.Equal(val, []byte("javascript")) {
+					if attr.hash == html.Type && (t.hash == html.Script && parse.Equal(val, []byte("text/javascript")) ||
+						t.hash == html.Style && parse.Equal(val, []byte("text/css")) ||
+						t.hash == html.Link && parse.Equal(val, []byte("text/css")) ||
+						t.hash == html.Input && parse.Equal(val, []byte("text")) ||
+						t.hash == html.Button && parse.Equal(val, []byte("submit"))) ||
+						attr.hash == html.Method && parse.Equal(val, []byte("get")) ||
+						attr.hash == html.Enctype && parse.Equal(val, []byte("application/x-www-form-urlencoded")) ||
+						attr.hash == html.Colspan && parse.Equal(val, []byte("1")) ||
+						attr.hash == html.Rowspan && parse.Equal(val, []byte("1")) ||
+						attr.hash == html.Shape && parse.Equal(val, []byte("rect")) ||
+						attr.hash == html.Span && parse.Equal(val, []byte("1")) ||
+						attr.hash == html.Clear && parse.Equal(val, []byte("none")) ||
+						attr.hash == html.Frameborder && parse.Equal(val, []byte("1")) ||
+						attr.hash == html.Scrolling && parse.Equal(val, []byte("auto")) ||
+						attr.hash == html.Valuetype && parse.Equal(val, []byte("data")) ||
+						attr.hash == html.Language && t.hash == html.Script && parse.Equal(val, []byte("javascript")) {
 						continue
 					}
-					if _, err := w.Write([]byte(" ")); err != nil {
+					if _, err := w.Write([]byte{' '}); err != nil {
 						return err
 					}
 					if _, err := w.Write(attr.data); err != nil {
@@ -621,35 +613,19 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						if len(val) == 0 {
 							continue
 						}
-						if _, err := w.Write([]byte("=")); err != nil {
+						if _, err := w.Write([]byte{'='}); err != nil {
 							return err
 						}
 						// CSS and JS minifiers for attribute inline code
 						if attr.hash == html.Style {
-							b := &bytes.Buffer{}
-							b.Grow(len(val))
-							if err := m.Minify(defaultStyleType, b, bytes.NewReader(val)); err != nil {
-								if err != minify.ErrNotExist {
-									return err
-								}
-							} else {
-								val = b.Bytes()
-							}
+							val, _ = m.MinifyBytes(defaultStyleType, val)
 						} else if len(attr.data) > 2 && attr.data[0] == 'o' && attr.data[1] == 'n' {
-							if len(val) >= 11 && bytes.Equal(parse.CopyToLower(val[:11]), []byte("javascript:")) {
+							if len(val) >= 11 && parse.EqualCaseInsensitive(val[:11], []byte("javascript:")) {
 								val = val[11:]
 							}
-							b := &bytes.Buffer{}
-							b.Grow(len(val))
-							if err := m.Minify(defaultScriptType, b, bytes.NewReader(val)); err != nil {
-								if err != minify.ErrNotExist {
-									return err
-								}
-							} else {
-								val = b.Bytes()
-							}
+							val, _ = m.MinifyBytes(defaultScriptType, val)
 						} else if urlAttrMap[attr.hash] {
-							if len(val) >= 5 && bytes.Equal(parse.CopyToLower(val[:5]), []byte("http:")) {
+							if len(val) >= 5 && parse.EqualCaseInsensitive(val[:5], []byte{'h', 't', 't', 'p', ':'}) {
 								val = val[5:]
 							}
 						}
@@ -662,7 +638,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					}
 				}
 			}
-			if _, err := w.Write([]byte(">")); err != nil {
+			if _, err := w.Write([]byte{'>'}); err != nil {
 				return err
 			}
 		}

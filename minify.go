@@ -54,6 +54,7 @@ type Func func(Minifier, string, io.Writer, io.Reader) error
 // It's used to extract parameter values of the mediatype and to recursively call other minifier functions.
 type Minifier interface {
 	Minify(string, io.Writer, io.Reader) error
+	MinifyBytes(string, []byte) ([]byte, error)
 }
 
 ////////////////////////////////////////////////////////////////
