@@ -24,15 +24,15 @@ func helperCommand(t *testing.T, s ...string) *exec.Cmd {
 	return cmd
 }
 
-func helperMinifyString(t *testing.T, m DefaultMinifier, mediatype string) string {
-	s, err := m.MinifyString(mediatype, "")
+func helperMinifyString(t *testing.T, m Minify, mediatype string) string {
+	s, err := String(m, mediatype, "")
 	assert.Nil(t, err, "minifier must not return error")
 	return s
 }
 
 ////////////////////////////////////////////////////////////////
 
-var m = DefaultMinifier(map[string]Func{
+var m = Minify(map[string]Func{
 	"dummy/copy": func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		io.Copy(w, r)
 		return nil
@@ -71,27 +71,27 @@ func TestMinify(t *testing.T) {
 	assert.Equal(t, errDummy, m.Minify("dummy/err", nil, nil), "must return errDummy for dummy/err")
 
 	b := []byte("test")
-	out, err := m.MinifyBytes("dummy/nil", b)
+	out, err := Bytes(m, "dummy/nil", b)
 	assert.Nil(t, err, "must not return error for dummy/nil")
 	assert.Equal(t, []byte{}, out, "must return empty byte array for dummy/nil")
-	out, err = m.MinifyBytes("?", b)
+	out, err = Bytes(m, "?", b)
 	assert.Equal(t, ErrNotExist, err, "must return ErrNotExist when minifier doesn't exist")
 	assert.Equal(t, b, out, "must return input byte array when minifier doesn't exist")
 
 	s := "test"
-	out2, err := m.MinifyString("dummy/nil", s)
+	out2, err := String(m, "dummy/nil", s)
 	assert.Nil(t, err, "must not return error for dummy/nil")
 	assert.Equal(t, "", out2, "must return empty string for dummy/nil")
-	out2, err = m.MinifyString("?", s)
+	out2, err = String(m, "?", s)
 	assert.Equal(t, ErrNotExist, err, "must return ErrNotExist when minifier doesn't exist")
 	assert.Equal(t, s, out2, "must return input string when minifier doesn't exist")
 }
 
 func TestAdd(t *testing.T) {
-	m := NewMinifier()
+	m := New()
 	w := &bytes.Buffer{}
 	r := bytes.NewBufferString("test")
-	m.Add("dummy/err", func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
+	m.AddFunc("dummy/err", func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		return errDummy
 	})
 

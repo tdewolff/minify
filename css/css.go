@@ -638,11 +638,7 @@ func (c *cssMinifier) shortenToken(t *css.TokenNode) {
 	} else if t.TokenType == css.URLToken {
 		t.Data = append([]byte("url"), t.Data[3:]...)
 		if mediatype, originalData, ok := css.SplitDataURI(t.Data); ok {
-			data := originalData
-			minifiedBuffer := &bytes.Buffer{}
-			if c.m.Minify(string(mediatype), minifiedBuffer, bytes.NewBuffer(data)) == nil {
-				data = minifiedBuffer.Bytes()
-			}
+			data, _ := minify.Bytes(c.m, string(mediatype), originalData)
 			base64Len := len(";base64") + base64.StdEncoding.EncodedLen(len(data))
 			asciiLen := len(data)
 			for _, c := range data {

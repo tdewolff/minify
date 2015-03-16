@@ -9,8 +9,8 @@ import (
 )
 
 func assertCSS(t *testing.T, input, expected string) {
-	m := minify.NewMinifier()
-	m.Add("text/css", Minify)
+	m := minify.New()
+	m.AddFunc("text/css", Minify)
 	b := &bytes.Buffer{}
 	assert.Nil(t, Minify(m, "text/css", b, bytes.NewBufferString(input)), "Minify must not return error in "+input)
 	assert.Equal(t, expected, b.String(), "Minify must give expected result in "+input)

@@ -653,12 +653,12 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						}
 						// CSS and JS minifiers for attribute inline code
 						if attr.hash == html.Style {
-							val, _ = m.MinifyBytes(defaultStyleType, val)
+							val, _ = minify.Bytes(m, defaultStyleType, val)
 						} else if len(attr.data) > 2 && attr.data[0] == 'o' && attr.data[1] == 'n' {
 							if len(val) >= 11 && parse.EqualCaseInsensitive(val[:11], []byte("javascript:")) {
 								val = val[11:]
 							}
-							val, _ = m.MinifyBytes(defaultScriptType, val)
+							val, _ = minify.Bytes(m, defaultScriptType, val)
 						} else if urlAttrMap[attr.hash] {
 							if len(val) >= 5 && parse.EqualCaseInsensitive(val[:5], []byte{'h', 't', 't', 'p', ':'}) {
 								val = val[5:]
