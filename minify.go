@@ -49,12 +49,12 @@ var ErrNotExist = errors.New("minify function does not exist for mediatype")
 // Func is the function interface for minifiers.
 // The Minifier parameter is used for embedded resources, such as JS within HTML.
 // The mediatype string is for wildcard minifiers so they know what they minify and for parameter passing (charset for example).
-type Func func(Minifier, string, io.Writer, io.Reader) error
+type Func func(m Minifier, mediatype string, w io.Writer, r io.Reader) error
 
 // Minifier is the interface which all minifier functions accept as first parameter.
 // It's used to extract parameter values of the mediatype and to recursively call other minifier functions.
 type Minifier interface {
-	Minify(string, io.Writer, io.Reader) error
+	Minify(mediatype string, w io.Writer, r io.Reader) error
 }
 
 ////////////////////////////////////////////////////////////////
@@ -62,12 +62,12 @@ type Minifier interface {
 // Minify holds a map of mediatype => function to allow recursive minifier calls of the minifier functions.
 type Minify map[string]Func
 
-// NewMinifier returns a new Minifier.
+// New returns a new Minify. It is the same as doing `Minify{}`.
 func New() Minify {
 	return Minify{}
 }
 
-// Add adds a minify function to the mediatype => function map (unsafe for concurrent use).
+// AddFunc adds a minify function to the mediatype => function map (unsafe for concurrent use).
 // It allows one to implement a custom minifier for a specific mediatype.
 func (m Minify) AddFunc(mediatype string, f Func) {
 	m[mediatype] = f
