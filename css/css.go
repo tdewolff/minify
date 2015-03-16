@@ -652,7 +652,7 @@ func (c *cssMinifier) shortenToken(t *css.TokenNode) {
 				}
 			}
 			if asciiLen > base64Len {
-				encoded := make([]byte, base64Len - len(";base64"))
+				encoded := make([]byte, base64Len-len(";base64"))
 				base64.StdEncoding.Encode(encoded, data)
 				data = encoded
 				mediatype = append(mediatype, []byte(";base64")...)

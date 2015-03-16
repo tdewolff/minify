@@ -49,32 +49,32 @@ var inlineTagMap = map[html.Hash]bool{
 }
 
 var blockTagMap = map[html.Hash]bool{
-	html.Address:       true,
+	html.Address:    true,
 	html.Article:    true,
-	html.Aside: true,
-	html.Blockquote:       true,
-	html.Div:     true,
-	html.Dl:     true,
-	html.Fieldset:    true,
-	html.Footer:  true,
-	html.Form:     true,
-	html.H1:      true,
-	html.H2:       true,
-	html.H3:     true,
-	html.H4:   true,
-	html.H5:     true,
-	html.H6:   true,
+	html.Aside:      true,
+	html.Blockquote: true,
+	html.Div:        true,
+	html.Dl:         true,
+	html.Fieldset:   true,
+	html.Footer:     true,
+	html.Form:       true,
+	html.H1:         true,
+	html.H2:         true,
+	html.H3:         true,
+	html.H4:         true,
+	html.H5:         true,
+	html.H6:         true,
 	html.Header:     true,
-	html.Hgroup:  true,
-	html.Hr:       true,
-	html.Main:    true,
-	html.Nav:  true,
-	html.Ol:   true,
-	html.P:    true,
-	html.Pre:  true,
-	html.Section:     true,
-	html.Table:     true,
-	html.Ul:      true,
+	html.Hgroup:     true,
+	html.Hr:         true,
+	html.Main:       true,
+	html.Nav:        true,
+	html.Ol:         true,
+	html.P:          true,
+	html.Pre:        true,
+	html.Section:    true,
+	html.Table:      true,
+	html.Ul:         true,
 }
 
 var booleanAttrMap = map[html.Hash]bool{
@@ -195,7 +195,7 @@ func replaceMultipleWhitespace(b []byte) []byte {
 					if start != 0 {
 						j += copy(b[j:], b[start:i])
 					} else {
-						j += i-start
+						j += i - start
 					}
 				}
 				start = i + 1
@@ -220,7 +220,7 @@ func normalizeContentType(b []byte) []byte {
 			if start != 0 {
 				j += copy(b[j:], b[start:i])
 			} else {
-				j += i-start
+				j += i - start
 			}
 			start = i + 1
 		}
@@ -245,9 +245,9 @@ func isAtQuoteEntity(b []byte) (quote byte, n int, ok bool) {
 			}
 			if i+2 < len(b) && b[i] == '2' && b[i+2] == ';' {
 				if b[i+1] == '2' {
-					return '"', i+3, true // &#x22;
+					return '"', i + 3, true // &#x22;
 				} else if b[i+1] == '7' {
-					return '\'', i+3, true // &#x27;
+					return '\'', i + 3, true // &#x27;
 				}
 			}
 		} else {
@@ -257,9 +257,9 @@ func isAtQuoteEntity(b []byte) (quote byte, n int, ok bool) {
 			}
 			if i+2 < len(b) && b[i] == '3' && b[i+2] == ';' {
 				if b[i+1] == '4' {
-					return '"', i+3, true // &#34;
+					return '"', i + 3, true // &#34;
 				} else if b[i+1] == '9' {
-					return '\'', i+3, true // &#39;
+					return '\'', i + 3, true // &#39;
 				}
 			}
 		}
@@ -356,14 +356,14 @@ func isAllWhitespace(b []byte) bool {
 
 func attrValEqual(attrVal, match []byte) bool {
 	if len(attrVal) > 0 && (attrVal[0] == '"' || attrVal[0] == '\'') {
-		attrVal = attrVal[1:len(attrVal)-1]
+		attrVal = attrVal[1 : len(attrVal)-1]
 	}
 	return parse.Equal(attrVal, match)
 }
 
 func attrValEqualCaseInsensitive(attrVal, match []byte) bool {
 	if len(attrVal) > 0 && (attrVal[0] == '"' || attrVal[0] == '\'') {
-		attrVal = attrVal[1:len(attrVal)-1]
+		attrVal = attrVal[1 : len(attrVal)-1]
 	}
 	return parse.EqualCaseInsensitive(attrVal, match)
 }
@@ -505,8 +505,8 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					break
 				} else if t.tt == html.EndTagToken {
 					if t.hash == html.Thead || t.hash == html.Tbody || t.hash == html.Tfoot || t.hash == html.Tr || t.hash == html.Th || t.hash == html.Td ||
-					   t.hash == html.Optgroup || t.hash == html.Option || t.hash == html.Dd || t.hash == html.Dt ||
-					   t.hash == html.Li || t.hash == html.Rb || t.hash == html.Rt || t.hash == html.Rtc || t.hash == html.Rp {
+						t.hash == html.Optgroup || t.hash == html.Option || t.hash == html.Dd || t.hash == html.Dt ||
+						t.hash == html.Li || t.hash == html.Rb || t.hash == html.Rt || t.hash == html.Rtc || t.hash == html.Rp {
 						break
 					} else if t.hash == html.P {
 						remove := false
@@ -605,7 +605,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 					val := attr.attrVal
 					if len(val) > 1 && (val[0] == '"' || val[0] == '\'') {
-						val = bytes.TrimSpace(val[1:len(val)-1])
+						val = bytes.TrimSpace(val[1 : len(val)-1])
 					}
 					if caseInsensitiveAttrMap[attr.hash] {
 						val = parse.ToLower(val)

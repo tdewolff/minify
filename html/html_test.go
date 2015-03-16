@@ -109,7 +109,6 @@ func TestHTML(t *testing.T) {
 	assertHTML(t, `<meta name="keywords" content="A, B">`, `<meta name=keywords content=A,B>`)
 }
 
-
 func TestWhitespace(t *testing.T) {
 	multipleWhitespaceRegexp := regexp.MustCompile("\\s+")
 	array := helperRand(100, 20, []byte("abcdefg \n\r\f\t"))

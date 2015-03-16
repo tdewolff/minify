@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"os"
 	"os/exec"
 	"testing"
-	"mime"
 
 	"github.com/stretchr/testify/assert"
 )
