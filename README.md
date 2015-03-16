@@ -130,15 +130,15 @@ import (
 ### New
 Retrieve a minifier struct which holds a map of mediatype &#8594; minifier functions.
 ``` go
-m := minify.NewMinifier()
+m := minify.New()
 ```
 
 The following loads all provided minifiers.
 ``` go
-m := minify.NewMinifier()
-m.Add("text/html", html.Minify)
-m.Add("text/css", css.Minify)
-m.Add("text/javascript", js.Minify)
+m := minify.New()
+m.AddFunc("text/html", html.Minify)
+m.AddFunc("text/css", css.Minify)
+m.AddFunc("text/javascript", js.Minify)
 ```
 
 ### From reader
@@ -165,27 +165,27 @@ if err := js.Minify(m, "text/javascript", w, r); err != nil {
 ```
 
 ### From bytes
-Minify from and to a `[]byte` for a specific mediatype `mediatype`.
+Minify from and to a `[]byte` for a specific mediatype.
 ``` go
-b, err := m.MinifyBytes(mediatype, b)
+b, err := minify.Bytes(m, mediatype, b)
 if err != nil {
-	log.Fatal("MinifyBytes:", err)
+	log.Fatal("Bytes:", err)
 }
 ```
 
 ### From string
 Minify from and to a `string` for a specific mediatype.
 ``` go
-s, err := m.MinifyString(mediatype, s)
+s, err := minify.String(m, mediatype, s)
 if err != nil {
-	log.Fatal("MinifyString:", err)
+	log.Fatal("String:", err)
 }
 ```
 
 ### Custom minifier
 Add a function for a specific mediatype.
 ``` go
-m.Add(mediatype, func(m minify.Minifier, mediatype string, w io.Writer, r io.Reader) error {
+m.AddFunc(mediatype, func(m minify.Minifier, mediatype string, w io.Writer, r io.Reader) error {
 	// ...
 	return nil
 })
@@ -218,10 +218,10 @@ import (
 )
 
 func main() {
-	m := minify.NewMinifier()
-	m.Add("text/html", html.Minify)
-	m.Add("text/css", css.Minify)
-	m.Add("text/javascript", js.Minify)
+	m := minify.New()
+	m.AddFunc("text/html", html.Minify)
+	m.AddFunc("text/css", css.Minify)
+	m.AddFunc("text/javascript", js.Minify)
 	// Or use the following for better minification of JS but lower speed:
 	// m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
 
@@ -247,10 +247,10 @@ import (
 
 // Outputs "Becausemycoffeewastoocold,Iheateditinthemicrowave."
 func main() {
-	m := minify.NewMinifier()
+	m := minify.New()
 
 	// remove newline and space bytes
-	m.Add("text/plain", func(m minify.Minifier, mediatype string, w io.Writer, r io.Reader) error {
+	m.AddFunc("text/plain", func(m minify.Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		rb := bufio.NewReader(r)
 		for {
 			line, err := rb.ReadString('\n')
@@ -267,7 +267,7 @@ func main() {
 		return nil
 	})
 
-	out, err := m.MinifyString("text/plain", "Because my coffee was too cold, I heated it in the microwave.")
+	out, err := minify.String(m, "text/plain", "Because my coffee was too cold, I heated it in the microwave.")
 	if err != nil {
 		log.Fatal("Minify:", err)
 	}
