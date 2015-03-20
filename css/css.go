@@ -357,7 +357,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 	}
 
 	prop := css.ToHash(decl.Prop.Data)
-	if prop == css.Margin || prop == css.Padding {
+	if prop == css.Margin || prop == css.Padding || prop == css.Border_Width {
 		tokens := make([]*css.TokenNode, 0, 4)
 		for _, val := range decl.Vals {
 			if t, ok := val.(*css.TokenNode); ok {
