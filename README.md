@@ -1,14 +1,34 @@
 [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify)](http://gocover.io/github.com/tdewolff/minify)
 
+**Table of Contents**
+
+- [Minify](#)
+	- [Comparison](#)
+		- [Alternatives](#)
+	- [HTML](#)
+		- [Beware](#)
+	- [CSS](#)
+	- [JS](#)
+	- [Installation](#)
+	- [Usage](#)
+		- [New](#)
+		- [From reader](#)
+		- [From bytes](#)
+		- [From string](#)
+		- [Custom minifier](#)
+		- [Mediatypes](#)
+	- [Examples](#)
+	- [License](#)
+
 # Minify
-Minify is a minifier package written in [Go][1]. It has a build-in HTML5, CSS3 and JS minifiers and provides an interface to implement any minifier. The implemented minifiers are very high performance and streaming (which implies O(n)).
+Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3 and JS minifiers and provides an interface to implement any minifier. The implemented minifiers are very high performance and streaming (which implies O(n)).
 
-It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...). It is possible to pass parameters through the mimetype to specify the charset for example for future minifiers.
+It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...). It is possible to pass parameters through the mimetype to specify the charset for example.
 
-Bottleneck for minification is mainly io and can be significantly faster with buffering (`bufio.Reader`). However, having the file fully loaded into memory (and providing `Bytes() []byte` like `bytes.Buffer`) speeds it up even more.
+Bottleneck for minification is mainly io and can be significantly sped up by buffering (`bufio.Reader`). However, having the file fully loaded into memory (and providing `Bytes() []byte` like `bytes.Buffer`) speeds up minification even more due to internal optimizations.
 
 ## Comparison
-Minification typically runs at about 20-30MB/s ~= 70-100GB/h, depeding on the composition of the file.
+HTML (with JS and CSS) minification typically runs at about 20-30MB/s ~= 70-100GB/h, depending on the composition of the file.
 
 Website | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
@@ -17,71 +37,41 @@ Website | Original | Minified | Ratio | Time<sup>&#42;</sup>
 [StackOverflow](http://stackoverflow.com/) | 201kB | **182kB** | 91% | 8ms
 [Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | **410kB** | 94%<sup>&#42;&#42;</sup> | 17ms
 
-<sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies alot but it's important to see it's in the 10ms range! The benchmark uses the HTML, CSS and JS minifiers and excludes the time reading from and writing to a file from the measurement.
+<sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies a lot but it's important to see it's in the 10ms range! The benchmark uses the HTML, CSS and JS minifiers and excludes the time reading from and writing to a file from the measurement.
 
 <sup>&#42;&#42;</sup>Is already somewhat minified, so this doesn't reflect the full potential of this minifier.
 
-[HTML Compressor](https://code.google.com/p/htmlcompressor/) performs worse in output size (for HTML and CSS) and speed, it is a magnitude slower. Its whitespace removal is not precise or the user must provide the tags around which can be trimmed. According to HTML Compressor, it produces smaller files than a couple of other libraries. With HTML and CSS compression this package is better, but JS compression it is still too basic.
+[HTML Compressor](https://code.google.com/p/htmlcompressor/) performs worse in output size (for HTML and CSS) and speed; it is a magnitude slower. Its whitespace removal is not precise or the user must provide the tags around which can be trimmed. According to HTML Compressor, it produces smaller files than a couple of other libraries. With HTML and CSS minification this package is better, but JS minification it is still too basic.
 
 ### Alternatives
-An alternative library written in Go is [https://github.com/dchest/htmlmin](https://github.com/dchest/htmlmin). It is written using regular expressions and is therefore a lot simpler (and thus less bugs, not handling edge-cases) but about twice as slow. Other alternatives are bindings for existing minifiers written in other languages. These are inevitably more robust and tested but will often be slower.
+An alternative library written in Go is [https://github.com/dchest/htmlmin](https://github.com/dchest/htmlmin). It is written using regular expressions and is therefore a lot simpler (and thus less bugs, not handling edge-cases) but about twice as slow. Also [https://github.com/omeid/jsmin](https://github.com/omeid/jsmin) contains a port of JSMin, just like this JS minifier, but is slower.
+
+Other alternatives are bindings for existing minifiers written in other languages. These are inevitably more robust and tested but will often be slower.
 
 ## HTML
 [![GoDoc](http://godoc.org/github.com/tdewolff/minify/html?status.svg)](http://godoc.org/github.com/tdewolff/minify/html) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/html)](http://gocover.io/github.com/tdewolff/minify/html)
 
 The HTML5 minifier uses these minifications:
 
-- strip unnecessary whitespace
+- strip unnecessary whitespace and otherwise collapse it to one space
 - strip superfluous quotes, or uses single/double quotes whichever requires fewer escapes
 - strip default attribute values and attribute boolean values
 - strip unrequired tags (`html`, `head`, `body`, ...)
+- strip unrequired end tags (`tr`, `td`, `li`, ... and often `p`)
 - strip default protocols (`http:` and `javascript:`)
 - strip comments (except conditional comments)
-- strip long `doctype` or `meta` charset
+- ahorten `doctype` and `meta` charset
 - lowercase tags, attributes and some values to enhance gzip compression
 
 After recent benchmarking and profiling it became really fast and minifies pages in the 10ms range, making it viable for on-the-fly minification.
 
-However, be careful when doing on-the-fly minification. A simple site would typically have HTML pages of 5kB which ideally are compressed to say 4kB. If this would take about 10ms to minify, one has to download slower than 100kB/s to make minification effective. There is a lot of handwaving in this example but it's hardly effective to minify on-the-fly. Rather use caching!
+However, be careful when doing on-the-fly minification. Minification typically trims off 10% and does this at worst around about 20MB/s. This means the users has to download slower than 2MB/s to make on-the-fly minification worthwhile. This may or may not apply in your situation. Rather use caching!
 
 ### Beware
-Make sure your HTML doesn't depend on whitespace between `block` elements that have been changed to `inline` or `inline-block` elements using CSS. Your layout *should not* depend on those whitespaces as the minifier will remove them. An example is a list of `<li>`s which have `display:inline-block` applied and have whitespace in between them.
+Make sure your HTML doesn't depend on whitespace between `block` elements that have been changed to `inline` or `inline-block` elements using CSS. Your layout *should not* depend on those whitespaces as the minifier will remove them. An example is a menu consisting of multiple `<li>` that have `display:inline-block` applied and have whitespace in between them. It is bad practise to rely on whitespace for element positioning anyways!
 
 ## CSS
 [![GoDoc](http://godoc.org/github.com/tdewolff/minify/css?status.svg)](http://godoc.org/github.com/tdewolff/minify/css) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/css)](http://gocover.io/github.com/tdewolff/minify/css)
-
-The CSS minifier will only use safe minifications:
-
-- remove comments and (most) whitespace
-- remove trailing semicolon(s)
-- optimize `margin`, `padding` and `border-width` number of sides
-- remove unnecessary decimal zeros and the `+` sign
-- remove dimension and percentage for zero values
-- remove quotes for URLs
-- remove quotes for font families and make lowercase
-- rewrite hex colors to/from color names, or to 3 digit hex
-- rewrite `rgb(` and `rgba(` colors to hex/name when possible
-- replace `normal` and `bold` by numbers for `font-weight` and `font`
-- replace `none` &#8594; `0` for `border`, `background` and `outline`
-- lowercase all identifiers except classes, IDs and URLs to enhace GZIP compression
-- shorten MS alpha function
-- remove empty rulesets
-- remove repeated selectors
-- rewrites data URI's with base64 or ASCII whichever is shorter
-- calls minifier for data URI mediatypes, thus you can compress embedded SVG files if you have that minifier attached for example
-
-It does purposely not use the following techniques:
-
-- (partially) merge rulesets
-- (partially) split rulesets
-- collapse multiple declarations when main declaration is defined within a ruleset (don't put `font-weight` within an already existing `font`, too complex)
-- remove overwritten properties in ruleset (this not always overwrites it, for example with `!important`)
-- rewrite properties into one in ruleset if possible (like `margin-top`, `margin-right`, `margin-bottom` and `margin-left` &#8594; `margin`)
-- put nested ID selector at the front (`body > div#elem p` &#8594; `#elem p`, unsafe)
-- rewrite attribute selectors for IDs and classes (`div[id=a]` &#8594; `div#a`)
-- put space after pseudo-selectors (IE6 is old, move on!)
-
-It's great that so many other tools make comparison tables: [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html), [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). From the last link, this CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented and often unsafe techniques, so that's fine.
 
 Minification typically runs at about 10MB/s ~= 35GB/h.
 
@@ -91,6 +81,37 @@ Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 [Gumby](http://gumbyframework.com/) | 182kB | **167kB** | 92% | 18ms
 
 <sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.
+
+The CSS minifier will only use safe minifications:
+
+- remove comments and (most) whitespace
+- remove trailing semicolons
+- optimize `margin`, `padding` and `border-width` number of sides
+- remove unnecessary decimal zeros and the `+` sign
+- remove dimension and percentage for zero values
+- remove quotes for URLs
+- remove quotes for font families and make lowercase
+- rewrite hex colors to/from color names, or to 3 digit hex
+- rewrite `rgb(` and `rgba(` colors to hex/name when possible
+- replace `normal` and `bold` by numbers for `font-weight` and `font`
+- replace `none` &#8594; `0` for `border`, `background` and `outline`
+- lowercase all identifiers except classes, IDs and URLs to enhance gzip compression
+- shorten MS alpha function
+- rewrite data URIs with base64 or ASCII whichever is shorter
+- calls minifier for data URI mediatypes, thus you can compress embedded SVG files if you have that minifier attached
+
+It does purposely not use the following techniques:
+
+- (partially) merge rulesets
+- (partially) split rulesets
+- collapse multiple declarations when main declaration is defined within a ruleset (don't put `font-weight` within an already existing `font`, too complex)
+- remove overwritten properties in ruleset (this not always overwrites it, for example with `!important`)
+- rewrite properties into one ruleset if possible (like `margin-top`, `margin-right`, `margin-bottom` and `margin-left` &#8594; `margin`)
+- put nested ID selector at the front (`body > div#elem p` &#8594; `#elem p`)
+- rewrite attribute selectors for IDs and classes (`div[id=a]` &#8594; `div#a`)
+- put space after pseudo-selectors (IE6 is old, move on!)
+
+It's great that so many other tools make comparison tables: [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html), [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). From the last link, this CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented and often unsafe techniques, so that's fine.
 
 ## JS
 [![GoDoc](http://godoc.org/github.com/tdewolff/minify/js?status.svg)](http://godoc.org/github.com/tdewolff/minify/js) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/js)](http://gocover.io/github.com/tdewolff/minify/js)
@@ -149,7 +170,7 @@ if err := m.Minify(mediatype, w, r); err != nil {
 }
 ```
 
-Minify HTML, CSS or JS directly from an `io.Reader` to an `io.Writer`. The passed mediatype is not required for these functions, but are added for clarity.
+Minify HTML, CSS or JS directly from an `io.Reader` to an `io.Writer`. The passed mediatype is not required for these functions, but are filled out for clarity.
 ``` go
 if err := html.Minify(m, "text/html", w, r); err != nil {
 	log.Fatal("Minify:", err)
@@ -167,7 +188,7 @@ if err := js.Minify(m, "text/javascript", w, r); err != nil {
 ### From bytes
 Minify from and to a `[]byte` for a specific mediatype.
 ``` go
-b, err := minify.Bytes(m, mediatype, b)
+b, err = minify.Bytes(m, mediatype, b)
 if err != nil {
 	log.Fatal("Bytes:", err)
 }
@@ -176,7 +197,7 @@ if err != nil {
 ### From string
 Minify from and to a `string` for a specific mediatype.
 ``` go
-s, err := minify.String(m, mediatype, s)
+s, err = minify.String(m, mediatype, s)
 if err != nil {
 	log.Fatal("String:", err)
 }
@@ -199,10 +220,10 @@ m.AddCmd(mediatype, exec.Command(cmd, args...))
 ### Mediatypes
 Mediatypes can contain wildcards (`*`) and parameters (`; key1=val2; key2=val2`). For example a minifier with `image/*` will match any image mime.
 
-Mediatypes such as `text/plain; charset=UTF-8` will be processed by `text/plain` or `text/*` or `*/*` whichever exists. The mediatype string is passed to the minifier function that can retrieve the parameters using `mime.ParseMediaType`.
+Mediatypes such as `text/plain; charset=UTF-8` will be processed by `text/plain` or `text/*` or `*/*` whichever exists. The mediatype string is passed to the minifier function which can retrieve the parameters using `mime.ParseMediaType`.
 
 ## Examples
-Basic example that minifies from stdin to stdout and loads the default HTML, CSS and JS minifiers. Optionally, one can enable `java -jar build/compiler.jar` to run for JS (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/)). Note that reading the file into a buffer first and writing to a pre-allocated buffer would be faster (but not streaming).
+Basic example that minifies from stdin to stdout and loads the default HTML, CSS and JS minifiers. Optionally, one can enable `java -jar build/compiler.jar` to run for JS (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/)). Note that reading the file into a buffer first and writing to a pre-allocated buffer would be faster (but would disable streaming).
 ``` go
 package main
 
