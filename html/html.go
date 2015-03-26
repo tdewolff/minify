@@ -302,42 +302,42 @@ func escapeAttrVal(b []byte) []byte {
 
 	if unquoted {
 		return b
-	} else {
-		var quote byte
-		var escapedQuote []byte
-		if doubles > singles {
-			quote = '\''
-			escapedQuote = []byte("&#39;")
-		} else {
-			quote = '"'
-			escapedQuote = []byte("&#34;")
-		}
-
-		t := make([]byte, len(b)+2) // maximum size, not actual size
-		t[0] = quote
-		j := 1
-		start := 0
-		for i, c := range b {
-			if c == '&' {
-				if entityQuote, n, ok := isAtQuoteEntity(b[i:]); ok {
-					j += copy(t[j:], b[start:i])
-					if entityQuote != quote {
-						j += copy(t[j:], []byte{entityQuote})
-					} else {
-						j += copy(t[j:], escapedQuote)
-					}
-					start = i + n
-				}
-			} else if c == quote {
-				j += copy(t[j:], b[start:i])
-				j += copy(t[j:], escapedQuote)
-				start = i + 1
-			}
-		}
-		j += copy(t[j:], b[start:])
-		t[j] = quote
-		return t[:j+1]
 	}
+
+	var quote byte
+	var escapedQuote []byte
+	if doubles > singles {
+		quote = '\''
+		escapedQuote = []byte("&#39;")
+	} else {
+		quote = '"'
+		escapedQuote = []byte("&#34;")
+	}
+
+	t := make([]byte, len(b)+2) // maximum size, not actual size
+	t[0] = quote
+	j := 1
+	start := 0
+	for i, c := range b {
+		if c == '&' {
+			if entityQuote, n, ok := isAtQuoteEntity(b[i:]); ok {
+				j += copy(t[j:], b[start:i])
+				if entityQuote != quote {
+					j += copy(t[j:], []byte{entityQuote})
+				} else {
+					j += copy(t[j:], escapedQuote)
+				}
+				start = i + n
+			}
+		} else if c == quote {
+			j += copy(t[j:], b[start:i])
+			j += copy(t[j:], escapedQuote)
+			start = i + 1
+		}
+	}
+	j += copy(t[j:], b[start:])
+	t[j] = quote
+	return t[:j+1]
 }
 
 // isWhitespace returns true for space, \n, \t, \f, \r.
@@ -529,7 +529,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 				// rewrite meta tag with charset
 				if hasAttributes && t.hash == html.Meta {
-					iHttpEquiv := -1
+					iHTTPEquiv := -1
 					iName := -1
 					iContent := -1
 					hasCharset := false
@@ -540,7 +540,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							break
 						}
 						if attr.hash == html.Http_Equiv {
-							iHttpEquiv = i
+							iHTTPEquiv = i
 						} else if attr.hash == html.Name {
 							iName = i
 						} else if attr.hash == html.Content {
@@ -552,8 +552,8 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					}
 					if iContent != -1 {
 						content := tb.peek(iContent)
-						if iHttpEquiv != -1 {
-							httpEquiv := tb.peek(iHttpEquiv)
+						if iHTTPEquiv != -1 {
+							httpEquiv := tb.peek(iHTTPEquiv)
 							content.attrVal = normalizeContentType(content.attrVal)
 							if !hasCharset && attrValEqualCaseInsensitive(httpEquiv.attrVal, []byte("content-type")) && attrValEqual(content.attrVal, []byte("text/html;charset=utf-8")) {
 								httpEquiv.data = nil
@@ -710,7 +710,7 @@ func (tb *tokenBuffer) read(p []token) int {
 			data = parse.Copy(data)
 		}
 
-		var attrVal []byte = nil
+		var attrVal []byte
 		var hash html.Hash
 		if tt == html.AttributeToken {
 			attrVal = tb.z.AttrVal()
