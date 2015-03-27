@@ -21,6 +21,8 @@
 	- [License](#license)
 
 # Minify
+**Update: [online live demo](http://pi.tacodewolff.nl:8080/minify) running on a Raspberry Pi 2.**
+
 Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3 and JS minifiers and provides an interface to implement any minifier. The implemented minifiers are very high performance and streaming (which implies O(n)).
 
 It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...). It is possible to pass parameters through the mimetype to specify the charset for example.
@@ -130,12 +132,9 @@ Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 <sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.
 
 ## Installation
-Run the following commands
+Run the following command
 
 	go get github.com/tdewolff/minify
-	go get github.com/tdewolff/minify/html
-	go get github.com/tdewolff/minify/css
-	go get github.com/tdewolff/minify/js
 
 or add the following imports and run the project with `go get`
 ``` go
