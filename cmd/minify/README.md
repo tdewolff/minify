@@ -18,6 +18,7 @@ and the `minify` command should be in your `$GOPATH/bin`.
 	  -x="": File extension (html, css or js), optional for input files
 
 ## Examples
+The following commands are variations one can use to minify a file:
 
 ```sh
 $ minify -o file.min.html file.html
@@ -29,7 +30,7 @@ $ minify -x js < file.js > file.min.js
 $ cat file.html | minify -x html > file.min.html
 ```
 
-It is also possible to overwrite the input file by the output. However, this won't work with input/output redirection streams. Using the following command the input file will be loaded into memory first before writing to output:
+It is also possible to overwrite the input file by the output file. However, this won't work with input/output redirection streams. Using the following command the input file will be loaded into memory first before writing to the output file:
 
 ```sh
 $ minify -o file.html file.html
