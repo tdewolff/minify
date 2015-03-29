@@ -1,5 +1,5 @@
 # Minify
-Minify is a CLI implementing the minify [library package](https://github.com/tdewolff/minify/blob/master/README.md).
+Minify is a CLI implemention of the minify [library package](https://github.com/tdewolff/minify/blob/master/README.md).
 
 ## Installation
 Make sure you have [Go](http://golang.org/) and [Git](http://git-scm.com/) installed.
@@ -19,12 +19,12 @@ and the `minify` command should be in your `$GOPATH/bin`.
 
 ## Examples
 
-```shell
-	minify -o file.min.html file.html
+```sh
+minify -o file.min.html file.html
 
-	minify -x css -o file.min.less file.less
+minify -x css -o file.min.less file.less
 
-	minify -x js < file.js > file.min.js
+minify -x js < file.js > file.min.js
 
-	cat file.html | minify -x html > file.min.html
+cat file.html | minify -x html > file.min.html
 ```

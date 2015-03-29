@@ -22,7 +22,8 @@
 
 # Minify
 **Update: [online live demo](http://pi.tacodewolff.nl:8080/minify) running on a Raspberry Pi 2.**
-**Update: [command-line-interface](https://github.com/tdewolff/minify/blob/master/cmd/minify/README.md) executable `minify` provided for tooling.**
+
+**Update: [command-line-interface](https://github.com/tdewolff/minify/tree/master/cmd/minify) executable `minify` provided for tooling.**
 
 Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3 and JS minifiers and provides an interface to implement any minifier. The implemented minifiers are very high performance and streaming (which implies O(n)).
 
