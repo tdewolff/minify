@@ -22,12 +22,13 @@
 
 # Minify
 **Update: [online live demo](http://pi.tacodewolff.nl:8080/minify) running on a Raspberry Pi 2.**
+**Update: [command-line-interface](https://github.com/tdewolff/minify/blob/master/cmd/minify/README.md) executable `minify` provided for tooling.**
 
 Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3 and JS minifiers and provides an interface to implement any minifier. The implemented minifiers are very high performance and streaming (which implies O(n)).
 
 It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...). It is possible to pass parameters through the mimetype to specify the charset for example.
 
-Bottleneck for minification is mainly io and can be significantly sped up by buffering (`bufio.Reader`). However, having the file fully loaded into memory (and providing `Bytes() []byte` like `bytes.Buffer`) speeds up minification even more due to internal optimizations.
+Bottleneck for minification is mainly io and can be significantly sped up by having the file loaded into memory and providing `Bytes() []byte` like `bytes.Buffer` does.
 
 ## Comparison
 HTML (with JS and CSS) minification typically runs at about 20-30MB/s ~= 70-100GB/h, depending on the composition of the file.
