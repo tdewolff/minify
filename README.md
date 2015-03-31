@@ -4,6 +4,12 @@
 
 **Update: [command-line-interface](https://github.com/tdewolff/minify/tree/master/cmd/minify) executable `minify` provided for tooling.**
 
+Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3 and JS minifiers and provides an interface to implement any minifier. The implemented minifiers are very high performance and streaming (which implies O(n)).
+
+It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...). It is possible to pass parameters through the mimetype to specify the charset for example.
+
+Bottleneck for minification is mainly io and can be significantly sped up by having the file loaded into memory and providing `Bytes() []byte` like `bytes.Buffer` does.
+
 **Table of Contents**
 
 - [Minify](#minify)
@@ -23,12 +29,6 @@
 		- [Mediatypes](#mediatypes)
 	- [Examples](#examples)
 	- [License](#license)
-
-Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3 and JS minifiers and provides an interface to implement any minifier. The implemented minifiers are very high performance and streaming (which implies O(n)).
-
-It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...). It is possible to pass parameters through the mimetype to specify the charset for example.
-
-Bottleneck for minification is mainly io and can be significantly sped up by having the file loaded into memory and providing `Bytes() []byte` like `bytes.Buffer` does.
 
 ## Comparison
 HTML (with JS and CSS) minification typically runs at about 20-30MB/s ~= 70-100GB/h, depending on the composition of the file.
