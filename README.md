@@ -1,4 +1,8 @@
-[![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify)](http://gocover.io/github.com/tdewolff/minify)
+# Minify [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify)](http://gocover.io/github.com/tdewolff/minify)
+
+**Update: [online live demo](http://pi.tacodewolff.nl:8080/minify) running on a Raspberry Pi 2.**
+
+**Update: [command-line-interface](https://github.com/tdewolff/minify/tree/master/cmd/minify) executable `minify` provided for tooling.**
 
 **Table of Contents**
 
@@ -19,11 +23,6 @@
 		- [Mediatypes](#mediatypes)
 	- [Examples](#examples)
 	- [License](#license)
-
-# Minify
-**Update: [online live demo](http://pi.tacodewolff.nl:8080/minify) running on a Raspberry Pi 2.**
-
-**Update: [command-line-interface](https://github.com/tdewolff/minify/tree/master/cmd/minify) executable `minify` provided for tooling.**
 
 Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3 and JS minifiers and provides an interface to implement any minifier. The implemented minifiers are very high performance and streaming (which implies O(n)).
 
