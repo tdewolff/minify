@@ -11,7 +11,7 @@ import (
 
 var rawTagMap = map[html.Hash]bool{
 	html.Code:     true,
-	html.Noscript: true,
+	html.Iframe:   true,
 	html.Pre:      true,
 	html.Script:   true,
 	html.Style:    true,
@@ -407,14 +407,26 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 		case html.TextToken:
 			// CSS and JS minifiers for inline code
 			if rawTag != 0 {
-				if rawTag == html.Style || rawTag == html.Script {
+				if rawTag == html.Style || rawTag == html.Script || rawTag == html.Iframe {
 					var mediatype string
-					if len(rawTagMediatype) > 0 {
+					if rawTag == html.Iframe {
+						mediatype = "text/html"
+					} else if len(rawTagMediatype) > 0 {
 						mediatype = string(rawTagMediatype)
 					} else if rawTag == html.Script {
 						mediatype = defaultScriptType
 					} else {
 						mediatype = defaultStyleType
+					}
+					// ignore CDATA in embedded HTML
+					if mediatype == "text/html" {
+						trimmedData := bytes.TrimSpace(t.data)
+						if len(trimmedData) > 12 && bytes.Equal(trimmedData[:9], []byte("<![CDATA[")) && bytes.Equal(trimmedData[len(trimmedData)-3:], []byte("]]>")) {
+							if _, err := w.Write([]byte("<![CDATA[")); err != nil {
+								return err
+							}
+							t.data = trimmedData[9:]
+						}
 					}
 					if err := m.Minify(mediatype, w, bytes.NewBuffer(t.data)); err != nil {
 						if err == minify.ErrNotExist {
@@ -425,10 +437,6 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						} else {
 							return err
 						}
-					}
-				} else if rawTag == html.Noscript {
-					if err := Minify(m, "text/html", w, bytes.NewBuffer(t.data)); err != nil {
-						return err
 					}
 				} else if _, err := w.Write(t.data); err != nil {
 					return err

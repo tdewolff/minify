@@ -14,8 +14,9 @@ import (
 
 func assertHTML(t *testing.T, input, expected string) {
 	m := minify.New()
+	m.AddFunc("text/html", Minify)
 	b := &bytes.Buffer{}
-	assert.Nil(t, Minify(m, "text/html", b, bytes.NewBufferString(input)), "Minify must not return error in "+input)
+	assert.Nil(t, m.Minify("text/html", b, bytes.NewBufferString(input)), "Minify must not return error in "+input)
 	assert.Equal(t, expected, b.String(), "Minify must give expected result in "+input)
 }
 
@@ -59,7 +60,7 @@ func TestHTML(t *testing.T) {
 	assertHTML(t, "<span onload=\"javascript:x;\"></span>", "<span onload=x;></span>")
 	assertHTML(t, "<span href=\"http://test\"></span>", "<span href=//test></span>")
 	assertHTML(t, "<span selected=\"selected\"></span>", "<span selected></span>")
-	assertHTML(t, "<noscript><html></noscript>", "<noscript></noscript>")
+	assertHTML(t, "<noscript><html><img id=\"x\"></noscript>", "<noscript><img id=x></noscript>")
 	assertHTML(t, "<body id=\"main\"></body>", "<body id=main>")
 
 	//assertHTML(t, "<!--[if IE 6]>some   spaces<![endif]-->", "<!--[if IE 6]>some spaces<![endif]-->") // TODO: make this work by changing the tokenizer code, see other TODO
@@ -107,6 +108,8 @@ func TestHTML(t *testing.T) {
 
 	assertHTML(t, `<!doctype html> <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"> <head profile="http://dublincore.org/documents/dcq-html/"> <!-- Barlesque 2.75.0 --> <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`, `<!doctype html><html xmlns=//www.w3.org/1999/xhtml xml:lang=en><head profile=//dublincore.org/documents/dcq-html/><meta charset=utf-8>`)
 	assertHTML(t, `<meta name="keywords" content="A, B">`, `<meta name=keywords content=A,B>`)
+	assertHTML(t, `<script type="text/html"><![CDATA[ <img id="x"> ]]></script>`, `<script type=text/html><![CDATA[<img id=x>]]></script>`)
+	assertHTML(t, `<iframe><html> <p> x </p> </html></iframe>`, `<iframe><p>x</iframe>`)
 }
 
 func TestWhitespace(t *testing.T) {
