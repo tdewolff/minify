@@ -7,6 +7,9 @@ import (
 	"github.com/tdewolff/parse/js"
 )
 
+var spaceByte = []byte{' '}
+var newlineByte = []byte{'\n'}
+
 // Minify minifies JS files, it reads from r and writes to w.
 func Minify(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	z := js.NewTokenizer(r)
@@ -35,11 +38,11 @@ func Minify(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			first := text[0]
 			if (prev == js.IdentifierToken || prev == js.NumericToken || prev == js.PunctuatorToken || prev == js.StringToken || prev == js.RegexpToken) && (tt == js.IdentifierToken || tt == js.NumericToken || tt == js.PunctuatorToken || tt == js.RegexpToken) {
 				if lineTerminatorQueued && (tt != js.PunctuatorToken || first == '{' || first == '[' || first == '(' || first == '+' || first == '-') && (prev != js.PunctuatorToken || prevLast == '}' || prevLast == ']' || prevLast == ')' || prevLast == '+' || prevLast == '-' || prevLast == '"' || prevLast == '\'') {
-					if _, err := w.Write([]byte("\n")); err != nil {
+					if _, err := w.Write(newlineByte); err != nil {
 						return err
 					}
 				} else if whitespaceQueued && (prev != js.StringToken && prev != js.PunctuatorToken && tt != js.PunctuatorToken || first == prevLast && (prevLast == '+' || prevLast == '-')) {
-					if _, err := w.Write([]byte(" ")); err != nil {
+					if _, err := w.Write(spaceByte); err != nil {
 						return err
 					}
 				}
