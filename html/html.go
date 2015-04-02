@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 
+	"github.com/tdewolff/buffer"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/parse"
 	"github.com/tdewolff/parse/html"
@@ -282,7 +283,7 @@ func isAtQuoteEntity(b []byte) (quote byte, n int, ok bool) {
 }
 
 // escapeAttrVal returns the escape attribute value bytes without quotes.
-func escapeAttrVal(b []byte) []byte {
+func escapeAttrVal(b []byte, buf *[]byte) []byte {
 	singles := 0
 	doubles := 0
 	unquoted := true
@@ -322,7 +323,12 @@ func escapeAttrVal(b []byte) []byte {
 		escapedQuote = escapedDoubleQuoteBytes
 	}
 
-	t := make([]byte, len(b)+2) // maximum size, not actual size
+	// maximum size, not actual size
+	if len(b)+2 > cap(*buf) {
+		*buf = make([]byte, 0, len(b)+2)
+	}
+
+	t := (*buf)[:len(b)+2] // maximum size, not actual size
 	t[0] = quote
 	j := 1
 	start := 0
@@ -387,6 +393,9 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	defaultScriptType := "text/javascript"
 	defaultStyleType := "text/css"
 
+	attrMinifyBuffer := make([]byte, 0, 64)
+	attrEscapeBuffer := make([]byte, 0, 64)
+
 	tb := newTokenBuffer(html.NewTokenizer(r))
 	for {
 		t := tb.shift()
@@ -436,7 +445,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							t.data = trimmedData[9:]
 						}
 					}
-					if err := m.Minify(mediatype, w, bytes.NewBuffer(t.data)); err != nil {
+					if err := m.Minify(mediatype, w, buffer.NewReader(t.data)); err != nil {
 						if err == minify.ErrNotExist {
 							// no minifier, write the original
 							if _, err := w.Write(t.data); err != nil {
@@ -669,12 +678,20 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						}
 						// CSS and JS minifiers for attribute inline code
 						if attr.hash == html.Style {
-							val, _ = minify.Bytes(m, defaultStyleType, val)
+							out := buffer.NewWriter(attrMinifyBuffer[:0])
+							if m.Minify(defaultStyleType, out, buffer.NewReader(val)) == nil {
+								val = out.Bytes()
+							}
+							attrMinifyBuffer = out.Bytes() // reuse resized buffer
 						} else if len(attr.data) > 2 && attr.data[0] == 'o' && attr.data[1] == 'n' {
 							if len(val) >= 11 && parse.EqualCaseInsensitive(val[:11], []byte("javascript:")) {
 								val = val[11:]
 							}
-							val, _ = minify.Bytes(m, defaultScriptType, val)
+							out := buffer.NewWriter(attrMinifyBuffer[:0])
+							if m.Minify(defaultScriptType, out, buffer.NewReader(val)) == nil {
+								val = out.Bytes()
+							}
+							attrMinifyBuffer = out.Bytes() // reuse resized buffer
 						} else if urlAttrMap[attr.hash] {
 							if len(val) >= 5 && parse.EqualCaseInsensitive(val[:5], []byte{'h', 't', 't', 'p', ':'}) {
 								val = val[5:]
@@ -682,7 +699,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						}
 
 						// no quotes if possible, else prefer single or double depending on which occurs more often in value
-						val = escapeAttrVal(val)
+						val = escapeAttrVal(val, &attrEscapeBuffer) // reuse resized buffer
 						if _, err := w.Write(val); err != nil {
 							return err
 						}

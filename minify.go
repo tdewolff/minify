@@ -35,10 +35,11 @@ Usage example:
 package minify // import "github.com/tdewolff/minify"
 
 import (
-	"bytes"
 	"errors"
 	"io"
 	"os/exec"
+
+	"github.com/tdewolff/buffer"
 )
 
 // ErrNotExist is returned when no minifier exists for a given mediatype.
@@ -144,21 +145,19 @@ func (m Minify) Minify(mediatype string, w io.Writer, r io.Reader) error {
 // Bytes minifies an array of bytes (safe for concurrent use). When an error occurs it return the original array and the error.
 // It returns an error when no such mediatype exists (ErrNotExist) or any error occurred in the minifier function.
 func Bytes(m Minifier, mediatype string, v []byte) ([]byte, error) {
-	b := &bytes.Buffer{}
-	b.Grow(len(v))
-	if err := m.Minify(mediatype, b, bytes.NewBuffer(v)); err != nil {
+	out := buffer.NewWriter(make([]byte, 0, len(v)))
+	if err := m.Minify(mediatype, out, buffer.NewReader(v)); err != nil {
 		return v, err
 	}
-	return b.Bytes(), nil
+	return out.Bytes(), nil
 }
 
 // String minifies a string (safe for concurrent use). When an error occurs it return the original string and the error.
 // It returns an error when no such mediatype exists (ErrNotExist) or any error occurred in the minifier function.
 func String(m Minifier, mediatype string, v string) (string, error) {
-	b := &bytes.Buffer{}
-	b.Grow(len(v))
-	if err := m.Minify(mediatype, b, bytes.NewBufferString(v)); err != nil {
+	out := buffer.NewWriter(make([]byte, 0, len(v)))
+	if err := m.Minify(mediatype, out, buffer.NewReader([]byte(v))); err != nil {
 		return v, err
 	}
-	return b.String(), nil
+	return string(out.Bytes()), nil
 }

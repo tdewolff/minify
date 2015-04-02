@@ -31,7 +31,8 @@ func helperRand(n, m int, chars []byte) []string {
 }
 
 func assertAttrVal(t *testing.T, input, expected string) {
-	assert.Equal(t, expected, string(escapeAttrVal([]byte(input))))
+	buf := make([]byte, len(input))
+	assert.Equal(t, expected, string(escapeAttrVal([]byte(input), &buf)))
 }
 
 ////////////////////////////////////////////////////////////////
