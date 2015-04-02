@@ -9,6 +9,14 @@ import (
 	"github.com/tdewolff/parse/html"
 )
 
+var ltByte = []byte{'<'}
+var gtByte = []byte{'>'}
+var isByte = []byte{'='}
+var spaceByte = []byte{' '}
+var endBytes = []byte{'<', '/'}
+var escapedSingleQuoteBytes = []byte("&#39;")
+var escapedDoubleQuoteBytes = []byte("&#34;")
+
 var rawTagMap = map[html.Hash]bool{
 	html.Code:     true,
 	html.Iframe:   true,
@@ -308,10 +316,10 @@ func escapeAttrVal(b []byte) []byte {
 	var escapedQuote []byte
 	if doubles > singles {
 		quote = '\''
-		escapedQuote = []byte("&#39;")
+		escapedQuote = escapedSingleQuoteBytes
 	} else {
 		quote = '"'
-		escapedQuote = []byte("&#34;")
+		escapedQuote = escapedDoubleQuoteBytes
 	}
 
 	t := make([]byte, len(b)+2) // maximum size, not actual size
@@ -588,11 +596,11 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 			// write tag
 			if t.tt == html.EndTagToken {
-				if _, err := w.Write([]byte{'<', '/'}); err != nil {
+				if _, err := w.Write(endBytes); err != nil {
 					return err
 				}
 			} else {
-				if _, err := w.Write([]byte{'<'}); err != nil {
+				if _, err := w.Write(ltByte); err != nil {
 					return err
 				}
 			}
@@ -644,7 +652,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						attr.hash == html.Language && t.hash == html.Script && parse.Equal(val, []byte("javascript")) {
 						continue
 					}
-					if _, err := w.Write([]byte{' '}); err != nil {
+					if _, err := w.Write(spaceByte); err != nil {
 						return err
 					}
 					if _, err := w.Write(attr.data); err != nil {
@@ -656,7 +664,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						if len(val) == 0 {
 							continue
 						}
-						if _, err := w.Write([]byte{'='}); err != nil {
+						if _, err := w.Write(isByte); err != nil {
 							return err
 						}
 						// CSS and JS minifiers for attribute inline code
@@ -681,7 +689,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					}
 				}
 			}
-			if _, err := w.Write([]byte{'>'}); err != nil {
+			if _, err := w.Write(gtByte); err != nil {
 				return err
 			}
 		}
