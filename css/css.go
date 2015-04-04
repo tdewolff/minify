@@ -21,143 +21,15 @@ import (
 
 var epsilon = 0.00001
 
-var shortenColorHex = map[string][]byte{
-	"#000080": []byte("navy"),
-	"#008000": []byte("green"),
-	"#008080": []byte("teal"),
-	"#4b0082": []byte("indigo"),
-	"#800000": []byte("maroon"),
-	"#800080": []byte("purple"),
-	"#808000": []byte("olive"),
-	"#808080": []byte("gray"),
-	"#a0522d": []byte("sienna"),
-	"#a52a2a": []byte("brown"),
-	"#c0c0c0": []byte("silver"),
-	"#cd853f": []byte("peru"),
-	"#d2b48c": []byte("tan"),
-	"#da70d6": []byte("orchid"),
-	"#dda0dd": []byte("plum"),
-	"#ee82ee": []byte("violet"),
-	"#f0e68c": []byte("khaki"),
-	"#f0ffff": []byte("azure"),
-	"#f5deb3": []byte("wheat"),
-	"#f5f5dc": []byte("beige"),
-	"#fa8072": []byte("salmon"),
-	"#faf0e6": []byte("linen"),
-	"#ff6347": []byte("tomato"),
-	"#ff7f50": []byte("coral"),
-	"#ffa500": []byte("orange"),
-	"#ffc0cb": []byte("pink"),
-	"#ffd700": []byte("gold"),
-	"#ffe4c4": []byte("bisque"),
-	"#fffafa": []byte("snow"),
-	"#fffff0": []byte("ivory"),
-	"#ff0000": []byte("red"),
-	"#f00":    []byte("red"),
-}
-
-var shortenColorName = map[css.Hash][]byte{
-	css.Black:                []byte("#000"),
-	css.Darkblue:             []byte("#00008b"),
-	css.Mediumblue:           []byte("#0000cd"),
-	css.Darkgreen:            []byte("#006400"),
-	css.Darkcyan:             []byte("#008b8b"),
-	css.Deepskyblue:          []byte("#00bfff"),
-	css.Darkturquoise:        []byte("#00ced1"),
-	css.Mediumspringgreen:    []byte("#00fa9a"),
-	css.Springgreen:          []byte("#00ff7f"),
-	css.Midnightblue:         []byte("#191970"),
-	css.Dodgerblue:           []byte("#1e90ff"),
-	css.Lightseagreen:        []byte("#20b2aa"),
-	css.Forestgreen:          []byte("#228b22"),
-	css.Seagreen:             []byte("#2e8b57"),
-	css.Darkslategray:        []byte("#2f4f4f"),
-	css.Limegreen:            []byte("#32cd32"),
-	css.Mediumseagreen:       []byte("#3cb371"),
-	css.Turquoise:            []byte("#40e0d0"),
-	css.Royalblue:            []byte("#4169e1"),
-	css.Steelblue:            []byte("#4682b4"),
-	css.Darkslateblue:        []byte("#483d8b"),
-	css.Mediumturquoise:      []byte("#48d1cc"),
-	css.Darkolivegreen:       []byte("#556b2f"),
-	css.Cadetblue:            []byte("#5f9ea0"),
-	css.Cornflowerblue:       []byte("#6495ed"),
-	css.Mediumaquamarine:     []byte("#66cdaa"),
-	css.Slateblue:            []byte("#6a5acd"),
-	css.Olivedrab:            []byte("#6b8e23"),
-	css.Slategray:            []byte("#708090"),
-	css.Lightslateblue:       []byte("#789"),
-	css.Mediumslateblue:      []byte("#7b68ee"),
-	css.Lawngreen:            []byte("#7cfc00"),
-	css.Chartreuse:           []byte("#7fff00"),
-	css.Aquamarine:           []byte("#7fffd4"),
-	css.Lightskyblue:         []byte("#87cefa"),
-	css.Blueviolet:           []byte("#8a2be2"),
-	css.Darkmagenta:          []byte("#8b008b"),
-	css.Saddlebrown:          []byte("#8b4513"),
-	css.Darkseagreen:         []byte("#8fbc8f"),
-	css.Lightgreen:           []byte("#90ee90"),
-	css.Mediumpurple:         []byte("#9370db"),
-	css.Darkviolet:           []byte("#9400d3"),
-	css.Palegreen:            []byte("#98fb98"),
-	css.Darkorchid:           []byte("#9932cc"),
-	css.Yellowgreen:          []byte("#9acd32"),
-	css.Darkgray:             []byte("#a9a9a9"),
-	css.Lightblue:            []byte("#add8e6"),
-	css.Greenyellow:          []byte("#adff2f"),
-	css.Paleturquoise:        []byte("#afeeee"),
-	css.Lightsteelblue:       []byte("#b0c4de"),
-	css.Powderblue:           []byte("#b0e0e6"),
-	css.Firebrick:            []byte("#b22222"),
-	css.Darkgoldenrod:        []byte("#b8860b"),
-	css.Mediumorchid:         []byte("#ba55d3"),
-	css.Rosybrown:            []byte("#bc8f8f"),
-	css.Darkkhaki:            []byte("#bdb76b"),
-	css.Mediumvioletred:      []byte("#c71585"),
-	css.Indianred:            []byte("#cd5c5c"),
-	css.Chocolate:            []byte("#d2691e"),
-	css.Lightgray:            []byte("#d3d3d3"),
-	css.Goldenrod:            []byte("#daa520"),
-	css.Palevioletred:        []byte("#db7093"),
-	css.Gainsboro:            []byte("#dcdcdc"),
-	css.Burlywood:            []byte("#deb887"),
-	css.Lightcyan:            []byte("#e0ffff"),
-	css.Lavender:             []byte("#e6e6fa"),
-	css.Darksalmon:           []byte("#e9967a"),
-	css.Palegoldenrod:        []byte("#eee8aa"),
-	css.Lightcoral:           []byte("#f08080"),
-	css.Aliceblue:            []byte("#f0f8ff"),
-	css.Honeydew:             []byte("#f0fff0"),
-	css.Sandybrown:           []byte("#f4a460"),
-	css.Whitesmoke:           []byte("#f5f5f5"),
-	css.Mintcream:            []byte("#f5fffa"),
-	css.Ghostwhite:           []byte("#f8f8ff"),
-	css.Antiquewhite:         []byte("#faebd7"),
-	css.Lightgoldenrodyellow: []byte("#fafad2"),
-	css.Fuchsia:              []byte("#f0f"),
-	css.Magenta:              []byte("#f0f"),
-	css.Deeppink:             []byte("#ff1493"),
-	css.Orangered:            []byte("#ff4500"),
-	css.Darkorange:           []byte("#ff8c00"),
-	css.Lightsalmon:          []byte("#ffa07a"),
-	css.Lightpink:            []byte("#ffb6c1"),
-	css.Peachpuff:            []byte("#ffdab9"),
-	css.Navajowhite:          []byte("#ffdead"),
-	css.Moccasin:             []byte("#ffe4b5"),
-	css.Mistyrose:            []byte("#ffe4e1"),
-	css.Blanchedalmond:       []byte("#ffebcd"),
-	css.Papayawhip:           []byte("#ffefd5"),
-	css.Lavenderblush:        []byte("#fff0f5"),
-	css.Seashell:             []byte("#fff5ee"),
-	css.Cornsilk:             []byte("#fff8dc"),
-	css.Lemonchiffon:         []byte("#fffacd"),
-	css.Floralwhite:          []byte("#fffaf0"),
-	css.Yellow:               []byte("#ff0"),
-	css.Lightyellow:          []byte("#ffffe0"),
-	css.White:                []byte("#fff"),
-}
-
-////////////////////////////////////////////////////////////////
+var (
+	spaceBytes        = []byte(" ")
+	commaBytes        = []byte(",")
+	semicolonBytes    = []byte(";")
+	leftBracketBytes  = []byte("{")
+	rightBracketBytes = []byte("}")
+	zeroBytes         = []byte("0")
+	msfilterBytes     = []byte("-ms-filter")
+)
 
 type cssMinifier struct {
 	m minify.Minifier
@@ -167,13 +39,14 @@ type cssMinifier struct {
 	semicolonQueued bool
 }
 
+////////////////////////////////////////////////////////////////
+
 // Minify minifies CSS files, it reads from r and writes to w.
 func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	c := &cssMinifier{
-		m,
-		w,
-		css.NewParser(r),
-		false,
+		m: m,
+		w: w,
+		p: css.NewParser(r),
 	}
 	var err error
 	for {
@@ -193,7 +66,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, rootNode css.Node) error {
 	if rootGt != css.ErrorGrammar && rootGt != css.TokenGrammar && c.semicolonQueued { // it is only TokenGrammar for CDO and CDC
-		if _, err := c.w.Write([]byte(";")); err != nil {
+		if _, err := c.w.Write(semicolonBytes); err != nil {
 			return err
 		}
 		c.semicolonQueued = false
@@ -215,7 +88,7 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, rootNode css.Nod
 			} else if gt == css.EndAtRuleGrammar {
 				break
 			} else if !hasRules {
-				if _, err := c.w.Write([]byte("{")); err != nil {
+				if _, err := c.w.Write(leftBracketBytes); err != nil {
 					return err
 				}
 				hasRules = true
@@ -225,7 +98,7 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, rootNode css.Nod
 			}
 		}
 		if hasRules {
-			if _, err := c.w.Write([]byte("}")); err != nil {
+			if _, err := c.w.Write(rightBracketBytes); err != nil {
 				return err
 			}
 			c.semicolonQueued = false
@@ -237,7 +110,7 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, rootNode css.Nod
 		if err := c.minifySelectors(ruleset.Selectors); err != nil {
 			return err
 		}
-		if _, err := c.w.Write([]byte("{")); err != nil {
+		if _, err := c.w.Write(leftBracketBytes); err != nil {
 			return err
 		}
 		for {
@@ -251,7 +124,7 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, rootNode css.Nod
 				return err
 			}
 		}
-		if _, err := c.w.Write([]byte("}")); err != nil {
+		if _, err := c.w.Write(rightBracketBytes); err != nil {
 			return err
 		}
 		c.semicolonQueued = false
@@ -277,12 +150,12 @@ func (c *cssMinifier) minifyAtRuleNodes(nodes []css.Node) error {
 				t = k
 			}
 			if t == nil || t.Data[0] != ',' {
-				if _, err := c.w.Write([]byte(" ")); err != nil {
+				if _, err := c.w.Write(spaceBytes); err != nil {
 					return err
 				}
 			}
 		} else {
-			if _, err := c.w.Write([]byte(" ")); err != nil {
+			if _, err := c.w.Write(spaceBytes); err != nil {
 				return err
 			}
 		}
@@ -296,7 +169,7 @@ func (c *cssMinifier) minifyAtRuleNodes(nodes []css.Node) error {
 func (c *cssMinifier) minifySelectors(selectors []css.SelectorNode) error {
 	for i, sel := range selectors {
 		if i != 0 {
-			if _, err := c.w.Write([]byte(",")); err != nil {
+			if _, err := c.w.Write(commaBytes); err != nil {
 				return err
 			}
 		}
@@ -403,7 +276,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 					parse.ToLower(t.Data)
 					s := t.Data[1 : len(t.Data)-1]
 					unquote := true
-					for _, split := range bytes.Split(s, []byte(" ")) {
+					for _, split := range bytes.Split(s, spaceBytes) {
 						val := css.ToHash(split)
 						// if len is zero, it contains two consecutive spaces
 						if val == css.Inherit || val == css.Serif || val == css.Sans_Serif || val == css.Monospace || val == css.Fantasy || val == css.Cursive || val == css.Initial || val == css.Default ||
@@ -421,7 +294,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 	} else if (prop == css.Outline || prop == css.Background || prop == css.Border || prop == css.Border_Bottom || prop == css.Border_Left || prop == css.Border_Right || prop == css.Border_Top) && len(decl.Vals) == 1 {
 		if t, ok := decl.Vals[0].(*css.TokenNode); ok && css.ToHash(t.Data) == css.None {
 			t.TokenType = css.NumberToken
-			t.Data = []byte("0")
+			t.Data = zeroBytes
 		}
 	} else if prop == css.Filter && len(decl.Vals) == 7 {
 		if fun, ok := decl.Vals[6].(*css.FunctionNode); ok && bytes.Equal(fun.Name.Data, []byte("Alpha")) {
@@ -445,7 +318,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 				}
 			}
 		}
-	} else if len(decl.Vals) == 1 && bytes.Equal(decl.Prop.Data, []byte("-ms-filter")) {
+	} else if len(decl.Vals) == 1 && bytes.Equal(decl.Prop.Data, msfilterBytes) {
 		if t, ok := decl.Vals[0].(*css.TokenNode); ok {
 			alpha := []byte("progid:DXImageTransform.Microsoft.Alpha(Opacity=")
 			if t.TokenType == css.StringToken && bytes.HasPrefix(t.Data[1:len(t.Data)-1], alpha) {
@@ -463,7 +336,7 @@ func (c *cssMinifier) minifyDeclaration(decl *css.DeclarationNode) error {
 				t = k
 			}
 			if t == nil || (t.Data[0] != ',' && t.Data[0] != '/' && t.Data[0] != ':' && t.Data[0] != '.' && t.Data[0] != '!') {
-				if _, err := c.w.Write([]byte(" ")); err != nil {
+				if _, err := c.w.Write(spaceBytes); err != nil {
 					return err
 				}
 			}
@@ -531,15 +404,18 @@ func (c *cssMinifier) shortenFunction(fun *css.FunctionNode) css.Node {
 				}
 			}
 			if err == nil {
-				valHex := make([]byte, 6)
-				hex.Encode(valHex, rgb)
-				parse.ToLower(valHex)
-				val := append([]byte("#"), valHex...)
+				val := make([]byte, 7)
+				val[0] = '#'
+				hex.Encode(val[1:], rgb)
+				parse.ToLower(val)
 				if s, ok := shortenColorHex[string(val)]; ok {
 					node = &css.TokenNode{css.IdentToken, s}
-				} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
-					node = &css.TokenNode{css.HashToken, append([]byte("#"), val[1], val[3], val[5])}
 				} else {
+					if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
+						val[2] = val[3]
+						val[3] = val[5]
+						val = val[:4]
+					}
 					node = &css.TokenNode{css.HashToken, val}
 				}
 			}
@@ -559,15 +435,15 @@ func (c *cssMinifier) shortenToken(t *css.TokenNode) {
 			return
 		}
 		if math.Abs(f) < epsilon {
-			t.Data = []byte("0")
+			t.Data = zeroBytes
 		} else if len(num) > 0 {
 			if num[0] == '-' {
-				num = num[1:]
-				// trim 0 left
-				for len(num) > 0 && num[0] == '0' {
-					num = num[1:]
+				n := 1
+				for n < len(num) && num[n] == '0' {
+					n++
 				}
-				num = append([]byte{'-'}, num...)
+				num = num[n-1:]
+				num[0] = '-'
 			} else {
 				// trim 0 left
 				for len(num) > 0 && num[0] == '0' {
@@ -609,7 +485,9 @@ func (c *cssMinifier) shortenToken(t *css.TokenNode) {
 			t.Data = ident
 		} else if len(t.Data) == 7 && t.Data[1] == t.Data[2] && t.Data[3] == t.Data[4] && t.Data[5] == t.Data[6] {
 			t.TokenType = css.HashToken
-			t.Data = append([]byte("#"), append([]byte{t.Data[1]}, t.Data[3], t.Data[5])...)
+			t.Data[2] = t.Data[3]
+			t.Data[3] = t.Data[5]
+			t.Data = t.Data[:4]
 		}
 	} else if t.TokenType == css.StringToken {
 		// remove any \\\r\n \\\r \\\n
@@ -671,3 +549,14 @@ func (c *cssMinifier) shortenToken(t *css.TokenNode) {
 		}
 	}
 }
+
+///
+///
+///
+///
+//
+//
+//
+//
+//
+//
