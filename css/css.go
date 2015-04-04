@@ -293,7 +293,7 @@ func (c *cssMinifier) minifyAtRuleNodes(nodes []css.Node) error {
 	return nil
 }
 
-func (c *cssMinifier) minifySelectors(selectors []*css.SelectorNode) error {
+func (c *cssMinifier) minifySelectors(selectors []css.SelectorNode) error {
 	for i, sel := range selectors {
 		if i != 0 {
 			if _, err := c.w.Write([]byte(",")); err != nil {
