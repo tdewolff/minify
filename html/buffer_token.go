@@ -41,7 +41,6 @@ func (z *tokenBuffer) Read(p []token) int {
 			}
 		}
 		p[i] = token{tt, data, attrVal, hash}
-
 		if tt == html.ErrorToken {
 			return i + 1
 		}
