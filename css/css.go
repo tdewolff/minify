@@ -72,7 +72,7 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, rootNode css.Nod
 		c.semicolonQueued = false
 	}
 
-	if rootGt == css.AtRuleGrammar {
+	if rootGt == css.AtRuleGrammar || rootGt == css.StartAtRuleGrammar {
 		atRule := rootNode.(*css.AtRuleNode)
 		if _, err := c.w.Write(atRule.Name.Data); err != nil {
 			return err
@@ -80,24 +80,21 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, rootNode css.Nod
 		if err := c.minifyAtRuleNodes(atRule.Nodes); err != nil {
 			return err
 		}
-		hasRules := false
-		for {
-			gt, node := c.p.Next()
-			if gt == css.ErrorGrammar {
-				return c.p.Err()
-			} else if gt == css.EndAtRuleGrammar {
-				break
-			} else if !hasRules {
-				if _, err := c.w.Write(leftBracketBytes); err != nil {
-					return err
-				}
-				hasRules = true
-			}
-			if err := c.minifyRecursively(gt, node); err != nil {
+		if rootGt == css.StartAtRuleGrammar {
+			if _, err := c.w.Write(leftBracketBytes); err != nil {
 				return err
 			}
-		}
-		if hasRules {
+			for {
+				gt, node := c.p.Next()
+				if gt == css.ErrorGrammar {
+					return c.p.Err()
+				} else if gt == css.EndAtRuleGrammar {
+					break
+				}
+				if err := c.minifyRecursively(gt, node); err != nil {
+					return err
+				}
+			}
 			if _, err := c.w.Write(rightBracketBytes); err != nil {
 				return err
 			}
@@ -105,7 +102,7 @@ func (c *cssMinifier) minifyRecursively(rootGt css.GrammarType, rootNode css.Nod
 		} else {
 			c.semicolonQueued = true
 		}
-	} else if rootGt == css.RulesetGrammar {
+	} else if rootGt == css.StartRulesetGrammar {
 		ruleset := rootNode.(*css.RulesetNode)
 		if err := c.minifySelectors(ruleset.Selectors); err != nil {
 			return err
