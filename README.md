@@ -78,8 +78,8 @@ Minification typically runs at about 10MB/s ~= 35GB/h.
 
 Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
-[Bootstrap](http://getbootstrap.com/) | 134kB | **111kB** | 83% | 13ms
-[Gumby](http://gumbyframework.com/) | 182kB | **167kB** | 92% | 18ms
+[Bootstrap](http://getbootstrap.com/) | 134kB | **111kB** | 83% | 11ms
+[Gumby](http://gumbyframework.com/) | 182kB | **167kB** | 92% | 15ms
 
 <sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.
 
