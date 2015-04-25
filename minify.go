@@ -38,6 +38,7 @@ import (
 	"errors"
 	"io"
 	"os/exec"
+	"regexp"
 
 	"github.com/tdewolff/buffer"
 )
@@ -58,39 +59,18 @@ type Minifier interface {
 	Minify(mediatype string, w io.Writer, r io.Reader) error
 }
 
-////////////////////////////////////////////////////////////////
-
-// Minify holds a map of mediatype => function to allow recursive minifier calls of the minifier functions.
-type Minify map[string]Func
-
-// New returns a new Minify. It is the same as doing `Minify{}`.
-func New() Minify {
-	return Minify{}
-}
-
-// AddFunc adds a minify function to the mediatype => function map (unsafe for concurrent use).
-// It allows one to implement a custom minifier for a specific mediatype.
-func (m Minify) AddFunc(mediatype string, f Func) {
-	m[mediatype] = f
-}
-
-// AddCmd adds a minify function to the mediatype => function map (unsafe for concurrent use) that executes a command to process the minification.
-// It allows the use of external tools like ClosureCompiler, UglifyCSS, etc.
-// Be aware that running external tools will slow down minification a lot!
-func (m Minify) AddCmd(mediatype string, cmd *exec.Cmd) error {
-	m[mediatype] = func(_ Minifier, _ string, w io.Writer, r io.Reader) error {
+func cmdFunc(cmd *exec.Cmd) func(_ Minifier, _ string, w io.Writer, r io.Reader) error {
+	return func(_ Minifier, _ string, w io.Writer, r io.Reader) error {
 		stdOut, err := cmd.StdoutPipe()
 		if err != nil {
 			return err
 		}
 		defer stdOut.Close()
-
 		stdIn, err := cmd.StdinPipe()
 		if err != nil {
 			return err
 		}
 		defer stdIn.Close()
-
 		if err = cmd.Start(); err != nil {
 			return err
 		}
@@ -103,7 +83,53 @@ func (m Minify) AddCmd(mediatype string, cmd *exec.Cmd) error {
 		}
 		return cmd.Wait()
 	}
-	return nil
+}
+
+////////////////////////////////////////////////////////////////
+
+type regexpFunc struct {
+	re *regexp.Regexp
+	Func
+}
+
+// Minify holds a map of mediatype => function to allow recursive minifier calls of the minifier functions.
+type Minify struct {
+	literal map[string]Func
+	regexp  []regexpFunc
+}
+
+// New returns a new Minify. It is the same as doing `Minify{}`.
+func New() *Minify {
+	return &Minify{
+		map[string]Func{},
+		[]regexpFunc{},
+	}
+}
+
+// AddFunc adds a minify function to the mediatype => function map (unsafe for concurrent use).
+// It allows one to implement a custom minifier for a specific mediatype.
+func (m *Minify) AddFunc(mediatype string, minifyFunc Func) {
+	m.literal[mediatype] = minifyFunc
+}
+
+// AddFuncRegexp adds a minify function to the mediatype => function map (unsafe for concurrent use).
+// It allows one to implement a custom minifier for a specific mediatype regular expression.
+func (m *Minify) AddFuncRegexp(mediatype *regexp.Regexp, minifyFunc Func) {
+	m.regexp = append(m.regexp, regexpFunc{mediatype, minifyFunc})
+}
+
+// AddCmd adds a minify function to the mediatype => function map (unsafe for concurrent use) that executes a command to process the minification.
+// It allows the use of external tools like ClosureCompiler, UglifyCSS, etc. for a specific mediatype.
+// Be aware that running external tools will slow down minification a lot!
+func (m *Minify) AddCmd(mediatype string, cmd *exec.Cmd) {
+	m.literal[mediatype] = cmdFunc(cmd)
+}
+
+// AddCmd adds a minify function to the mediatype => function map (unsafe for concurrent use) that executes a command to process the minification.
+// It allows the use of external tools like ClosureCompiler, UglifyCSS, etc. for a specific mediatype regular expression.
+// Be aware that running external tools will slow down minification a lot!
+func (m *Minify) AddCmdRegexp(mediatype *regexp.Regexp, cmd *exec.Cmd) {
+	m.regexp = append(m.regexp, regexpFunc{mediatype, cmdFunc(cmd)})
 }
 
 // Minify minifies the content of a Reader and writes it to a Writer (safe for concurrent use).
@@ -111,29 +137,21 @@ func (m Minify) AddCmd(mediatype string, cmd *exec.Cmd) error {
 // Mediatype may take the form of 'text/plain', 'text/*', '*/*' or 'text/plain; charset=UTF-8; version=2.0'.
 func (m Minify) Minify(mediatype string, w io.Writer, r io.Reader) error {
 	mimetype := mediatype
-	slashPos := -1
 	for i, c := range mediatype {
-		if c == '/' {
-			slashPos = i
-		} else if c == ';' {
+		if c == ';' {
 			mimetype = mediatype[:i]
 			break
 		}
 	}
-
-	if f, ok := m[mimetype]; ok {
-		if err := f(m, mediatype, w, r); err != nil {
+	if minifyFunc, ok := m.literal[mimetype]; ok {
+		if err := minifyFunc(m, mediatype, w, r); err != nil {
 			return err
 		}
 		return nil
-	} else if slashPos != -1 {
-		if f, ok := m[mimetype[:slashPos]+"/*"]; ok {
-			if err := f(m, mediatype, w, r); err != nil {
-				return err
-			}
-			return nil
-		} else if f, ok := m["*/*"]; ok {
-			if err := f(m, mediatype, w, r); err != nil {
+	}
+	for _, minifyRegexp := range m.regexp {
+		if minifyRegexp.re.MatchString(mimetype) {
+			if err := minifyRegexp.Func(m, mediatype, w, r); err != nil {
 				return err
 			}
 			return nil

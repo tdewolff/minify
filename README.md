@@ -226,9 +226,9 @@ m.AddCmd(mediatype, exec.Command(cmd, args...))
 ```
 
 ### Mediatypes
-Mediatypes can contain wildcards (`*`) and parameters (`; key1=val2; key2=val2`). For example a minifier with `image/*` will match any image mime.
+Mediatypes can contain parameters (`type/subtype; key1=val2; key2=val2`). Minifiers can also be added using a regular expression. For example a minifier with `image/.*` will match any image mime.
 
-Mediatypes such as `text/plain; charset=UTF-8` will be processed by `text/plain` or `text/*` or `*/*` whichever exists. The mediatype string is passed to the minifier function which can retrieve the parameters using `mime.ParseMediaType`.
+Mediatypes such as `text/plain; charset=UTF-8` will be processed by `text/plain` or any regexp it matches. The mediatype string is passed to the minifier function which can retrieve the parameters using the standard library `mime.ParseMediaType`.
 
 ## Examples
 Basic example that minifies from stdin to stdout and loads the default HTML, CSS and JS minifiers. Optionally, one can enable `java -jar build/compiler.jar` to run for JS (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/)). Note that reading the file into a buffer first and writing to a pre-allocated buffer would be faster (but would disable streaming).

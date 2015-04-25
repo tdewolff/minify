@@ -8,6 +8,7 @@ import (
 	"mime"
 	"os"
 	"os/exec"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,46 +25,50 @@ func helperCommand(t *testing.T, s ...string) *exec.Cmd {
 	return cmd
 }
 
-func helperMinifyString(t *testing.T, m Minify, mediatype string) string {
+func helperMinifyString(t *testing.T, m *Minify, mediatype string) string {
 	s, err := String(m, mediatype, "")
-	assert.Nil(t, err, "minifier must not return error")
+	assert.Nil(t, err, "minifier must not return error for '"+mediatype+"'")
 	return s
 }
 
 ////////////////////////////////////////////////////////////////
 
-var m = Minify(map[string]Func{
-	"dummy/copy": func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
+var m *Minify
+
+func TestMain(t *testing.T) {
+	m = New()
+	m.AddFunc("dummy/copy", func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		io.Copy(w, r)
 		return nil
-	},
-	"dummy/nil": func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
+	})
+	m.AddFunc("dummy/nil", func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		return nil
-	},
-	"dummy/err": func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
+	})
+	m.AddFunc("dummy/err", func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		return errDummy
-	},
-	"dummy/charset": func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
+	})
+	m.AddFunc("dummy/charset", func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		_, param, _ := mime.ParseMediaType(mediatype)
 		w.Write([]byte(param["charset"]))
 		return nil
-	},
-	"dummy/params": func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
+	})
+	m.AddFunc("dummy/params", func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		_, param, _ := mime.ParseMediaType(mediatype)
 		return m.Minify(param["type"]+"/"+param["sub"], w, r)
-	},
-	"type/sub": func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
+	})
+	m.AddFunc("type/sub", func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		w.Write([]byte("type/sub"))
 		return nil
-	},
-	"type/*": func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
+	})
+	m.AddFuncRegexp(regexp.MustCompile("^type/.+$"), func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		w.Write([]byte("type/*"))
 		return nil
-	},
-	"*/*": func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
+	})
+	m.AddFuncRegexp(regexp.MustCompile("^.+/.+$"), func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		w.Write([]byte("*/*"))
 		return nil
-	}})
+	})
+}
 
 func TestMinify(t *testing.T) {
 	assert.Equal(t, ErrNotExist, m.Minify("?", nil, nil), "must return ErrNotExist when minifier doesn't exist")
@@ -96,10 +101,10 @@ func TestAdd(t *testing.T) {
 	})
 
 	assert.Equal(t, errDummy, m.Minify("dummy/err", nil, nil), "must return errDummy for dummy/err")
-	assert.Nil(t, m.AddCmd("dummy/copy", helperCommand(t, "dummy/copy")), "must return nil when adding command")
+	m.AddCmd("dummy/copy", helperCommand(t, "dummy/copy"))
 	assert.Nil(t, m.Minify("dummy/copy", w, r), "must return nil for dummy/copy command")
 	assert.Equal(t, "test", w.String(), "must return input string for dummy/copy command")
-	assert.Nil(t, m.AddCmd("dummy/err", helperCommand(t, "dummy/err")), "must return nil for dummy/err command")
+	m.AddCmd("dummy/err", helperCommand(t, "dummy/err"))
 	assert.Equal(t, "exit status 1", m.Minify("dummy/err", w, r).Error(), "must return proper exit status when command encounters error")
 }
 
