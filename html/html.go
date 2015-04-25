@@ -70,7 +70,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 		case html.TextToken:
 			// CSS and JS minifiers for inline code
 			if rawTag != 0 {
-				if rawTag == html.Style || rawTag == html.Script || rawTag == html.Iframe {
+				if rawTag == html.Style || rawTag == html.Script || rawTag == html.Iframe || rawTag == html.Svg || rawTag == html.Math {
 					var mediatype string
 					if rawTag == html.Iframe {
 						mediatype = "text/html"
@@ -78,8 +78,12 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						mediatype = string(rawTagMediatype)
 					} else if rawTag == html.Script {
 						mediatype = defaultScriptType
-					} else {
+					} else if rawTag == html.Style {
 						mediatype = defaultStyleType
+					} else if rawTag == html.Svg {
+						mediatype = "image/svg+xml"
+					} else if rawTag == html.Math {
+						mediatype = "application/mathml+xml"
 					}
 					// ignore CDATA in embedded HTML
 					if mediatype == "text/html" {

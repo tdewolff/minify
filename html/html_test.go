@@ -111,6 +111,7 @@ func TestHTML(t *testing.T) {
 	assertHTML(t, `<meta name="keywords" content="A, B">`, `<meta name=keywords content=A,B>`)
 	assertHTML(t, `<script type="text/html"><![CDATA[ <img id="x"> ]]></script>`, `<script type=text/html><![CDATA[<img id=x>]]></script>`)
 	assertHTML(t, `<iframe><html> <p> x </p> </html></iframe>`, `<iframe><p>x</iframe>`)
+	assertHTML(t, `<svg xmlns="http://www.w3.org/2000/svg"><path d="x"/></svg>`, `<svg xmlns=//www.w3.org/2000/svg><path d="x"/></svg>`)
 }
 
 func TestWhitespace(t *testing.T) {

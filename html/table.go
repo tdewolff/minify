@@ -5,9 +5,11 @@ import "github.com/tdewolff/parse/html"
 var rawTagMap = map[html.Hash]bool{
 	html.Code:     true,
 	html.Iframe:   true,
+	html.Math:     true,
 	html.Pre:      true,
 	html.Script:   true,
 	html.Style:    true,
+	html.Svg:      true,
 	html.Textarea: true,
 }
 
