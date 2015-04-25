@@ -19,6 +19,7 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 		- [Beware](#beware)
 	- [CSS](#css)
 	- [JS](#js)
+	- [JSON](#json)
 	- [Installation](#installation)
 	- [Usage](#usage)
 		- [New](#new)
@@ -129,6 +130,10 @@ Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 
 <sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.
 
+## JSON [![GoDoc](http://godoc.org/github.com/tdewolff/minify/json?status.svg)](http://godoc.org/github.com/tdewolff/minify/json) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/json)](http://gocover.io/github.com/tdewolff/minify/json)
+
+The JSON minifier only removes whitespace.
+
 ## Installation
 Run the following command
 
@@ -141,6 +146,7 @@ import (
 	"github.com/tdewolff/minify/html"
 	"github.com/tdewolff/minify/css"
 	"github.com/tdewolff/minify/js"
+	"github.com/tdewolff/minify/json"
 )
 ```
 
@@ -157,6 +163,7 @@ m := minify.New()
 m.AddFunc("text/html", html.Minify)
 m.AddFunc("text/css", css.Minify)
 m.AddFunc("text/javascript", js.Minify)
+m.AddFunc("application/json", json.Minify)
 ```
 
 ### From reader
@@ -178,6 +185,10 @@ if err := css.Minify(m, "text/css", w, r); err != nil {
 }
 
 if err := js.Minify(m, "text/javascript", w, r); err != nil {
+	log.Fatal("Minify:", err)
+}
+
+if err := json.Minify(m, "application/json", w, r); err != nil {
 	log.Fatal("Minify:", err)
 }
 ```
