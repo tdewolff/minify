@@ -18,4 +18,5 @@ func assertJSON(t *testing.T, input, expected string) {
 func TestCSS(t *testing.T) {
 	assertJSON(t, "{ \"a\": [1, 2] }", "{\"a\":[1,2]}")
 	assertJSON(t, "[{ \"a\": [{\"x\": null}, true] }]", "[{\"a\":[{\"x\":null},true]}]")
+	assertJSON(t, "{ \"a\": 1, \"b\": 2 }", "{\"a\":1,\"b\":2}")
 }
