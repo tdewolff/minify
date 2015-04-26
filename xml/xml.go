@@ -13,12 +13,16 @@ import (
 var (
 	ltBytes                 = []byte("<")
 	gtBytes                 = []byte(">")
+	ltEntityBytes           = []byte("&lt;")
+	ampEntityBytes          = []byte("&amp;")
 	voidBytes               = []byte("/>")
 	piBytes                 = []byte("?>")
 	isBytes                 = []byte("=")
 	spaceBytes              = []byte(" ")
 	emptyBytes              = []byte("\"\"")
 	endBytes                = []byte("</")
+	CDATAStartBytes         = []byte("<![CDATA[")
+	CDATAEndBytes           = []byte("]]>")
 	escapedSingleQuoteBytes = []byte("&#39;")
 	escapedDoubleQuoteBytes = []byte("&#34;")
 )
@@ -35,7 +39,7 @@ type token struct {
 // Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 10% in size.
 func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	precededBySpace := true // on true the next text token must not start with a space
-	attrEscapeBuffer := make([]byte, 0, 64)
+	escapeBuffer := make([]byte, 0, 64)
 
 	z := xml.NewTokenizer(r)
 	tb := newTokenBuffer(z)
@@ -47,6 +51,23 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				return nil
 			}
 			return z.Err()
+		case xml.CDATAToken:
+			data, useCDATA := escapeCDATAVal(&escapeBuffer, t.data)
+			if useCDATA {
+				if _, err := w.Write(CDATAStartBytes); err != nil {
+					return err
+				}
+				if _, err := w.Write(data); err != nil {
+					return err
+				}
+				if _, err := w.Write(CDATAEndBytes); err != nil {
+					return err
+				}
+			} else {
+				if _, err := w.Write(data); err != nil {
+					return err
+				}
+			}
 		case xml.TextToken:
 			if t.data = replaceMultipleWhitespace(t.data); len(t.data) > 0 {
 				// whitespace removal; trim left
@@ -132,7 +153,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 			// prefer single or double quotes depending on what occurs more often in value
 			val = val[1 : len(val)-1]
-			val = escapeAttrVal(&attrEscapeBuffer, val)
+			val = escapeAttrVal(&escapeBuffer, val)
 			if _, err := w.Write(val); err != nil {
 				return err
 			}
@@ -255,7 +276,6 @@ func escapeAttrVal(buf *[]byte, b []byte) []byte {
 			singles++
 		}
 	}
-
 	var quote byte
 	var escapedQuote []byte
 	if doubles > singles {
@@ -266,11 +286,9 @@ func escapeAttrVal(buf *[]byte, b []byte) []byte {
 		escapedQuote = escapedDoubleQuoteBytes
 	}
 
-	// maximum size, not actual size
 	if len(b)+2 > cap(*buf) {
-		*buf = make([]byte, 0, len(b)+2)
+		*buf = make([]byte, 0, len(b)+2) // maximum size, not actual size
 	}
-
 	t := (*buf)[:len(b)+2] // maximum size, not actual size
 	t[0] = quote
 	j := 1
@@ -297,6 +315,42 @@ func escapeAttrVal(buf *[]byte, b []byte) []byte {
 	j += copy(t[j:], b[start:])
 	t[j] = quote
 	return t[:j+1]
+}
+
+// escapeCDATAVal returns the escaped text bytes.
+func escapeCDATAVal(buf *[]byte, b []byte) ([]byte, bool) {
+	n := 0
+	for _, c := range b {
+		if c == '<' || c == '&' {
+			if c == '<' {
+				n += 3 // &lt;
+			} else {
+				n += 4 // &amp;
+			}
+			if n > len("<![CDATA[]]>") {
+				return b, true
+			}
+		}
+	}
+	if len(b)+n > cap(*buf) {
+		*buf = make([]byte, 0, len(b)+n)
+	}
+	t := (*buf)[:len(b)+n]
+	j := 0
+	start := 0
+	for i, c := range b {
+		if c == '<' {
+			j += copy(t[j:], b[start:i])
+			j += copy(t[j:], ltEntityBytes)
+			start = i + 1
+		} else if c == '&' {
+			j += copy(t[j:], b[start:i])
+			j += copy(t[j:], ampEntityBytes)
+			start = i + 1
+		}
+	}
+	j += copy(t[j:], b[start:])
+	return t[:j], false
 }
 
 // isWhitespace returns true for space, \n, \t, \f, \r.
