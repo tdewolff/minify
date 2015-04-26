@@ -170,7 +170,7 @@ m.AddFunc("text/css", css.Minify)
 m.AddFunc("text/html", html.Minify)
 m.AddFunc("text/javascript", js.Minify)
 m.AddFunc("application/json", json.Minify)
-m.AddFuncRegexp(".+[/+]xml", xml.Minify)
+m.AddFuncRegexp(regexp.MustCompile("^.+[/+]xml$"), xml.Minify)
 ```
 
 ### From reader
@@ -265,7 +265,7 @@ func main() {
 	m.AddFunc("text/html", html.Minify)
 	m.AddFunc("text/javascript", js.Minify)
 	m.AddFunc("application/json", json.Minify)
-	m.AddFuncRegexp(".+[/+]xml", xml.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("^.+[/+]xml$"), xml.Minify)
 
 	// Or use the following for better minification of JS but lower speed:
 	// m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
