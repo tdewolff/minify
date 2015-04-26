@@ -10,17 +10,19 @@ It associates minification functions with mime types, allowing embedded resource
 
 Bottleneck for minification is mainly io and can be significantly sped up by having the file loaded into memory and providing `Bytes() []byte` like `bytes.Buffer` does.
 
+See the [Wiki](https://github.com/tdewolff/minify/wiki) for a roadmap of what is planned for the future.
+
 **Table of Contents**
 
-- [Minify](#minify)
+- [Minify](#minify--)
 	- [Comparison](#comparison)
 		- [Alternatives](#alternatives)
-	- [HTML](#html)
+	- [HTML](#html--)
 		- [Beware](#beware)
-	- [CSS](#css)
-	- [JS](#js)
-	- [JSON](#json)
-	- [XML](#xml)
+	- [CSS](#css--)
+	- [JS](#js--)
+	- [JSON](#json--)
+	- [XML](#xml--)
 	- [Installation](#installation)
 	- [Usage](#usage)
 		- [New](#new)
