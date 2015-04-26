@@ -20,6 +20,7 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 	- [CSS](#css)
 	- [JS](#js)
 	- [JSON](#json)
+	- [XML](#xml)
 	- [Installation](#installation)
 	- [Usage](#usage)
 		- [New](#new)
@@ -134,6 +135,10 @@ Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 
 The JSON minifier only removes whitespace.
 
+## XML [![GoDoc](http://godoc.org/github.com/tdewolff/minify/xml?status.svg)](http://godoc.org/github.com/tdewolff/minify/xml) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/xml)](http://gocover.io/github.com/tdewolff/minify/xml)
+
+The XML minifier removes whitespace and changes empty start and end tags to a void tag.
+
 ## Installation
 Run the following command
 
@@ -147,6 +152,7 @@ import (
 	"github.com/tdewolff/minify/css"
 	"github.com/tdewolff/minify/js"
 	"github.com/tdewolff/minify/json"
+	"github.com/tdewolff/minify/xml"
 )
 ```
 
@@ -164,6 +170,7 @@ m.AddFunc("text/html", html.Minify)
 m.AddFunc("text/css", css.Minify)
 m.AddFunc("text/javascript", js.Minify)
 m.AddFunc("application/json", json.Minify)
+m.AddFuncRegexp(".+[/+]xml", xml.Minify)
 ```
 
 ### From reader
@@ -189,6 +196,10 @@ if err := js.Minify(m, "text/javascript", w, r); err != nil {
 }
 
 if err := json.Minify(m, "application/json", w, r); err != nil {
+	log.Fatal("Minify:", err)
+}
+
+if err := xml.Minify(m, "text/xml", w, r); err != nil {
 	log.Fatal("Minify:", err)
 }
 ```
@@ -244,6 +255,8 @@ import (
 	"github.com/tdewolff/minify/html"
 	"github.com/tdewolff/minify/css"
 	"github.com/tdewolff/minify/js"
+	"github.com/tdewolff/minify/json"
+	"github.com/tdewolff/minify/xml"
 )
 
 func main() {
@@ -251,6 +264,9 @@ func main() {
 	m.AddFunc("text/html", html.Minify)
 	m.AddFunc("text/css", css.Minify)
 	m.AddFunc("text/javascript", js.Minify)
+	m.AddFunc("application/json", json.Minify)
+	m.AddFuncRegexp(".+[/+]xml", xml.Minify)
+
 	// Or use the following for better minification of JS but lower speed:
 	// m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
 
