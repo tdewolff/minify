@@ -456,7 +456,7 @@ func isAtQuoteEntity(b []byte) (quote byte, n int, ok bool) {
 	return 0, 0, false
 }
 
-// escapeAttrVal returns the escape attribute value bytes without quotes.
+// escapeAttrVal returns the escaped attribute value bytes without quotes.
 func escapeAttrVal(buf *[]byte, b []byte) []byte {
 	singles := 0
 	doubles := 0
@@ -482,11 +482,9 @@ func escapeAttrVal(buf *[]byte, b []byte) []byte {
 			unquoted = false
 		}
 	}
-
 	if unquoted {
 		return b
 	}
-
 	var quote byte
 	var escapedQuote []byte
 	if doubles > singles {
@@ -497,11 +495,9 @@ func escapeAttrVal(buf *[]byte, b []byte) []byte {
 		escapedQuote = escapedDoubleQuoteBytes
 	}
 
-	// maximum size, not actual size
 	if len(b)+2 > cap(*buf) {
-		*buf = make([]byte, 0, len(b)+2)
+		*buf = make([]byte, 0, len(b)+2) // maximum size, not actual size
 	}
-
 	t := (*buf)[:len(b)+2] // maximum size, not actual size
 	t[0] = quote
 	j := 1
