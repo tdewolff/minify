@@ -37,6 +37,10 @@ func assertAttrVal(t *testing.T, input, expected string) {
 
 func TestXML(t *testing.T) {
 	assertXML(t, "<!-- comment -->", "")
+	assertXML(t, "<a><b>x</b></a>", "<a><b>x</b></a>")
+	assertXML(t, "<?xml version=\"1.0\"?>", "<?xml version=\"1.0\"?>")
+	assertXML(t, "<x></x>", "<x/>")
+	assertXML(t, "<x a=\" a \n\r\t b \"/>", "<x a=\" a     b \"/>")
 }
 
 func TestWhitespace(t *testing.T) {
@@ -51,7 +55,7 @@ func TestWhitespace(t *testing.T) {
 func TestHelpers(t *testing.T) {
 	assertAttrVal(t, "xyz", "\"xyz\"")
 	assertAttrVal(t, "", "\"\"")
-	assertAttrVal(t, "x&amp;z", "x&amp;z")
+	assertAttrVal(t, "x&amp;z", "\"x&amp;z\"")
 	assertAttrVal(t, "x'z", "\"x'z\"")
 	assertAttrVal(t, "x\"z", "'x\"z'")
 }

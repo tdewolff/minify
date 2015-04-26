@@ -1,7 +1,6 @@
 package xml // import "github.com/tdewolff/minify/xml"
 
 import (
-	"bytes"
 	"io"
 
 	"github.com/tdewolff/minify"
@@ -16,6 +15,7 @@ var (
 	piBytes                 = []byte("?>")
 	isBytes                 = []byte("=")
 	spaceBytes              = []byte(" ")
+	emptyBytes              = []byte("\"\"")
 	endBytes                = []byte("</")
 	escapedSingleQuoteBytes = []byte("&#39;")
 	escapedDoubleQuoteBytes = []byte("&#34;")
@@ -89,15 +89,34 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			if _, err := w.Write(t.data); err != nil {
 				return err
 			}
+			// collapse empty tags to single void tag
+			if next := tb.Peek(0); next.tt == xml.StartTagCloseToken {
+				i := 1
+				for {
+					next = tb.Peek(i)
+					i++
+					// continue if text token is empty or whitespace
+					if next.tt == xml.TextToken && isAllWhitespace(next.data) {
+						continue
+					} else if next.tt != xml.EndTagToken {
+						break
+					}
+					tb.Shift()
+					tb.Shift()
+					if _, err := w.Write(voidBytes); err != nil {
+						return err
+					}
+					break
+				}
+			}
 		case xml.AttributeToken:
 			val := t.attrVal
 			if len(val) < 2 {
-				if _, err := w.Write(ltBytes); err != nil {
+				if _, err := w.Write(emptyBytes); err != nil {
 					return err
 				}
 				continue
 			}
-			val = bytes.TrimSpace(val[1 : len(val)-1])
 
 			if _, err := w.Write(spaceBytes); err != nil {
 				return err
@@ -110,6 +129,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 
 			// prefer single or double quotes depending on what occurs more often in value
+			val = val[1 : len(val)-1]
 			val = escapeAttrVal(&attrEscapeBuffer, val)
 			if _, err := w.Write(val); err != nil {
 				return err
@@ -131,6 +151,9 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				return err
 			}
 			if _, err := w.Write(t.data); err != nil {
+				return err
+			}
+			if _, err := w.Write(gtBytes); err != nil {
 				return err
 			}
 		}
@@ -265,6 +288,8 @@ func escapeAttrVal(buf *[]byte, b []byte) []byte {
 			j += copy(t[j:], b[start:i])
 			j += copy(t[j:], escapedQuote)
 			start = i + 1
+		} else if c == '\t' || c == '\n' || c == '\r' {
+			b[i] = ' '
 		}
 	}
 	j += copy(t[j:], b[start:])
