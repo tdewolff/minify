@@ -148,8 +148,8 @@ or add the following imports and run the project with `go get`
 ``` go
 import (
 	"github.com/tdewolff/minify"
-	"github.com/tdewolff/minify/html"
 	"github.com/tdewolff/minify/css"
+	"github.com/tdewolff/minify/html"
 	"github.com/tdewolff/minify/js"
 	"github.com/tdewolff/minify/json"
 	"github.com/tdewolff/minify/xml"
@@ -166,8 +166,8 @@ m := minify.New()
 The following loads all provided minifiers.
 ``` go
 m := minify.New()
-m.AddFunc("text/html", html.Minify)
 m.AddFunc("text/css", css.Minify)
+m.AddFunc("text/html", html.Minify)
 m.AddFunc("text/javascript", js.Minify)
 m.AddFunc("application/json", json.Minify)
 m.AddFuncRegexp(".+[/+]xml", xml.Minify)
@@ -183,11 +183,11 @@ if err := m.Minify(mediatype, w, r); err != nil {
 
 Minify HTML, CSS or JS directly from an `io.Reader` to an `io.Writer`. The passed mediatype is not required for these functions, but are filled out for clarity.
 ``` go
-if err := html.Minify(m, "text/html", w, r); err != nil {
+if err := css.Minify(m, "text/css", w, r); err != nil {
 	log.Fatal("Minify:", err)
 }
 
-if err := css.Minify(m, "text/css", w, r); err != nil {
+if err := html.Minify(m, "text/html", w, r); err != nil {
 	log.Fatal("Minify:", err)
 }
 
@@ -252,8 +252,8 @@ import (
 	"os/exec"
 
 	"github.com/tdewolff/minify"
-	"github.com/tdewolff/minify/html"
 	"github.com/tdewolff/minify/css"
+	"github.com/tdewolff/minify/html"
 	"github.com/tdewolff/minify/js"
 	"github.com/tdewolff/minify/json"
 	"github.com/tdewolff/minify/xml"
@@ -261,8 +261,8 @@ import (
 
 func main() {
 	m := minify.New()
-	m.AddFunc("text/html", html.Minify)
 	m.AddFunc("text/css", css.Minify)
+	m.AddFunc("text/html", html.Minify)
 	m.AddFunc("text/javascript", js.Minify)
 	m.AddFunc("application/json", json.Minify)
 	m.AddFuncRegexp(".+[/+]xml", xml.Minify)

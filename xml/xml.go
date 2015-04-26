@@ -1,5 +1,7 @@
 package xml // import "github.com/tdewolff/minify/xml"
 
+// TODO: follow the spec more closely
+
 import (
 	"io"
 
