@@ -39,7 +39,7 @@ HTML (with JS and CSS) minification typically runs at about 20-30MB/s ~= 70-100G
 
 Website | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
-[Amazon](http://www.amazon.com/) | 463kB | **414kB** | 89% | 15ms
+[Amazon](http://www.amazon.com/) | 463kB | **414kB** | 89% | 13ms
 [BBC](http://www.bbc.com/) | 113kB | **96kB** | 85% | 4ms
 [StackOverflow](http://stackoverflow.com/) | 201kB | **182kB** | 91% | 7ms
 [Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | **410kB** | 94%<sup>&#42;&#42;</sup> | 16ms
@@ -78,12 +78,12 @@ Make sure your HTML doesn't depend on whitespace between `block` elements that h
 
 ## CSS [![GoDoc](http://godoc.org/github.com/tdewolff/minify/css?status.svg)](http://godoc.org/github.com/tdewolff/minify/css) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/css)](http://gocover.io/github.com/tdewolff/minify/css)
 
-Minification typically runs at about 10MB/s ~= 35GB/h.
+Minification typically runs at about 20MB/s ~= 70GB/h.
 
 Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
-[Bootstrap](http://getbootstrap.com/) | 134kB | **111kB** | 83% | 11ms
-[Gumby](http://gumbyframework.com/) | 182kB | **167kB** | 92% | 15ms
+[Bootstrap](http://getbootstrap.com/) | 134kB | **111kB** | 83% | 6ms
+[Gumby](http://gumbyframework.com/) | 182kB | **167kB** | 91% | 10ms
 
 <sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.
 

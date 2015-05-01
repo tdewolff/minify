@@ -329,7 +329,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						// CSS and JS minifiers for attribute inline code
 						if attr.hash == html.Style {
 							attrMinifyBuffer.Reset()
-							if m.Minify(defaultStyleType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
+							if m.Minify(defaultStyleType+";inline=1", attrMinifyBuffer, buffer.NewReader(val)) == nil {
 								val = attrMinifyBuffer.Bytes()
 							}
 						} else if len(attr.data) > 2 && attr.data[0] == 'o' && attr.data[1] == 'n' {
