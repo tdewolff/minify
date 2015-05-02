@@ -204,39 +204,11 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 				// rewrite meta tag with charset
 				if hasAttributes && t.hash == html.Meta {
-					iHTTPEquiv := -1
-					iName := -1
-					iContent := -1
-					hasCharset := false
-					i := 0
-					for {
-						attr := tb.Peek(i)
-						if attr.tt != html.AttributeToken {
-							break
-						}
-						if attr.hash == html.Http_Equiv {
-							iHTTPEquiv = i
-						} else if attr.hash == html.Name {
-							iName = i
-						} else if attr.hash == html.Content {
-							iContent = i
-						} else if attr.hash == html.Charset {
-							hasCharset = true
-						}
-						i++
-					}
-					if iContent != -1 {
-						content := tb.Peek(iContent)
-						if len(content.attrVal) > 1 && (content.attrVal[0] == '"' || content.attrVal[0] == '\'') {
-							content.attrVal = content.attrVal[1 : len(content.attrVal)-1] // quotes will be readded in attribute loop if necessary
-						}
-						if iHTTPEquiv != -1 {
-							httpEquiv := tb.Peek(iHTTPEquiv)
-							if len(httpEquiv.attrVal) > 1 && (httpEquiv.attrVal[0] == '"' || httpEquiv.attrVal[0] == '\'') {
-								httpEquiv.attrVal = httpEquiv.attrVal[1 : len(httpEquiv.attrVal)-1] // quotes will be readded in attribute loop if necessary
-							}
+					attr := getAttributes(tb, html.Content, html.Http_Equiv, html.Charset, html.Name)
+					if content, ok := attr[html.Content]; ok {
+						if httpEquiv, ok := attr[html.Http_Equiv]; ok {
 							content.attrVal = parse.NormalizeContentType(content.attrVal)
-							if !hasCharset && parse.EqualCaseInsensitive(httpEquiv.attrVal, []byte("content-type")) && parse.Equal(content.attrVal, []byte("text/html;charset=utf-8")) {
+							if _, ok := attr[html.Charset]; !ok && parse.EqualCaseInsensitive(httpEquiv.attrVal, []byte("content-type")) && parse.Equal(content.attrVal, []byte("text/html;charset=utf-8")) {
 								httpEquiv.data = nil
 								content.data = []byte("charset")
 								content.hash = html.Charset
@@ -247,11 +219,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 								defaultScriptType = string(content.attrVal)
 							}
 						}
-						if iName != -1 {
-							name := tb.Peek(iName)
-							if len(name.attrVal) > 1 && (name.attrVal[0] == '"' || name.attrVal[0] == '\'') {
-								name.attrVal = name.attrVal[1 : len(name.attrVal)-1] // quotes will be readded in attribute loop if necessary
-							}
+						if name, ok := attr[html.Name]; ok {
 							if parse.EqualCaseInsensitive(name.attrVal, []byte("keywords")) {
 								content.attrVal = bytes.Replace(content.attrVal, []byte(", "), []byte(","), -1)
 							} else if parse.EqualCaseInsensitive(name.attrVal, []byte("viewport")) {
@@ -372,6 +340,32 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 }
 
 ////////////////////////////////////////////////////////////////
+
+func getAttributes(tb *tokenBuffer, hashes ...html.Hash) map[html.Hash]*token {
+	iAttr := make(map[html.Hash]int)
+	i := 0
+	for {
+		t := tb.Peek(i)
+		if t.tt != html.AttributeToken {
+			break
+		}
+		for _, hash := range hashes {
+			if t.hash == hash {
+				iAttr[hash] = i
+			}
+		}
+		i++
+	}
+	attr := make(map[html.Hash]*token)
+	for hash, i := range iAttr {
+		t := tb.Peek(i)
+		if len(t.attrVal) > 1 && (t.attrVal[0] == '"' || t.attrVal[0] == '\'') {
+			t.attrVal = bytes.TrimSpace(t.attrVal[1 : len(t.attrVal)-1]) // quotes will be readded in attribute loop if necessary
+		}
+		attr[hash] = t
+	}
+	return attr
+}
 
 // it is assumed that b[0] equals '&'
 func isAtQuoteEntity(b []byte) (quote byte, n int, ok bool) {
