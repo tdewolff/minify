@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
-	"math/rand"
-	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,16 +14,6 @@ func assertHTML(t *testing.T, m *minify.Minify, input, expected string) {
 	b := &bytes.Buffer{}
 	assert.Nil(t, m.Minify("text/html", b, bytes.NewBufferString(input)), "Minify must not return error in "+input)
 	assert.Equal(t, expected, b.String(), "Minify must give expected result in "+input)
-}
-
-func helperRand(n, m int, chars []byte) []string {
-	r := make([]string, n)
-	for i := range r {
-		for j := 0; j < m; j++ {
-			r[i] += string(chars[rand.Intn(len(chars))])
-		}
-	}
-	return r
 }
 
 func assertAttrVal(t *testing.T, input, expected string) {
@@ -113,15 +101,10 @@ func TestHTML(t *testing.T) {
 	assertHTML(t, m, `<script type="text/html"><![CDATA[ <img id="x"> ]]></script>`, `<script type=text/html><![CDATA[<img id=x>]]></script>`)
 	assertHTML(t, m, `<iframe><html> <p> x </p> </html></iframe>`, `<iframe><p>x</iframe>`)
 	assertHTML(t, m, `<svg xmlns="http://www.w3.org/2000/svg"><path d="x"/></svg>`, `<svg xmlns=//www.w3.org/2000/svg><path d="x"/></svg>`)
-}
-
-func TestWhitespace(t *testing.T) {
-	multipleWhitespaceRegexp := regexp.MustCompile("\\s+")
-	array := helperRand(100, 20, []byte("abcdefg \n\r\f\t"))
-	for _, e := range array {
-		reference := multipleWhitespaceRegexp.ReplaceAll([]byte(e), []byte(" "))
-		assert.Equal(t, reference, replaceMultipleWhitespace([]byte(e)), "must remove all multiple whitespace")
-	}
+	assertHTML(t, m, `<script language="x" charset="x" src="y"></script>`, `<script src="y"></script>`)
+	assertHTML(t, m, `<style media="all">x</style>`, `<style>x</style>`)
+	assertHTML(t, m, `<a href="https://x">y</a>`, `<a href="//x">y</a>`)
+	assertHTML(t, m, `<a href="https://x" rel="external">y</a>`, `<a href="https://x" rel="external">y</a>`)
 }
 
 func TestSpecialTagClosing(t *testing.T) {
@@ -145,8 +128,4 @@ func TestHelpers(t *testing.T) {
 	assertAttrVal(t, "x'z", "\"x'z\"")
 	assertAttrVal(t, "x\"z", "'x\"z'")
 	assertAttrVal(t, "You&#039;re encouraged to log in; however, it&#039;s not mandatory. [o]", "\"You're encouraged to log in; however, it's not mandatory. [o]\"")
-
-	assert.Equal(t, "text/html", string(normalizeContentType([]byte("text/html"))))
-	assert.Equal(t, "text/html;charset=utf-8", string(normalizeContentType([]byte("text/html; charset=UTF-8"))))
-	assert.Equal(t, "text/html,text/css", string(normalizeContentType([]byte("text/html, text/css"))))
 }

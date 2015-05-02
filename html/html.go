@@ -108,7 +108,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				} else if _, err := w.Write(t.data); err != nil {
 					return err
 				}
-			} else if t.data = replaceMultipleWhitespace(t.data); len(t.data) > 0 {
+			} else if t.data = parse.ReplaceMultiple(t.data, parse.IsWhitespace, ' '); len(t.data) > 0 {
 				// whitespace removal; trim left
 				if t.data[0] == ' ' && precededBySpace {
 					t.data = t.data[1:]
@@ -130,7 +130,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							break
 						} else if next.tt == html.TextToken {
 							// remove if the text token starts with a whitespace
-							trim = (len(next.data) > 0 && isWhitespace(next.data[0]))
+							trim = (len(next.data) > 0 && parse.IsWhitespace(next.data[0]))
 							break
 						} else if next.tt == html.StartTagToken || next.tt == html.EndTagToken {
 							if !inlineTagMap[next.hash] {
@@ -190,7 +190,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							next := tb.Peek(i)
 							i++
 							// continue if text token is empty or whitespace
-							if next.tt == html.TextToken && isAllWhitespace(next.data) {
+							if next.tt == html.TextToken && parse.IsAllWhitespace(next.data) {
 								continue
 							}
 							remove = (next.tt == html.ErrorToken || next.tt == html.EndTagToken && next.hash != html.A || next.tt == html.StartTagToken && blockTagMap[next.hash])
@@ -227,25 +227,34 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					}
 					if iContent != -1 {
 						content := tb.Peek(iContent)
+						if len(content.attrVal) > 1 && (content.attrVal[0] == '"' || content.attrVal[0] == '\'') {
+							content.attrVal = content.attrVal[1 : len(content.attrVal)-1] // quotes will be readded in attribute loop if necessary
+						}
 						if iHTTPEquiv != -1 {
 							httpEquiv := tb.Peek(iHTTPEquiv)
-							content.attrVal = normalizeContentType(content.attrVal)
-							if !hasCharset && attrValEqualCaseInsensitive(httpEquiv.attrVal, []byte("content-type")) && attrValEqual(content.attrVal, []byte("text/html;charset=utf-8")) {
+							if len(httpEquiv.attrVal) > 1 && (httpEquiv.attrVal[0] == '"' || httpEquiv.attrVal[0] == '\'') {
+								httpEquiv.attrVal = httpEquiv.attrVal[1 : len(httpEquiv.attrVal)-1] // quotes will be readded in attribute loop if necessary
+							}
+							content.attrVal = parse.NormalizeContentType(content.attrVal)
+							if !hasCharset && parse.EqualCaseInsensitive(httpEquiv.attrVal, []byte("content-type")) && parse.Equal(content.attrVal, []byte("text/html;charset=utf-8")) {
 								httpEquiv.data = nil
 								content.data = []byte("charset")
 								content.hash = html.Charset
 								content.attrVal = []byte("utf-8")
-							} else if attrValEqualCaseInsensitive(httpEquiv.attrVal, []byte("content-style-type")) {
+							} else if parse.EqualCaseInsensitive(httpEquiv.attrVal, []byte("content-style-type")) {
 								defaultStyleType = string(content.attrVal)
-							} else if attrValEqualCaseInsensitive(httpEquiv.attrVal, []byte("content-script-type")) {
+							} else if parse.EqualCaseInsensitive(httpEquiv.attrVal, []byte("content-script-type")) {
 								defaultScriptType = string(content.attrVal)
 							}
 						}
 						if iName != -1 {
 							name := tb.Peek(iName)
-							if attrValEqualCaseInsensitive(name.attrVal, []byte("keywords")) {
+							if len(name.attrVal) > 1 && (name.attrVal[0] == '"' || name.attrVal[0] == '\'') {
+								name.attrVal = name.attrVal[1 : len(name.attrVal)-1] // quotes will be readded in attribute loop if necessary
+							}
+							if parse.EqualCaseInsensitive(name.attrVal, []byte("keywords")) {
 								content.attrVal = bytes.Replace(content.attrVal, []byte(", "), []byte(","), -1)
-							} else if attrValEqualCaseInsensitive(name.attrVal, []byte("viewport")) {
+							} else if parse.EqualCaseInsensitive(name.attrVal, []byte("viewport")) {
 								content.attrVal = bytes.Replace(content.attrVal, []byte(" "), []byte(""), -1)
 							}
 						}
@@ -285,7 +294,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					if caseInsensitiveAttrMap[attr.hash] {
 						val = parse.ToLower(val)
 						if attr.hash == html.Enctype || attr.hash == html.Codetype || attr.hash == html.Accept || attr.hash == html.Type && (t.hash == html.A || t.hash == html.Link || t.hash == html.Object || t.hash == html.Param || t.hash == html.Script || t.hash == html.Style || t.hash == html.Source) {
-							val = normalizeContentType(val)
+							val = parse.NormalizeContentType(val)
 						}
 					}
 					if rawTag != 0 && attr.hash == html.Type {
@@ -363,58 +372,6 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 ////////////////////////////////////////////////////////////////
 
-// replaceMultipleWhitespace replaces any series of whitespace characters by a single space.
-func replaceMultipleWhitespace(b []byte) []byte {
-	j := 0
-	start := 0
-	prevSpace := false
-	for i, c := range b {
-		if isWhitespace(c) {
-			if !prevSpace {
-				prevSpace = true
-				b[i] = ' '
-			} else {
-				if start < i {
-					if start != 0 {
-						j += copy(b[j:], b[start:i])
-					} else {
-						j += i - start
-					}
-				}
-				start = i + 1
-			}
-		} else {
-			prevSpace = false
-		}
-	}
-	if start != 0 {
-		j += copy(b[j:], b[start:])
-		return b[:j]
-	}
-	return b
-}
-
-func normalizeContentType(b []byte) []byte {
-	j := 0
-	start := 0
-	b = parse.ToLower(bytes.TrimSpace(replaceMultipleWhitespace(b)))
-	for i, c := range b {
-		if c == ' ' && (b[i-1] == ';' || b[i-1] == ',') {
-			if start != 0 {
-				j += copy(b[j:], b[start:i])
-			} else {
-				j += i - start
-			}
-			start = i + 1
-		}
-	}
-	if start != 0 {
-		j += copy(b[j:], b[start:])
-		return b[:j]
-	}
-	return b
-}
-
 // it is assumed that b[0] equals '&'
 func isAtQuoteEntity(b []byte) (quote byte, n int, ok bool) {
 	if len(b) < 5 {
@@ -478,7 +435,7 @@ func escapeAttrVal(buf *[]byte, b []byte) []byte {
 		} else if c == '\'' {
 			singles++
 			unquoted = false
-		} else if unquoted && (c == '`' || c == '<' || c == '=' || c == '>' || isWhitespace(c)) {
+		} else if unquoted && (c == '`' || c == '<' || c == '=' || c == '>' || parse.IsWhitespace(c)) {
 			unquoted = false
 		}
 	}
@@ -522,32 +479,4 @@ func escapeAttrVal(buf *[]byte, b []byte) []byte {
 	j += copy(t[j:], b[start:])
 	t[j] = quote
 	return t[:j+1]
-}
-
-// isWhitespace returns true for space, \n, \t, \f, \r.
-func isWhitespace(c byte) bool {
-	return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f'
-}
-
-func isAllWhitespace(b []byte) bool {
-	for _, c := range b {
-		if !isWhitespace(c) {
-			return false
-		}
-	}
-	return true
-}
-
-func attrValEqual(attrVal, match []byte) bool {
-	if len(attrVal) > 0 && (attrVal[0] == '"' || attrVal[0] == '\'') {
-		attrVal = attrVal[1 : len(attrVal)-1]
-	}
-	return parse.Equal(attrVal, match)
-}
-
-func attrValEqualCaseInsensitive(attrVal, match []byte) bool {
-	if len(attrVal) > 0 && (attrVal[0] == '"' || attrVal[0] == '\'') {
-		attrVal = attrVal[1 : len(attrVal)-1]
-	}
-	return parse.EqualCaseInsensitive(attrVal, match)
 }
