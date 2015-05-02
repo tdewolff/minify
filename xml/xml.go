@@ -21,6 +21,7 @@ var (
 	spaceBytes              = []byte(" ")
 	emptyBytes              = []byte("\"\"")
 	endBytes                = []byte("</")
+	DOCTYPEBytes            = []byte("<!DOCTYPE")
 	CDATAStartBytes         = []byte("<![CDATA[")
 	CDATAEndBytes           = []byte("]]>")
 	escapedSingleQuoteBytes = []byte("&#39;")
@@ -57,6 +58,16 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				return nil
 			}
 			return z.Err()
+		case xml.DOCTYPEToken:
+			if _, err := w.Write(DOCTYPEBytes); err != nil {
+				return err
+			}
+			if _, err := w.Write(t.data); err != nil {
+				return err
+			}
+			if _, err := w.Write(gtBytes); err != nil {
+				return err
+			}
 		case xml.CDATAToken:
 			if _, err := w.Write(CDATAStartBytes); err != nil {
 				return err
@@ -68,7 +79,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				return err
 			}
 		case xml.TextToken:
-			if t.data = replaceMultipleWhitespace(t.data); len(t.data) > 0 {
+			if t.data = parse.ReplaceMultiple(t.data, parse.IsWhitespace, ' '); len(t.data) > 0 {
 				// whitespace removal; trim left
 				if t.data[0] == ' ' && precededBySpace {
 					t.data = t.data[1:]
@@ -90,7 +101,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							break
 						} else if next.tt == xml.TextToken {
 							// remove if the text token starts with a whitespace
-							trim = (len(next.data) > 0 && isWhitespace(next.data[0]))
+							trim = (len(next.data) > 0 && parse.IsWhitespace(next.data[0]))
 							break
 						}
 						i++
@@ -139,7 +150,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 		case xml.StartTagCloseToken:
 			next := tb.Peek(0)
 			skipExtra := false
-			if next.tt == xml.TextToken && isAllWhitespace(next.data) {
+			if next.tt == xml.TextToken && parse.IsAllWhitespace(next.data) {
 				next = tb.Peek(1)
 				skipExtra = true
 			}
@@ -180,37 +191,6 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 }
 
 ////////////////////////////////////////////////////////////////
-
-// replaceMultipleWhitespace replaces any series of whitespace characters by a single space.
-func replaceMultipleWhitespace(b []byte) []byte {
-	j := 0
-	start := 0
-	prevSpace := false
-	for i, c := range b {
-		if isWhitespace(c) {
-			if !prevSpace {
-				prevSpace = true
-				b[i] = ' '
-			} else {
-				if start < i {
-					if start != 0 {
-						j += copy(b[j:], b[start:i])
-					} else {
-						j += i - start
-					}
-				}
-				start = i + 1
-			}
-		} else {
-			prevSpace = false
-		}
-	}
-	if start != 0 {
-		j += copy(b[j:], b[start:])
-		return b[:j]
-	}
-	return b
-}
 
 // it is assumed that b[0] equals '&'
 func isAtQuoteEntity(b []byte) (quote byte, n int, ok bool) {
@@ -347,18 +327,4 @@ func escapeCDATAVal(buf *[]byte, b []byte) ([]byte, bool) {
 	}
 	j += copy(t[j:], b[start:])
 	return t[:j], false
-}
-
-// isWhitespace returns true for space, \n, \t, \f, \r.
-func isWhitespace(c byte) bool {
-	return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f'
-}
-
-func isAllWhitespace(b []byte) bool {
-	for _, c := range b {
-		if !isWhitespace(c) {
-			return false
-		}
-	}
-	return true
 }

@@ -2,8 +2,6 @@ package xml // import "github.com/tdewolff/minify/xml"
 
 import (
 	"bytes"
-	"math/rand"
-	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,16 +14,6 @@ func assertXML(t *testing.T, input, expected string) {
 	b := &bytes.Buffer{}
 	assert.Nil(t, m.Minify("text/xml", b, bytes.NewBufferString(input)), "Minify must not return error in "+input)
 	assert.Equal(t, expected, b.String(), "Minify must give expected result in "+input)
-}
-
-func helperRand(n, m int, chars []byte) []string {
-	r := make([]string, n)
-	for i := range r {
-		for j := 0; j < m; j++ {
-			r[i] += string(chars[rand.Intn(len(chars))])
-		}
-	}
-	return r
 }
 
 func assertAttrVal(t *testing.T, input, expected string) {
@@ -49,15 +37,6 @@ func TestXML(t *testing.T) {
 	assertXML(t, "<x> </x>", "<x/>")
 	assertXML(t, "<x a=\" a \n\r\t b \"/>", "<x a=\" a     b \"/>")
 	assertXML(t, "<!DOCTYPE foo SYSTEM \"Foo.dtd\">", "<!DOCTYPE foo SYSTEM \"Foo.dtd\">") // lower-case?
-}
-
-func TestWhitespace(t *testing.T) {
-	multipleWhitespaceRegexp := regexp.MustCompile("\\s+")
-	array := helperRand(100, 20, []byte("abcdefg \n\r\f\t"))
-	for _, e := range array {
-		reference := multipleWhitespaceRegexp.ReplaceAll([]byte(e), []byte(" "))
-		assert.Equal(t, reference, replaceMultipleWhitespace([]byte(e)), "must remove all multiple whitespace")
-	}
 }
 
 func TestHelpers(t *testing.T) {
