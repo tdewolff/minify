@@ -18,7 +18,7 @@ func assertXML(t *testing.T, input, expected string) {
 
 func assertAttrVal(t *testing.T, input, expected string) {
 	buf := make([]byte, len(input))
-	assert.Equal(t, expected, string(escapeAttrVal(&buf, []byte(input))))
+	assert.Equal(t, expected, string(EscapeAttrVal(&buf, []byte(input))))
 }
 
 ////////////////////////////////////////////////////////////////
@@ -37,7 +37,7 @@ func TestXML(t *testing.T) {
 	assertXML(t, "<x a=\"b\"></x>", "<x a=\"b\"/>")
 	assertXML(t, "<x> </x>", "<x/>")
 	assertXML(t, "<x a=\" a \n\r\t b \"/>", "<x a=\" a     b \"/>")
-	assertXML(t, "<!DOCTYPE foo SYSTEM \"Foo.dtd\">", "<!DOCTYPE foo SYSTEM \"Foo.dtd\">") // lower-case?
+	assertXML(t, "<!DOCTYPE foo SYSTEM \"Foo.dtd\">", "<!DOCTYPE foo SYSTEM \"Foo.dtd\">")
 }
 
 func TestHelpers(t *testing.T) {
