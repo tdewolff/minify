@@ -231,10 +231,19 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						}
 					}
 				} else if t.hash == html.A {
-					if attr := getAttributes(tb, html.Id, html.Name); attr != nil {
+					if attr := getAttributes(tb, html.Id, html.Name, html.Href, html.Rel); attr != nil {
 						if id, ok := attr[html.Id]; ok {
 							if name, ok := attr[html.Name]; ok && parse.Equal(id.attrVal, name.attrVal) {
 								name.data = nil
+							}
+						}
+						if rel, ok := attr[html.Rel]; !ok || !parse.Equal(rel.attrVal, []byte("external")) {
+							if href, ok := attr[html.Href]; ok {
+								if len(href.attrVal) >= 5 && parse.EqualCaseInsensitive(href.attrVal[:5], []byte{'h', 't', 't', 'p', ':'}) {
+									href.attrVal = href.attrVal[5:]
+								} else if len(href.attrVal) >= 6 && parse.EqualCaseInsensitive(href.attrVal[:6], []byte{'h', 't', 't', 'p', 's', ':'}) {
+									href.attrVal = href.attrVal[6:]
+								}
 							}
 						}
 					}
@@ -337,9 +346,11 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							if m.Minify(defaultScriptType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
 								val = attrMinifyBuffer.Bytes()
 							}
-						} else if urlAttrMap[attr.hash] {
+						} else if urlAttrMap[attr.hash] && t.hash != html.A { // anchors are already handled
 							if len(val) >= 5 && parse.EqualCaseInsensitive(val[:5], []byte{'h', 't', 't', 'p', ':'}) {
 								val = val[5:]
+							} else if len(val) >= 6 && parse.EqualCaseInsensitive(val[:6], []byte{'h', 't', 't', 'p', 's', ':'}) {
+								val = val[6:]
 							}
 						}
 
