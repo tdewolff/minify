@@ -45,6 +45,12 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	tb := newTokenBuffer(z)
 	for {
 		t := *tb.Shift()
+		if t.tt == xml.CDATAToken {
+			var useCDATA bool
+			if t.data, useCDATA = escapeCDATAVal(&escapeBuffer, t.data); !useCDATA {
+				t.tt = xml.TextToken
+			}
+		}
 		switch t.tt {
 		case xml.ErrorToken:
 			if z.Err() == io.EOF {
@@ -52,21 +58,14 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 			return z.Err()
 		case xml.CDATAToken:
-			data, useCDATA := escapeCDATAVal(&escapeBuffer, t.data)
-			if useCDATA {
-				if _, err := w.Write(CDATAStartBytes); err != nil {
-					return err
-				}
-				if _, err := w.Write(data); err != nil {
-					return err
-				}
-				if _, err := w.Write(CDATAEndBytes); err != nil {
-					return err
-				}
-			} else {
-				if _, err := w.Write(data); err != nil {
-					return err
-				}
+			if _, err := w.Write(CDATAStartBytes); err != nil {
+				return err
+			}
+			if _, err := w.Write(t.data); err != nil {
+				return err
+			}
+			if _, err := w.Write(CDATAEndBytes); err != nil {
+				return err
 			}
 		case xml.TextToken:
 			if t.data = replaceMultipleWhitespace(t.data); len(t.data) > 0 {
