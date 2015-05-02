@@ -287,16 +287,13 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					if attr.tt != html.AttributeToken {
 						break
 					} else if attr.data == nil {
-						// removed attribute
-						continue
+						continue // removed attribute
 					}
 
 					val := attr.attrVal
 					if len(val) > 1 && (val[0] == '"' || val[0] == '\'') {
 						val = parse.Trim(val[1:len(val)-1], parse.IsWhitespace)
-					}
-					// omit empty attribute values
-					if len(val) == 0 && (attr.hash == html.Class ||
+					} else if len(val) == 0 && (attr.hash == html.Class ||
 						attr.hash == html.Dir ||
 						attr.hash == html.Id ||
 						attr.hash == html.Lang ||
@@ -306,7 +303,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						attr.hash == html.Action && t.hash == html.Form ||
 						attr.hash == html.Value && t.hash == html.Input ||
 						len(attr.data) > 2 && attr.data[0] == 'o' && attr.data[1] == 'n') {
-						continue
+						continue // omit empty attribute values
 					}
 					if caseInsensitiveAttrMap[attr.hash] {
 						val = parse.ToLower(val)
@@ -345,11 +342,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						return err
 					}
 
-					// booleans have no value
-					if !booleanAttrMap[attr.hash] {
-						if len(val) == 0 {
-							continue
-						}
+					if len(val) > 0 && !booleanAttrMap[attr.hash] {
 						if _, err := w.Write(isBytes); err != nil {
 							return err
 						}
@@ -376,9 +369,8 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 								}
 							}
 						}
-
 						// no quotes if possible, else prefer single or double depending on which occurs more often in value
-						val = escapeAttrVal(&attrEscapeBuffer, val)
+						val = escapeAttrVal(&attrEscapeBuffer, attr.attrVal, val)
 						if _, err := w.Write(val); err != nil {
 							return err
 						}
@@ -470,7 +462,7 @@ func isAtQuoteEntity(b []byte) (quote byte, n int, ok bool) {
 }
 
 // escapeAttrVal returns the escaped attribute value bytes without quotes.
-func escapeAttrVal(buf *[]byte, b []byte) []byte {
+func escapeAttrVal(buf *[]byte, orig []byte, b []byte) []byte {
 	singles := 0
 	doubles := 0
 	unquoted := true
@@ -497,6 +489,8 @@ func escapeAttrVal(buf *[]byte, b []byte) []byte {
 	}
 	if unquoted {
 		return b
+	} else if singles == 0 && doubles == 0 && len(orig) == len(b)+2 {
+		return orig
 	}
 	var quote byte
 	var escapedQuote []byte

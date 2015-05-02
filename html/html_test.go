@@ -18,7 +18,8 @@ func assertHTML(t *testing.T, m *minify.Minify, input, expected string) {
 
 func assertAttrVal(t *testing.T, input, expected string) {
 	buf := make([]byte, len(input))
-	assert.Equal(t, expected, string(escapeAttrVal(&buf, []byte(input))))
+	orig := append([]byte("\""), append([]byte(input), '"')...)
+	assert.Equal(t, expected, string(escapeAttrVal(&buf, orig, []byte(input))))
 }
 
 ////////////////////////////////////////////////////////////////
