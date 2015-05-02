@@ -106,6 +106,7 @@ func TestHTML(t *testing.T) {
 	assertHTML(t, m, `<a href="https://x">y</a>`, `<a href=//x>y</a>`)
 	assertHTML(t, m, `<a href="https://x" rel="external">y</a>`, `<a href=https://x rel=external>y</a>`)
 	assertHTML(t, m, `<a id="abc" name="abc">y</a>`, `<a id=abc>y</a>`)
+	assertHTML(t, m, `<a id="" value="">y</a>`, `<a value>y</a>`)
 }
 
 func TestSpecialTagClosing(t *testing.T) {

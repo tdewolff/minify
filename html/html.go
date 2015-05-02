@@ -239,10 +239,12 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						}
 						if rel, ok := attr[html.Rel]; !ok || !parse.Equal(rel.attrVal, []byte("external")) {
 							if href, ok := attr[html.Href]; ok {
-								if len(href.attrVal) >= 5 && parse.EqualCaseInsensitive(href.attrVal[:5], []byte{'h', 't', 't', 'p', ':'}) {
-									href.attrVal = href.attrVal[5:]
-								} else if len(href.attrVal) >= 6 && parse.EqualCaseInsensitive(href.attrVal[:6], []byte{'h', 't', 't', 'p', 's', ':'}) {
-									href.attrVal = href.attrVal[6:]
+								if len(href.attrVal) > 5 && parse.EqualCaseInsensitive(href.attrVal[:4], []byte{'h', 't', 't', 'p'}) {
+									if href.attrVal[4] == ':' {
+										href.attrVal = href.attrVal[5:]
+									} else if href.attrVal[4] == 's' && href.attrVal[5] == ':' {
+										href.attrVal = href.attrVal[6:]
+									}
 								}
 							}
 						}
@@ -286,6 +288,19 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					val := attr.attrVal
 					if len(val) > 1 && (val[0] == '"' || val[0] == '\'') {
 						val = bytes.TrimSpace(val[1 : len(val)-1])
+					}
+					// omit empty attribute values
+					if len(val) == 0 && (attr.hash == html.Class ||
+						attr.hash == html.Dir ||
+						attr.hash == html.Id ||
+						attr.hash == html.Lang ||
+						attr.hash == html.Name ||
+						attr.hash == html.Style ||
+						attr.hash == html.Title ||
+						attr.hash == html.Action && t.hash == html.Form ||
+						attr.hash == html.Value && t.hash == html.Input ||
+						len(attr.data) > 2 && attr.data[0] == 'o' && attr.data[1] == 'n') {
+						continue
 					}
 					if caseInsensitiveAttrMap[attr.hash] {
 						val = parse.ToLower(val)
@@ -347,10 +362,12 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 								val = attrMinifyBuffer.Bytes()
 							}
 						} else if urlAttrMap[attr.hash] && t.hash != html.A { // anchors are already handled
-							if len(val) >= 5 && parse.EqualCaseInsensitive(val[:5], []byte{'h', 't', 't', 'p', ':'}) {
-								val = val[5:]
-							} else if len(val) >= 6 && parse.EqualCaseInsensitive(val[:6], []byte{'h', 't', 't', 'p', 's', ':'}) {
-								val = val[6:]
+							if len(val) > 5 && parse.EqualCaseInsensitive(val[:4], []byte{'h', 't', 't', 'p'}) {
+								if val[4] == ':' {
+									val = val[5:]
+								} else if val[4] == 's' && val[5] == ':' {
+									val = val[6:]
+								}
 							}
 						}
 
@@ -372,7 +389,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 ////////////////////////////////////////////////////////////////
 
 func getAttributes(tb *tokenBuffer, hashes ...html.Hash) map[html.Hash]*token {
-	iAttr := make(map[html.Hash]int)
+	var iAttr map[html.Hash]int
 	i := 0
 	for {
 		t := tb.Peek(i)
@@ -381,15 +398,18 @@ func getAttributes(tb *tokenBuffer, hashes ...html.Hash) map[html.Hash]*token {
 		}
 		for _, hash := range hashes {
 			if t.hash == hash {
+				if iAttr == nil {
+					iAttr = make(map[html.Hash]int, len(hashes))
+				}
 				iAttr[hash] = i
 			}
 		}
 		i++
 	}
-	if len(iAttr) == 0 {
+	if iAttr == nil {
 		return nil
 	}
-	attr := make(map[html.Hash]*token)
+	attr := make(map[html.Hash]*token, len(hashes))
 	for hash, i := range iAttr {
 		t := tb.Peek(i)
 		if len(t.attrVal) > 1 && (t.attrVal[0] == '"' || t.attrVal[0] == '\'') {
@@ -508,3 +528,11 @@ func escapeAttrVal(buf *[]byte, b []byte) []byte {
 	t[j] = quote
 	return t[:j+1]
 }
+
+//
+
+//
+
+//
+
+//
