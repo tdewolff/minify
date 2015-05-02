@@ -201,29 +201,40 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						}
 					}
 				}
+			}
 
-				// rewrite meta tag with charset
-				if hasAttributes && t.hash == html.Meta {
-					attr := getAttributes(tb, html.Content, html.Http_Equiv, html.Charset, html.Name)
-					if content, ok := attr[html.Content]; ok {
-						if httpEquiv, ok := attr[html.Http_Equiv]; ok {
-							content.attrVal = parse.NormalizeContentType(content.attrVal)
-							if _, ok := attr[html.Charset]; !ok && parse.EqualCaseInsensitive(httpEquiv.attrVal, []byte("content-type")) && parse.Equal(content.attrVal, []byte("text/html;charset=utf-8")) {
-								httpEquiv.data = nil
-								content.data = []byte("charset")
-								content.hash = html.Charset
-								content.attrVal = []byte("utf-8")
-							} else if parse.EqualCaseInsensitive(httpEquiv.attrVal, []byte("content-style-type")) {
-								defaultStyleType = string(content.attrVal)
-							} else if parse.EqualCaseInsensitive(httpEquiv.attrVal, []byte("content-script-type")) {
-								defaultScriptType = string(content.attrVal)
+			// rewrite attributes with interdependent conditions
+			if hasAttributes {
+				if t.hash == html.Meta {
+					if attr := getAttributes(tb, html.Content, html.Http_Equiv, html.Charset, html.Name); attr != nil {
+						if content, ok := attr[html.Content]; ok {
+							if httpEquiv, ok := attr[html.Http_Equiv]; ok {
+								content.attrVal = parse.NormalizeContentType(content.attrVal)
+								if _, ok := attr[html.Charset]; !ok && parse.EqualCaseInsensitive(httpEquiv.attrVal, []byte("content-type")) && parse.Equal(content.attrVal, []byte("text/html;charset=utf-8")) {
+									httpEquiv.data = nil
+									content.data = []byte("charset")
+									content.hash = html.Charset
+									content.attrVal = []byte("utf-8")
+								} else if parse.EqualCaseInsensitive(httpEquiv.attrVal, []byte("content-style-type")) {
+									defaultStyleType = string(content.attrVal)
+								} else if parse.EqualCaseInsensitive(httpEquiv.attrVal, []byte("content-script-type")) {
+									defaultScriptType = string(content.attrVal)
+								}
+							}
+							if name, ok := attr[html.Name]; ok {
+								if parse.EqualCaseInsensitive(name.attrVal, []byte("keywords")) {
+									content.attrVal = bytes.Replace(content.attrVal, []byte(", "), []byte(","), -1)
+								} else if parse.EqualCaseInsensitive(name.attrVal, []byte("viewport")) {
+									content.attrVal = bytes.Replace(content.attrVal, []byte(" "), []byte(""), -1)
+								}
 							}
 						}
-						if name, ok := attr[html.Name]; ok {
-							if parse.EqualCaseInsensitive(name.attrVal, []byte("keywords")) {
-								content.attrVal = bytes.Replace(content.attrVal, []byte(", "), []byte(","), -1)
-							} else if parse.EqualCaseInsensitive(name.attrVal, []byte("viewport")) {
-								content.attrVal = bytes.Replace(content.attrVal, []byte(" "), []byte(""), -1)
+					}
+				} else if t.hash == html.A {
+					if attr := getAttributes(tb, html.Id, html.Name); attr != nil {
+						if id, ok := attr[html.Id]; ok {
+							if name, ok := attr[html.Name]; ok && parse.Equal(id.attrVal, name.attrVal) {
+								name.data = nil
 							}
 						}
 					}
@@ -355,6 +366,9 @@ func getAttributes(tb *tokenBuffer, hashes ...html.Hash) map[html.Hash]*token {
 			}
 		}
 		i++
+	}
+	if len(iAttr) == 0 {
+		return nil
 	}
 	attr := make(map[html.Hash]*token)
 	for hash, i := range iAttr {
