@@ -140,6 +140,17 @@ Minification typically runs at about 75MB/s ~= 270GB/h. It shaves off about 15% 
 
 The JSON minifier only removes whitespace, which is the only thing that can be left out.
 
+## SVG [![GoDoc](http://godoc.org/github.com/tdewolff/minify/svg?status.svg)](http://godoc.org/github.com/tdewolff/minify/svg) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/svg)](http://gocover.io/github.com/tdewolff/minify/svg)
+
+The SVG minifier uses these minifications:
+
+- strip all text between tags
+- strip comments
+- strip doctype
+- strip XML prelude
+- collapse tags with no content to a void tag
+- strip CDATA sections wherever possible
+
 ## XML [![GoDoc](http://godoc.org/github.com/tdewolff/minify/xml?status.svg)](http://godoc.org/github.com/tdewolff/minify/xml) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/xml)](http://gocover.io/github.com/tdewolff/minify/xml)
 
 Minification typically runs at about 50MB/s ~= 180GB/h.
@@ -164,6 +175,7 @@ import (
 	"github.com/tdewolff/minify/html"
 	"github.com/tdewolff/minify/js"
 	"github.com/tdewolff/minify/json"
+	"github.com/tdewolff/minify/svg"
 	"github.com/tdewolff/minify/xml"
 )
 ```
@@ -181,6 +193,7 @@ m := minify.New()
 m.AddFunc("text/css", css.Minify)
 m.AddFunc("text/html", html.Minify)
 m.AddFunc("text/javascript", js.Minify)
+m.AddFunc("image/svg+xml", svg.Minify)
 m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
 m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 ```
@@ -196,23 +209,27 @@ if err := m.Minify(mediatype, w, r); err != nil {
 Minify HTML, CSS or JS directly from an `io.Reader` to an `io.Writer`. The passed mediatype is not required for these functions, but are filled out for clarity.
 ``` go
 if err := css.Minify(m, "text/css", w, r); err != nil {
-	log.Fatal("Minify:", err)
+	log.Fatal("css.Minify:", err)
 }
 
 if err := html.Minify(m, "text/html", w, r); err != nil {
-	log.Fatal("Minify:", err)
+	log.Fatal("html.Minify:", err)
 }
 
 if err := js.Minify(m, "text/javascript", w, r); err != nil {
-	log.Fatal("Minify:", err)
+	log.Fatal("js.Minify:", err)
 }
 
 if err := json.Minify(m, "application/json", w, r); err != nil {
-	log.Fatal("Minify:", err)
+	log.Fatal("json.Minify:", err)
+}
+
+if err := svg.Minify(m, "image/svg+xml", w, r); err != nil {
+	log.Fatal("svg.Minify:", err)
 }
 
 if err := xml.Minify(m, "text/xml", w, r); err != nil {
-	log.Fatal("Minify:", err)
+	log.Fatal("xml.Minify:", err)
 }
 ```
 
@@ -221,7 +238,7 @@ Minify from and to a `[]byte` for a specific mediatype.
 ``` go
 b, err = minify.Bytes(m, mediatype, b)
 if err != nil {
-	log.Fatal("Bytes:", err)
+	log.Fatal("minify.Bytes:", err)
 }
 ```
 
@@ -230,7 +247,7 @@ Minify from and to a `string` for a specific mediatype.
 ``` go
 s, err = minify.String(m, mediatype, s)
 if err != nil {
-	log.Fatal("String:", err)
+	log.Fatal("minify.String:", err)
 }
 ```
 
@@ -268,6 +285,7 @@ import (
 	"github.com/tdewolff/minify/html"
 	"github.com/tdewolff/minify/js"
 	"github.com/tdewolff/minify/json"
+	"github.com/tdewolff/minify/svg"
 	"github.com/tdewolff/minify/xml"
 )
 
@@ -276,6 +294,7 @@ func main() {
 	m.AddFunc("text/css", css.Minify)
 	m.AddFunc("text/html", html.Minify)
 	m.AddFunc("text/javascript", js.Minify)
+	m.AddFunc("image/svg+xml", svg.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
