@@ -361,7 +361,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							if m.Minify(defaultScriptType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
 								val = attrMinifyBuffer.Bytes()
 							}
-						} else if urlAttrMap[attr.hash] && t.hash != html.A { // anchors are already handled
+						} else if t.hash != html.A && urlAttrMap[attr.hash] { // anchors are already handled
 							if len(val) > 5 && parse.EqualCaseInsensitive(val[:4], []byte{'h', 't', 't', 'p'}) {
 								if val[4] == ':' {
 									val = val[5:]

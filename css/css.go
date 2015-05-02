@@ -42,7 +42,9 @@ type cssMinifier struct {
 // Minify minifies CSS files, it reads from r and writes to w.
 func Minify(m minify.Minifier, mediatype string, w io.Writer, r io.Reader) error {
 	isStylesheet := true
-	if _, params, err := mime.ParseMediaType(mediatype); err == nil && params["inline"] == "1" {
+	if len(mediatype) >= len(";inline=0") && mediatype[len(mediatype)-len(";inline=0"):] == ";inline=1" {
+		isStylesheet = false
+	} else if _, params, err := mime.ParseMediaType(mediatype); err == nil && params["inline"] == "1" {
 		isStylesheet = false
 	}
 	c := &cssMinifier{
