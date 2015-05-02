@@ -87,7 +87,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					}
 					// ignore CDATA in embedded HTML
 					if mediatype == "text/html" {
-						trimmedData := bytes.TrimSpace(t.data)
+						trimmedData := parse.Trim(t.data, parse.IsWhitespace)
 						if len(trimmedData) > 12 && bytes.Equal(trimmedData[:9], []byte("<![CDATA[")) && bytes.Equal(trimmedData[len(trimmedData)-3:], []byte("]]>")) {
 							if _, err := w.Write([]byte("<![CDATA[")); err != nil {
 								return err
@@ -287,7 +287,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 					val := attr.attrVal
 					if len(val) > 1 && (val[0] == '"' || val[0] == '\'') {
-						val = bytes.TrimSpace(val[1 : len(val)-1])
+						val = parse.Trim(val[1:len(val)-1], parse.IsWhitespace)
 					}
 					// omit empty attribute values
 					if len(val) == 0 && (attr.hash == html.Class ||
@@ -413,7 +413,7 @@ func getAttributes(tb *tokenBuffer, hashes ...html.Hash) map[html.Hash]*token {
 	for hash, i := range iAttr {
 		t := tb.Peek(i)
 		if len(t.attrVal) > 1 && (t.attrVal[0] == '"' || t.attrVal[0] == '\'') {
-			t.attrVal = bytes.TrimSpace(t.attrVal[1 : len(t.attrVal)-1]) // quotes will be readded in attribute loop if necessary
+			t.attrVal = parse.Trim(t.attrVal[1:len(t.attrVal)-1], parse.IsWhitespace) // quotes will be readded in attribute loop if necessary
 		}
 		attr[hash] = t
 	}
