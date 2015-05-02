@@ -317,7 +317,8 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						attr.hash == html.Frameborder && parse.Equal(val, []byte("1")) ||
 						attr.hash == html.Scrolling && parse.Equal(val, []byte("auto")) ||
 						attr.hash == html.Valuetype && parse.Equal(val, []byte("data")) ||
-						attr.hash == html.Language && t.hash == html.Script && parse.Equal(val, []byte("javascript")) {
+						attr.hash == html.Language && t.hash == html.Script && parse.Equal(val, []byte("javascript")) ||
+						attr.hash == html.Media && t.hash == html.Style && parse.Equal(val, []byte("all")) {
 						continue
 					}
 					if _, err := w.Write(spaceBytes); err != nil {
