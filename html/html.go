@@ -293,7 +293,8 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					val := attr.attrVal
 					if len(val) > 1 && (val[0] == '"' || val[0] == '\'') {
 						val = parse.Trim(val[1:len(val)-1], parse.IsWhitespace)
-					} else if len(val) == 0 && (attr.hash == html.Class ||
+					}
+					if len(val) == 0 && (attr.hash == html.Class ||
 						attr.hash == html.Dir ||
 						attr.hash == html.Id ||
 						attr.hash == html.Lang ||
