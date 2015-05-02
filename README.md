@@ -143,7 +143,7 @@ Minification typically runs at about 75MB/s ~= 270GB/h. It shaves off about 15% 
 
 The XML minifier removes whitespace, changes empty start and end tags to a void tag and removes CDATA wherever possible.
 
-Minification typically runs at about 45MB/s ~= 160GB/h.
+Minification typically runs at about 50MB/s ~= 180GB/h.
 
 ## Installation
 Run the following command
