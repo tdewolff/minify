@@ -35,7 +35,7 @@ See the [Wiki](https://github.com/tdewolff/minify/wiki) for a roadmap of what is
 	- [License](#license)
 
 ## Comparison
-HTML (with JS and CSS) minification typically runs at about 20-30MB/s ~= 70-100GB/h, depending on the composition of the file.
+HTML (with JS and CSS) minification typically runs at about 30MB/s ~= 100GB/h, depending on the composition of the file.
 
 Website | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
