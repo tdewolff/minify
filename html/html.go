@@ -18,6 +18,8 @@ var (
 	endBytes                = []byte("</")
 	escapedSingleQuoteBytes = []byte("&#39;")
 	escapedDoubleQuoteBytes = []byte("&#34;")
+	externalBytes           = []byte("external")
+	httpBytes               = []byte("http")
 )
 
 type token struct {
@@ -37,9 +39,12 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	precededBySpace := true // on true the next text token must not start with a space
 	defaultScriptType := "text/javascript"
 	defaultStyleType := "text/css"
+	defaultInlineStyleType := "text/css;inline=1"
 
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrEscapeBuffer := make([]byte, 0, 64)
+	attrIndexBuffer := make([]int, 0, 4)
+	attrTokenBuffer := make([]*token, 0, 4)
 
 	z := html.NewTokenizer(r)
 	tb := newTokenBuffer(z)
@@ -110,7 +115,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				}
 			} else if t.data = parse.ReplaceMultiple(t.data, parse.IsWhitespace, ' '); len(t.data) > 0 {
 				// whitespace removal; trim left
-				if t.data[0] == ' ' && precededBySpace {
+				if precededBySpace && t.data[0] == ' ' {
 					t.data = t.data[1:]
 				}
 
@@ -155,14 +160,14 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			rawTag = 0
 			hasAttributes := false
 			if t.tt == html.StartTagToken {
-				if next := tb.Peek(0); next.tt != html.StartTagCloseToken && next.tt != html.StartTagVoidToken {
+				if next := tb.Peek(0); next.tt == html.AttributeToken {
 					hasAttributes = true
 				}
 			}
 
 			if !inlineTagMap[t.hash] {
 				precededBySpace = true
-				if rawTagMap[t.hash] && t.tt == html.StartTagToken {
+				if t.tt == html.StartTagToken && rawTagMap[t.hash] {
 					// ignore empty script and style tags
 					if !hasAttributes && (t.hash == html.Script || t.hash == html.Style) {
 						if next := tb.Peek(1); next.tt == html.EndTagToken {
@@ -205,23 +210,43 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 			// rewrite attributes with interdependent conditions
 			if hasAttributes {
-				if t.hash == html.Meta {
-					if attr := getAttributes(tb, html.Content, html.Http_Equiv, html.Charset, html.Name); attr != nil {
-						if content, ok := attr[html.Content]; ok {
-							if httpEquiv, ok := attr[html.Http_Equiv]; ok {
+				if t.hash == html.A {
+					if attr := getAttributes(tb, &attrIndexBuffer, &attrTokenBuffer, html.Id, html.Name, html.Rel, html.Href); attr != nil {
+						if id := attr[0]; id != nil {
+							if name := attr[1]; name != nil && parse.Equal(id.attrVal, name.attrVal) {
+								name.data = nil
+							}
+						}
+						if rel := attr[2]; rel == nil || !parse.EqualCaseInsensitive(rel.attrVal, externalBytes) {
+							if href := attr[3]; href != nil {
+								if len(href.attrVal) > 5 && parse.EqualCaseInsensitive(href.attrVal[:4], []byte{'h', 't', 't', 'p'}) {
+									if href.attrVal[4] == ':' {
+										href.attrVal = href.attrVal[5:]
+									} else if (href.attrVal[4] == 's' || href.attrVal[4] == 'S') && href.attrVal[5] == ':' {
+										href.attrVal = href.attrVal[6:]
+									}
+								}
+							}
+						}
+					}
+				} else if t.hash == html.Meta {
+					if attr := getAttributes(tb, &attrIndexBuffer, &attrTokenBuffer, html.Content, html.Http_Equiv, html.Charset, html.Name); attr != nil {
+						if content := attr[0]; content != nil {
+							if httpEquiv := attr[1]; httpEquiv != nil {
 								content.attrVal = parse.NormalizeContentType(content.attrVal)
-								if _, ok := attr[html.Charset]; !ok && parse.EqualCaseInsensitive(httpEquiv.attrVal, []byte("content-type")) && parse.Equal(content.attrVal, []byte("text/html;charset=utf-8")) {
+								if charset := attr[2]; charset == nil && parse.EqualCaseInsensitive(httpEquiv.attrVal, []byte("content-type")) && parse.Equal(content.attrVal, []byte("text/html;charset=utf-8")) {
 									httpEquiv.data = nil
 									content.data = []byte("charset")
 									content.hash = html.Charset
 									content.attrVal = []byte("utf-8")
 								} else if parse.EqualCaseInsensitive(httpEquiv.attrVal, []byte("content-style-type")) {
 									defaultStyleType = string(content.attrVal)
+									defaultInlineStyleType = defaultStyleType + ";inline=1"
 								} else if parse.EqualCaseInsensitive(httpEquiv.attrVal, []byte("content-script-type")) {
 									defaultScriptType = string(content.attrVal)
 								}
 							}
-							if name, ok := attr[html.Name]; ok {
+							if name := attr[3]; name != nil {
 								if parse.EqualCaseInsensitive(name.attrVal, []byte("keywords")) {
 									content.attrVal = bytes.Replace(content.attrVal, []byte(", "), []byte(","), -1)
 								} else if parse.EqualCaseInsensitive(name.attrVal, []byte("viewport")) {
@@ -230,29 +255,10 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							}
 						}
 					}
-				} else if t.hash == html.A {
-					if attr := getAttributes(tb, html.Id, html.Name, html.Href, html.Rel); attr != nil {
-						if id, ok := attr[html.Id]; ok {
-							if name, ok := attr[html.Name]; ok && parse.Equal(id.attrVal, name.attrVal) {
-								name.data = nil
-							}
-						}
-						if rel, ok := attr[html.Rel]; !ok || !parse.Equal(rel.attrVal, []byte("external")) {
-							if href, ok := attr[html.Href]; ok {
-								if len(href.attrVal) > 5 && parse.EqualCaseInsensitive(href.attrVal[:4], []byte{'h', 't', 't', 'p'}) {
-									if href.attrVal[4] == ':' {
-										href.attrVal = href.attrVal[5:]
-									} else if href.attrVal[4] == 's' && href.attrVal[5] == ':' {
-										href.attrVal = href.attrVal[6:]
-									}
-								}
-							}
-						}
-					}
 				} else if t.hash == html.Script {
-					if attr := getAttributes(tb, html.Src, html.Charset); attr != nil {
-						if _, ok := attr[html.Src]; ok {
-							if charset, ok := attr[html.Charset]; ok {
+					if attr := getAttributes(tb, &attrIndexBuffer, &attrTokenBuffer, html.Src, html.Charset); attr != nil {
+						if src := attr[0]; src != nil {
+							if charset := attr[1]; charset != nil {
 								charset.data = nil
 							}
 						}
@@ -318,6 +324,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						t.hash == html.Link && parse.Equal(val, []byte("text/css")) ||
 						t.hash == html.Input && parse.Equal(val, []byte("text")) ||
 						t.hash == html.Button && parse.Equal(val, []byte("submit"))) ||
+						attr.hash == html.Language && t.hash == html.Script ||
 						attr.hash == html.Method && parse.Equal(val, []byte("get")) ||
 						attr.hash == html.Enctype && parse.Equal(val, []byte("application/x-www-form-urlencoded")) ||
 						attr.hash == html.Colspan && parse.Equal(val, []byte("1")) ||
@@ -328,7 +335,6 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						attr.hash == html.Frameborder && parse.Equal(val, []byte("1")) ||
 						attr.hash == html.Scrolling && parse.Equal(val, []byte("auto")) ||
 						attr.hash == html.Valuetype && parse.Equal(val, []byte("data")) ||
-						attr.hash == html.Language && t.hash == html.Script ||
 						attr.hash == html.Media && t.hash == html.Style && parse.Equal(val, []byte("all")) {
 						continue
 					}
@@ -350,7 +356,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						// CSS and JS minifiers for attribute inline code
 						if attr.hash == html.Style {
 							attrMinifyBuffer.Reset()
-							if m.Minify(defaultStyleType+";inline=1", attrMinifyBuffer, buffer.NewReader(val)) == nil {
+							if m.Minify(defaultInlineStyleType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
 								val = attrMinifyBuffer.Bytes()
 							}
 						} else if len(attr.data) > 2 && attr.data[0] == 'o' && attr.data[1] == 'n' {
@@ -365,7 +371,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							if len(val) > 5 && parse.EqualCaseInsensitive(val[:4], []byte{'h', 't', 't', 'p'}) {
 								if val[4] == ':' {
 									val = val[5:]
-								} else if val[4] == 's' && val[5] == ':' {
+								} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
 									val = val[6:]
 								}
 							}
@@ -388,36 +394,38 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 ////////////////////////////////////////////////////////////////
 
-func getAttributes(tb *tokenBuffer, hashes ...html.Hash) map[html.Hash]*token {
-	var iAttr map[html.Hash]int
+func getAttributes(tb *tokenBuffer, attrIndexBuffer *[]int, attrTokenBuffer *[]*token, hashes ...html.Hash) []*token {
+	if cap(*attrIndexBuffer) < len(hashes) || cap(*attrTokenBuffer) < len(hashes) {
+		*attrIndexBuffer = make([]int, 0, len(hashes))
+		*attrTokenBuffer = make([]*token, 0, len(hashes))
+	}
+	*attrIndexBuffer = (*attrIndexBuffer)[:len(hashes)]
+	*attrTokenBuffer = (*attrTokenBuffer)[:len(hashes)]
 	i := 0
 	for {
 		t := tb.Peek(i)
 		if t.tt != html.AttributeToken {
 			break
 		}
-		for _, hash := range hashes {
+		for j, hash := range hashes {
 			if t.hash == hash {
-				if iAttr == nil {
-					iAttr = make(map[html.Hash]int, len(hashes))
-				}
-				iAttr[hash] = i
+				(*attrIndexBuffer)[j] = i + 1
 			}
 		}
 		i++
 	}
-	if iAttr == nil {
-		return nil
-	}
-	attr := make(map[html.Hash]*token, len(hashes))
-	for hash, i := range iAttr {
-		t := tb.Peek(i)
-		if len(t.attrVal) > 1 && (t.attrVal[0] == '"' || t.attrVal[0] == '\'') {
-			t.attrVal = parse.Trim(t.attrVal[1:len(t.attrVal)-1], parse.IsWhitespace) // quotes will be readded in attribute loop if necessary
+	for j, i := range *attrIndexBuffer {
+		if i > 0 {
+			t := tb.Peek(i - 1)
+			if len(t.attrVal) > 1 && (t.attrVal[0] == '"' || t.attrVal[0] == '\'') {
+				t.attrVal = parse.Trim(t.attrVal[1:len(t.attrVal)-1], parse.IsWhitespace) // quotes will be readded in attribute loop if necessary
+			}
+			(*attrTokenBuffer)[j] = t
+		} else {
+			(*attrTokenBuffer)[j] = nil
 		}
-		attr[hash] = t
 	}
-	return attr
+	return *attrTokenBuffer
 }
 
 // it is assumed that b[0] equals '&'
