@@ -531,11 +531,3 @@ func escapeAttrVal(buf *[]byte, orig []byte, b []byte) []byte {
 	t[j] = quote
 	return t[:j+1]
 }
-
-//
-
-//
-
-//
-
-//
