@@ -238,6 +238,14 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							}
 						}
 					}
+				} else if t.hash == html.Script {
+					if attr := getAttributes(tb, html.Src, html.Charset); attr != nil {
+						if _, ok := attr[html.Src]; ok {
+							if charset, ok := attr[html.Charset]; ok {
+								charset.data = nil
+							}
+						}
+					}
 				}
 			}
 

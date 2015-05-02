@@ -101,10 +101,10 @@ func TestHTML(t *testing.T) {
 	assertHTML(t, m, `<script type="text/html"><![CDATA[ <img id="x"> ]]></script>`, `<script type=text/html><![CDATA[<img id=x>]]></script>`)
 	assertHTML(t, m, `<iframe><html> <p> x </p> </html></iframe>`, `<iframe><p>x</iframe>`)
 	assertHTML(t, m, `<svg xmlns="http://www.w3.org/2000/svg"><path d="x"/></svg>`, `<svg xmlns=//www.w3.org/2000/svg><path d="x"/></svg>`)
-	assertHTML(t, m, `<script language="x" charset="x" src="y"></script>`, `<script src="y"></script>`)
+	assertHTML(t, m, `<script language="x" charset="x" src="y"></script>`, `<script src=y></script>`)
 	assertHTML(t, m, `<style media="all">x</style>`, `<style>x</style>`)
-	assertHTML(t, m, `<a href="https://x">y</a>`, `<a href="//x">y</a>`)
-	assertHTML(t, m, `<a href="https://x" rel="external">y</a>`, `<a href="https://x" rel="external">y</a>`)
+	assertHTML(t, m, `<a href="https://x">y</a>`, `<a href=//x>y</a>`)
+	assertHTML(t, m, `<a href="https://x" rel="external">y</a>`, `<a href=https://x rel=external>y</a>`)
 	assertHTML(t, m, `<a id="abc" name="abc">y</a>`, `<a id=abc>y</a>`)
 }
 
