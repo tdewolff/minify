@@ -1,4 +1,4 @@
-package html
+package html // import "github.com/tdewolff/minify/html"
 
 import (
 	"github.com/tdewolff/parse"
