@@ -112,26 +112,6 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			if _, err := w.Write(t.data); err != nil {
 				return err
 			}
-			// collapse empty tags to single void tag
-			if next := tb.Peek(0); next.tt == xml.StartTagCloseToken {
-				i := 1
-				for {
-					next = tb.Peek(i)
-					i++
-					// continue if text token is empty or whitespace
-					if next.tt == xml.TextToken && isAllWhitespace(next.data) {
-						continue
-					} else if next.tt != xml.EndTagToken {
-						break
-					}
-					tb.Shift()
-					tb.Shift()
-					if _, err := w.Write(voidBytes); err != nil {
-						return err
-					}
-					break
-				}
-			}
 		case xml.AttributeToken:
 			val := t.attrVal
 			if len(val) < 2 {
@@ -158,8 +138,25 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				return err
 			}
 		case xml.StartTagCloseToken:
-			if _, err := w.Write(gtBytes); err != nil {
-				return err
+			next := tb.Peek(0)
+			skipExtra := false
+			if next.tt == xml.TextToken && isAllWhitespace(next.data) {
+				next = tb.Peek(1)
+				skipExtra = true
+			}
+			if next.tt == xml.EndTagToken {
+				// collapse empty tags to single void tag
+				tb.Shift()
+				if skipExtra {
+					tb.Shift()
+				}
+				if _, err := w.Write(voidBytes); err != nil {
+					return err
+				}
+			} else {
+				if _, err := w.Write(gtBytes); err != nil {
+					return err
+				}
 			}
 		case xml.StartTagCloseVoidToken:
 			if _, err := w.Write(voidBytes); err != nil {
