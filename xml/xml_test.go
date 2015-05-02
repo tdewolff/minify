@@ -25,6 +25,7 @@ func assertAttrVal(t *testing.T, input, expected string) {
 
 func TestXML(t *testing.T) {
 	assertXML(t, "<!-- comment -->", "")
+	assertXML(t, "<A>x</A>", "<A>x</A>")
 	assertXML(t, "<a><b>x</b></a>", "<a><b>x</b></a>")
 	assertXML(t, "<a><b>x\ny</b></a>", "<a><b>x y</b></a>")
 	assertXML(t, "<a><![CDATA[<b>]]></a>", "<a>&lt;b></a>")
