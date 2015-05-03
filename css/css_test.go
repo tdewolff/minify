@@ -23,6 +23,13 @@ func assertCSS(t *testing.T, m *minify.Minify, isStylesheet bool, input, expecte
 	assert.Equal(t, expected, b.String(), "Minify must give expected result in "+input)
 }
 
+func assertLength(t *testing.T, x, e string) {
+	s := ShortenLength([]byte(x))
+	assert.Equal(t, e, string(s), "lengths must match in "+x)
+}
+
+////////////////////////////////////////////////////////////////
+
 func TestCSS(t *testing.T) {
 	m := minify.New()
 	m.AddFunc("text/css", Minify)
@@ -112,6 +119,18 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, m, false, "margin: rgb(ident);", "margin:rgb(ident)")
 	assertCSS(t, m, false, "filter: progid:b().c.Alpha(rgba(x));", "filter:progid:b().c.Alpha(rgba(x))")
 	assertCSS(t, m, true, "a, b + c { x:y; }", "a,b+c{x:y}")
+}
+
+func TestLength(t *testing.T) {
+	assertLength(t, "0%", "0")
+	assertLength(t, "0em", "0")
+	assertLength(t, "1.0px", "1px")
+	assertLength(t, "0.1px", ".1px")
+	assertLength(t, "+1px", "1px")
+	assertLength(t, "-0.1px", "-.1px")
+	assertLength(t, "100px", "100px")
+	assertLength(t, "1000px", "1e3px")
+	assertLength(t, "96px", "1in")
 }
 
 func TestDataURI(t *testing.T) {
