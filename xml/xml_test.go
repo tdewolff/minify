@@ -34,8 +34,9 @@ func TestXML(t *testing.T) {
 	assertXML(t, "<a><![CDATA[&&&&]]></a>", "<a><![CDATA[&&&&]]></a>")
 	assertXML(t, "<?xml version=\"1.0\" ?>", "<?xml version=\"1.0\"?>")
 	assertXML(t, "<x></x>", "<x/>")
-	assertXML(t, "<x a=\"b\"></x>", "<x a=\"b\"/>")
 	assertXML(t, "<x> </x>", "<x/>")
+	assertXML(t, "<x a=\"b\"></x>", "<x a=\"b\"/>")
+	assertXML(t, "<x a=\"\"></x>", "<x a=\"\"/>")
 	assertXML(t, "<x a=\" a \n\r\t b \"/>", "<x a=\" a     b \"/>")
 	assertXML(t, "<!DOCTYPE foo SYSTEM \"Foo.dtd\">", "<!DOCTYPE foo SYSTEM \"Foo.dtd\">")
 }

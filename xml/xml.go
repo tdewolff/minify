@@ -33,7 +33,8 @@ var (
 // Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 10% in size.
 func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	precededBySpace := true // on true the next text token must not start with a space
-	escapeBuffer := make([]byte, 0, 64)
+
+	attrEscapeBuffer := make([]byte, 0, 64)
 
 	z := xml.NewTokenizer(r)
 	tb := NewTokenBuffer(z)
@@ -41,7 +42,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 		t := *tb.Shift()
 		if t.TokenType == xml.CDATAToken {
 			var useCDATA bool
-			if t.Data, useCDATA = EscapeCDATAVal(&escapeBuffer, t.Data); !useCDATA {
+			if t.Data, useCDATA = EscapeCDATAVal(&attrEscapeBuffer, t.Data); !useCDATA {
 				t.TokenType = xml.TextToken
 			}
 		}
@@ -123,14 +124,23 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				return err
 			}
 		case xml.AttributeToken:
-			val := t.AttrVal
-			if len(val) < 2 {
+			if len(t.AttrVal) < 2 {
+				if _, err := w.Write(spaceBytes); err != nil {
+					return err
+				}
+				if _, err := w.Write(t.Data); err != nil {
+					return err
+				}
+				if _, err := w.Write(isBytes); err != nil {
+					return err
+				}
 				if _, err := w.Write(emptyBytes); err != nil {
 					return err
 				}
 				continue
 			}
 
+			val := t.AttrVal[1 : len(t.AttrVal)-1]
 			if _, err := w.Write(spaceBytes); err != nil {
 				return err
 			}
@@ -142,8 +152,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 
 			// prefer single or double quotes depending on what occurs more often in value
-			val = val[1 : len(val)-1]
-			val = EscapeAttrVal(&escapeBuffer, val)
+			val = EscapeAttrVal(&attrEscapeBuffer, val)
 			if _, err := w.Write(val); err != nil {
 				return err
 			}
