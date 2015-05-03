@@ -94,8 +94,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						}
 					}
 					if err := m.Minify(mediatype, w, buffer.NewReader(t.Data)); err != nil {
-						if err == minify.ErrNotExist {
-							// no minifier, write the original
+						if err == minify.ErrNotExist { // no minifier, write the original
 							if _, err := w.Write(t.Data); err != nil {
 								return err
 							}
