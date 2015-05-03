@@ -22,6 +22,7 @@ See the [Wiki](https://github.com/tdewolff/minify/wiki) for a roadmap of what is
 	- [CSS](#css--)
 	- [JS](#js--)
 	- [JSON](#json--)
+	- [SVG](#svg--)
 	- [XML](#xml--)
 	- [Installation](#installation)
 	- [Usage](#usage)
@@ -144,12 +145,15 @@ The JSON minifier only removes whitespace, which is the only thing that can be l
 
 The SVG minifier uses these minifications:
 
-- strip all text between tags
+- trim and collapse whitespace between all tags
 - strip comments
 - strip doctype
 - strip XML prelude
+- stip SVG version
 - collapse tags with no content to a void tag
 - strip CDATA sections wherever possible
+- shorten lengths and numbers
+- minify style tag and attributes with the CSS minifier
 
 ## XML [![GoDoc](http://godoc.org/github.com/tdewolff/minify/xml?status.svg)](http://godoc.org/github.com/tdewolff/minify/xml) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/xml)](http://gocover.io/github.com/tdewolff/minify/xml)
 
