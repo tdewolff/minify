@@ -128,9 +128,6 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				}
 			} else if num, dim, ok := cssParse.SplitNumberDimension(val); ok {
 				val = css.ShortenLength(num, dim)
-				if len(val) > 2 && val[len(val)-2] == 'p' && val[len(val)-1] == 'x' {
-					val = val[:len(val)-2]
-				}
 			}
 
 			// prefer single or double quotes depending on what occurs more often in value
