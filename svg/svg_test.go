@@ -26,5 +26,5 @@ func TestSVG(t *testing.T) {
 	assertSVG(t, "<svg version=\"1.0\"></svg>", "<svg/>")
 	assertSVG(t, "<svg x=\" a \"/>", "<svg x=\"a\"/>")
 	assertSVG(t, "<svg x=\" a \n b \"/>", "<svg x=\"a b\"/>")
-	assertSVG(t, "<svg x=\"5.0px\"/>", "<svg x=\"5\"/>")
+	assertSVG(t, "<svg x=\"5.0px\"/>", "<svg x=\"5px\"/>")
 }
