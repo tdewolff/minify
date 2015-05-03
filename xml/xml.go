@@ -252,6 +252,7 @@ func EscapeAttrVal(buf *[]byte, b []byte) []byte {
 			singles++
 		}
 	}
+
 	var quote byte
 	var escapedQuote []byte
 	if doubles > singles {
@@ -261,7 +262,6 @@ func EscapeAttrVal(buf *[]byte, b []byte) []byte {
 		quote = '"'
 		escapedQuote = escapedDoubleQuoteBytes
 	}
-
 	if len(b)+2 > cap(*buf) {
 		*buf = make([]byte, 0, len(b)+2) // maximum size, not actual size
 	}
