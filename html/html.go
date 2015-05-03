@@ -200,8 +200,22 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				}
 			}
 
-			// rewrite attributes with interdependent conditions
+			// write tag
+			if t.TokenType == html.EndTagToken {
+				if _, err := w.Write(endBytes); err != nil {
+					return err
+				}
+			} else {
+				if _, err := w.Write(ltBytes); err != nil {
+					return err
+				}
+			}
+			if _, err := w.Write(t.Data); err != nil {
+				return err
+			}
+
 			if hasAttributes {
+				// rewrite attributes with interdependent conditions
 				if t.Hash == html.A {
 					if attr := getAttributes(tb, &attrIntBuffer, &attrTokenBuffer, html.Id, html.Name, html.Rel, html.Href); attr != nil {
 						if id := attr[0]; id != nil {
@@ -256,24 +270,8 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						}
 					}
 				}
-			}
 
-			// write tag
-			if t.TokenType == html.EndTagToken {
-				if _, err := w.Write(endBytes); err != nil {
-					return err
-				}
-			} else {
-				if _, err := w.Write(ltBytes); err != nil {
-					return err
-				}
-			}
-			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
-
-			// write attributes
-			if hasAttributes {
+				// write attributes
 				for {
 					attr := *tb.Shift()
 					if attr.TokenType != html.AttributeToken {
