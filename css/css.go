@@ -380,7 +380,9 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 
 func (c *cssMinifier) shortenToken(tt css.TokenType, data []byte) (css.TokenType, []byte) {
 	if tt == css.NumberToken || tt == css.DimensionToken || tt == css.PercentageToken {
-		data = ShortenLength(data)
+		if num, dim, ok := css.SplitNumberDimension(data); ok {
+			data = ShortenLength(num, dim)
+		}
 	} else if tt == css.IdentToken {
 		parse.ToLower(data)
 		if hash, ok := shortenColorName[css.ToHash(data)]; ok {
@@ -466,55 +468,52 @@ func (c *cssMinifier) shortenToken(tt css.TokenType, data []byte) (css.TokenType
 
 ////////////////////////////////////////////////////////////////
 
-func ShortenLength(b []byte) []byte {
-	num, dim, ok := css.SplitNumberDimension(b)
-	if !ok {
-		return b
-	}
+func ShortenLength(num, dim []byte) []byte {
 	f, err := strconv.ParseFloat(string(num), 64)
 	if err != nil {
-		return b
+		return append(num, dim...)
 	}
 	if math.Abs(f) < epsilon {
-		b = zeroBytes
-	} else if len(num) > 0 {
-		if num[0] == '-' {
-			n := 1
-			for n < len(num) && num[n] == '0' {
-				n++
-			}
-			num = num[n-1:]
-			num[0] = '-'
-		} else {
-			if num[0] == '+' {
-				num = num[1:]
-			}
-			// trim 0 left
-			for len(num) > 0 && num[0] == '0' {
-				num = num[1:]
-			}
-		}
-		// trim 0 right
-		for i, digit := range num {
-			if digit == '.' {
-				j := len(num) - 1
-				for ; j > i; j-- {
-					if num[j] == '0' {
-						num = num[:len(num)-1]
-					} else {
-						break
-					}
-				}
-				if j == i {
-					num = num[:len(num)-1] // remove .
-				}
-				break
-			}
-		}
-		if len(dim) > 1 { // only percentage is length 1
-			parse.ToLower(dim)
-		}
-		b = append(num, dim...)
+		return zeroBytes
+	} else if len(num) == 0 {
+		return append(num, dim...)
 	}
-	return b
+
+	if num[0] == '-' {
+		n := 1
+		for n < len(num) && num[n] == '0' {
+			n++
+		}
+		num = num[n-1:]
+		num[0] = '-'
+	} else {
+		if num[0] == '+' {
+			num = num[1:]
+		}
+		// trim 0 left
+		for len(num) > 0 && num[0] == '0' {
+			num = num[1:]
+		}
+	}
+	// trim 0 right
+	for i, digit := range num {
+		if digit == '.' {
+			j := len(num) - 1
+			for ; j > i; j-- {
+				if num[j] == '0' {
+					num = num[:len(num)-1]
+				} else {
+					break
+				}
+			}
+			if j == i {
+				num = num[:len(num)-1] // remove .
+			}
+			break
+		}
+	}
+	if len(dim) > 1 { // only percentage is length 1
+		parse.ToLower(dim)
+	}
+	return append(num, dim...)
 }
