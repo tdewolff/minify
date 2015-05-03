@@ -34,7 +34,7 @@ var (
 func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	precededBySpace := true // on true the next text token must not start with a space
 
-	attrEscapeBuffer := make([]byte, 0, 64)
+	attrByteBuffer := make([]byte, 0, 64)
 
 	z := xml.NewTokenizer(r)
 	tb := NewTokenBuffer(z)
@@ -42,7 +42,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 		t := *tb.Shift()
 		if t.TokenType == xml.CDATAToken {
 			var useCDATA bool
-			if t.Data, useCDATA = EscapeCDATAVal(&attrEscapeBuffer, t.Data); !useCDATA {
+			if t.Data, useCDATA = EscapeCDATAVal(&attrByteBuffer, t.Data); !useCDATA {
 				t.TokenType = xml.TextToken
 			}
 		}
@@ -152,7 +152,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 
 			// prefer single or double quotes depending on what occurs more often in value
-			val = EscapeAttrVal(&attrEscapeBuffer, val)
+			val = EscapeAttrVal(&attrByteBuffer, val)
 			if _, err := w.Write(val); err != nil {
 				return err
 			}

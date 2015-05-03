@@ -35,8 +35,8 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	defaultInlineStyleType := "text/css;inline=1"
 
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
-	attrEscapeBuffer := make([]byte, 0, 64)
-	attrIndexBuffer := make([]int, 0, 4)
+	attrByteBuffer := make([]byte, 0, 64)
+	attrIntBuffer := make([]int, 0, 4)
 	attrTokenBuffer := make([]*Token, 0, 4)
 
 	z := html.NewTokenizer(r)
@@ -203,7 +203,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			// rewrite attributes with interdependent conditions
 			if hasAttributes {
 				if t.Hash == html.A {
-					if attr := getAttributes(tb, &attrIndexBuffer, &attrTokenBuffer, html.Id, html.Name, html.Rel, html.Href); attr != nil {
+					if attr := getAttributes(tb, &attrIntBuffer, &attrTokenBuffer, html.Id, html.Name, html.Rel, html.Href); attr != nil {
 						if id := attr[0]; id != nil {
 							if name := attr[1]; name != nil && parse.Equal(id.AttrVal, name.AttrVal) {
 								name.Data = nil
@@ -222,7 +222,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						}
 					}
 				} else if t.Hash == html.Meta {
-					if attr := getAttributes(tb, &attrIndexBuffer, &attrTokenBuffer, html.Content, html.Http_Equiv, html.Charset, html.Name); attr != nil {
+					if attr := getAttributes(tb, &attrIntBuffer, &attrTokenBuffer, html.Content, html.Http_Equiv, html.Charset, html.Name); attr != nil {
 						if content := attr[0]; content != nil {
 							if httpEquiv := attr[1]; httpEquiv != nil {
 								content.AttrVal = parse.NormalizeContentType(content.AttrVal)
@@ -248,7 +248,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						}
 					}
 				} else if t.Hash == html.Script {
-					if attr := getAttributes(tb, &attrIndexBuffer, &attrTokenBuffer, html.Src, html.Charset); attr != nil {
+					if attr := getAttributes(tb, &attrIntBuffer, &attrTokenBuffer, html.Src, html.Charset); attr != nil {
 						if src := attr[0]; src != nil {
 							if charset := attr[1]; charset != nil {
 								charset.Data = nil
@@ -363,7 +363,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							}
 						}
 						// no quotes if possible, else prefer single or double depending on which occurs more often in value
-						val = escapeAttrVal(&attrEscapeBuffer, attr.AttrVal, val)
+						val = escapeAttrVal(&attrByteBuffer, attr.AttrVal, val)
 						if _, err := w.Write(val); err != nil {
 							return err
 						}
