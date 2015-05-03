@@ -5,8 +5,10 @@ import (
 
 	"github.com/tdewolff/buffer"
 	"github.com/tdewolff/minify"
+	"github.com/tdewolff/minify/css"
 	xmlMinify "github.com/tdewolff/minify/xml"
 	"github.com/tdewolff/parse"
+	cssParse "github.com/tdewolff/parse/css"
 	"github.com/tdewolff/parse/svg"
 	"github.com/tdewolff/parse/xml"
 )
@@ -31,7 +33,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	var tag svg.Hash
 
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
-	attrEscapeBuffer := make([]byte, 0, 64)
+	attrByteBuffer := make([]byte, 0, 64)
 
 	z := xml.NewTokenizer(r)
 	tb := xmlMinify.NewTokenBuffer(z)
@@ -39,7 +41,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 		t := *tb.Shift()
 		if t.TokenType == xml.CDATAToken {
 			var useCDATA bool
-			if t.Data, useCDATA = xmlMinify.EscapeCDATAVal(&attrEscapeBuffer, t.Data); !useCDATA {
+			if t.Data, useCDATA = xmlMinify.EscapeCDATAVal(&attrByteBuffer, t.Data); !useCDATA {
 				t.TokenType = xml.TextToken
 			}
 		}
@@ -50,7 +52,8 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 			return z.Err()
 		case xml.TextToken:
-			if tag == svg.Style && !parse.IsAllWhitespace(t.Data) {
+			t.Data = parse.ReplaceMultiple(parse.Trim(t.Data, parse.IsWhitespace), parse.IsWhitespace, ' ')
+			if tag == svg.Style && len(t.Data) > 0 {
 				if err := m.Minify("text/css", w, buffer.NewReader(t.Data)); err != nil {
 					if err == minify.ErrNotExist { // no minifier, write the original
 						if _, err := w.Write(t.Data); err != nil {
@@ -60,12 +63,15 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						return err
 					}
 				}
+			} else if _, err := w.Write(t.Data); err != nil {
+				return err
 			}
 		case xml.CDATAToken:
 			if _, err := w.Write(CDATAStartBytes); err != nil {
 				return err
 			}
-			if tag == svg.Style {
+			t.Data = parse.ReplaceMultiple(parse.Trim(t.Data, parse.IsWhitespace), parse.IsWhitespace, ' ')
+			if tag == svg.Style && len(t.Data) > 0 {
 				if err := m.Minify("text/css", w, buffer.NewReader(t.Data)); err != nil {
 					if err == minify.ErrNotExist { // no minifier, write the original
 						if _, err := w.Write(t.Data); err != nil {
@@ -99,9 +105,8 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			if len(t.AttrVal) < 2 {
 				continue
 			}
-
-			val := t.AttrVal[1 : len(t.AttrVal)-1]
 			attr := svg.ToHash(t.Data)
+			val := parse.ReplaceMultiple(parse.Trim(t.AttrVal[1:len(t.AttrVal)-1], parse.IsWhitespace), parse.IsWhitespace, ' ')
 			if tag == svg.Svg && attr == svg.Version {
 				continue
 			}
@@ -121,10 +126,15 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				if m.Minify("text/css;inline=1", attrMinifyBuffer, buffer.NewReader(val)) == nil {
 					val = attrMinifyBuffer.Bytes()
 				}
+			} else if num, dim, ok := cssParse.SplitNumberDimension(val); ok {
+				val = css.ShortenLength(num, dim)
+				if len(val) > 2 && val[len(val)-2] == 'p' && val[len(val)-1] == 'x' {
+					val = val[:len(val)-2]
+				}
 			}
 
 			// prefer single or double quotes depending on what occurs more often in value
-			val = xmlMinify.EscapeAttrVal(&attrEscapeBuffer, val)
+			val = xmlMinify.EscapeAttrVal(&attrByteBuffer, val)
 			if _, err := w.Write(val); err != nil {
 				return err
 			}
