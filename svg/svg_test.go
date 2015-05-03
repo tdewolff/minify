@@ -8,7 +8,7 @@ import (
 	"github.com/tdewolff/minify"
 )
 
-func assertXML(t *testing.T, input, expected string) {
+func assertSVG(t *testing.T, input, expected string) {
 	m := minify.New()
 	m.AddFunc("image/svg+xml", Minify)
 	b := &bytes.Buffer{}
@@ -18,8 +18,10 @@ func assertXML(t *testing.T, input, expected string) {
 
 ////////////////////////////////////////////////////////////////
 
-func TestXML(t *testing.T) {
-	assertXML(t, "<!-- comment -->", "")
-	assertXML(t, "<!DOCTYPE foo SYSTEM \"Foo.dtd\">", "")
-	assertXML(t, "<?xml version=\"1.0\" ?>", "")
+func TestSVG(t *testing.T) {
+	assertSVG(t, "<!-- comment -->", "")
+	assertSVG(t, "<!DOCTYPE foo SYSTEM \"Foo.dtd\">", "")
+	assertSVG(t, "<?xml version=\"1.0\" ?>", "")
+	assertSVG(t, "<style> <![CDATA[ x ]]> </style>", "<style> x </style>")
+	assertSVG(t, "<svg version=\"1.0\"></svg>", "<svg/>")
 }
