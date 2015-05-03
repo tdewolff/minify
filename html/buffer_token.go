@@ -42,10 +42,7 @@ func (z *TokenBuffer) Read(p []Token) int {
 			}
 			hash = html.ToHash(data)
 		} else if tt == html.StartTagToken || tt == html.EndTagToken {
-			hash = z.Tokenizer.RawTag()
-			if hash == 0 {
-				hash = html.ToHash(data)
-			}
+			hash = html.ToHash(data)
 		}
 		p[i] = Token{tt, data, attrVal, hash}
 		if tt == html.ErrorToken {

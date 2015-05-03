@@ -15,7 +15,7 @@ var (
 	ltPIBytes               = []byte("<?")
 	gtPIBytes               = []byte("?>")
 	endBytes                = []byte("</")
-	DOCTYPEBytes            = []byte("<!DOCTYPE")
+	DOCTYPEBytes            = []byte("<!DOCTYPE ")
 	CDATAStartBytes         = []byte("<![CDATA[")
 	CDATAEndBytes           = []byte("]]>")
 	isBytes                 = []byte("=")
@@ -293,8 +293,6 @@ func EscapeAttrVal(buf *[]byte, b []byte) []byte {
 			j += copy(t[j:], b[start:i])
 			j += copy(t[j:], escapedQuote)
 			start = i + 1
-		} else if c == '\t' || c == '\n' || c == '\r' {
-			b[i] = ' '
 		}
 	}
 	j += copy(t[j:], b[start:])
