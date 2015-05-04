@@ -457,8 +457,10 @@ func escapeAttrVal(buf *[]byte, orig, b []byte) []byte {
 	singles := 0
 	doubles := 0
 	unquoted := true
+	entities := false
 	for i, c := range b {
 		if c == '&' {
+			entities = true
 			if quote, _, ok := isAtQuoteEntity(b[i:]); ok {
 				if quote == '"' {
 					doubles++
@@ -480,7 +482,7 @@ func escapeAttrVal(buf *[]byte, orig, b []byte) []byte {
 	}
 	if unquoted {
 		return b
-	} else if singles == 0 && doubles == 0 && len(orig) == len(b)+2 {
+	} else if !entities && len(orig) == len(b)+2 && (singles == 0 && orig[0] == '\'' || doubles == 0 && orig[0] == '"') {
 		return orig
 	}
 
