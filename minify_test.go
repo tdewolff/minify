@@ -35,7 +35,7 @@ func helperMinifyString(t *testing.T, m *Minify, mediatype string) string {
 
 var m *Minify
 
-func TestMain(t *testing.T) {
+func init() {
 	m = New()
 	m.AddFunc("dummy/copy", func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		io.Copy(w, r)
@@ -99,13 +99,16 @@ func TestAdd(t *testing.T) {
 	m.AddFunc("dummy/err", func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		return errDummy
 	})
-
 	assert.Equal(t, errDummy, m.Minify("dummy/err", nil, nil), "must return errDummy for dummy/err")
+
 	m.AddCmd("dummy/copy", helperCommand(t, "dummy/copy"))
+	m.AddCmd("dummy/err", helperCommand(t, "dummy/err"))
+	m.AddCmdRegexp(regexp.MustCompile("err$"), helperCommand(t, "werr"))
 	assert.Nil(t, m.Minify("dummy/copy", w, r), "must return nil for dummy/copy command")
 	assert.Equal(t, "test", w.String(), "must return input string for dummy/copy command")
-	m.AddCmd("dummy/err", helperCommand(t, "dummy/err"))
 	assert.Equal(t, "exit status 1", m.Minify("dummy/err", w, r).Error(), "must return proper exit status when command encounters error")
+	assert.Equal(t, "exit status 2", m.Minify("werr", w, r).Error(), "must return proper exit status when command encounters error")
+	assert.Equal(t, "exit status 2", m.Minify("stderr", w, r).Error(), "must return proper exit status when command encounters error")
 }
 
 func TestWildcard(t *testing.T) {
@@ -123,8 +126,6 @@ func TestHelperProcess(*testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
 	}
-	defer os.Exit(0)
-
 	args := os.Args
 	for len(args) > 0 {
 		if args[0] == "--" {
@@ -137,13 +138,14 @@ func TestHelperProcess(*testing.T) {
 		fmt.Fprintf(os.Stderr, "No command\n")
 		os.Exit(2)
 	}
-
 	cmd, args := args[0], args[1:]
 	switch cmd {
 	case "dummy/copy":
 		io.Copy(os.Stdout, os.Stdin)
 	case "dummy/err":
 		os.Exit(1)
+	default:
+		os.Exit(2)
 	}
 	os.Exit(0)
 }

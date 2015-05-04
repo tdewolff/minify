@@ -59,29 +59,13 @@ type Minifier interface {
 	Minify(mediatype string, w io.Writer, r io.Reader) error
 }
 
-func cmdFunc(cmd *exec.Cmd) func(_ Minifier, _ string, w io.Writer, r io.Reader) error {
+func cmdFunc(origCmd *exec.Cmd) func(_ Minifier, _ string, w io.Writer, r io.Reader) error {
 	return func(_ Minifier, _ string, w io.Writer, r io.Reader) error {
-		stdOut, err := cmd.StdoutPipe()
-		if err != nil {
-			return err
-		}
-		defer stdOut.Close()
-		stdIn, err := cmd.StdinPipe()
-		if err != nil {
-			return err
-		}
-		defer stdIn.Close()
-		if err = cmd.Start(); err != nil {
-			return err
-		}
-		if _, err := io.Copy(stdIn, r); err != nil {
-			return err
-		}
-		stdIn.Close()
-		if _, err = io.Copy(w, stdOut); err != nil {
-			return err
-		}
-		return cmd.Wait()
+		cmd := &exec.Cmd{}
+		*cmd = *origCmd // concurrency safe
+		cmd.Stdout = w
+		cmd.Stdin = r
+		return cmd.Run()
 	}
 }
 
