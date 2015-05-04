@@ -97,6 +97,7 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, m, false, "background:url(data:text/css,color%3A#ff0000;)", "background:url(data:text/css,color%3Ared)")
 	assertCSS(t, m, false, "background:url(data:,=====)", "background:url(data:,%3D%3D%3D%3D%3D)")
 	assertCSS(t, m, false, "background:url(data:,======)", "background:url(data:;base64,PT09PT09)")
+	assertCSS(t, m, false, "margin:0 0 18px 0;", "margin:0 0 18px")
 	assertCSS(t, m, true, "input[type=\"radio\"]{x:y}", "input[type=radio]{x:y}")
 	assertCSS(t, m, true, "DIV{margin:1em}", "div{margin:1em}")
 	assertCSS(t, m, true, ".CLASS{margin:1em}", ".CLASS{margin:1em}")
@@ -106,7 +107,7 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, m, true, "[class^=icon-] i[class^=icon-],i[class*=\" icon-\"]{x:y}", "[class^=icon-] i[class^=icon-],i[class*=\" icon-\"]{x:y}")
 	assertCSS(t, m, true, "html{line-height:1;}html{line-height:1;}", "html{line-height:1}html{line-height:1}")
 	assertCSS(t, m, true, ".clearfix { *zoom: 1; }", ".clearfix{*zoom:1}")
-	assertCSS(t, m, false, "margin:0 0 18px 0;", "margin:0 0 18px")
+	assertCSS(t, m, true, "a { b: 1", "a{b:1}")
 
 	// coverage
 	assertCSS(t, m, false, "margin: 1 1;", "margin:1")
