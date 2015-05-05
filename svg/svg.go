@@ -5,7 +5,6 @@ import (
 
 	"github.com/tdewolff/buffer"
 	"github.com/tdewolff/minify"
-	"github.com/tdewolff/minify/css"
 	xmlMinify "github.com/tdewolff/minify/xml"
 	"github.com/tdewolff/parse"
 	cssParse "github.com/tdewolff/parse/css"
@@ -126,8 +125,18 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				if m.Minify("text/css;inline=1", attrMinifyBuffer, buffer.NewReader(val)) == nil {
 					val = attrMinifyBuffer.Bytes()
 				}
+			} else if tag == svg.Path && attr == svg.D {
+				val = shortenPathData(val)
 			} else if num, dim, ok := cssParse.SplitNumberDimension(val); ok {
-				val = css.MinifyLength(num, dim)
+				num = minify.MinifyNumber(num)
+				if len(num) == 1 && num[0] == '0' {
+					val = num
+				} else {
+					if len(dim) > 1 { // only percentage is length 1
+						parse.ToLower(dim)
+					}
+					val = append(num, dim...)
+				}
 			}
 
 			// prefer single or double quotes depending on what occurs more often in value
@@ -172,4 +181,86 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 		}
 	}
+}
+
+func shortenPathData(b []byte) []byte {
+	cmd := byte(0)
+	prevDigit := false
+	prevDigitHasDecimal := false
+	j := 0
+	start := 0
+	for i := 0; i < len(b); i++ {
+		c := b[i]
+		if c >= '0' && c <= '9' || c == '.' || c == '-' || c == '+' {
+			hasDecimal := (c == '.')
+			if start != 0 {
+				j += copy(b[j:], b[start:i])
+			} else {
+				j += i
+			}
+			start = i
+			i++
+			for {
+				c := b[i]
+				if c == '.' && !hasDecimal {
+					hasDecimal = true
+				} else if c < '0' || c > '9' {
+					break
+				}
+				i++
+			}
+			if c := b[i]; c == 'e' || c == 'E' {
+				i++
+				if c := b[i]; c == '+' || c == '-' {
+					i++
+				}
+				for {
+					if c := b[i]; c < '0' || c > '9' {
+						break
+					}
+					i++
+				}
+			}
+			num := minify.MinifyNumber(b[start:i])
+			if prevDigit && (num[0] >= '0' && num[0] <= '9' || num[0] == '.' && !prevDigitHasDecimal) {
+				b[j] = ' '
+				j++
+			}
+			prevDigit = true
+			prevDigitHasDecimal = false
+			for _, c2 := range num {
+				if c2 == '.' {
+					prevDigitHasDecimal = true
+					break
+				}
+			}
+			j += copy(b[j:], num)
+			start = i
+			i--
+		} else if c == ' ' || c == ',' || c == '\t' || c == '\n' || c == '\r' {
+			if start != 0 {
+				j += copy(b[j:], b[start:i])
+			} else {
+				j += i
+			}
+			start = i + 1
+		} else {
+			if cmd == c {
+				if start != 0 {
+					j += copy(b[j:], b[start:i])
+				} else {
+					j += i
+				}
+				start = i + 1
+			} else {
+				cmd = c
+				prevDigit = false
+			}
+		}
+	}
+	if start != 0 {
+		j += copy(b[j:], b[start:])
+		return b[:j]
+	}
+	return b
 }
