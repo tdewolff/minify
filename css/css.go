@@ -17,8 +17,6 @@ import (
 	"github.com/tdewolff/parse/css"
 )
 
-var epsilon = 0.00001
-
 var (
 	spaceBytes        = []byte(" ")
 	colonBytes        = []byte(":")
@@ -313,7 +311,7 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 		nArgs := (n - 1) / 2
 		if fun == css.Rgba && nArgs == 4 {
 			d, _ := strconv.ParseFloat(string(values[7].Data), 32)
-			if math.Abs(d-1.0) < epsilon {
+			if math.Abs(d-1.0) < minify.Epsilon {
 				values[0].Data = []byte("rgb")
 				values = values[:len(values)-2]
 				fun = css.Rgb
@@ -379,7 +377,15 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 func (c *cssMinifier) shortenToken(tt css.TokenType, data []byte) (css.TokenType, []byte) {
 	if tt == css.NumberToken || tt == css.DimensionToken || tt == css.PercentageToken {
 		if num, dim, ok := css.SplitNumberDimension(data); ok {
-			data = MinifyLength(num, dim)
+			num = minify.MinifyNumber(num)
+			if len(num) == 1 && num[0] == '0' {
+				data = num
+			} else {
+				if len(dim) > 1 { // only percentage is length 1
+					parse.ToLower(dim)
+				}
+				data = append(num, dim...)
+			}
 		}
 	} else if tt == css.IdentToken {
 		parse.ToLower(data)
@@ -440,56 +446,4 @@ func (c *cssMinifier) shortenToken(tt css.TokenType, data []byte) (css.TokenType
 		}
 	}
 	return tt, data
-}
-
-////////////////////////////////////////////////////////////////
-
-func MinifyLength(num, dim []byte) []byte {
-	f, err := strconv.ParseFloat(string(num), 64)
-	if err != nil {
-		return append(num, dim...)
-	}
-	if math.Abs(f) < epsilon {
-		return zeroBytes
-	} else if len(num) == 0 {
-		return append(num, dim...)
-	}
-
-	if num[0] == '-' {
-		n := 1
-		for n < len(num) && num[n] == '0' {
-			n++
-		}
-		num = num[n-1:]
-		num[0] = '-'
-	} else {
-		if num[0] == '+' {
-			num = num[1:]
-		}
-		// trim 0 left
-		for len(num) > 0 && num[0] == '0' {
-			num = num[1:]
-		}
-	}
-	// trim 0 right
-	for i, digit := range num {
-		if digit == '.' {
-			j := len(num) - 1
-			for ; j > i; j-- {
-				if num[j] == '0' {
-					num = num[:len(num)-1]
-				} else {
-					break
-				}
-			}
-			if j == i {
-				num = num[:len(num)-1] // remove .
-			}
-			break
-		}
-	}
-	if len(dim) > 1 { // only percentage is length 1
-		parse.ToLower(dim)
-	}
-	return append(num, dim...)
 }

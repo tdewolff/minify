@@ -3,9 +3,17 @@ package minify // import "github.com/tdewolff/minify"
 import (
 	"bytes"
 	"encoding/base64"
+	"math"
 	"net/url"
+	"strconv"
 
 	"github.com/tdewolff/parse"
+)
+
+var Epsilon = 0.00001
+
+var (
+	zeroBytes = []byte("0")
 )
 
 func MinifyDataURI(m Minifier, dataURI []byte) []byte {
@@ -38,4 +46,48 @@ func MinifyDataURI(m Minifier, dataURI []byte) []byte {
 		dataURI = append(append(append([]byte("data:"), mediatype...), ','), dataURI...)
 	}
 	return dataURI
+}
+
+func MinifyNumber(num []byte) []byte {
+	f, err := strconv.ParseFloat(string(num), 64)
+	if err != nil {
+		return num
+	}
+	if math.Abs(f) < Epsilon {
+		return zeroBytes
+	}
+	if num[0] == '-' {
+		n := 1
+		for n < len(num) && num[n] == '0' {
+			n++
+		}
+		num = num[n-1:]
+		num[0] = '-'
+	} else {
+		if num[0] == '+' {
+			num = num[1:]
+		}
+		// trim 0 left
+		for len(num) > 0 && num[0] == '0' {
+			num = num[1:]
+		}
+	}
+	// trim 0 right
+	for i, digit := range num {
+		if digit == '.' {
+			j := len(num) - 1
+			for ; j > i; j-- {
+				if num[j] == '0' {
+					num = num[:len(num)-1]
+				} else {
+					break
+				}
+			}
+			if j == i {
+				num = num[:len(num)-1] // remove .
+			}
+			break
+		}
+	}
+	return num
 }

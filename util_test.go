@@ -12,6 +12,10 @@ func assertMinifyDataURI(t *testing.T, m Minifier, s, e string) {
 	assert.Equal(t, e, string(MinifyDataURI(m, []byte(s))), "data URIs must match")
 }
 
+func assertMinifyNumber(t *testing.T, x, e string) {
+	assert.Equal(t, e, string(MinifyNumber([]byte(x))), "numbers must match in "+x)
+}
+
 func TestDataURI(t *testing.T) {
 	m := New()
 	m.AddFunc("text/x", func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
@@ -28,4 +32,16 @@ func TestDataURI(t *testing.T) {
 	assertMinifyDataURI(t, m, "data:text/xml; version = 2.0,content", "data:text/xml;version=2.0,content")
 	assertMinifyDataURI(t, m, "data:,=====", "data:,%3D%3D%3D%3D%3D")
 	assertMinifyDataURI(t, m, "data:,======", "data:;base64,PT09PT09")
+}
+
+func TestNumber(t *testing.T) {
+	assertMinifyNumber(t, "0", "0")
+	assertMinifyNumber(t, "1.0", "1")
+	assertMinifyNumber(t, "0.1", ".1")
+	assertMinifyNumber(t, "+1", "1")
+	assertMinifyNumber(t, "-0.1", "-.1")
+	assertMinifyNumber(t, "100", "100")
+	// assertMinifyNumber(t, "1000px", "1e3px")
+	// assertMinifyNumber(t, "0.001px", "1e-3px")
+	// assertMinifyNumber(t, "96px", "1in")
 }
