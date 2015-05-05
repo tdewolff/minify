@@ -12,7 +12,11 @@ import (
 func assertCSS(t *testing.T, m *minify.Minify, isStylesheet bool, input, expected string) {
 	mediatype := "text/css"
 	if !isStylesheet {
-		mediatype = "text/css; inline=1"
+		if len(input)%2 == 0 {
+			mediatype = "text/css;inline=1"
+		} else {
+			mediatype = "text/css; inline=1"
+		}
 	}
 
 	b := &bytes.Buffer{}
@@ -52,6 +56,7 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, m, false, "margin: 1 2 1 2;", "margin:1 2")
 	assertCSS(t, m, false, "margin: 1 2 3 2;", "margin:1 2 3")
 	assertCSS(t, m, false, "margin: 1 2 3 4;", "margin:1 2 3 4")
+	assertCSS(t, m, false, "margin: 1 1 1 a;", "margin:1 1 1 a")
 	assertCSS(t, m, false, "margin: 1 1 1 1 !important;", "margin:1!important")
 	assertCSS(t, m, false, "margin: 0em;", "margin:0")
 	assertCSS(t, m, false, "font-family:'Arial', 'Times New Roman';", "font-family:arial,times new roman")
@@ -87,6 +92,7 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, m, false, "background:url(/*nocomment*/)", "background:url(/*nocomment*/)")
 	assertCSS(t, m, false, "background:url(data:,text)", "background:url(data:,text)")
 	assertCSS(t, m, false, "background:url('data:text/xml; version = 2.0,content')", "background:url(data:text/xml;version=2.0,content)")
+	assertCSS(t, m, false, "background:url('data:\\'\",text')", "background:url('data:\\'\",text')")
 	assertCSS(t, m, false, "margin:0 0 18px 0;", "margin:0 0 18px")
 	assertCSS(t, m, true, "input[type=\"radio\"]{x:y}", "input[type=radio]{x:y}")
 	assertCSS(t, m, true, "DIV{margin:1em}", "div{margin:1em}")

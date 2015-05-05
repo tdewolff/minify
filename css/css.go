@@ -426,14 +426,16 @@ func (c *cssMinifier) shortenToken(tt css.TokenType, data []byte) (css.TokenType
 		parse.ToLower(data[:3])
 		if len(data) > 10 {
 			uri := data[4 : len(data)-1]
+			delim := byte('"')
 			if uri[0] == '\'' || uri[0] == '"' {
+				delim = uri[0]
 				uri = uri[1 : len(uri)-1]
 			}
 			uri = minify.MinifyDataURI(c.m, uri)
 			if css.IsUrlUnquoted(uri) {
 				data = append(append([]byte("url("), uri...), ')')
 			} else {
-				data = append(append([]byte("url(\""), uri...), '"', ')')
+				data = append(append(append([]byte("url("), delim), uri...), delim, ')')
 			}
 		}
 	}
