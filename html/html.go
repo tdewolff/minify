@@ -22,6 +22,8 @@ var (
 	httpBytes               = []byte("http")
 )
 
+const maxAttrLookup = 4
+
 ////////////////////////////////////////////////////////////////
 
 // Minify minifies HTML5 files, it reads from r and writes to w.
@@ -36,8 +38,8 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
-	attrIntBuffer := make([]int, 0, 4)
-	attrTokenBuffer := make([]*Token, 0, 4)
+	attrIntBuffer := make([]int, 0, maxAttrLookup)
+	attrTokenBuffer := make([]*Token, 0, maxAttrLookup)
 
 	z := html.NewTokenizer(r)
 	tb := NewTokenBuffer(z)
@@ -83,22 +85,12 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					} else if rawTag == html.Math {
 						mediatype = "application/mathml+xml"
 					}
-					// ignore CDATA in embedded HTML
-					if mediatype == "text/html" {
-						trimmedData := parse.Trim(t.Data, parse.IsWhitespace)
-						if len(trimmedData) > 12 && bytes.Equal(trimmedData[:9], []byte("<![CDATA[")) && bytes.Equal(trimmedData[len(trimmedData)-3:], []byte("]]>")) {
-							if _, err := w.Write([]byte("<![CDATA[")); err != nil {
-								return err
-							}
-							t.Data = trimmedData[9:]
-						}
+					// ignore CDATA
+					if trimmedData := parse.Trim(t.Data, parse.IsWhitespace); len(trimmedData) > 12 && bytes.Equal(trimmedData[:9], []byte("<![CDATA[")) && bytes.Equal(trimmedData[len(trimmedData)-3:], []byte("]]>")) {
+						t.Data = trimmedData[9 : len(trimmedData)-3]
 					}
 					if err := m.Minify(mediatype, w, buffer.NewReader(t.Data)); err != nil {
-						if err == minify.ErrNotExist { // no minifier, write the original
-							if _, err := w.Write(t.Data); err != nil {
-								return err
-							}
-						} else {
+						if _, err := w.Write(t.Data); err != nil {
 							return err
 						}
 					}
@@ -351,13 +343,15 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							if m.Minify(defaultScriptType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
 								val = attrMinifyBuffer.Bytes()
 							}
-						} else if t.Hash != html.A && urlAttrMap[attr.Hash] { // anchors are already handled
-							if len(val) > 5 && parse.EqualCaseInsensitive(val[:4], []byte{'h', 't', 't', 'p'}) {
+						} else if t.Hash != html.A && urlAttrMap[attr.Hash] && len(val) > 5 { // anchors are already handled
+							if parse.EqualCaseInsensitive(val[:4], []byte{'h', 't', 't', 'p'}) {
 								if val[4] == ':' {
 									val = val[5:]
 								} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
 									val = val[6:]
 								}
+							} else if parse.EqualCaseInsensitive(val[:5], []byte{'d', 'a', 't', 'a', ':'}) {
+								val = minify.MinifyDataURI(m, val)
 							}
 						}
 						// no quotes if possible, else prefer single or double depending on which occurs more often in value
@@ -378,10 +372,6 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 ////////////////////////////////////////////////////////////////
 
 func getAttributes(tb *TokenBuffer, attrIndexBuffer *[]int, attrTokenBuffer *[]*Token, hashes ...html.Hash) []*Token {
-	if cap(*attrIndexBuffer) < len(hashes) || cap(*attrTokenBuffer) < len(hashes) {
-		*attrIndexBuffer = make([]int, 0, len(hashes))
-		*attrTokenBuffer = make([]*Token, 0, len(hashes))
-	}
 	*attrIndexBuffer = (*attrIndexBuffer)[:len(hashes)]
 	*attrTokenBuffer = (*attrTokenBuffer)[:len(hashes)]
 	i := 0

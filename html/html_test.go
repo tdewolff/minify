@@ -58,8 +58,8 @@ func TestHTML(t *testing.T) {
 	assertHTML(t, m, "<span selected=\"selected\"></span>", "<span selected></span>")
 	assertHTML(t, m, "<noscript><html><img id=\"x\"></noscript>", "<noscript><img id=x></noscript>")
 	assertHTML(t, m, "<body id=\"main\"></body>", "<body id=main>")
-
-	//assertHTML(t, "<!--[if IE 6]>some   spaces<![endif]-->", "<!--[if IE 6]>some spaces<![endif]-->") // TODO: make this work by changing the tokenizer code, see other TODO
+	assertHTML(t, m, "<style><![CDATA[x]]></style>", "<style>x</style>")
+	assertHTML(t, m, "<link href=\"data:text/plain, data\">", "<link href=data:,+data>")
 
 	// increase coverage
 	assertHTML(t, m, "<script style=\"css\">js</script>", "<script style=css>js</script>")
@@ -71,7 +71,6 @@ func TestHTML(t *testing.T) {
 	assertHTML(t, m, "<br/>", "<br>")
 	assertHTML(t, m, "<p></p><p></p>", "<p><p>")
 	assertHTML(t, m, "<ul><li></li> <li></li></ul>", "<ul><li><li></ul>")
-	//assertHTML(t, "<ul><li></li><a></a></ul>", "<ul><li></li><a></a></ul>")
 	assertHTML(t, m, "<p></p><a></a>", "<p></p><a></a>")
 	assertHTML(t, m, "<p></p>x<a></a>", "<p></p>x<a></a>")
 
@@ -104,7 +103,7 @@ func TestHTML(t *testing.T) {
 
 	assertHTML(t, m, `<!doctype html> <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"> <head profile="http://dublincore.org/documents/dcq-html/"> <!-- Barlesque 2.75.0 --> <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`, `<!doctype html><html xmlns=//www.w3.org/1999/xhtml xml:lang=en><head profile=//dublincore.org/documents/dcq-html/><meta charset=utf-8>`)
 	assertHTML(t, m, `<meta name="keywords" content="A, B">`, `<meta name=keywords content=A,B>`)
-	assertHTML(t, m, `<script type="text/html"><![CDATA[ <img id="x"> ]]></script>`, `<script type=text/html><![CDATA[<img id=x>]]></script>`)
+	assertHTML(t, m, `<script type="text/html"><![CDATA[ <img id="x"> ]]></script>`, `<script type=text/html><img id=x></script>`)
 	assertHTML(t, m, `<iframe><html> <p> x </p> </html></iframe>`, `<iframe><p>x</iframe>`)
 	assertHTML(t, m, `<svg xmlns="http://www.w3.org/2000/svg"><path d="x"/></svg>`, `<svg xmlns=//www.w3.org/2000/svg><path d="x"/></svg>`)
 	assertHTML(t, m, `<math> &int;_a_^b^{f(x)<over>1+x} dx </math>`, `<math> &int;_a_^b^{f(x)<over>1+x} dx </math>`)
