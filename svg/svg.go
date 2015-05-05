@@ -127,7 +127,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					val = attrMinifyBuffer.Bytes()
 				}
 			} else if num, dim, ok := cssParse.SplitNumberDimension(val); ok {
-				val = css.ShortenLength(num, dim)
+				val = css.MinifyLength(num, dim)
 			}
 
 			// prefer single or double quotes depending on what occurs more often in value
