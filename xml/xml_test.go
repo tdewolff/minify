@@ -29,19 +29,25 @@ func TestXML(t *testing.T) {
 	assertXML(t, "<a><b>x</b></a>", "<a><b>x</b></a>")
 	assertXML(t, "<a><b>x\ny</b></a>", "<a><b>x y</b></a>")
 	assertXML(t, "<a><![CDATA[<b>]]></a>", "<a>&lt;b></a>")
+	assertXML(t, "<a><![CDATA[abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz]]></a>", "<a>abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz</a>")
 	assertXML(t, "<a><![CDATA[ <b> ]]></a>", "<a>&lt;b></a>")
 	assertXML(t, "<a><![CDATA[<<<<<]]></a>", "<a><![CDATA[<<<<<]]></a>")
+	assertXML(t, "<a><![CDATA[&]]></a>", "<a>&amp;</a>")
 	assertXML(t, "<a><![CDATA[&&&&]]></a>", "<a><![CDATA[&&&&]]></a>")
+	assertXML(t, "<a> <![CDATA[ a ]]> </a>", "<a>a</a>")
 	assertXML(t, "<?xml version=\"1.0\" ?>", "<?xml version=\"1.0\"?>")
 	assertXML(t, "<x></x>", "<x/>")
 	assertXML(t, "<x> </x>", "<x/>")
 	assertXML(t, "<x a=\"b\"></x>", "<x a=\"b\"/>")
 	assertXML(t, "<x a=\"\"></x>", "<x a=\"\"/>")
+	assertXML(t, "<x a=a></x>", "<x a=a/>")
 	assertXML(t, "<x a=\" a \n\r\t b \"/>", "<x a=\" a     b \"/>")
+	assertXML(t, "<x a=\"&apos;b&quot;\"></x>", "<x a=\"'b&#34;\"/>")
+	assertXML(t, "<x a=\"&quot;&quot;'\"></x>", "<x a='\"\"&#39;'/>")
 	assertXML(t, "<!DOCTYPE foo SYSTEM \"Foo.dtd\">", "<!DOCTYPE foo SYSTEM \"Foo.dtd\">")
 }
 
-func TestHelpers(t *testing.T) {
+func TestAttrVal(t *testing.T) {
 	assertAttrVal(t, "xyz", "\"xyz\"")
 	assertAttrVal(t, "", "\"\"")
 	assertAttrVal(t, "x&amp;z", "\"x&amp;z\"")
