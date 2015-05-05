@@ -2,14 +2,10 @@ package css // import "github.com/tdewolff/minify/css"
 
 import (
 	"bytes"
-	"io"
-	"io/ioutil"
-	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/minify"
-	"github.com/tdewolff/minify/xml"
 	"github.com/tdewolff/parse/css"
 )
 
@@ -27,7 +23,7 @@ func assertCSS(t *testing.T, m *minify.Minify, isStylesheet bool, input, expecte
 func assertLength(t *testing.T, x, e string) {
 	s := e
 	if num, dim, ok := css.SplitNumberDimension([]byte(x)); ok {
-		s = string(ShortenLength(num, dim))
+		s = string(MinifyLength(num, dim))
 	}
 	assert.Equal(t, e, s, "lengths must match in "+x)
 }
@@ -90,13 +86,7 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, m, false, "background:URL(x.PNG);", "background:url(x.PNG)")
 	assertCSS(t, m, false, "background:url(/*nocomment*/)", "background:url(/*nocomment*/)")
 	assertCSS(t, m, false, "background:url(data:,text)", "background:url(data:,text)")
-	assertCSS(t, m, false, "background:url(data:;base64,dGV4dA==)", "background:url(data:,text)")
-	assertCSS(t, m, false, "background:url(data:text/svg+xml;base64,PT09PT09)", "background:url(data:text/svg+xml;base64,PT09PT09)")
-	assertCSS(t, m, false, "background:url(data:text/xml;version=2.0,content)", "background:url(data:text/xml;version=2.0,content)")
 	assertCSS(t, m, false, "background:url('data:text/xml; version = 2.0,content')", "background:url(data:text/xml;version=2.0,content)")
-	assertCSS(t, m, false, "background:url(data:text/css,color%3A#ff0000;)", "background:url(data:text/css,color%3Ared)")
-	assertCSS(t, m, false, "background:url(data:,=====)", "background:url(data:,%3D%3D%3D%3D%3D)")
-	assertCSS(t, m, false, "background:url(data:,======)", "background:url(data:;base64,PT09PT09)")
 	assertCSS(t, m, false, "margin:0 0 18px 0;", "margin:0 0 18px")
 	assertCSS(t, m, true, "input[type=\"radio\"]{x:y}", "input[type=radio]{x:y}")
 	assertCSS(t, m, true, "DIV{margin:1em}", "div{margin:1em}")
@@ -137,17 +127,4 @@ func TestLength(t *testing.T) {
 	// assertLength(t, "1000px", "1e3px")
 	// assertLength(t, "0.001px", "1e-3px")
 	// assertLength(t, "96px", "1in")
-}
-
-func TestDataURI(t *testing.T) {
-	m := minify.New()
-	m.AddFunc("text/css", Minify)
-	m.AddFunc("text/xml", func(m minify.Minifier, mediatype string, w io.Writer, r io.Reader) error {
-		b, _ := ioutil.ReadAll(r)
-		assert.Equal(t, "<?xml?>", string(b))
-		w.Write(b)
-		return nil
-	})
-	m.AddFuncRegexp(regexp.MustCompile("^.+[/+]xml$"), xml.Minify)
-	assertCSS(t, m, true, "a{background:url('data:text/xml,<?xml?>')}", "a{background:url(data:text/xml,%3C%3Fxml%3F%3E)}")
 }

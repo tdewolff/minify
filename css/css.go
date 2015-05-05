@@ -6,12 +6,10 @@ Uses http://www.w3.org/TR/2010/PR-css3-color-20101028/ for colors
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/hex"
 	"io"
 	"math"
 	"mime"
-	"net/url"
 	"strconv"
 
 	"github.com/tdewolff/minify"
@@ -381,7 +379,7 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 func (c *cssMinifier) shortenToken(tt css.TokenType, data []byte) (css.TokenType, []byte) {
 	if tt == css.NumberToken || tt == css.DimensionToken || tt == css.PercentageToken {
 		if num, dim, ok := css.SplitNumberDimension(data); ok {
-			data = ShortenLength(num, dim)
+			data = MinifyLength(num, dim)
 		}
 	} else if tt == css.IdentToken {
 		parse.ToLower(data)
@@ -426,41 +424,17 @@ func (c *cssMinifier) shortenToken(tt css.TokenType, data []byte) (css.TokenType
 		}
 	} else if tt == css.URLToken {
 		parse.ToLower(data[:3])
-		if mediatype, originalData, ok := css.SplitDataURI(data); ok {
-			if bytes.HasPrefix(mediatype, []byte("text/css")) {
-				data, _ = minify.Bytes(c.m, string(mediatype)+";inline=1", originalData)
+		if len(data) > 10 {
+			uri := data[4 : len(data)-1]
+			if uri[0] == '\'' || uri[0] == '"' {
+				uri = uri[1 : len(uri)-1]
+			}
+			uri = minify.MinifyDataURI(c.m, uri)
+			if css.IsUrlUnquoted(uri) {
+				data = append(append([]byte("url("), uri...), ')')
 			} else {
-				data, _ = minify.Bytes(c.m, string(mediatype), originalData)
+				data = append(append([]byte("url(\""), uri...), '"', ')')
 			}
-			base64Len := len(";base64") + base64.StdEncoding.EncodedLen(len(data))
-			asciiLen := len(data)
-			for _, c := range data {
-				if 'A' <= c && c <= 'Z' || 'a' <= c && c <= 'z' || '0' <= c && c <= '9' || c == '-' || c == '_' || c == '.' || c == '~' || c == ' ' {
-					asciiLen++
-				} else {
-					asciiLen += 2
-				}
-				if asciiLen > base64Len {
-					break
-				}
-			}
-			if asciiLen > base64Len {
-				encoded := make([]byte, base64Len-len(";base64"))
-				base64.StdEncoding.Encode(encoded, data)
-				data = encoded
-				mediatype = append(mediatype, []byte(";base64")...)
-			} else {
-				data = []byte(url.QueryEscape(string(data)))
-				data = bytes.Replace(data, []byte("\""), []byte("\\\""), -1)
-			}
-			if len(mediatype) >= len("text/plain") && bytes.HasPrefix(mediatype, []byte("text/plain")) {
-				mediatype = mediatype[len("text/plain"):]
-			}
-			data = append(append(append(append([]byte("url(\"data:"), mediatype...), ','), data...), []byte("\")")...)
-		}
-		s := data[4 : len(data)-1]
-		if len(s) > 2 && (s[0] == '"' || s[0] == '\'') && css.IsUrlUnquoted([]byte(s[1:len(s)-1])) {
-			data = append(append([]byte("url("), s[1:len(s)-1]...), ')')
 		}
 	}
 	return tt, data
@@ -468,7 +442,7 @@ func (c *cssMinifier) shortenToken(tt css.TokenType, data []byte) (css.TokenType
 
 ////////////////////////////////////////////////////////////////
 
-func ShortenLength(num, dim []byte) []byte {
+func MinifyLength(num, dim []byte) []byte {
 	f, err := strconv.ParseFloat(string(num), 64)
 	if err != nil {
 		return append(num, dim...)
