@@ -17,7 +17,7 @@ var (
 )
 
 func MinifyDataURI(m Minifier, dataURI []byte) []byte {
-	if mediatype, data, ok := parse.SplitDataURI(dataURI); ok {
+	if mediatype, data, err := parse.SplitDataURI(dataURI); err == nil {
 		dataURI, _ = Bytes(m, string(mediatype), data)
 		base64Len := len(";base64") + base64.StdEncoding.EncodedLen(len(dataURI))
 		asciiLen := len(dataURI)
