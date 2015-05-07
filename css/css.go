@@ -225,7 +225,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, values []css.Token) err
 		}
 	} else {
 		if prop == css.Margin || prop == css.Padding || prop == css.Border_Width {
-			if values[0].TokenType == css.NumberToken && (len(values)+1)%2 == 0 {
+			if (values[0].TokenType == css.NumberToken || values[0].TokenType == css.DimensionToken || values[0].TokenType == css.PercentageToken) && (len(values)+1)%2 == 0 {
 				valid := true
 				for i := 1; i < len(values); i += 2 {
 					if values[i].TokenType != css.WhitespaceToken || values[i+1].TokenType != css.NumberToken && values[i+1].TokenType != css.DimensionToken && values[i+1].TokenType != css.PercentageToken {

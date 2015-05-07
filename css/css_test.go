@@ -30,6 +30,7 @@ func TestCSS(t *testing.T) {
 	m.AddFunc("text/css", Minify)
 
 	assertCSS(t, m, false, "/*comment*/", "")
+	assertCSS(t, m, false, ";", "")
 	assertCSS(t, m, false, "key: value;", "key:value")
 	assertCSS(t, m, false, "margin: 0 1; padding: 0 1;", "margin:0 1;padding:0 1")
 	assertCSS(t, m, false, "color: #FF0000;", "color:red")
@@ -49,6 +50,7 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, m, false, "margin: 1 2 3 4;", "margin:1 2 3 4")
 	assertCSS(t, m, false, "margin: 1 1 1 a;", "margin:1 1 1 a")
 	assertCSS(t, m, false, "margin: 1 1 1 1 !important;", "margin:1!important")
+	assertCSS(t, m, false, "padding:.2em .4em .2em", "padding:.2em .4em")
 	assertCSS(t, m, false, "margin: 0em;", "margin:0")
 	assertCSS(t, m, false, "font-family:'Arial', 'Times New Roman';", "font-family:arial,times new roman")
 	assertCSS(t, m, false, "background:url('http://domain.com/image.png');", "background:url(http://domain.com/image.png)")
