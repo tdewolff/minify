@@ -186,64 +186,40 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 func shortenPathData(b []byte) []byte {
 	cmd := byte(0)
 	prevDigit := false
-	prevDigitHasDecimal := false
+	prevDigitRequiresSpace := true
 	j := 0
 	start := 0
 	for i := 0; i < len(b); i++ {
 		c := b[i]
-		if c >= '0' && c <= '9' || c == '.' || c == '-' || c == '+' {
-			hasDecimal := (c == '.')
-			if start != 0 {
-				j += copy(b[j:], b[start:i])
-			} else {
-				j += i
-			}
-			start = i
-			i++
-			for {
-				c := b[i]
-				if c == '.' && !hasDecimal {
-					hasDecimal = true
-				} else if c < '0' || c > '9' {
-					break
-				}
-				i++
-			}
-			if c := b[i]; c == 'e' || c == 'E' {
-				i++
-				if c := b[i]; c == '+' || c == '-' {
-					i++
-				}
-				for {
-					if c := b[i]; c < '0' || c > '9' {
-						break
-					}
-					i++
-				}
-			}
-			num := minify.MinifyNumber(b[start:i])
-			if prevDigit && (num[0] >= '0' && num[0] <= '9' || num[0] == '.' && !prevDigitHasDecimal) {
-				b[j] = ' '
-				j++
-			}
-			prevDigit = true
-			prevDigitHasDecimal = false
-			for _, c2 := range num {
-				if c2 == '.' {
-					prevDigitHasDecimal = true
-					break
-				}
-			}
-			j += copy(b[j:], num)
-			start = i
-			i--
-		} else if c == ' ' || c == ',' || c == '\t' || c == '\n' || c == '\r' {
+		if c == ' ' || c == ',' || c == '\t' || c == '\n' || c == '\r' {
 			if start != 0 {
 				j += copy(b[j:], b[start:i])
 			} else {
 				j += i
 			}
 			start = i + 1
+		} else if n, ok := cssParse.ParseNumber(b[i:]); ok {
+			if start != 0 {
+				j += copy(b[j:], b[start:i])
+			} else {
+				j += i
+			}
+			num := minify.MinifyNumber(b[i : i+n])
+			if prevDigit && (num[0] >= '0' && num[0] <= '9' || num[0] == '.' && prevDigitRequiresSpace) {
+				b[j] = ' '
+				j++
+			}
+			prevDigit = true
+			prevDigitRequiresSpace = true
+			for _, c := range num {
+				if c == '.' || c == 'e' || c == 'E' {
+					prevDigitRequiresSpace = false
+					break
+				}
+			}
+			j += copy(b[j:], num)
+			start = i + n
+			i += n - 1
 		} else {
 			if cmd == c {
 				if start != 0 {
