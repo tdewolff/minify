@@ -198,7 +198,7 @@ func shortenPathData(b []byte) []byte {
 				j += i
 			}
 			start = i + 1
-		} else if n, ok := cssParse.ParseNumber(b[i:]); ok {
+		} else if n, ok := parse.ParseNumber(b[i:]); ok {
 			if start != 0 {
 				j += copy(b[j:], b[start:i])
 			} else {
