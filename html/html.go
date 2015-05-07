@@ -282,11 +282,9 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						attr.Hash == html.Id ||
 						attr.Hash == html.Lang ||
 						attr.Hash == html.Name ||
-						attr.Hash == html.Style ||
 						attr.Hash == html.Title ||
 						attr.Hash == html.Action && t.Hash == html.Form ||
-						attr.Hash == html.Value && t.Hash == html.Input ||
-						len(attr.Data) > 2 && attr.Data[0] == 'o' && attr.Data[1] == 'n') {
+						attr.Hash == html.Value && t.Hash == html.Input) {
 						continue // omit empty attribute values
 					}
 					if caseInsensitiveAttrMap[attr.Hash] {
@@ -319,41 +317,50 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						attr.Hash == html.Media && t.Hash == html.Style && parse.Equal(val, []byte("all")) {
 						continue
 					}
+					// CSS and JS minifiers for attribute inline code
+					if attr.Hash == html.Style {
+						attrMinifyBuffer.Reset()
+						if m.Minify(defaultInlineStyleType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
+							val = attrMinifyBuffer.Bytes()
+						}
+						if len(val) == 0 {
+							continue
+						}
+					} else if len(attr.Data) > 2 && attr.Data[0] == 'o' && attr.Data[1] == 'n' {
+						if len(val) >= 11 && parse.EqualCaseInsensitive(val[:11], []byte("javascript:")) {
+							val = val[11:]
+						}
+						attrMinifyBuffer.Reset()
+						if m.Minify(defaultScriptType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
+							val = attrMinifyBuffer.Bytes()
+						}
+						if len(val) == 0 {
+							continue
+						}
+					} else if t.Hash != html.A && urlAttrMap[attr.Hash] && len(val) > 5 { // anchors are already handled
+						if parse.EqualCaseInsensitive(val[:4], []byte{'h', 't', 't', 'p'}) {
+							if val[4] == ':' {
+								val = val[5:]
+							} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
+								val = val[6:]
+							}
+						} else if parse.EqualCaseInsensitive(val[:5], []byte{'d', 'a', 't', 'a', ':'}) {
+							val = minify.MinifyDataURI(m, val)
+						}
+						if len(val) == 0 {
+							continue
+						}
+					}
+
 					if _, err := w.Write(spaceBytes); err != nil {
 						return err
 					}
 					if _, err := w.Write(attr.Data); err != nil {
 						return err
 					}
-
 					if len(val) > 0 && !booleanAttrMap[attr.Hash] {
 						if _, err := w.Write(isBytes); err != nil {
 							return err
-						}
-						// CSS and JS minifiers for attribute inline code
-						if attr.Hash == html.Style {
-							attrMinifyBuffer.Reset()
-							if m.Minify(defaultInlineStyleType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
-								val = attrMinifyBuffer.Bytes()
-							}
-						} else if len(attr.Data) > 2 && attr.Data[0] == 'o' && attr.Data[1] == 'n' {
-							if len(val) >= 11 && parse.EqualCaseInsensitive(val[:11], []byte("javascript:")) {
-								val = val[11:]
-							}
-							attrMinifyBuffer.Reset()
-							if m.Minify(defaultScriptType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
-								val = attrMinifyBuffer.Bytes()
-							}
-						} else if t.Hash != html.A && urlAttrMap[attr.Hash] && len(val) > 5 { // anchors are already handled
-							if parse.EqualCaseInsensitive(val[:4], []byte{'h', 't', 't', 'p'}) {
-								if val[4] == ':' {
-									val = val[5:]
-								} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
-									val = val[6:]
-								}
-							} else if parse.EqualCaseInsensitive(val[:5], []byte{'d', 'a', 't', 'a', ':'}) {
-								val = minify.MinifyDataURI(m, val)
-							}
 						}
 						// no quotes if possible, else prefer single or double depending on which occurs more often in value
 						val = escapeAttrVal(&attrByteBuffer, attr.AttrVal, val)

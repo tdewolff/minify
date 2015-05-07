@@ -60,6 +60,7 @@ func TestHTML(t *testing.T) {
 	assertHTML(t, m, "<body id=\"main\"></body>", "<body id=main>")
 	assertHTML(t, m, "<style><![CDATA[x]]></style>", "<style>x</style>")
 	assertHTML(t, m, "<link href=\"data:text/plain, data\">", "<link href=data:,+data>")
+	assertHTML(t, m, "<span style=>", "<span>")
 
 	// increase coverage
 	assertHTML(t, m, "<script style=\"css\">js</script>", "<script style=css>js</script>")
