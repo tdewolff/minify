@@ -17,18 +17,18 @@ var (
 // Minify minifies JSON data, it reads from r and writes to w.
 func Minify(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	skipComma := true
-	z := json.NewTokenizer(r)
+	p := json.NewParser(r)
 	for {
-		state := z.State()
-		tt, text := z.Next()
-		if tt == json.ErrorToken {
-			if z.Err() != io.EOF {
-				return z.Err()
+		state := p.State()
+		gt, text := p.Next()
+		if gt == json.ErrorGrammar {
+			if p.Err() != io.EOF {
+				return p.Err()
 			}
 			return nil
 		}
 
-		if !skipComma && tt != json.EndObjectToken && tt != json.EndArrayToken {
+		if !skipComma && gt != json.EndObjectGrammar && gt != json.EndArrayGrammar {
 			if state == json.ObjectKeyState || state == json.ArrayState {
 				if _, err := w.Write(commaBytes); err != nil {
 					return err
@@ -39,9 +39,9 @@ func Minify(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				}
 			}
 		}
-		skipComma = tt == json.StartObjectToken || tt == json.StartArrayToken
+		skipComma = gt == json.StartObjectGrammar || gt == json.StartArrayGrammar
 
-		if tt == json.StringToken {
+		if gt == json.StringGrammar {
 			if _, err := w.Write(quoteBytes); err != nil {
 				return err
 			}

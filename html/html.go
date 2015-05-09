@@ -39,16 +39,16 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	attrIntBuffer := make([]int, 0, maxAttrLookup)
 	attrTokenBuffer := make([]*html.Token, 0, maxAttrLookup)
 
-	z := html.NewTokenizer(r)
-	tb := html.NewTokenBuffer(z)
+	l := html.NewLexer(r)
+	tb := html.NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()
 		switch t.TokenType {
 		case html.ErrorToken:
-			if z.Err() == io.EOF {
+			if l.Err() == io.EOF {
 				return nil
 			}
-			return z.Err()
+			return l.Err()
 		case html.DoctypeToken:
 			if _, err := w.Write([]byte("<!doctype html>")); err != nil {
 				return err

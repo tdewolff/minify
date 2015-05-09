@@ -15,16 +15,16 @@ var (
 
 // Minify minifies JS data, it reads from r and writes to w.
 func Minify(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
-	z := js.NewTokenizer(r)
+	l := js.NewLexer(r)
 	lineTerminatorQueued := false
 	whitespaceQueued := false
 	prev := js.LineTerminatorToken
 	prevLast := byte(' ')
 	for {
-		tt, text := z.Next()
+		tt, text := l.Next()
 		if tt == js.ErrorToken {
-			if z.Err() != io.EOF {
-				return z.Err()
+			if l.Err() != io.EOF {
+				return l.Err()
 			}
 			return nil
 		} else if tt == js.CommentToken {

@@ -33,8 +33,8 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
 
-	z := xml.NewTokenizer(r)
-	tb := xml.NewTokenBuffer(z)
+	l := xml.NewLexer(r)
+	tb := xml.NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()
 		if t.TokenType == xml.CDATAToken {
@@ -45,10 +45,10 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 		}
 		switch t.TokenType {
 		case xml.ErrorToken:
-			if z.Err() == io.EOF {
+			if l.Err() == io.EOF {
 				return nil
 			}
-			return z.Err()
+			return l.Err()
 		case xml.TextToken:
 			t.Data = parse.ReplaceMultiple(parse.Trim(t.Data, parse.IsWhitespace), parse.IsWhitespace, ' ')
 			if tag == svg.Style && len(t.Data) > 0 {
