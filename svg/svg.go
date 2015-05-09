@@ -1,3 +1,4 @@
+// Package svg is a minifier written in Go that minifies SVG1.1 following the specifications at http://www.w3.org/TR/SVG11/.
 package svg // import "github.com/tdewolff/minify/svg"
 
 import (

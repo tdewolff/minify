@@ -1,8 +1,5 @@
+// Package css is a minifier written in Go that minifies CSS3 following the specifications at http://www.w3.org/TR/css-syntax-3/.
 package css // import "github.com/tdewolff/minify/css"
-
-/*
-Uses http://www.w3.org/TR/2010/PR-css3-color-20101028/ for colors
-*/
 
 import (
 	"bytes"

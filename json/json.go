@@ -1,3 +1,4 @@
+// Package json is a minifier written in Go that minifies JSON following the specifications at http://json.org/.
 package json // import "github.com/tdewolff/minify/json"
 
 import (

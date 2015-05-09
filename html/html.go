@@ -1,3 +1,4 @@
+// Package html is a minifier written in Go that minifies HTML5 following the specifications at http://www.w3.org/TR/html5/syntax.html.
 package html // import "github.com/tdewolff/minify/html"
 
 import (

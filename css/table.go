@@ -2,6 +2,8 @@ package css
 
 import "github.com/tdewolff/parse/css"
 
+// Uses http://www.w3.org/TR/2010/PR-css3-color-20101028/ for colors
+
 var shortenColorHex = map[string][]byte{
 	"#000080": []byte("navy"),
 	"#008000": []byte("green"),
