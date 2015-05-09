@@ -54,7 +54,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				return err
 			}
 		case html.CommentToken:
-			// TODO: ensure that nested comments are handled properly (tokenizer doesn't handle this!)
+			// TODO: ensure that nested comments are handled properly (lexer doesn't handle this!)
 			var comment []byte
 			if bytes.HasPrefix(t.Data, []byte("[if")) {
 				comment = append(append([]byte("<!--"), t.Data...), []byte("-->")...)
