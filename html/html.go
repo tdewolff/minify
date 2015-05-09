@@ -12,15 +12,13 @@ import (
 )
 
 var (
-	ltBytes                 = []byte("<")
-	gtBytes                 = []byte(">")
-	isBytes                 = []byte("=")
-	spaceBytes              = []byte(" ")
-	endBytes                = []byte("</")
-	escapedSingleQuoteBytes = []byte("&#39;")
-	escapedDoubleQuoteBytes = []byte("&#34;")
-	externalBytes           = []byte("external")
-	httpBytes               = []byte("http")
+	ltBytes       = []byte("<")
+	gtBytes       = []byte(">")
+	isBytes       = []byte("=")
+	spaceBytes    = []byte(" ")
+	endBytes      = []byte("</")
+	externalBytes = []byte("external")
+	httpBytes     = []byte("http")
 )
 
 const maxAttrLookup = 4
@@ -28,7 +26,6 @@ const maxAttrLookup = 4
 ////////////////////////////////////////////////////////////////
 
 // Minify minifies HTML5 files, it reads from r and writes to w.
-// Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 10% in size.
 func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	var rawTag html.Hash
 	var rawTagMediatype []byte
@@ -40,10 +37,10 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
 	attrIntBuffer := make([]int, 0, maxAttrLookup)
-	attrTokenBuffer := make([]*Token, 0, maxAttrLookup)
+	attrTokenBuffer := make([]*html.Token, 0, maxAttrLookup)
 
 	z := html.NewTokenizer(r)
-	tb := NewTokenBuffer(z)
+	tb := html.NewTokenBuffer(z)
 	for {
 		t := *tb.Shift()
 		switch t.TokenType {
@@ -363,7 +360,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							return err
 						}
 						// no quotes if possible, else prefer single or double depending on which occurs more often in value
-						val = escapeAttrVal(&attrByteBuffer, attr.AttrVal, val)
+						val = html.EscapeAttrVal(&attrByteBuffer, attr.AttrVal, val)
 						if _, err := w.Write(val); err != nil {
 							return err
 						}
@@ -379,7 +376,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 ////////////////////////////////////////////////////////////////
 
-func getAttributes(tb *TokenBuffer, attrIndexBuffer *[]int, attrTokenBuffer *[]*Token, hashes ...html.Hash) []*Token {
+func getAttributes(tb *html.TokenBuffer, attrIndexBuffer *[]int, attrTokenBuffer *[]*html.Token, hashes ...html.Hash) []*html.Token {
 	*attrIndexBuffer = (*attrIndexBuffer)[:len(hashes)]
 	*attrTokenBuffer = (*attrTokenBuffer)[:len(hashes)]
 	i := 0
@@ -407,76 +404,4 @@ func getAttributes(tb *TokenBuffer, attrIndexBuffer *[]int, attrTokenBuffer *[]*
 		}
 	}
 	return *attrTokenBuffer
-}
-
-// escapeAttrVal returns the escaped attribute value bytes without quotes.
-func escapeAttrVal(buf *[]byte, orig, b []byte) []byte {
-	singles := 0
-	doubles := 0
-	unquoted := true
-	entities := false
-	for i, c := range b {
-		if c == '&' {
-			entities = true
-			if quote, _, ok := parse.QuoteEntity(b[i:]); ok {
-				if quote == '"' {
-					doubles++
-					unquoted = false
-				} else {
-					singles++
-					unquoted = false
-				}
-			}
-		} else if c == '"' {
-			doubles++
-			unquoted = false
-		} else if c == '\'' {
-			singles++
-			unquoted = false
-		} else if unquoted && (c == '`' || c == '<' || c == '=' || c == '>' || parse.IsWhitespace(c)) {
-			unquoted = false
-		}
-	}
-	if unquoted {
-		return b
-	} else if !entities && len(orig) == len(b)+2 && (singles == 0 && orig[0] == '\'' || doubles == 0 && orig[0] == '"') {
-		return orig
-	}
-
-	var quote byte
-	var escapedQuote []byte
-	if doubles > singles {
-		quote = '\''
-		escapedQuote = escapedSingleQuoteBytes
-	} else {
-		quote = '"'
-		escapedQuote = escapedDoubleQuoteBytes
-	}
-	if len(b)+2 > cap(*buf) {
-		*buf = make([]byte, 0, len(b)+2) // maximum size, not actual size
-	}
-	t := (*buf)[:len(b)+2] // maximum size, not actual size
-	t[0] = quote
-	j := 1
-	start := 0
-	for i, c := range b {
-		if c == '&' {
-			if entityQuote, n, ok := parse.QuoteEntity(b[i:]); ok {
-				j += copy(t[j:], b[start:i])
-				if entityQuote != quote {
-					j += copy(t[j:], []byte{entityQuote})
-				} else {
-					j += copy(t[j:], escapedQuote)
-				}
-				start = i + n
-			}
-		} else if c == quote {
-			j += copy(t[j:], b[start:i])
-			j += copy(t[j:], escapedQuote)
-			start = i + 1
-		}
-	}
-	j += copy(t[j:], b[start:])
-	t[j] = quote
-	return t[:j+1]
 }

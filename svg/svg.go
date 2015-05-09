@@ -6,9 +6,8 @@ import (
 
 	"github.com/tdewolff/buffer"
 	"github.com/tdewolff/minify"
-	xmlMinify "github.com/tdewolff/minify/xml"
 	"github.com/tdewolff/parse"
-	cssParse "github.com/tdewolff/parse/css"
+	"github.com/tdewolff/parse/css"
 	"github.com/tdewolff/parse/svg"
 	"github.com/tdewolff/parse/xml"
 )
@@ -36,12 +35,12 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	attrByteBuffer := make([]byte, 0, 64)
 
 	z := xml.NewTokenizer(r)
-	tb := xmlMinify.NewTokenBuffer(z)
+	tb := xml.NewTokenBuffer(z)
 	for {
 		t := *tb.Shift()
 		if t.TokenType == xml.CDATAToken {
 			var useCDATA bool
-			if t.Data, useCDATA = xmlMinify.EscapeCDATAVal(&attrByteBuffer, t.Data); !useCDATA {
+			if t.Data, useCDATA = xml.EscapeCDATAVal(&attrByteBuffer, t.Data); !useCDATA {
 				t.TokenType = xml.TextToken
 			}
 		}
@@ -128,7 +127,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				}
 			} else if tag == svg.Path && attr == svg.D {
 				val = shortenPathData(val)
-			} else if num, dim, ok := cssParse.SplitNumberDimension(val); ok {
+			} else if num, dim, ok := css.SplitNumberDimension(val); ok {
 				num = minify.Number(num)
 				if len(num) == 1 && num[0] == '0' {
 					val = num
@@ -141,7 +140,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 
 			// prefer single or double quotes depending on what occurs more often in value
-			val = xmlMinify.EscapeAttrVal(&attrByteBuffer, val)
+			val = xml.EscapeAttrVal(&attrByteBuffer, val)
 			if _, err := w.Write(val); err != nil {
 				return err
 			}

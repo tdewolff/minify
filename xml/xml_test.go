@@ -19,11 +19,6 @@ func assertXML(t *testing.T, input, expected string) {
 	assert.Equal(t, expected, b.String(), "Minify must give expected result in "+input)
 }
 
-func assertAttrVal(t *testing.T, input, expected string) {
-	buf := make([]byte, len(input))
-	assert.Equal(t, expected, string(EscapeAttrVal(&buf, []byte(input))))
-}
-
 ////////////////////////////////////////////////////////////////
 
 func TestXML(t *testing.T) {
@@ -48,14 +43,6 @@ func TestXML(t *testing.T) {
 	assertXML(t, "<x a=\"&apos;b&quot;\"></x>", "<x a=\"'b&#34;\"/>")
 	assertXML(t, "<x a=\"&quot;&quot;'\"></x>", "<x a='\"\"&#39;'/>")
 	assertXML(t, "<!DOCTYPE foo SYSTEM \"Foo.dtd\">", "<!DOCTYPE foo SYSTEM \"Foo.dtd\">")
-}
-
-func TestAttrVal(t *testing.T) {
-	assertAttrVal(t, "xyz", "\"xyz\"")
-	assertAttrVal(t, "", "\"\"")
-	assertAttrVal(t, "x&amp;z", "\"x&amp;z\"")
-	assertAttrVal(t, "x'z", "\"x'z\"")
-	assertAttrVal(t, "x\"z", "'x\"z'")
 }
 
 ////////////////////////////////////////////////////////////////
