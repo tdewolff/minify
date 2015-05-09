@@ -2,6 +2,8 @@ package js // import "github.com/tdewolff/minify/js"
 
 import (
 	"bytes"
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,4 +33,15 @@ func TestCSS(t *testing.T) {
 	assertJS(t, ",\na", ",a")
 	assertJS(t, "a + ++b", "a+ ++b")                                          // JSMin caution
 	assertJS(t, "var a=/\\s?auto?\\s?/i\nvar", "var a=/\\s?auto?\\s?/i\nvar") // #14
+}
+
+////////////////////////////////////////////////////////////////
+
+func ExampleMinify() {
+	m := minify.New()
+	m.AddFunc("text/javascript", Minify)
+
+	if err := m.Minify("text/javascript", os.Stdout, os.Stdin); err != nil {
+		fmt.Println("minify.Minify:", err)
+	}
 }

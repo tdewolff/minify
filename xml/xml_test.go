@@ -2,6 +2,9 @@ package xml // import "github.com/tdewolff/minify/xml"
 
 import (
 	"bytes"
+	"fmt"
+	"os"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -53,4 +56,15 @@ func TestAttrVal(t *testing.T) {
 	assertAttrVal(t, "x&amp;z", "\"x&amp;z\"")
 	assertAttrVal(t, "x'z", "\"x'z\"")
 	assertAttrVal(t, "x\"z", "'x\"z'")
+}
+
+////////////////////////////////////////////////////////////////
+
+func ExampleMinify() {
+	m := minify.New()
+	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), Minify)
+
+	if err := m.Minify("text/xml", os.Stdout, os.Stdin); err != nil {
+		fmt.Println("minify.Minify:", err)
+	}
 }

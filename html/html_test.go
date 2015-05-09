@@ -2,12 +2,20 @@ package html // import "github.com/tdewolff/minify/html"
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/minify"
+	"github.com/tdewolff/minify/css"
+	"github.com/tdewolff/minify/js"
+	"github.com/tdewolff/minify/json"
+	"github.com/tdewolff/minify/svg"
+	"github.com/tdewolff/minify/xml"
 )
 
 func assertHTML(t *testing.T, m *minify.Minify, input, expected string) {
@@ -143,4 +151,20 @@ func TestHelpers(t *testing.T) {
 	assertAttrVal(t, "'x&#x00022;z'", "'x\"z'")
 	assertAttrVal(t, "'x\"&gt;'", "'x\"&gt;'")
 	assertAttrVal(t, "You&#039;re encouraged to log in; however, it&#039;s not mandatory. [o]", "\"You're encouraged to log in; however, it's not mandatory. [o]\"")
+}
+
+////////////////////////////////////////////////////////////////
+
+func ExampleMinify() {
+	m := minify.New()
+	m.AddFunc("text/html", Minify)
+	m.AddFunc("text/css", css.Minify)
+	m.AddFunc("text/javascript", js.Minify)
+	m.AddFunc("image/svg+xml", svg.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
+
+	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
+		fmt.Println("minify.Minify:", err)
+	}
 }

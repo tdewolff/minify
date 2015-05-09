@@ -1,6 +1,7 @@
 package minify // import "github.com/tdewolff/minify"
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -148,4 +150,32 @@ func TestHelperProcess(*testing.T) {
 		os.Exit(2)
 	}
 	os.Exit(0)
+}
+
+////////////////////////////////////////////////////////////////
+
+func ExampleMinifier_Minify() {
+	m := New()
+	m.AddFunc("text/plain", func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
+		// remove all spaces
+		rb := bufio.NewReader(r)
+		for {
+			line, err := rb.ReadString('\n')
+			if err != nil && err != io.EOF {
+				return err
+			}
+			if _, errws := io.WriteString(w, strings.Replace(line, " ", "", -1)); errws != nil {
+				return errws
+			}
+			if err == io.EOF {
+				break
+			}
+		}
+		return nil
+	})
+
+	// minify from Stdin to Stdout
+	if err := m.Minify("text/plain", os.Stdout, os.Stdin); err != nil {
+		fmt.Println("minify.Minify:", err)
+	}
 }

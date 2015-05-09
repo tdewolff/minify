@@ -2,10 +2,13 @@ package css // import "github.com/tdewolff/minify/css"
 
 import (
 	"bytes"
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/minify"
+	"github.com/tdewolff/minify/svg"
 )
 
 func assertCSS(t *testing.T, m *minify.Minify, isStylesheet bool, input, expected string) {
@@ -113,4 +116,16 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, m, false, "margin: rgb(ident);", "margin:rgb(ident)")
 	assertCSS(t, m, false, "filter: progid:b().c.Alpha(rgba(x));", "filter:progid:b().c.Alpha(rgba(x))")
 	assertCSS(t, m, true, "a, b + c { x:y; }", "a,b+c{x:y}")
+}
+
+////////////////////////////////////////////////////////////////
+
+func ExampleMinify() {
+	m := minify.New()
+	m.AddFunc("text/css", Minify)
+	m.AddFunc("image/svg+xml", svg.Minify)
+
+	if err := m.Minify("text/css", os.Stdout, os.Stdin); err != nil {
+		fmt.Println("minify.Minify:", err)
+	}
 }
