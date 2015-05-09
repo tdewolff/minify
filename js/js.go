@@ -1,4 +1,4 @@
-// Package js is a minifier written in Go that minifies ECMAScript5.1 following the specifications at http://www.ecma-international.org/ecma-262/5.1/.
+// Package js minifies ECMAScript5.1 following the specifications at http://www.ecma-international.org/ecma-262/5.1/.
 package js // import "github.com/tdewolff/minify/js"
 
 import (
@@ -13,7 +13,7 @@ var (
 	newlineBytes = []byte("\n")
 )
 
-// Minify minifies JS files, it reads from r and writes to w.
+// Minify minifies JS data, it reads from r and writes to w.
 func Minify(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	z := js.NewTokenizer(r)
 	lineTerminatorQueued := false

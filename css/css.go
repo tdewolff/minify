@@ -1,4 +1,4 @@
-// Package css is a minifier written in Go that minifies CSS3 following the specifications at http://www.w3.org/TR/css-syntax-3/.
+// Package css minifies CSS3 following the specifications at http://www.w3.org/TR/css-syntax-3/.
 package css // import "github.com/tdewolff/minify/css"
 
 import (
@@ -32,7 +32,7 @@ type cssMinifier struct {
 
 ////////////////////////////////////////////////////////////////
 
-// Minify minifies CSS files, it reads from r and writes to w.
+// Minify minifies CSS data, it reads from r and writes to w.
 func Minify(m minify.Minifier, mediatype string, w io.Writer, r io.Reader) error {
 	isStylesheet := true
 	if len(mediatype) >= len(";inline=0") && mediatype[len(mediatype)-len(";inline=0"):] == ";inline=1" {

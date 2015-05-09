@@ -1,4 +1,4 @@
-// Package minify is a minifier written in Go that can attach minification functions to MIME types. Several minifiers are provided in subpackages.
+// Package minify relates MIME type to minifiers. Several minifiers are provided in the subpackages.
 package minify // import "github.com/tdewolff/minify"
 
 import (

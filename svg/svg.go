@@ -1,4 +1,4 @@
-// Package svg is a minifier written in Go that minifies SVG1.1 following the specifications at http://www.w3.org/TR/SVG11/.
+// Package svg minifies SVG1.1 following the specifications at http://www.w3.org/TR/SVG11/.
 package svg // import "github.com/tdewolff/minify/svg"
 
 import (
@@ -20,14 +20,13 @@ var (
 	spaceBytes      = []byte(" ")
 	emptyBytes      = []byte("\"\"")
 	endBytes        = []byte("</")
-	CDATAStartBytes = []byte("<![CDATA[")
-	CDATAEndBytes   = []byte("]]>")
+	cdataStartBytes = []byte("<![CDATA[")
+	cdataEndBytes   = []byte("]]>")
 )
 
 ////////////////////////////////////////////////////////////////
 
-// Minify minifies XML files, it reads from r and writes to w.
-// Removes unnecessary whitespace, tags, attributes, quotes and comments and typically saves 10% in size.
+// Minify minifies SVG data, it reads from r and writes to w.
 func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	var tag svg.Hash
 
@@ -66,7 +65,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				return err
 			}
 		case xml.CDATAToken:
-			if _, err := w.Write(CDATAStartBytes); err != nil {
+			if _, err := w.Write(cdataStartBytes); err != nil {
 				return err
 			}
 			t.Data = parse.ReplaceMultiple(parse.Trim(t.Data, parse.IsWhitespace), parse.IsWhitespace, ' ')
@@ -83,7 +82,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			} else if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
-			if _, err := w.Write(CDATAEndBytes); err != nil {
+			if _, err := w.Write(cdataEndBytes); err != nil {
 				return err
 			}
 		case xml.StartTagToken:

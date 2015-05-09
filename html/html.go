@@ -1,4 +1,4 @@
-// Package html is a minifier written in Go that minifies HTML5 following the specifications at http://www.w3.org/TR/html5/syntax.html.
+// Package html minifies HTML5 following the specifications at http://www.w3.org/TR/html5/syntax.html.
 package html // import "github.com/tdewolff/minify/html"
 
 import (
@@ -25,7 +25,7 @@ const maxAttrLookup = 4
 
 ////////////////////////////////////////////////////////////////
 
-// Minify minifies HTML5 files, it reads from r and writes to w.
+// Minify minifies HTML data, it reads from r and writes to w.
 func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	var rawTag html.Hash
 	var rawTagMediatype []byte

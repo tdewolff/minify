@@ -1,4 +1,4 @@
-// Package json is a minifier written in Go that minifies JSON following the specifications at http://json.org/.
+// Package json minifies JSON following the specifications at http://json.org/.
 package json // import "github.com/tdewolff/minify/json"
 
 import (
@@ -14,7 +14,7 @@ var (
 	colonBytes = []byte(":")
 )
 
-// Minify minifies JSON files, it reads from r and writes to w.
+// Minify minifies JSON data, it reads from r and writes to w.
 func Minify(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	skipComma := true
 	z := json.NewTokenizer(r)

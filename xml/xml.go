@@ -1,4 +1,4 @@
-// Package xml is a minifier written in Go that minifies XML1.0 following the specifications at http://www.w3.org/TR/xml/.
+// Package xml minifies XML1.0 following the specifications at http://www.w3.org/TR/xml/.
 package xml // import "github.com/tdewolff/minify/xml"
 
 import (
@@ -16,16 +16,16 @@ var (
 	ltPIBytes       = []byte("<?")
 	gtPIBytes       = []byte("?>")
 	endBytes        = []byte("</")
-	DOCTYPEBytes    = []byte("<!DOCTYPE ")
-	CDATAStartBytes = []byte("<![CDATA[")
-	CDATAEndBytes   = []byte("]]>")
+	doctypeBytes    = []byte("<!DOCTYPE ")
+	cdataStartBytes = []byte("<![CDATA[")
+	cdataEndBytes   = []byte("]]>")
 	isBytes         = []byte("=")
 	spaceBytes      = []byte(" ")
 )
 
 ////////////////////////////////////////////////////////////////
 
-// Minify minifies XML files, it reads from r and writes to w.
+// Minify minifies XML data, it reads from r and writes to w.
 func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	precededBySpace := true // on true the next text token must not start with a space
 
@@ -48,7 +48,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 			return z.Err()
 		case xml.DOCTYPEToken:
-			if _, err := w.Write(DOCTYPEBytes); err != nil {
+			if _, err := w.Write(doctypeBytes); err != nil {
 				return err
 			}
 			if _, err := w.Write(t.Data); err != nil {
@@ -58,13 +58,13 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				return err
 			}
 		case xml.CDATAToken:
-			if _, err := w.Write(CDATAStartBytes); err != nil {
+			if _, err := w.Write(cdataStartBytes); err != nil {
 				return err
 			}
 			if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
-			if _, err := w.Write(CDATAEndBytes); err != nil {
+			if _, err := w.Write(cdataEndBytes); err != nil {
 				return err
 			}
 		case xml.TextToken:
