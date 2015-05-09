@@ -10,12 +10,14 @@ import (
 	"github.com/tdewolff/parse"
 )
 
+// Epsilon is the closest number to zero that is not considered to be zero.
 var Epsilon = 0.00001
 
 var (
 	zeroBytes = []byte("0")
 )
 
+// ContentType minifies a given mediatype by removing all whitespace.
 func ContentType(b []byte) []byte {
 	j := 0
 	start := 0
@@ -39,6 +41,7 @@ func ContentType(b []byte) []byte {
 	return parse.ToLower(b)
 }
 
+// DataURI minifies a data URI and calls a minifier by the specified mediatype. Specifications: https://www.ietf.org/rfc/rfc2397.txt.
 func DataURI(m Minifier, dataURI []byte) []byte {
 	if mediatype, data, err := parse.DataURI(dataURI); err == nil {
 		dataURI, _ = Bytes(m, string(mediatype), data)
@@ -71,6 +74,7 @@ func DataURI(m Minifier, dataURI []byte) []byte {
 	return dataURI
 }
 
+// Number minifies a given byte slice containing a number (see parse.Number) and remove superfluous characters.
 func Number(num []byte) []byte {
 	f, err := strconv.ParseFloat(string(num), 64)
 	if err != nil {
