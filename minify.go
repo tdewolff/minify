@@ -1,37 +1,4 @@
-/*
-Package minify is a minifier written in Go that has built-in HTML, CSS and JS minifiers.
-
-Usage example:
-
-	package main
-
-	import (
-		"fmt"
-		"os"
-		"os/exec"
-
-		"github.com/tdewolff/minify"
-		"github.com/tdewolff/minify/html"
-		"github.com/tdewolff/minify/css"
-		"github.com/tdewolff/minify/js"
-	)
-
-	// Minifies HTML from stdin to stdout.
-	// Note that reading the file into a buffer first and writing to a buffer would be faster.
-	func main() {
-		m := minify.New()
-		m.AddFunc("text/html", html.Minify)
-		m.AddFunc("text/css", css.Minify)
-		m.AddFunc("text/javascript", js.Minify)
-		// Or use an external tool:
-		// m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
-
-		if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
-			fmt.Println("minify.Minify:", err)
-		}
-	}
-
-*/
+// Package minify is a minifier written in Go that can attach minification functions to MIME types. Several minifiers are provided in subpackages.
 package minify // import "github.com/tdewolff/minify"
 
 import (
@@ -59,10 +26,17 @@ type Minifier interface {
 	Minify(mediatype string, w io.Writer, r io.Reader) error
 }
 
+////////////////////////////////////////////////////////////////
+
+type regexpFunc struct {
+	re *regexp.Regexp
+	Func
+}
+
 func cmdFunc(origCmd *exec.Cmd) func(_ Minifier, _ string, w io.Writer, r io.Reader) error {
 	return func(_ Minifier, _ string, w io.Writer, r io.Reader) error {
 		cmd := &exec.Cmd{}
-		*cmd = *origCmd // concurrency safe
+		*cmd = *origCmd // concurrency safety
 		cmd.Stdout = w
 		cmd.Stdin = r
 		return cmd.Run()
@@ -70,11 +44,6 @@ func cmdFunc(origCmd *exec.Cmd) func(_ Minifier, _ string, w io.Writer, r io.Rea
 }
 
 ////////////////////////////////////////////////////////////////
-
-type regexpFunc struct {
-	re *regexp.Regexp
-	Func
-}
 
 // Minify holds a map of mediatype => function to allow recursive minifier calls of the minifier functions.
 type Minify struct {
