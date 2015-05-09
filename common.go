@@ -16,8 +16,31 @@ var (
 	zeroBytes = []byte("0")
 )
 
-func MinifyDataURI(m Minifier, dataURI []byte) []byte {
-	if mediatype, data, err := parse.SplitDataURI(dataURI); err == nil {
+func ContentType(b []byte) []byte {
+	j := 0
+	start := 0
+	inString := false
+	for i, c := range b {
+		if !inString && parse.IsWhitespace(c) {
+			if start != 0 {
+				j += copy(b[j:], b[start:i])
+			} else {
+				j += i
+			}
+			start = i + 1
+		} else if c == '"' {
+			inString = !inString
+		}
+	}
+	if start != 0 {
+		j += copy(b[j:], b[start:])
+		return parse.ToLower(b[:j])
+	}
+	return parse.ToLower(b)
+}
+
+func DataURI(m Minifier, dataURI []byte) []byte {
+	if mediatype, data, err := parse.DataURI(dataURI); err == nil {
 		dataURI, _ = Bytes(m, string(mediatype), data)
 		base64Len := len(";base64") + base64.StdEncoding.EncodedLen(len(dataURI))
 		asciiLen := len(dataURI)
@@ -48,7 +71,7 @@ func MinifyDataURI(m Minifier, dataURI []byte) []byte {
 	return dataURI
 }
 
-func MinifyNumber(num []byte) []byte {
+func Number(num []byte) []byte {
 	f, err := strconv.ParseFloat(string(num), 64)
 	if err != nil {
 		return num

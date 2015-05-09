@@ -377,7 +377,7 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 func (c *cssMinifier) shortenToken(tt css.TokenType, data []byte) (css.TokenType, []byte) {
 	if tt == css.NumberToken || tt == css.DimensionToken || tt == css.PercentageToken {
 		if num, dim, ok := css.SplitNumberDimension(data); ok {
-			num = minify.MinifyNumber(num)
+			num = minify.Number(num)
 			if len(num) == 1 && num[0] == '0' {
 				data = num
 			} else {
@@ -437,7 +437,7 @@ func (c *cssMinifier) shortenToken(tt css.TokenType, data []byte) (css.TokenType
 				delim = uri[0]
 				uri = uri[1 : len(uri)-1]
 			}
-			uri = minify.MinifyDataURI(c.m, uri)
+			uri = minify.DataURI(c.m, uri)
 			if css.IsUrlUnquoted(uri) {
 				data = append(append([]byte("url("), uri...), ')')
 			} else {

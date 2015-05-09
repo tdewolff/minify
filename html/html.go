@@ -8,7 +8,6 @@ import (
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/parse"
 	"github.com/tdewolff/parse/html"
-	"github.com/tdewolff/parse/xml"
 )
 
 var (
@@ -232,7 +231,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					if attr := getAttributes(tb, &attrIntBuffer, &attrTokenBuffer, html.Content, html.Http_Equiv, html.Charset, html.Name); attr != nil {
 						if content := attr[0]; content != nil {
 							if httpEquiv := attr[1]; httpEquiv != nil {
-								content.AttrVal = parse.NormalizeContentType(content.AttrVal)
+								content.AttrVal = minify.ContentType(content.AttrVal)
 								if charset := attr[2]; charset == nil && parse.EqualCaseInsensitive(httpEquiv.AttrVal, []byte("content-type")) && parse.Equal(content.AttrVal, []byte("text/html;charset=utf-8")) {
 									httpEquiv.Data = nil
 									content.Data = []byte("charset")
@@ -290,7 +289,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					if caseInsensitiveAttrMap[attr.Hash] {
 						val = parse.ToLower(val)
 						if attr.Hash == html.Enctype || attr.Hash == html.Codetype || attr.Hash == html.Accept || attr.Hash == html.Type && (t.Hash == html.A || t.Hash == html.Link || t.Hash == html.Object || t.Hash == html.Param || t.Hash == html.Script || t.Hash == html.Style || t.Hash == html.Source) {
-							val = parse.NormalizeContentType(val)
+							val = minify.ContentType(val)
 						}
 					}
 					if rawTag != 0 && attr.Hash == html.Type {
@@ -345,7 +344,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 								val = val[6:]
 							}
 						} else if parse.EqualCaseInsensitive(val[:5], []byte{'d', 'a', 't', 'a', ':'}) {
-							val = minify.MinifyDataURI(m, val)
+							val = minify.DataURI(m, val)
 						}
 						if len(val) == 0 {
 							continue
@@ -418,7 +417,7 @@ func escapeAttrVal(buf *[]byte, orig, b []byte) []byte {
 	for i, c := range b {
 		if c == '&' {
 			entities = true
-			if quote, _, ok := xml.IsAtQuoteEntity(b[i:]); ok {
+			if quote, _, ok := parse.QuoteEntity(b[i:]); ok {
 				if quote == '"' {
 					doubles++
 					unquoted = false
@@ -461,7 +460,7 @@ func escapeAttrVal(buf *[]byte, orig, b []byte) []byte {
 	start := 0
 	for i, c := range b {
 		if c == '&' {
-			if entityQuote, n, ok := xml.IsAtQuoteEntity(b[i:]); ok {
+			if entityQuote, n, ok := parse.QuoteEntity(b[i:]); ok {
 				j += copy(t[j:], b[start:i])
 				if entityQuote != quote {
 					j += copy(t[j:], []byte{entityQuote})

@@ -128,7 +128,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			} else if tag == svg.Path && attr == svg.D {
 				val = shortenPathData(val)
 			} else if num, dim, ok := cssParse.SplitNumberDimension(val); ok {
-				num = minify.MinifyNumber(num)
+				num = minify.Number(num)
 				if len(num) == 1 && num[0] == '0' {
 					val = num
 				} else {
@@ -198,13 +198,13 @@ func shortenPathData(b []byte) []byte {
 				j += i
 			}
 			start = i + 1
-		} else if n, ok := parse.ParseNumber(b[i:]); ok {
+		} else if n, ok := parse.Number(b[i:]); ok {
 			if start != 0 {
 				j += copy(b[j:], b[start:i])
 			} else {
 				j += i
 			}
-			num := minify.MinifyNumber(b[i : i+n])
+			num := minify.Number(b[i : i+n])
 			if prevDigit && (num[0] >= '0' && num[0] <= '9' || num[0] == '.' && prevDigitRequiresSpace) {
 				b[j] = ' '
 				j++
