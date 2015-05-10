@@ -15,6 +15,7 @@ See the [Wiki](https://github.com/tdewolff/minify/wiki) for a roadmap of what is
 **Table of Contents**
 
 - [Minify](#minify--)
+	- [Prologue](#prologue)
 	- [Comparison](#comparison)
 		- [Alternatives](#alternatives)
 	- [HTML](#html--)
@@ -35,6 +36,15 @@ See the [Wiki](https://github.com/tdewolff/minify/wiki) for a roadmap of what is
 	- [Examples](#examples)
 	- [License](#license)
 
+## Prologue
+Minifiers or bindings to minifiers exist in almost all programming languages. Some implementations are merely using several regular-expressions to trim whitespace and comments (even though regex for parsing HTML/XML is ill-advised, for a good read see [Regular Expressions: Now You Have Two Problems](http://blog.codinghorror.com/regular-expressions-now-you-have-two-problems/)). Some implementations are much more profound, such as [YUI Compressor](http://yui.github.io/yuicompressor/), [Google Closure Compiler](https://github.com/google/closure-compiler) for JS and [HTML Compressor](https://code.google.com/p/htmlcompressor/) for HTML.
+
+These industry-grade minifiers are all written in Java and are generally slow too. Futhermore, these tools provide a large number of configurations which is often just confusing. Regular-expression based minifiers are slow anyways because they often use multiple regular-expressions, each of which parses the complete document. While regular-expressions is overkill (or ill-advised) for parsing of HTML/CSS/JS sources, parsing it a number of time is certainly not speeding things up. Other implementations are often written in uncompiled languages such as JS, which is great for bindings with [Grunt](http://gruntjs.com/) for example, but catastrophic for the minification speed of large files or projects with many files. Additionally many of these minifier either do not follow the specifications or drag a lot of legacy code around. When you are still supporting IE6 I don't suppose you are squeezing out every bit of performance out of your web application.
+
+However, implementing an HTML minifier is the bare minimum. HTML documents can contain embedded resources such as CSS, JS and SVG file formats. Thus for increased minification of HTML, other file format minifiers must be present too. A minifier is really not a single-trick pony, but should minify a range of mediatype to be successful.
+
+This minifier proves to be that fast, zero-configurable, modern, extensive minifier which stream-minifies files and can minify them concurrently.
+
 ## Comparison
 HTML (with JS and CSS) minification typically runs at about 30MB/s ~= 100GB/h, depending on the composition of the file.
 
@@ -52,9 +62,9 @@ Website | Original | Minified | Ratio | Time<sup>&#42;</sup>
 [HTML Compressor](https://code.google.com/p/htmlcompressor/) performs worse in output size (for HTML and CSS) and speed; it is a magnitude slower. Its whitespace removal is not precise or the user must provide the tags around which can be trimmed. According to HTML Compressor, it produces smaller files than a couple of other libraries. With HTML and CSS minification this package is better, but JS minification it is still too basic.
 
 ### Alternatives
-An alternative library written in Go is [https://github.com/dchest/htmlmin](https://github.com/dchest/htmlmin). It is written using regular expressions and is therefore a lot simpler (and thus less bugs, not handling edge-cases) but about twice as slow. Also [https://github.com/omeid/jsmin](https://github.com/omeid/jsmin) contains a port of JSMin, just like this JS minifier, but is slower.
+An alternative library written in Go is [https://github.com/dchest/htmlmin](https://github.com/dchest/htmlmin). It is written using regular expressions and is therefore a lot simpler (less bugs but not handling edge-cases) but slower. Also [https://github.com/omeid/jsmin](https://github.com/omeid/jsmin) contains a port of JSMin, just like this JS minifier, but is slower.
 
-Other alternatives are bindings for existing minifiers written in other languages. These are inevitably more robust and tested but will often be slower.
+Other alternatives are bindings for existing minifiers written in other languages. These are inevitably more robust and tested but will often be slower. For example, Java-based minifiers incur overhead of starting up the JVM.
 
 ## HTML [![GoDoc](http://godoc.org/github.com/tdewolff/minify/html?status.svg)](http://godoc.org/github.com/tdewolff/minify/html) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/html)](http://gocover.io/github.com/tdewolff/minify/html)
 
