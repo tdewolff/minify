@@ -80,7 +80,7 @@ The HTML5 minifier uses these minifications:
 - strip unrequired end tags (`tr`, `td`, `li`, ... and often `p`)
 - strip default protocols (`http:`, `https:` and `javascript:`)
 - strip comments (except conditional comments)
-- ahorten `doctype` and `meta` charset
+- shorten `doctype` and `meta` charset
 - lowercase tags, attributes and some values to enhance gzip compression
 
 After recent benchmarking and profiling it became really fast and minifies pages in the 10ms range, making it viable for on-the-fly minification.
