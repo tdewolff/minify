@@ -6,7 +6,7 @@ Make sure you have [Go](http://golang.org/) and [Git](http://git-scm.com/) insta
 
 Run the following command
 
-	go get github.com/tdewolff/minify
+	go get github.com/tdewolff/minify/cmd/minify
 
 and the `minify` command should be in your `$GOPATH/bin`.
 
