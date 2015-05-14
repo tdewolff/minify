@@ -379,6 +379,9 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 func getAttributes(tb *html.TokenBuffer, attrIndexBuffer *[]int, attrTokenBuffer *[]*html.Token, hashes ...html.Hash) []*html.Token {
 	*attrIndexBuffer = (*attrIndexBuffer)[:len(hashes)]
 	*attrTokenBuffer = (*attrTokenBuffer)[:len(hashes)]
+	for j, _ := range *attrIndexBuffer {
+		(*attrIndexBuffer)[j] = 0
+	}
 	i := 0
 	for {
 		t := tb.Peek(i)
