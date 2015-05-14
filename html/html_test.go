@@ -112,6 +112,10 @@ func TestHTML(t *testing.T) {
 	assertHTML(t, m, `<a href="https://x" rel="external">y</a>`, `<a href=https://x rel=external>y</a>`)
 	assertHTML(t, m, `<a id="abc" name="abc">y</a>`, `<a id=abc>y</a>`)
 	assertHTML(t, m, `<a id="" value="">y</a>`, `<a value>y</a>`)
+
+	// go-fuzz
+	assertHTML(t, m, `<meta e t n content=ful><a b`, `<meta e t n content=ful><a b>`)
+	assertHTML(t, m, `<img alt=a'b="">`, `<img alt='a&#39;b=""'>`)
 }
 
 func TestSpecialTagClosing(t *testing.T) {
