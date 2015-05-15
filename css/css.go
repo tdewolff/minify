@@ -127,25 +127,29 @@ func (c *cssMinifier) minifySelectors(property []byte, values []css.Token) error
 	inAttr := false
 	isClass := false
 	for _, val := range c.p.Values() {
-		if !inAttr && val.TokenType == css.LeftBracketToken {
-			inAttr = true
-		} else if inAttr && val.TokenType == css.RightBracketToken {
-			inAttr = false
-		} else if inAttr && val.TokenType == css.StringToken && len(val.Data) > 2 {
-			s := val.Data[1 : len(val.Data)-1]
-			if css.IsIdent([]byte(s)) {
-				if _, err := c.w.Write(s); err != nil {
-					return err
+		if !inAttr {
+			if val.TokenType == css.IdentToken {
+				if !isClass {
+					parse.ToLower(val.Data)
 				}
-				continue
+				isClass = false
+			} else if val.TokenType == css.DelimToken && val.Data[0] == '.' {
+				isClass = true
+			} else if val.TokenType == css.LeftBracketToken {
+				inAttr = true
 			}
-		} else if !inAttr && val.TokenType == css.DelimToken && val.Data[0] == '.' {
-			isClass = true
-		} else if !inAttr && val.TokenType == css.IdentToken {
-			if !isClass {
-				parse.ToLower(val.Data)
+		} else {
+			if val.TokenType == css.StringToken && len(val.Data) > 2 {
+				s := val.Data[1 : len(val.Data)-1]
+				if css.IsIdent([]byte(s)) {
+					if _, err := c.w.Write(s); err != nil {
+						return err
+					}
+					continue
+				}
+			} else if val.TokenType == css.RightBracketToken {
+				inAttr = false
 			}
-			isClass = false
 		}
 		if _, err := c.w.Write(val.Data); err != nil {
 			return err
