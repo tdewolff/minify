@@ -213,9 +213,9 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 								name.Data = nil
 							}
 						}
-						if rel := attr[2]; rel == nil || !parse.EqualCaseInsensitive(rel.AttrVal, externalBytes) {
+						if rel := attr[2]; rel == nil || !parse.EqualFold(rel.AttrVal, externalBytes) {
 							if href := attr[3]; href != nil {
-								if len(href.AttrVal) > 5 && parse.EqualCaseInsensitive(href.AttrVal[:4], []byte{'h', 't', 't', 'p'}) {
+								if len(href.AttrVal) > 5 && parse.EqualFold(href.AttrVal[:4], []byte{'h', 't', 't', 'p'}) {
 									if href.AttrVal[4] == ':' {
 										href.AttrVal = href.AttrVal[5:]
 									} else if (href.AttrVal[4] == 's' || href.AttrVal[4] == 'S') && href.AttrVal[5] == ':' {
@@ -230,22 +230,22 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						if content := attr[0]; content != nil {
 							if httpEquiv := attr[1]; httpEquiv != nil {
 								content.AttrVal = minify.ContentType(content.AttrVal)
-								if charset := attr[2]; charset == nil && parse.EqualCaseInsensitive(httpEquiv.AttrVal, []byte("content-type")) && parse.Equal(content.AttrVal, []byte("text/html;charset=utf-8")) {
+								if charset := attr[2]; charset == nil && parse.EqualFold(httpEquiv.AttrVal, []byte("content-type")) && parse.Equal(content.AttrVal, []byte("text/html;charset=utf-8")) {
 									httpEquiv.Data = nil
 									content.Data = []byte("charset")
 									content.Hash = html.Charset
 									content.AttrVal = []byte("utf-8")
-								} else if parse.EqualCaseInsensitive(httpEquiv.AttrVal, []byte("content-style-type")) {
+								} else if parse.EqualFold(httpEquiv.AttrVal, []byte("content-style-type")) {
 									defaultStyleType = string(content.AttrVal)
 									defaultInlineStyleType = defaultStyleType + ";inline=1"
-								} else if parse.EqualCaseInsensitive(httpEquiv.AttrVal, []byte("content-script-type")) {
+								} else if parse.EqualFold(httpEquiv.AttrVal, []byte("content-script-type")) {
 									defaultScriptType = string(content.AttrVal)
 								}
 							}
 							if name := attr[3]; name != nil {
-								if parse.EqualCaseInsensitive(name.AttrVal, []byte("keywords")) {
+								if parse.EqualFold(name.AttrVal, []byte("keywords")) {
 									content.AttrVal = bytes.Replace(content.AttrVal, []byte(", "), []byte(","), -1)
-								} else if parse.EqualCaseInsensitive(name.AttrVal, []byte("viewport")) {
+								} else if parse.EqualFold(name.AttrVal, []byte("viewport")) {
 									content.AttrVal = bytes.Replace(content.AttrVal, []byte(" "), []byte(""), -1)
 								}
 							}
@@ -324,7 +324,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							continue
 						}
 					} else if len(attr.Data) > 2 && attr.Data[0] == 'o' && attr.Data[1] == 'n' {
-						if len(val) >= 11 && parse.EqualCaseInsensitive(val[:11], []byte("javascript:")) {
+						if len(val) >= 11 && parse.EqualFold(val[:11], []byte("javascript:")) {
 							val = val[11:]
 						}
 						attrMinifyBuffer.Reset()
@@ -335,13 +335,13 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							continue
 						}
 					} else if t.Hash != html.A && urlAttrMap[attr.Hash] && len(val) > 5 { // anchors are already handled
-						if parse.EqualCaseInsensitive(val[:4], []byte{'h', 't', 't', 'p'}) {
+						if parse.EqualFold(val[:4], []byte{'h', 't', 't', 'p'}) {
 							if val[4] == ':' {
 								val = val[5:]
 							} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
 								val = val[6:]
 							}
-						} else if parse.EqualCaseInsensitive(val[:5], []byte{'d', 'a', 't', 'a', ':'}) {
+						} else if parse.EqualFold(val[:5], []byte{'d', 'a', 't', 'a', ':'}) {
 							val = minify.DataURI(m, val)
 						}
 						if len(val) == 0 {
