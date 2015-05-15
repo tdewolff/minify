@@ -3,6 +3,7 @@ package minify // import "github.com/tdewolff/minify"
 import (
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"math"
 	"net/url"
 
@@ -76,6 +77,11 @@ func DataURI(m Minifier, dataURI []byte) []byte {
 // TODO: omit ParseFloat in favor of counting digit-zero bytes on the left, also useful for using exponents as shorter notations
 // Number minifies a given byte slice containing a number (see parse.Number) and removes superfluous characters.
 func Number(num []byte) []byte {
+	defer func() {
+		if recover() != nil {
+			fmt.Println(string(num))
+		}
+	}()
 	// omit first + and register mantissa start and end, whether it's negative and the exponent
 	neg := false
 	start := 0

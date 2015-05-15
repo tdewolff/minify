@@ -7,7 +7,6 @@ import (
 	"github.com/tdewolff/buffer"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/parse"
-	"github.com/tdewolff/parse/css"
 	"github.com/tdewolff/parse/svg"
 	"github.com/tdewolff/parse/xml"
 )
@@ -126,15 +125,14 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				}
 			} else if tag == svg.Path && attr == svg.D {
 				val = shortenPathData(val)
-			} else if num, dim, ok := css.SplitNumberDimension(val); ok {
-				num = minify.Number(num)
-				if len(num) == 1 && num[0] == '0' {
-					val = num
-				} else {
+			} else if n := parse.Number(val); n > 0 {
+				dim := val[n:]
+				val = minify.Number(val[:n])
+				if len(val) != 1 || val[0] != '0' {
 					if len(dim) > 1 { // only percentage is length 1
 						parse.ToLower(dim)
 					}
-					val = append(num, dim...)
+					val = append(val, dim...)
 				}
 			}
 

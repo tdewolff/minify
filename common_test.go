@@ -59,5 +59,6 @@ func TestNumber(t *testing.T) {
 	assertNumber(t, "1.252", "1.252")
 	assertNumber(t, "-1.252", "-1.252")
 	assertNumber(t, "0.075", ".075")
+	assertNumber(t, "444140528068789", "444140528068789")
 	//assertNumber(t, "96px", "1in")
 }

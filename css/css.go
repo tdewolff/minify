@@ -378,16 +378,21 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 }
 
 func (c *cssMinifier) shortenToken(tt css.TokenType, data []byte) (css.TokenType, []byte) {
-	if tt == css.NumberToken || tt == css.DimensionToken || tt == css.PercentageToken {
-		if num, dim, ok := css.SplitNumberDimension(data); ok {
-			num = minify.Number(num)
-			if len(num) == 1 && num[0] == '0' {
-				data = num
-			} else {
-				if len(dim) > 1 { // only percentage is length 1
-					parse.ToLower(dim)
-				}
-				data = append(num, dim...)
+	if tt == css.NumberToken || tt == css.PercentageToken || tt == css.DimensionToken {
+		n := len(data)
+		if tt == css.PercentageToken {
+			n--
+		} else if tt == css.DimensionToken {
+			n = parse.Number(data)
+		}
+		dim := data[n:]
+		data = minify.Number(data[:n])
+		if len(data) != 1 || data[0] != '0' {
+			if tt == css.PercentageToken {
+				data = append(data, '%')
+			} else if tt == css.DimensionToken {
+				parse.ToLower(dim)
+				data = append(data, dim...)
 			}
 		}
 	} else if tt == css.IdentToken {
