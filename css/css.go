@@ -131,7 +131,7 @@ func (c *cssMinifier) minifySelectors(property []byte, values []css.Token) error
 			inAttr = true
 		} else if inAttr && val.TokenType == css.RightBracketToken {
 			inAttr = false
-		} else if inAttr && val.TokenType == css.StringToken {
+		} else if inAttr && val.TokenType == css.StringToken && len(val.Data) > 2 {
 			s := val.Data[1 : len(val.Data)-1]
 			if css.IsIdent([]byte(s)) {
 				if _, err := c.w.Write(s); err != nil {
