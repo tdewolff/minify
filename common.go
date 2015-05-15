@@ -80,7 +80,7 @@ func Number(num []byte) []byte {
 	start := 0
 	dot := -1
 	end := len(num)
-	exp := 0
+	exp := int64(0)
 	if 0 < len(num) && (num[0] == '+' || num[0] == '-') {
 		if num[0] == '-' {
 			neg = true
@@ -99,7 +99,10 @@ func Number(num []byte) []byte {
 			if i < len(num) && num[i] == '+' {
 				i++
 			}
-			exp = parse.Int(num[i:])
+			var ok bool
+			if exp, ok = parse.Int(num[i:]); !ok {
+				return num
+			}
 			break
 		}
 	}
@@ -130,13 +133,13 @@ func Number(num []byte) []byte {
 	if end == dot {
 		for i := end - 1; i >= start; i-- {
 			if num[i] != '0' {
-				exp += end - i - 1
+				exp += int64(end - i - 1)
 				end = i + 1
 				break
 			}
 		}
 	} else {
-		exp -= end - dot - 1
+		exp -= int64(end - dot - 1)
 		if start == dot {
 			for i = dot + 1; i < end; i++ {
 				if num[i] != '0' {
@@ -152,7 +155,7 @@ func Number(num []byte) []byte {
 	}
 
 	// append the exponent or change the mantissa to incorporate the exponent
-	relExp := exp + (end - start)
+	relExp := exp + int64(end-start)
 	if exp == 0 {
 		if neg {
 			start--
@@ -175,23 +178,23 @@ func Number(num []byte) []byte {
 		end += n
 	} else if exp < 0 {
 		if relExp > 0 {
-			copy(num[start+relExp+1:], num[start+relExp:end])
-			num[start+relExp] = '.'
+			copy(num[start+int(relExp)+1:], num[start+int(relExp):end])
+			num[start+int(relExp)] = '.'
 			end++
 		} else {
-			copy(num[start-relExp+1:], num[start:end])
+			copy(num[start-int(relExp)+1:], num[start:end])
 			num[start] = '.'
-			for i := 1; i < -relExp+1; i++ {
+			for i := 1; i < -int(relExp)+1; i++ {
 				num[start+i] = '0'
 			}
-			end -= relExp - 1
+			end -= int(relExp) - 1
 		}
 	} else {
 		num[end] = '0'
 		if exp == 2 {
 			num[end+1] = '0'
 		}
-		end += exp
+		end += int(exp)
 	}
 
 	if neg {
