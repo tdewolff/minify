@@ -106,7 +106,7 @@ The CSS minifier will only use safe minifications:
 - remove comments and (most) whitespace
 - remove trailing semicolons
 - optimize `margin`, `padding` and `border-width` number of sides
-- remove unnecessary decimal zeros and the `+` sign
+- shorten numbers by removing unnecessary `+` and zeros and rewriting with/without exponent
 - remove dimension and percentage for zero values
 - remove quotes for URLs
 - remove quotes for font families and make lowercase
@@ -166,6 +166,7 @@ The SVG minifier uses these minifications:
 - strip CDATA sections wherever possible
 - shorten lengths and numbers
 - minify style tag and attributes with the CSS minifier
+- shorten the `path` data `m` attribute
 
 ## XML [![GoDoc](http://godoc.org/github.com/tdewolff/minify/xml?status.svg)](http://godoc.org/github.com/tdewolff/minify/xml) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/xml)](http://gocover.io/github.com/tdewolff/minify/xml)
 
