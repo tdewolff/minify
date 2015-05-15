@@ -161,7 +161,7 @@ The SVG minifier uses these minifications:
 - strip comments
 - strip doctype
 - strip XML prelude
-- stip SVG version
+- strip SVG version
 - collapse tags with no content to a void tag
 - strip CDATA sections wherever possible
 - shorten lengths and numbers
