@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"math"
 	"net/url"
-	"strconv"
 
 	"github.com/tdewolff/parse"
 )
@@ -77,45 +76,128 @@ func DataURI(m Minifier, dataURI []byte) []byte {
 // TODO: omit ParseFloat in favor of counting digit-zero bytes on the left, also useful for using exponents as shorter notations
 // Number minifies a given byte slice containing a number (see parse.Number) and removes superfluous characters.
 func Number(num []byte) []byte {
-	f, err := strconv.ParseFloat(string(num), 64)
-	if err != nil {
-		return num
-	}
-	if math.Abs(f) < Epsilon {
-		return zeroBytes
-	}
-	if num[0] == '-' {
-		n := 1
-		for n < len(num) && num[n] == '0' {
-			n++
-		}
-		num = num[n-1:]
-		num[0] = '-'
-	} else {
-		if num[0] == '+' {
+	// omit first + and register mantissa start and end, whether it's negative and the exponent
+	neg := false
+	start := 0
+	dot := -1
+	end := len(num)
+	exp := 0
+	if 0 < len(num) && (num[0] == '+' || num[0] == '-') {
+		if num[0] == '-' {
+			neg = true
+			start++
+		} else {
 			num = num[1:]
-		}
-		// trim 0 left
-		for len(num) > 0 && num[0] == '0' {
-			num = num[1:]
+			end--
 		}
 	}
-	// trim 0 right
-	for i, digit := range num {
-		if digit == '.' {
-			j := len(num) - 1
-			for ; j > i; j-- {
-				if num[j] == '0' {
-					num = num[:len(num)-1]
-				} else {
-					break
-				}
+	for i, c := range num {
+		if c == '.' {
+			dot = i
+		} else if c == 'e' || c == 'E' {
+			end = i
+			i++
+			if i < len(num) && num[i] == '+' {
+				i++
 			}
-			if j == i {
-				num = num[:len(num)-1] // remove .
-			}
+			exp = parse.Int(num[i:])
 			break
 		}
 	}
-	return num
+	if dot == -1 {
+		dot = end
+	}
+
+	// trim leading zeros
+	for start < end && num[start] == '0' {
+		start++
+	}
+	// trim trailing zeros
+	i := end - 1
+	for ; i > dot; i-- {
+		if num[i] != '0' {
+			end = i + 1
+			break
+		}
+	}
+	if i == dot {
+		end = dot
+	}
+	if start == end {
+		return zeroBytes
+	}
+
+	// shorten mantissa by increasing/decreasing the exponent
+	if end == dot {
+		for i := end - 1; i >= start; i-- {
+			if num[i] != '0' {
+				exp += end - i - 1
+				end = i + 1
+				break
+			}
+		}
+	} else {
+		exp -= end - dot - 1
+		if start == dot {
+			for i = dot + 1; i < end; i++ {
+				if num[i] != '0' {
+					copy(num[dot:], num[i:end])
+					end -= i - dot
+					break
+				}
+			}
+		} else {
+			copy(num[dot:], num[dot+1:end])
+			end--
+		}
+	}
+
+	// append the exponent or change the mantissa to incorporate the exponent
+	relExp := exp + (end - start)
+	if exp == 0 {
+		if neg {
+			start--
+			num[start] = '-'
+		}
+		return num[start:end]
+	} else if relExp < -2 || 2 < exp {
+		num[end] = 'e'
+		end++
+		if exp < 0 {
+			num[end] = '-'
+			end++
+			exp = -exp
+		}
+		n := int(math.Log10(float64(exp))) + 1
+		for i := end + n - 1; i >= end; i-- {
+			num[i] = byte(exp%10) + '0'
+			exp /= 10
+		}
+		end += n
+	} else if exp < 0 {
+		if relExp > 0 {
+			copy(num[start+relExp+1:], num[start+relExp:end])
+			num[start+relExp] = '.'
+			end++
+		} else {
+			copy(num[start-relExp+1:], num[start:end])
+			num[start] = '.'
+			for i := 1; i < -relExp+1; i++ {
+				num[start+i] = '0'
+			}
+			end -= relExp - 1
+		}
+	} else {
+		num[end] = '0'
+		if exp == 2 {
+			num[end+1] = '0'
+		}
+		end += exp
+	}
+
+	if neg {
+		start--
+		num[start] = '-'
+	}
+	return num[start:end]
 }
