@@ -431,9 +431,6 @@ func (c *cssMinifier) shortenToken(tt css.TokenType, data []byte) (css.TokenType
 				break
 			}
 		}
-		if len(data) < 3 {
-			data = data[:0]
-		}
 	} else if tt == css.URLToken {
 		parse.ToLower(data[:3])
 		if len(data) > 10 {

@@ -61,7 +61,7 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, m, false, "filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=0);", "filter:alpha(opacity=0)")
 	assertCSS(t, m, false, "content: \"a\\\nb\";", "content:\"ab\"")
 	assertCSS(t, m, false, "content: \"a\\\r\nb\\\r\nc\";", "content:\"abc\"")
-	assertCSS(t, m, false, "content: \"\";", "content:")
+	assertCSS(t, m, false, "content: \"\";", "content:\"\"")
 	assertCSS(t, m, true, "i { key: value; key2: value; }", "i{key:value;key2:value}")
 	assertCSS(t, m, true, ".cla .ss > #id { x:y; }", ".cla .ss>#id{x:y}")
 	assertCSS(t, m, true, ".cla[id ^= L] { x:y; }", ".cla[id^=L]{x:y}")
@@ -119,10 +119,10 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, m, true, "a, b + c { x:y; }", "a,b+c{x:y}")
 
 	// go-fuzz
-	assertCSS(t, m, false, "FONT-FAMILY: ru\"", "font-family:ru")
+	assertCSS(t, m, false, "FONT-FAMILY: ru\"", "font-family:ru\"")
 	assertCSS(t, m, true, "input[type=\"\x00\"] {  a: b\n}.a{}", "input[type=\"\x00\"] {  a: b\n}.a{}")
 
-	assertCSS(t, m, true, "a{a:)'''", "a{a:)}")
+	assertCSS(t, m, true, "a{a:)'''", "a{a:)'''}")
 }
 
 ////////////////////////////////////////////////////////////////
