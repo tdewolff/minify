@@ -182,17 +182,19 @@ func (c *cssMinifier) minifyDeclaration(property []byte, values []css.Token) err
 					values[i].TokenType = css.NumberToken
 					values[i].Data = []byte("700")
 				}
-			} else if value.TokenType == css.StringToken && (prop == css.Font || prop == css.Font_Family) {
+			} else if value.TokenType == css.StringToken && (prop == css.Font || prop == css.Font_Family) && len(value.Data) > 2 {
+				unquote := true
 				parse.ToLower(value.Data)
 				s := value.Data[1 : len(value.Data)-1]
-				unquote := true
-				for _, split := range bytes.Split(s, spaceBytes) {
-					val := css.ToHash(split)
-					// if len is zero, it contains two consecutive spaces
-					if val == css.Inherit || val == css.Serif || val == css.Sans_Serif || val == css.Monospace || val == css.Fantasy || val == css.Cursive || val == css.Initial || val == css.Default ||
-						len(split) == 0 || !css.IsIdent(split) {
-						unquote = false
-						break
+				if len(s) > 0 {
+					for _, split := range bytes.Split(s, spaceBytes) {
+						val := css.ToHash(split)
+						// if len is zero, it contains two consecutive spaces
+						if val == css.Inherit || val == css.Serif || val == css.Sans_Serif || val == css.Monospace || val == css.Fantasy || val == css.Cursive || val == css.Initial || val == css.Default ||
+							len(split) == 0 || !css.IsIdent(split) {
+							unquote = false
+							break
+						}
 					}
 				}
 				if unquote {
@@ -424,6 +426,9 @@ func (c *cssMinifier) shortenToken(tt css.TokenType, data []byte) (css.TokenType
 				data = data[:i]
 				break
 			}
+		}
+		if len(data) < 3 {
+			data = data[:0]
 		}
 	} else if tt == css.URLToken {
 		parse.ToLower(data[:3])
