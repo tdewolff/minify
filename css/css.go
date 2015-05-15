@@ -210,7 +210,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, values []css.Token) err
 	}
 
 	important := false
-	if len(values) > 2 && values[len(values)-2].Data[0] == '!' && bytes.Equal(values[len(values)-1].Data, []byte("important")) {
+	if len(values) > 2 && values[len(values)-2].TokenType == css.DelimToken && values[len(values)-2].Data[0] == '!' && bytes.Equal(values[len(values)-1].Data, []byte("important")) {
 		values = values[:len(values)-2]
 		important = true
 	}

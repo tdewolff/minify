@@ -121,6 +121,8 @@ func TestCSS(t *testing.T) {
 	// go-fuzz
 	assertCSS(t, m, false, "FONT-FAMILY: ru\"", "font-family:ru")
 	assertCSS(t, m, true, "input[type=\"\x00\"] {  a: b\n}.a{}", "input[type=\"\x00\"] {  a: b\n}.a{}")
+
+	assertCSS(t, m, true, "a{a:)'''", "a{a:)}")
 }
 
 ////////////////////////////////////////////////////////////////
