@@ -75,7 +75,7 @@ func DataURI(m Minifier, dataURI []byte) []byte {
 }
 
 // TODO: omit ParseFloat in favor of counting digit-zero bytes on the left, also useful for using exponents as shorter notations
-// Number minifies a given byte slice containing a number (see parse.Number) and remove superfluous characters.
+// Number minifies a given byte slice containing a number (see parse.Number) and removes superfluous characters.
 func Number(num []byte) []byte {
 	f, err := strconv.ParseFloat(string(num), 64)
 	if err != nil {

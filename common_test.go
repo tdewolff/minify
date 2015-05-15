@@ -50,7 +50,8 @@ func TestNumber(t *testing.T) {
 	assertNumber(t, "+1", "1")
 	assertNumber(t, "-0.1", "-.1")
 	assertNumber(t, "100", "100")
-	// assertNumber(t, "1000px", "1e3px")
-	// assertNumber(t, "0.001px", "1e-3px")
+	// assertNumber(t, "1000", "1e3")
+	// assertNumber(t, "0.001", "1e-3")
+	// assertNumber(t, "100e1", "1e3")
 	// assertNumber(t, "96px", "1in")
 }
