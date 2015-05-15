@@ -166,7 +166,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, values []css.Token) err
 				inProgid = false
 			}
 			continue
-		} else if value.TokenType == css.IdentToken && bytes.Equal(value.Data, []byte("progid")) {
+		} else if value.TokenType == css.IdentToken && css.ToHash(value.Data) == css.Progid {
 			inProgid = true
 			continue
 		}
@@ -210,7 +210,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, values []css.Token) err
 	}
 
 	important := false
-	if len(values) > 2 && values[len(values)-2].TokenType == css.DelimToken && values[len(values)-2].Data[0] == '!' && bytes.Equal(values[len(values)-1].Data, []byte("important")) {
+	if len(values) > 2 && values[len(values)-2].TokenType == css.DelimToken && values[len(values)-2].Data[0] == '!' && css.ToHash(values[len(values)-1].Data) == css.Important {
 		values = values[:len(values)-2]
 		important = true
 	}
