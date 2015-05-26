@@ -155,14 +155,18 @@ func Number(num []byte) []byte {
 	}
 
 	// append the exponent or change the mantissa to incorporate the exponent
-	relExp := exp + int64(end-start)
+	relExp := exp + int64(end-start) // exp when the first non-zero digit is directly after the dot
+	n := 0                           // number of exp digits
+	if exp != 0 {
+		n = int(math.Log10(math.Abs(float64(exp)))) + 1
+	}
 	if exp == 0 {
 		if neg {
 			start--
 			num[start] = '-'
 		}
 		return num[start:end]
-	} else if relExp < -2 || 2 < exp {
+	} else if int(relExp)+n+1 < 0 || 2 < exp { // add exponent for exp 3 and higher and where a lower exp really makes it shorter
 		num[end] = 'e'
 		end++
 		if exp < 0 {
@@ -170,13 +174,12 @@ func Number(num []byte) []byte {
 			end++
 			exp = -exp
 		}
-		n := int(math.Log10(float64(exp))) + 1
 		for i := end + n - 1; i >= end; i-- {
 			num[i] = byte(exp%10) + '0'
 			exp /= 10
 		}
 		end += n
-	} else if exp < 0 {
+	} else if exp < 0 { // omit exponent
 		if relExp > 0 {
 			copy(num[start+int(relExp)+1:], num[start+int(relExp):end])
 			num[start+int(relExp)] = '.'
@@ -189,7 +192,7 @@ func Number(num []byte) []byte {
 			}
 			end -= int(relExp) - 1
 		}
-	} else {
+	} else { // for exponent 1 and 2
 		num[end] = '0'
 		if exp == 2 {
 			num[end+1] = '0'
