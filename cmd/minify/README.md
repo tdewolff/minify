@@ -35,3 +35,10 @@ It is also possible to overwrite the input file by the output file. However, thi
 ```sh
 $ minify -o file.html file.html
 ```
+
+The following commands are variations one can use to minify a files in a directory:
+```sh
+$ minify -d files
+
+$ minify -d files -r
+```
