@@ -25,9 +25,9 @@ var (
 		".css":  "text/css",
 		".html": "text/html",
 		".js":   "application/javascript",
-		".json": "[/+]json$",
+		".json": "application/json",
 		".svg":  "image/svg+xml",
-		".xml":  "[/+]xml$",
+		".xml":  "text/xml",
 	}
 )
 
@@ -57,12 +57,12 @@ func main() {
 	r := io.Reader(os.Stdin)
 	w := io.Writer(os.Stdout)
 	m := minify.New()
-	m.AddFunc(extMime[".css"], css.Minify)
-	m.AddFunc(extMime[".html"], html.Minify)
-	m.AddFunc(extMime[".js"], js.Minify)
-	m.AddFunc(extMime[".svg"], svg.Minify)
-	m.AddFuncRegexp(regexp.MustCompile(extMime[".json"]), json.Minify)
-	m.AddFuncRegexp(regexp.MustCompile(extMime[".xml"]), xml.Minify)
+	m.AddFunc("text/css", css.Minify)
+	m.AddFunc("text/html", html.Minify)
+	m.AddFunc("application/javascript", js.Minify)
+	m.AddFunc("image/svg+xml", svg.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
 	filenames := make(map[string]string)
 	if directory != "" {
