@@ -20,6 +20,17 @@ import (
 	"github.com/tdewolff/minify/xml"
 )
 
+var (
+	extMime = map[string]string{
+		".css":  "text/css",
+		".html": "text/html",
+		".js":   "application/javascript",
+		".json": "[/+]json$",
+		".svg":  "image/svg+xml",
+		".xml":  "[/+]xml$",
+	}
+)
+
 func main() {
 	input := ""
 	output := ""
@@ -46,12 +57,12 @@ func main() {
 	r := io.Reader(os.Stdin)
 	w := io.Writer(os.Stdout)
 	m := minify.New()
-	m.AddFunc("text/css", css.Minify)
-	m.AddFunc("text/html", html.Minify)
-	m.AddFunc("application/javascript", js.Minify)
-	m.AddFunc("image/svg+xml", svg.Minify)
-	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
-	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
+	m.AddFunc(extMime[".css"], css.Minify)
+	m.AddFunc(extMime[".html"], html.Minify)
+	m.AddFunc(extMime[".js"], js.Minify)
+	m.AddFunc(extMime[".svg"], svg.Minify)
+	m.AddFuncRegexp(regexp.MustCompile(extMime[".json"]), json.Minify)
+	m.AddFuncRegexp(regexp.MustCompile(extMime[".xml"]), xml.Minify)
 
 	filenames := make(map[string]string)
 	if directory != "" {
@@ -91,20 +102,7 @@ func main() {
 			w = out
 		}
 		if ext != "" {
-			switch ext {
-			case ".css":
-				mediatype = "text/css"
-			case ".html":
-				mediatype = "text/html"
-			case ".js":
-				mediatype = "application/javascript"
-			case ".json":
-				mediatype = "application/json"
-			case ".svg":
-				mediatype = "image/svg+xml"
-			case ".xml":
-				mediatype = "text/xml"
-			}
+			mediatype = extMime[ext]
 		}
 
 		if err := m.Minify(mediatype, w, r); err != nil {
@@ -120,7 +118,7 @@ func main() {
 
 // ioNames returns a map of input paths and output paths.
 func ioNames(startDir string, recursive bool) map[string]string {
-	names := make(map[string]string)
+	names := map[string]string{}
 
 	if recursive {
 		filepath.Walk(startDir, func(path string, info os.FileInfo, _ error) error {
@@ -169,24 +167,18 @@ func validFile(info os.FileInfo) bool {
 		return false
 	}
 
-	switch strings.ToLower(filepath.Ext(info.Name())) {
-	case ".css", ".html", ".js", ".json", ".svg", ".xml":
-		return true
-	default:
-		return false
-	}
+	_, exists := extMime[strings.ToLower(filepath.Ext(info.Name()))]
+	return exists
 }
 
-// minExt adds .min before a file's extension.
+// minExt adds .min before a file's extension. If a file doesn't have an
+// extension then .min will become the file's extension.
 func minExt(path string) string {
-	var dot int
+	dot := strings.LastIndex(path, ".")
 
-	for i := len(path) - 1; i >= 0; i-- {
-		if path[i] == '.' {
-			dot = i
-			break
-		}
+	if dot == -1 {
+		return path + ".min"
 	}
 
-	return path[:dot] + ".min" + filepath.Ext(path)
+	return path[:dot] + ".min" + path[dot:]
 }
