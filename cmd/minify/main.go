@@ -111,28 +111,22 @@ func main() {
 }
 
 // ioNames returns a map of input paths and output paths.
-func ioNames(startDir string, recursive bool) map[string]string {
+func ioNames(root string, recursive bool) map[string]string {
 	names := map[string]string{}
 	if recursive {
-		filepath.Walk(startDir, func(path string, info os.FileInfo, _ error) error {
-			if !validFile(info) {
-				return nil
+		filepath.Walk(root, func(path string, info os.FileInfo, _ error) error {
+			if validFile(info) {
+				names[path] = minExt(path)
 			}
-			names[path] = minExt(path)
 			return nil
 		})
-		return names
-	}
-	infos, err := ioutil.ReadDir(startDir)
-	if err != nil {
-		return map[string]string{}
-	}
-	for _, info := range infos {
-		if !validFile(info) {
-			continue
+	} else if infos, err := ioutil.ReadDir(root); err == nil {
+		for _, info := range infos {
+			if validFile(info) {
+				path := filepath.Join(root, info.Name())
+				names[path] = minExt(path)
+			}
 		}
-		fullPath := filepath.Join(startDir, info.Name())
-		names[fullPath] = minExt(fullPath)
 	}
 	return names
 }
@@ -140,14 +134,7 @@ func ioNames(startDir string, recursive bool) map[string]string {
 // validFile checks to see if a file is a directory, hidden, already has the
 // minified extension, or if it's one of the minifiable extensions.
 func validFile(info os.FileInfo) bool {
-	if info.IsDir() {
-		return false
-	}
-	if info.Name()[0] == '.' {
-		return false
-	}
-	// don't want to reminify already minified files
-	if strings.Contains(info.Name(), ".min.") {
+	if info.IsDir() || len(info.Name()) > 0 && (info.Name()[0] == '.' || strings.Contains(info.Name(), ".min.")) {
 		return false
 	}
 	_, exists := extMime[strings.ToLower(filepath.Ext(info.Name()))]
@@ -157,9 +144,8 @@ func validFile(info os.FileInfo) bool {
 // minExt adds .min before a file's extension. If a file doesn't have an
 // extension then .min will become the file's extension.
 func minExt(path string) string {
-	dot := strings.LastIndex(path, ".")
-	if dot == -1 {
-		return path + ".min"
+	if dot := strings.LastIndex(path, "."); dot != -1 {
+		return path[:dot] + ".min" + path[dot:]
 	}
-	return path[:dot] + ".min" + path[dot:]
+	return path + ".min"
 }
