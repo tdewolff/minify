@@ -20,16 +20,14 @@ import (
 	"github.com/tdewolff/minify/xml"
 )
 
-var (
-	extMime = map[string]string{
-		".css":  "text/css",
-		".html": "text/html",
-		".js":   "application/javascript",
-		".json": "application/json",
-		".svg":  "image/svg+xml",
-		".xml":  "text/xml",
-	}
-)
+var extMime = map[string]string{
+	".css":  "text/css",
+	".html": "text/html",
+	".js":   "application/javascript",
+	".json": "application/json",
+	".svg":  "image/svg+xml",
+	".xml":  "text/xml",
+}
 
 func main() {
 	input := ""
@@ -50,8 +48,6 @@ func main() {
 	if len(flag.Args()) > 0 {
 		input = flag.Arg(0)
 	}
-
-	extPassed := (ext != "")
 
 	mediatype := ""
 	r := io.Reader(os.Stdin)
@@ -74,7 +70,6 @@ func main() {
 	for in, out := range filenames {
 		input = in
 		output = out
-
 		if input != "" {
 			in, err := os.Open(input)
 			if err != nil {
@@ -88,7 +83,7 @@ func main() {
 				io.Copy(b, r)
 				r = b
 			}
-			if !extPassed {
+			if ext == "" {
 				ext = filepath.Ext(input)
 			}
 		}
@@ -104,7 +99,6 @@ func main() {
 		if ext != "" {
 			mediatype = extMime[ext]
 		}
-
 		if err := m.Minify(mediatype, w, r); err != nil {
 			if err == minify.ErrNotExist {
 				io.Copy(w, r)
@@ -119,35 +113,27 @@ func main() {
 // ioNames returns a map of input paths and output paths.
 func ioNames(startDir string, recursive bool) map[string]string {
 	names := map[string]string{}
-
 	if recursive {
 		filepath.Walk(startDir, func(path string, info os.FileInfo, _ error) error {
 			if !validFile(info) {
 				return nil
 			}
-
 			names[path] = minExt(path)
-
 			return nil
 		})
-
 		return names
 	}
-
 	infos, err := ioutil.ReadDir(startDir)
 	if err != nil {
 		return map[string]string{}
 	}
-
 	for _, info := range infos {
 		if !validFile(info) {
 			continue
 		}
-
 		fullPath := filepath.Join(startDir, info.Name())
 		names[fullPath] = minExt(fullPath)
 	}
-
 	return names
 }
 
@@ -157,16 +143,13 @@ func validFile(info os.FileInfo) bool {
 	if info.IsDir() {
 		return false
 	}
-
 	if info.Name()[0] == '.' {
 		return false
 	}
-
 	// don't want to reminify already minified files
 	if strings.Contains(info.Name(), ".min.") {
 		return false
 	}
-
 	_, exists := extMime[strings.ToLower(filepath.Ext(info.Name()))]
 	return exists
 }
@@ -175,10 +158,8 @@ func validFile(info os.FileInfo) bool {
 // extension then .min will become the file's extension.
 func minExt(path string) string {
 	dot := strings.LastIndex(path, ".")
-
 	if dot == -1 {
 		return path + ".min"
 	}
-
 	return path[:dot] + ".min" + path[dot:]
 }
