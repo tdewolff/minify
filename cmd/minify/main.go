@@ -62,14 +62,12 @@ func main() {
 
 	filenames := make(map[string]string)
 	if directory != "" {
-		filenames = ioNames(directory, recursive)
+		filenames = dirFilenames(directory, recursive)
 	} else {
 		filenames[input] = output
 	}
 
-	for in, out := range filenames {
-		input = in
-		output = out
+	for input, output := range filenames {
 		if input != "" {
 			in, err := os.Open(input)
 			if err != nil {
@@ -110,30 +108,30 @@ func main() {
 	}
 }
 
-// ioNames returns a map of input paths and output paths.
-func ioNames(root string, recursive bool) map[string]string {
+// dirFilenames returns a map of input paths and output paths.
+func dirFilenames(root string, recursive bool) map[string]string {
 	names := map[string]string{}
 	if recursive {
 		filepath.Walk(root, func(path string, info os.FileInfo, _ error) error {
-			if validFile(info) {
-				names[path] = minExt(path)
+			if isValidFile(info) {
+				names[path] = insertMinExt(path)
 			}
 			return nil
 		})
 	} else if infos, err := ioutil.ReadDir(root); err == nil {
 		for _, info := range infos {
-			if validFile(info) {
+			if isValidFile(info) {
 				path := filepath.Join(root, info.Name())
-				names[path] = minExt(path)
+				names[path] = insertMinExt(path)
 			}
 		}
 	}
 	return names
 }
 
-// validFile checks to see if a file is a directory, hidden, already has the
+// isValidFile checks to see if a file is a directory, hidden, already has the
 // minified extension, or if it's one of the minifiable extensions.
-func validFile(info os.FileInfo) bool {
+func isValidFile(info os.FileInfo) bool {
 	if info.IsDir() || len(info.Name()) > 0 && (info.Name()[0] == '.' || strings.Contains(info.Name(), ".min.")) {
 		return false
 	}
@@ -141,9 +139,9 @@ func validFile(info os.FileInfo) bool {
 	return exists
 }
 
-// minExt adds .min before a file's extension. If a file doesn't have an
+// insertMinExt adds .min before a file's extension. If a file doesn't have an
 // extension then .min will become the file's extension.
-func minExt(path string) string {
+func insertMinExt(path string) string {
 	if dot := strings.LastIndex(path, "."); dot != -1 {
 		return path[:dot] + ".min" + path[dot:]
 	}
