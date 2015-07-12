@@ -15,13 +15,14 @@ import (
 )
 
 var (
-	spaceBytes        = []byte(" ")
-	colonBytes        = []byte(":")
-	semicolonBytes    = []byte(";")
-	leftBracketBytes  = []byte("{")
-	rightBracketBytes = []byte("}")
-	zeroBytes         = []byte("0")
-	msfilterBytes     = []byte("-ms-filter")
+	spaceBytes          = []byte(" ")
+	colonBytes          = []byte(":")
+	semicolonBytes      = []byte(";")
+	leftBracketBytes    = []byte("{")
+	rightBracketBytes   = []byte("}")
+	zeroBytes           = []byte("0")
+	msfilterBytes       = []byte("-ms-filter")
+	backgroundNoneBytes = []byte("0 0")
 )
 
 type cssMinifier struct {
@@ -205,7 +206,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, values []css.Token) err
 					values[i].Data = s
 				}
 			}
-		} else if prop == css.Outline || prop == css.Background || prop == css.Border || prop == css.Border_Bottom || prop == css.Border_Left || prop == css.Border_Right || prop == css.Border_Top {
+		} else if prop == css.Outline || prop == css.Border || prop == css.Border_Bottom || prop == css.Border_Left || prop == css.Border_Right || prop == css.Border_Top {
 			if css.ToHash(values[i].Data) == css.None {
 				values[i].TokenType = css.NumberToken
 				values[i].Data = zeroBytes
@@ -220,7 +221,9 @@ func (c *cssMinifier) minifyDeclaration(property []byte, values []css.Token) err
 	}
 
 	if len(values) == 1 {
-		if bytes.Equal(property, msfilterBytes) {
+		if prop == css.Background && css.ToHash(values[0].Data) == css.None {
+			values[0].Data = backgroundNoneBytes
+		} else if bytes.Equal(property, msfilterBytes) {
 			alpha := []byte("progid:DXImageTransform.Microsoft.Alpha(Opacity=")
 			if values[0].TokenType == css.StringToken && bytes.HasPrefix(values[0].Data[1:len(values[0].Data)-1], alpha) {
 				values[0].Data = append(append([]byte{values[0].Data[0]}, []byte("alpha(opacity=")...), values[0].Data[1+len(alpha):]...)

@@ -101,6 +101,8 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, m, true, "html{line-height:1;}html{line-height:1;}", "html{line-height:1}html{line-height:1}")
 	assertCSS(t, m, true, ".clearfix { *zoom: 1; }", ".clearfix{*zoom:1}")
 	assertCSS(t, m, true, "a { b: 1", "a{b:1}")
+	assertCSS(t, m, false, "background:none", "background:0 0")
+	assertCSS(t, m, false, "background:none 1 1", "background:none 1 1")
 
 	// coverage
 	assertCSS(t, m, false, "margin: 1 1;", "margin:1")
