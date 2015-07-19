@@ -14,8 +14,10 @@ and the `minify` command should be in your `$GOPATH/bin`.
 
 	Usage: minify [options] [file]
 	Options:
-	  -o="": Output file (stdout when empty)
-	  -x="": File extension (css, html, js, json, svg or xml), optional for input files
+	  -o: Output file (stdout when empty)
+	  -x: File extension (css, html, js, json, svg or xml), optional for input files
+	  -d: Directory to search for files
+	  -r: Recursively minify everything
 
 ## Examples
 The following commands are variations one can use to minify a file:
@@ -36,9 +38,9 @@ It is also possible to overwrite the input file by the output file. However, thi
 $ minify -o file.html file.html
 ```
 
-The following commands are variations one can use to minify a files in a directory:
+The following commands minify the files in a directory:
 ```sh
-$ minify -d files
+$ minify -d path/to/dir
 
-$ minify -d files -r
+$ minify -d path/to/dir -r
 ```
