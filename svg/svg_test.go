@@ -34,6 +34,7 @@ func TestSVG(t *testing.T) {
 	assertSVG(t, "<path d=\"M100 -100M200 300z\"/>", "<path d=\"M100-100 200 300z\"/>")
 	assertSVG(t, "<path d=\"M0.5 0.6 M -100 0.5z\"/>", "<path d=\"M.5.6-100 .5z\"/>")
 	assertSVG(t, "<path d=\"M01.0 0.6 z\"/>", "<path d=\"M1 .6z\"/>")
+	assertSVG(t, `<?xml version="1.0" encoding="utf-8"?>`, "")
 }
 
 ////////////////////////////////////////////////////////////////
