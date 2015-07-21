@@ -2,7 +2,6 @@
 package svg // import "github.com/tdewolff/minify/svg"
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/tdewolff/buffer"
@@ -43,7 +42,6 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				t.TokenType = xml.TextToken
 			}
 		}
-		fmt.Println(t)
 		switch t.TokenType {
 		case xml.ErrorToken:
 			if l.Err() == io.EOF {
@@ -86,19 +84,27 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			if _, err := w.Write(cdataEndBytes); err != nil {
 				return err
 			}
-		case xml.StartTagToken:
-			if _, err := w.Write(ltBytes); err != nil {
-				return err
-			}
-			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
-			tag = svg.ToHash(t.Data)
 		case xml.StartTagPIToken:
 			for {
 				if t := *tb.Shift(); t.TokenType == xml.StartTagClosePIToken {
 					break
 				}
+			}
+		case xml.StartTagToken:
+			tag = svg.ToHash(t.Data)
+			if tag == svg.Metadata {
+				for {
+					if t := *tb.Shift(); t.TokenType == xml.EndTagToken || t.TokenType == xml.StartTagCloseVoidToken {
+						break
+					}
+				}
+				break
+			}
+			if _, err := w.Write(ltBytes); err != nil {
+				return err
+			}
+			if _, err := w.Write(t.Data); err != nil {
+				return err
 			}
 		case xml.AttributeToken:
 			if len(t.AttrVal) < 2 {
