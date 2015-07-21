@@ -127,7 +127,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				}
 			} else if tag == svg.Path && attr == svg.D {
 				val = shortenPathData(val)
-			} else if n := parse.Number(val); n > 0 {
+			} else if n := parse.Number(val); n == len(val) {
 				dim := val[n:]
 				val = minify.Number(val[:n])
 				if len(val) != 1 || val[0] != '0' {
