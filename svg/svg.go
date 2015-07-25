@@ -21,6 +21,7 @@ var (
 	endBytes        = []byte("</")
 	cdataStartBytes = []byte("<![CDATA[")
 	cdataEndBytes   = []byte("]]>")
+	pathBytes       = []byte("path")
 )
 
 ////////////////////////////////////////////////////////////////
@@ -93,14 +94,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 		case xml.StartTagToken:
 			tag = svg.ToHash(t.Data)
-			if tag == svg.Metadata {
-				for {
-					if t := *tb.Shift(); t.TokenType == xml.EndTagToken && svg.ToHash(t.Data) == tag || t.TokenType == xml.StartTagCloseVoidToken || t.TokenType == xml.ErrorToken {
-						break
-					}
-				}
-				break
-			} else if containerTagMap[tag] { // skip empty containers
+			if containerTagMap[tag] { // skip empty containers
 				i := 0
 				for {
 					next := tb.Peek(i)
@@ -114,7 +108,57 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						break
 					}
 				}
-			}
+			} else if tag == svg.Metadata {
+				for {
+					if t := *tb.Shift(); t.TokenType == xml.EndTagToken && svg.ToHash(t.Data) == tag || t.TokenType == xml.StartTagCloseVoidToken || t.TokenType == xml.ErrorToken {
+						break
+					}
+				}
+				break
+			} // else if tag == svg.Line || tag == svg.Rect {
+			// 	x1, y1, x2, y2 float64 := 0, 0, 0, 0
+			// 	valid := true
+			// 	i := 0
+			// 	for {
+			// 		next := tb.Peek(i)
+			// 		i++
+			// 		if next.TokenType != xml.AttributeToken {
+			// 			break
+			// 		}
+			// 		v *int
+			// 		attr := svg.ToHash(next.Data)
+			// 		if tag == svg.Line {
+			// 			if attr == svg.X1 {
+			// 				v = &x1
+			// 			} else if attr == svg.Y1 {
+			// 				v = &y1
+			// 			} else if attr == svg.X2 {
+			// 				v = &x2
+			// 			} else if attr == svg.Y2 {
+			// 				v = &Y2
+			// 			} else {
+			// 				continue
+			// 			}
+			// 		} else if attr == svg.X { // rect
+			// 			v = &x1
+			// 		} else if attr == svg.Y {
+			// 			v = &y1
+			// 		} else if attr == svg.Width {
+			// 			v = &x2
+			// 		} else if attr == svg.Height {
+			// 			v = &Y2
+			// 		} else if attr == svg.Rx || attr == svg.Ry {
+			// 			valid = false
+			// 			break
+			// 		} else {
+			// 			continue
+			// 		}
+
+			// 	}
+			// 	if valid {
+			// 		t.Data = pathBytes
+			// 	}
+			// }
 			if _, err := w.Write(ltBytes); err != nil {
 				return err
 			}
