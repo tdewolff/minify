@@ -170,10 +170,9 @@ The SVG minifier uses these minifications:
 
 TODO:
 - convert `rect`, `line`, `polygon`, `polyline` to `path`
-- omit more tags and attributes that are useless
 - convert attributes to style attribute whenever shorter
 - use relative instead of absolute positions for path data (need bytes2float)
-- merge path data (same style and no intersection -- the latter is difficult)
+- merge path data? (same style and no intersection -- the latter is difficult)
 
 ## XML [![GoDoc](http://godoc.org/github.com/tdewolff/minify/xml?status.svg)](http://godoc.org/github.com/tdewolff/minify/xml) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/xml)](http://gocover.io/github.com/tdewolff/minify/xml)
 
