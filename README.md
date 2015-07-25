@@ -158,14 +158,13 @@ The JSON minifier only removes whitespace, which is the only thing that can be l
 The SVG minifier uses these minifications:
 
 - trim and collapse whitespace between all tags
-- strip comments
-- strip doctype
-- strip XML prelude
+- strip comments, `doctype`, XML prelude, `metadata`
 - strip SVG version
-- collapse tags with no content to a void tag
 - strip CDATA sections wherever possible
-- shorten lengths and numbers
+- collapse tags with no content to a void tag
+- collapse empty container tags (`g`, `svg`, ...)
 - minify style tag and attributes with the CSS minifier
+- shorten lengths and numbers and remove default `px` unit
 - shorten the `path` data `m` attribute
 
 ## XML [![GoDoc](http://godoc.org/github.com/tdewolff/minify/xml?status.svg)](http://godoc.org/github.com/tdewolff/minify/xml) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/xml)](http://gocover.io/github.com/tdewolff/minify/xml)
