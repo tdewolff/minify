@@ -164,12 +164,12 @@ The SVG minifier uses these minifications:
 - collapse tags with no content to a void tag
 - collapse empty container tags (`g`, `svg`, ...)
 - minify style tag and attributes with the CSS minifier
+- minify colors
 - shorten lengths and numbers and remove default `px` unit
 - shorten the `path` data `m` attribute
 
 TODO:
 - convert `rect`, `line`, `polygon`, `polyline` to `path`
-- minify colors like the CSS minifier does
 - omit more tags and attributes that are useless
 - convert attributes to style attribute whenever shorter
 - use relative instead of absolute positions for path data (need bytes2float)
