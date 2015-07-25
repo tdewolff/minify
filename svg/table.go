@@ -14,3 +14,11 @@ var containerTagMap = map[svg.Hash]bool{
 	svg.Switch:        true,
 	svg.Symbol:        true,
 }
+
+var colorAttrMap = map[svg.Hash]bool{
+	svg.Fill:           true,
+	svg.Stroke:         true,
+	svg.Stop_Color:     true,
+	svg.Flood_Color:    true,
+	svg.Lighting_Color: true,
+}

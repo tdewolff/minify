@@ -6,7 +6,9 @@ import (
 
 	"github.com/tdewolff/buffer"
 	"github.com/tdewolff/minify"
+	minifyCSS "github.com/tdewolff/minify/css"
 	"github.com/tdewolff/parse"
+	"github.com/tdewolff/parse/css"
 	"github.com/tdewolff/parse/svg"
 	"github.com/tdewolff/parse/xml"
 )
@@ -115,50 +117,51 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					}
 				}
 				break
-			} // else if tag == svg.Line || tag == svg.Rect {
-			// 	x1, y1, x2, y2 float64 := 0, 0, 0, 0
-			// 	valid := true
-			// 	i := 0
-			// 	for {
-			// 		next := tb.Peek(i)
-			// 		i++
-			// 		if next.TokenType != xml.AttributeToken {
-			// 			break
-			// 		}
-			// 		v *int
-			// 		attr := svg.ToHash(next.Data)
-			// 		if tag == svg.Line {
-			// 			if attr == svg.X1 {
-			// 				v = &x1
-			// 			} else if attr == svg.Y1 {
-			// 				v = &y1
-			// 			} else if attr == svg.X2 {
-			// 				v = &x2
-			// 			} else if attr == svg.Y2 {
-			// 				v = &Y2
-			// 			} else {
-			// 				continue
-			// 			}
-			// 		} else if attr == svg.X { // rect
-			// 			v = &x1
-			// 		} else if attr == svg.Y {
-			// 			v = &y1
-			// 		} else if attr == svg.Width {
-			// 			v = &x2
-			// 		} else if attr == svg.Height {
-			// 			v = &Y2
-			// 		} else if attr == svg.Rx || attr == svg.Ry {
-			// 			valid = false
-			// 			break
-			// 		} else {
-			// 			continue
-			// 		}
+			} else if tag == svg.Line || tag == svg.Rect {
+				// TODO: shape2path also for polygon and polyline
+				// x1, y1, x2, y2 float64 := 0, 0, 0, 0
+				// valid := true
+				// i := 0
+				// for {
+				// 	next := tb.Peek(i)
+				// 	i++
+				// 	if next.TokenType != xml.AttributeToken {
+				// 		break
+				// 	}
+				// 	v *int
+				// 	attr := svg.ToHash(next.Data)
+				// 	if tag == svg.Line {
+				// 		if attr == svg.X1 {
+				// 			v = &x1
+				// 		} else if attr == svg.Y1 {
+				// 			v = &y1
+				// 		} else if attr == svg.X2 {
+				// 			v = &x2
+				// 		} else if attr == svg.Y2 {
+				// 			v = &Y2
+				// 		} else {
+				// 			continue
+				// 		}
+				// 	} else if attr == svg.X { // rect
+				// 		v = &x1
+				// 	} else if attr == svg.Y {
+				// 		v = &y1
+				// 	} else if attr == svg.Width {
+				// 		v = &x2
+				// 	} else if attr == svg.Height {
+				// 		v = &Y2
+				// 	} else if attr == svg.Rx || attr == svg.Ry {
+				// 		valid = false
+				// 		break
+				// 	} else {
+				// 		continue
+				// 	}
 
-			// 	}
-			// 	if valid {
-			// 		t.Data = pathBytes
-			// 	}
-			// }
+				// }
+				// if valid {
+				// 	t.Data = pathBytes
+				// }
+			}
 			if _, err := w.Write(ltBytes); err != nil {
 				return err
 			}
@@ -213,6 +216,21 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					}
 				}
 				val = newVal
+			} else if colorAttrMap[attr] && len(val) > 0 {
+				parse.ToLower(val)
+				if val[0] == '#' {
+					if name, ok := minifyCSS.ShortenColorHex[string(val)]; ok {
+						val = name
+					} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
+						val[2] = val[3]
+						val[3] = val[5]
+						val = val[:4]
+					}
+				} else if hex, ok := minifyCSS.ShortenColorName[css.ToHash(val)]; ok {
+					val = hex
+				} else if len(val) > 5 && parse.Equal(val[:4], []byte("rgb(")) && val[len(val)-1] == ')' {
+					// TODO: handle rgb(x, y, z)
+				}
 			} else if dim, n := shortenDimension(val); n == len(val) {
 				val = dim
 			}
