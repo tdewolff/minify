@@ -42,6 +42,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				t.TokenType = xml.TextToken
 			}
 		}
+	SWITCH:
 		switch t.TokenType {
 		case xml.ErrorToken:
 			if l.Err() == io.EOF {
@@ -99,6 +100,20 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					}
 				}
 				break
+			} else if containerTagMap[tag] { // skip empty containers
+				i := 0
+				for {
+					next := tb.Peek(i)
+					i++
+					if next.TokenType == xml.EndTagToken && svg.ToHash(next.Data) == tag || next.TokenType == xml.StartTagCloseVoidToken || next.TokenType == xml.ErrorToken {
+						for j := 0; j < i; j++ {
+							tb.Shift()
+						}
+						break SWITCH
+					} else if next.TokenType != xml.AttributeToken && next.TokenType != xml.StartTagCloseToken {
+						break
+					}
+				}
 			}
 			if _, err := w.Write(ltBytes); err != nil {
 				return err
