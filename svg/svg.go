@@ -133,17 +133,29 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				}
 			} else if tag == svg.Path && attr == svg.D {
 				val = shortenPathData(val)
-			} else if n, m := parse.Dimension(val); n+m == len(val) {
-				unit := val[n:]
-				val = minify.Number(val[:n])
-				if len(val) != 1 || val[0] != '0' {
-					if m == 2 && unit[0] == 'p' && unit[1] == 'x' {
-						unit = nil
-					} else if m > 1 { // only percentage is length 1
-						parse.ToLower(unit)
+			} else if attr == svg.ViewBox {
+				j := 0
+				newVal := val[:0]
+				for i := 0; i < 4; i++ {
+					if i != 0 {
+						if j >= len(val) || val[j] != ' ' && val[j] != ',' {
+							newVal = append(newVal, val[j:]...)
+							break
+						}
+						newVal = append(newVal, ' ')
+						j++
 					}
-					val = append(val, unit...)
+					if dim, n := shortenDimension(val[j:]); n > 0 {
+						newVal = append(newVal, dim...)
+						j += n
+					} else {
+						newVal = append(newVal, val[j:]...)
+						break
+					}
 				}
+				val = newVal
+			} else if dim, n := shortenDimension(val); n == len(val) {
+				val = dim
 			}
 
 			// prefer single or double quotes depending on what occurs more often in value
@@ -246,4 +258,21 @@ func shortenPathData(b []byte) []byte {
 		return b[:j]
 	}
 	return b
+}
+
+func shortenDimension(b []byte) ([]byte, int) {
+	if n, m := parse.Dimension(b); n > 0 {
+		unit := b[n : n+m]
+		b = minify.Number(b[:n])
+		if len(b) != 1 || b[0] != '0' {
+			if m == 2 && unit[0] == 'p' && unit[1] == 'x' {
+				unit = nil
+			} else if m > 1 { // only percentage is length 1
+				parse.ToLower(unit)
+			}
+			b = append(b, unit...)
+		}
+		return b, n + m
+	}
+	return b, 0
 }
