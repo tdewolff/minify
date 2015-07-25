@@ -133,15 +133,16 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				}
 			} else if tag == svg.Path && attr == svg.D {
 				val = shortenPathData(val)
-			} else if n, u := parse.Dimension(val); n+u == len(val) {
-				num := minify.Number(val[:n])
-				if len(num) != 1 || num[0] != '0' {
-					if u > 1 { // only percentage is length 1
-						parse.ToLower(val[n:])
+			} else if n, m := parse.Dimension(val); n+m == len(val) {
+				unit := val[n:]
+				val = minify.Number(val[:n])
+				if len(val) != 1 || val[0] != '0' {
+					if m == 2 && unit[0] == 'p' && unit[1] == 'x' {
+						unit = nil
+					} else if m > 1 { // only percentage is length 1
+						parse.ToLower(unit)
 					}
-					val = append(num, val[n:]...)
-				} else {
-					val = num
+					val = append(val, unit...)
 				}
 			}
 
