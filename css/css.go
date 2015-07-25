@@ -354,7 +354,7 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 				val[0] = '#'
 				hex.Encode(val[1:], rgb[:])
 				parse.ToLower(val)
-				if s, ok := shortenColorHex[string(val)]; ok {
+				if s, ok := ShortenColorHex[string(val)]; ok {
 					if _, err := c.w.Write(s); err != nil {
 						return 0, err
 					}
@@ -400,13 +400,13 @@ func (c *cssMinifier) shortenToken(tt css.TokenType, data []byte) (css.TokenType
 		}
 	} else if tt == css.IdentToken {
 		parse.ToLower(data)
-		if hash, ok := shortenColorName[css.ToHash(data)]; ok {
+		if hex, ok := ShortenColorName[css.ToHash(data)]; ok {
 			tt = css.HashToken
-			data = hash
+			data = hex
 		}
 	} else if tt == css.HashToken {
 		parse.ToLower(data)
-		if ident, ok := shortenColorHex[string(data)]; ok {
+		if ident, ok := ShortenColorHex[string(data)]; ok {
 			tt = css.IdentToken
 			data = ident
 		} else if len(data) == 7 && data[1] == data[2] && data[3] == data[4] && data[5] == data[6] {

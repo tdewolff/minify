@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/minify"
-	"github.com/tdewolff/minify/svg"
 )
 
 func assertCSS(t *testing.T, m *minify.Minify, isStylesheet bool, input, expected string) {
@@ -131,7 +130,6 @@ func TestCSS(t *testing.T) {
 func ExampleMinify() {
 	m := minify.New()
 	m.AddFunc("text/css", Minify)
-	m.AddFunc("image/svg+xml", svg.Minify)
 
 	if err := m.Minify("text/css", os.Stdout, os.Stdin); err != nil {
 		fmt.Println("minify.Minify:", err)
