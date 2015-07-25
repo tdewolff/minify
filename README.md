@@ -167,6 +167,14 @@ The SVG minifier uses these minifications:
 - shorten lengths and numbers and remove default `px` unit
 - shorten the `path` data `m` attribute
 
+TODO:
+- convert `rect`, `line`, `polygon`, `polyline` to `path`
+- minify colors like the CSS minifier does
+- omit more tags and attributes that are useless
+- convert attributes to style attribute whenever shorter
+- use relative instead of absolute positions for path data (need bytes2float)
+- merge path data (same style and no intersection -- the latter is difficult)
+
 ## XML [![GoDoc](http://godoc.org/github.com/tdewolff/minify/xml?status.svg)](http://godoc.org/github.com/tdewolff/minify/xml) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/xml)](http://gocover.io/github.com/tdewolff/minify/xml)
 
 Minification typically runs at about 50MB/s ~= 180GB/h.
