@@ -86,7 +86,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 		case xml.StartTagPIToken:
 			for {
-				if t := *tb.Shift(); t.TokenType == xml.StartTagClosePIToken {
+				if t := *tb.Shift(); t.TokenType == xml.StartTagClosePIToken || t.TokenType == xml.ErrorToken {
 					break
 				}
 			}
@@ -94,7 +94,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			tag = svg.ToHash(t.Data)
 			if tag == svg.Metadata {
 				for {
-					if t := *tb.Shift(); t.TokenType == xml.EndTagToken && svg.ToHash(t.Data) == tag || t.TokenType == xml.StartTagCloseVoidToken {
+					if t := *tb.Shift(); t.TokenType == xml.EndTagToken && svg.ToHash(t.Data) == tag || t.TokenType == xml.StartTagCloseVoidToken || t.TokenType == xml.ErrorToken {
 						break
 					}
 				}
