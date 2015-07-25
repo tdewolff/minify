@@ -43,6 +43,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	tb := html.NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()
+	SWITCH:
 		switch t.TokenType {
 		case html.ErrorToken:
 			if l.Err() == io.EOF {
@@ -171,7 +172,6 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						t.Hash == html.Li || t.Hash == html.Rb || t.Hash == html.Rt || t.Hash == html.Rtc || t.Hash == html.Rp {
 						break
 					} else if t.Hash == html.P {
-						remove := false
 						i := 0
 						for {
 							next := tb.Peek(i)
@@ -180,10 +180,9 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							if next.TokenType == html.TextToken && parse.IsAllWhitespace(next.Data) {
 								continue
 							}
-							remove = (next.TokenType == html.ErrorToken || next.TokenType == html.EndTagToken && next.Hash != html.A || next.TokenType == html.StartTagToken && blockTagMap[next.Hash])
-							break
-						}
-						if remove {
+							if next.TokenType == html.ErrorToken || next.TokenType == html.EndTagToken && next.Hash != html.A || next.TokenType == html.StartTagToken && blockTagMap[next.Hash] {
+								break SWITCH
+							}
 							break
 						}
 					}
