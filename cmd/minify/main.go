@@ -22,6 +22,7 @@ import (
 
 var extMime = map[string]string{
 	".css":  "text/css",
+	".htm":  "text/html",
 	".html": "text/html",
 	".js":   "application/javascript",
 	".json": "application/json",
