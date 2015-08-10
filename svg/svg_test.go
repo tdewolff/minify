@@ -39,8 +39,8 @@ func TestSVG(t *testing.T) {
 	assertSVG(t, `<svg viewbox="0 0 16 16"><path/></svg>`, `<svg viewbox="0 0 16 16"><path/></svg>`)
 	assertSVG(t, `<g></g>`, ``)
 	assertSVG(t, `<path fill="#ffffff"/>`, `<path fill="#fff"/>`)
-	assertSVG(t, `<line x1="5" y1="10" x2="20" y2="40"/>`, `<path d="M5 10l15 30"/>`)
-	assertSVG(t, `<rect x="5" y="10" width="20" height="40"/>`, `<path d="M5 10h20v40H5z"/>`)
+	//assertSVG(t, `<line x1="5" y1="10" x2="20" y2="40"/>`, `<path d="M5 10l15 30"/>`)
+	//assertSVG(t, `<rect x="5" y="10" width="20" height="40"/>`, `<path d="M5 10h20v40H5z"/>`)
 
 	// from SVGO
 	assertSVG(t, `<!DOCTYPE bla><?xml?><!-- comment --><metadata/>`, ``)
