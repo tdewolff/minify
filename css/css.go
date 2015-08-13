@@ -175,17 +175,17 @@ func (c *cssMinifier) minifyDeclaration(property []byte, values []css.Token) err
 			inProgid = true
 			continue
 		}
-		values[i].TokenType, values[i].Data = c.shortenToken(value.TokenType, value.Data)
+		value.TokenType, value.Data = c.shortenToken(value.TokenType, value.Data)
 		if prop == css.Font || prop == css.Font_Family || prop == css.Font_Weight {
 			if value.TokenType == css.IdentToken && (prop == css.Font || prop == css.Font_Weight) {
 				val := css.ToHash(value.Data)
 				if val == css.Normal && prop == css.Font_Weight {
 					// normal could also be specified for font-variant, not just font-weight
-					values[i].TokenType = css.NumberToken
-					values[i].Data = []byte("400")
+					value.TokenType = css.NumberToken
+					value.Data = []byte("400")
 				} else if val == css.Bold {
-					values[i].TokenType = css.NumberToken
-					values[i].Data = []byte("700")
+					value.TokenType = css.NumberToken
+					value.Data = []byte("700")
 				}
 			} else if value.TokenType == css.StringToken && (prop == css.Font || prop == css.Font_Family) && len(value.Data) > 2 {
 				unquote := true
@@ -203,15 +203,16 @@ func (c *cssMinifier) minifyDeclaration(property []byte, values []css.Token) err
 					}
 				}
 				if unquote {
-					values[i].Data = s
+					value.Data = s
 				}
 			}
 		} else if prop == css.Outline || prop == css.Border || prop == css.Border_Bottom || prop == css.Border_Left || prop == css.Border_Right || prop == css.Border_Top {
-			if css.ToHash(values[i].Data) == css.None {
-				values[i].TokenType = css.NumberToken
-				values[i].Data = zeroBytes
+			if css.ToHash(value.Data) == css.None {
+				value.TokenType = css.NumberToken
+				value.Data = zeroBytes
 			}
 		}
+		values[i].TokenType, values[i].Data = value.TokenType, value.Data
 	}
 
 	important := false

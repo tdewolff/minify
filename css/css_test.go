@@ -102,6 +102,7 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, m, true, "a { b: 1", "a{b:1}")
 	assertCSS(t, m, false, "background:none", "background:0 0")
 	assertCSS(t, m, false, "background:none 1 1", "background:none 1 1")
+	assertCSS(t, m, false, "z-index:1000", "z-index:1000")
 
 	// coverage
 	assertCSS(t, m, false, "margin: 1 1;", "margin:1")
