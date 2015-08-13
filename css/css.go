@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"io"
-	"math"
 	"mime"
 	"strconv"
 
@@ -318,11 +317,16 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 		nArgs := (n - 1) / 2
 		if fun == css.Rgba && nArgs == 4 {
 			d, _ := strconv.ParseFloat(string(values[7].Data), 32)
-			if math.Abs(d-1.0) < minify.Epsilon {
+			if d-1.0 > -minify.Epsilon {
 				values[0].Data = []byte("rgb")
 				values = values[:len(values)-2]
 				fun = css.Rgb
 				nArgs = 3
+			} else if d < minify.Epsilon {
+				values[0].Data = []byte("transparent")
+				values = values[:1]
+				fun = css.None
+				nArgs = 0
 			}
 		}
 		if fun == css.Rgb && nArgs == 3 {

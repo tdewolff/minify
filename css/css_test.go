@@ -41,6 +41,8 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, m, false, "color: rgb(255,255,255);", "color:#fff")
 	assertCSS(t, m, false, "color: rgb(100%,100%,100%);", "color:#fff")
 	assertCSS(t, m, false, "color: rgba(255,0,0,1);", "color:red")
+	assertCSS(t, m, false, "color: rgba(255,0,0,2);", "color:red")
+	assertCSS(t, m, false, "color: rgba(255,0,0,-1);", "color:transparent")
 	assertCSS(t, m, false, "font-weight: bold; font-weight: normal;", "font-weight:700;font-weight:400")
 	assertCSS(t, m, false, "font: bold \"Times new Roman\",\"Sans-Serif\";", "font:700 times new roman,\"sans-serif\"")
 	assertCSS(t, m, false, "outline: none;", "outline:0")
