@@ -175,7 +175,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, values []css.Token) err
 			inProgid = true
 			continue
 		}
-		value.TokenType, value.Data = c.shortenToken(value.TokenType, value.Data)
+		value.TokenType, value.Data = c.shortenToken(prop, value.TokenType, value.Data)
 		if prop == css.Font || prop == css.Font_Family || prop == css.Font_Weight {
 			if value.TokenType == css.IdentToken && (prop == css.Font || prop == css.Font_Weight) {
 				val := css.ToHash(value.Data)
@@ -381,8 +381,11 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 	return n, nil
 }
 
-func (c *cssMinifier) shortenToken(tt css.TokenType, data []byte) (css.TokenType, []byte) {
+func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte) (css.TokenType, []byte) {
 	if tt == css.NumberToken || tt == css.PercentageToken || tt == css.DimensionToken {
+		if tt == css.NumberToken && (prop == css.Z_Index || prop == css.Counter_Increment || prop == css.Counter_Reset || prop == css.Orphans || prop == css.Widows) {
+			return tt, data // integers
+		}
 		n := len(data)
 		if tt == css.PercentageToken {
 			n--
