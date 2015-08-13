@@ -315,12 +315,18 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 	if simple && (n-1)%2 == 0 {
 		fun := css.ToHash(values[0].Data[:len(values[0].Data)-1])
 		nArgs := (n - 1) / 2
-		if fun == css.Rgba && nArgs == 4 {
+		if (fun == css.Rgba || fun == css.Hsla) && nArgs == 4 {
 			d, _ := strconv.ParseFloat(string(values[7].Data), 32)
 			if d-1.0 > -minify.Epsilon {
-				values[0].Data = []byte("rgb")
+				if fun == css.Rgba {
+					values[0].Data = []byte("rgb(")
+					fun = css.Rgb
+				} else {
+					values[0].Data = []byte("hsl(")
+					fun = css.Hsl
+				}
 				values = values[:len(values)-2]
-				fun = css.Rgb
+				values[len(values)-1].Data = []byte(")")
 				nArgs = 3
 			} else if d < minify.Epsilon {
 				values[0].Data = []byte("transparent")
@@ -374,6 +380,35 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 					}
 				}
 				return n, nil
+			}
+		} else if fun == css.Hsl && nArgs == 3 {
+			if values[1].TokenType == css.NumberToken && values[3].TokenType == css.PercentageToken && values[5].TokenType == css.PercentageToken {
+				h, err := strconv.ParseFloat(string(values[1].Data), 32)
+				s, err := strconv.ParseFloat(string(values[3].Data[:len(values[3].Data)-1]), 32)
+				l, err := strconv.ParseFloat(string(values[5].Data[:len(values[5].Data)-1]), 32)
+				if err == nil {
+					r, g, b := css.Hsl2Rgb(h/360.0, s/100.0, l/100.0)
+					rgb := []byte{byte((r * 255.0) + 0.5), byte((g * 255.0) + 0.5), byte((b * 255.0) + 0.5)}
+					val := make([]byte, 7)
+					val[0] = '#'
+					hex.Encode(val[1:], rgb[:])
+					parse.ToLower(val)
+					if s, ok := ShortenColorHex[string(val)]; ok {
+						if _, err := c.w.Write(s); err != nil {
+							return 0, err
+						}
+					} else {
+						if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
+							val[2] = val[3]
+							val[3] = val[5]
+							val = val[:4]
+						}
+						if _, err := c.w.Write(val); err != nil {
+							return 0, err
+						}
+					}
+					return n, nil
+				}
 			}
 		}
 	}
