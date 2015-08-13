@@ -111,7 +111,7 @@ The CSS minifier will only use safe minifications:
 - remove quotes for URLs
 - remove quotes for font families and make lowercase
 - rewrite hex colors to/from color names, or to 3 digit hex
-- rewrite `rgb(` and `rgba(` colors to hex/name when possible
+- rewrite `rgb(`, `rgba(`, `hsl(` and `hsla(` colors to hex or name
 - replace `normal` and `bold` by numbers for `font-weight` and `font`
 - replace `none` &#8594; `0` for `border`, `background` and `outline`
 - lowercase all identifiers except classes, IDs and URLs to enhance gzip compression
