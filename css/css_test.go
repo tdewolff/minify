@@ -41,6 +41,12 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, m, false, "color: rgb(255,255,255);", "color:#fff")
 	assertCSS(t, m, false, "color: rgb(100%,100%,100%);", "color:#fff")
 	assertCSS(t, m, false, "color: rgba(255,0,0,1);", "color:red")
+	assertCSS(t, m, false, "color: rgba(255,0,0,2);", "color:red")
+	assertCSS(t, m, false, "color: rgba(255,0,0,0.5);", "color:rgba(255,0,0,.5)")
+	assertCSS(t, m, false, "color: rgba(255,0,0,-1);", "color:transparent")
+	assertCSS(t, m, false, "color: hsl(0,100%,50%);", "color:red")
+	assertCSS(t, m, false, "color: hsla(1,2%,3%,1);", "color:#080807")
+	assertCSS(t, m, false, "color: hsla(1,2%,3%,0);", "color:transparent")
 	assertCSS(t, m, false, "font-weight: bold; font-weight: normal;", "font-weight:700;font-weight:400")
 	assertCSS(t, m, false, "font: bold \"Times new Roman\",\"Sans-Serif\";", "font:700 times new roman,\"sans-serif\"")
 	assertCSS(t, m, false, "outline: none;", "outline:0")
@@ -102,6 +108,7 @@ func TestCSS(t *testing.T) {
 	assertCSS(t, m, true, "a { b: 1", "a{b:1}")
 	assertCSS(t, m, false, "background:none", "background:0 0")
 	assertCSS(t, m, false, "background:none 1 1", "background:none 1 1")
+	assertCSS(t, m, false, "z-index:1000", "z-index:1000")
 
 	// coverage
 	assertCSS(t, m, false, "margin: 1 1;", "margin:1")

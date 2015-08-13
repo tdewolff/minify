@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"io"
-	"math"
 	"mime"
 	"strconv"
 
@@ -175,17 +174,17 @@ func (c *cssMinifier) minifyDeclaration(property []byte, values []css.Token) err
 			inProgid = true
 			continue
 		}
-		values[i].TokenType, values[i].Data = c.shortenToken(value.TokenType, value.Data)
+		value.TokenType, value.Data = c.shortenToken(prop, value.TokenType, value.Data)
 		if prop == css.Font || prop == css.Font_Family || prop == css.Font_Weight {
 			if value.TokenType == css.IdentToken && (prop == css.Font || prop == css.Font_Weight) {
 				val := css.ToHash(value.Data)
 				if val == css.Normal && prop == css.Font_Weight {
 					// normal could also be specified for font-variant, not just font-weight
-					values[i].TokenType = css.NumberToken
-					values[i].Data = []byte("400")
+					value.TokenType = css.NumberToken
+					value.Data = []byte("400")
 				} else if val == css.Bold {
-					values[i].TokenType = css.NumberToken
-					values[i].Data = []byte("700")
+					value.TokenType = css.NumberToken
+					value.Data = []byte("700")
 				}
 			} else if value.TokenType == css.StringToken && (prop == css.Font || prop == css.Font_Family) && len(value.Data) > 2 {
 				unquote := true
@@ -203,15 +202,16 @@ func (c *cssMinifier) minifyDeclaration(property []byte, values []css.Token) err
 					}
 				}
 				if unquote {
-					values[i].Data = s
+					value.Data = s
 				}
 			}
 		} else if prop == css.Outline || prop == css.Border || prop == css.Border_Bottom || prop == css.Border_Left || prop == css.Border_Right || prop == css.Border_Top {
-			if css.ToHash(values[i].Data) == css.None {
-				values[i].TokenType = css.NumberToken
-				values[i].Data = zeroBytes
+			if css.ToHash(value.Data) == css.None {
+				value.TokenType = css.NumberToken
+				value.Data = zeroBytes
 			}
 		}
+		values[i].TokenType, values[i].Data = value.TokenType, value.Data
 	}
 
 	important := false
@@ -315,13 +315,24 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 	if simple && (n-1)%2 == 0 {
 		fun := css.ToHash(values[0].Data[:len(values[0].Data)-1])
 		nArgs := (n - 1) / 2
-		if fun == css.Rgba && nArgs == 4 {
+		if (fun == css.Rgba || fun == css.Hsla) && nArgs == 4 {
 			d, _ := strconv.ParseFloat(string(values[7].Data), 32)
-			if math.Abs(d-1.0) < minify.Epsilon {
-				values[0].Data = []byte("rgb")
+			if d-1.0 > -minify.Epsilon {
+				if fun == css.Rgba {
+					values[0].Data = []byte("rgb(")
+					fun = css.Rgb
+				} else {
+					values[0].Data = []byte("hsl(")
+					fun = css.Hsl
+				}
 				values = values[:len(values)-2]
-				fun = css.Rgb
+				values[len(values)-1].Data = []byte(")")
 				nArgs = 3
+			} else if d < minify.Epsilon {
+				values[0].Data = []byte("transparent")
+				values = values[:1]
+				fun = css.None
+				nArgs = 0
 			}
 		}
 		if fun == css.Rgb && nArgs == 3 {
@@ -370,6 +381,35 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 				}
 				return n, nil
 			}
+		} else if fun == css.Hsl && nArgs == 3 {
+			if values[1].TokenType == css.NumberToken && values[3].TokenType == css.PercentageToken && values[5].TokenType == css.PercentageToken {
+				h, err := strconv.ParseFloat(string(values[1].Data), 32)
+				s, err := strconv.ParseFloat(string(values[3].Data[:len(values[3].Data)-1]), 32)
+				l, err := strconv.ParseFloat(string(values[5].Data[:len(values[5].Data)-1]), 32)
+				if err == nil {
+					r, g, b := css.Hsl2Rgb(h/360.0, s/100.0, l/100.0)
+					rgb := []byte{byte((r * 255.0) + 0.5), byte((g * 255.0) + 0.5), byte((b * 255.0) + 0.5)}
+					val := make([]byte, 7)
+					val[0] = '#'
+					hex.Encode(val[1:], rgb[:])
+					parse.ToLower(val)
+					if s, ok := ShortenColorHex[string(val)]; ok {
+						if _, err := c.w.Write(s); err != nil {
+							return 0, err
+						}
+					} else {
+						if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
+							val[2] = val[3]
+							val[3] = val[5]
+							val = val[:4]
+						}
+						if _, err := c.w.Write(val); err != nil {
+							return 0, err
+						}
+					}
+					return n, nil
+				}
+			}
 		}
 	}
 	for _, value := range values {
@@ -380,8 +420,11 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 	return n, nil
 }
 
-func (c *cssMinifier) shortenToken(tt css.TokenType, data []byte) (css.TokenType, []byte) {
+func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte) (css.TokenType, []byte) {
 	if tt == css.NumberToken || tt == css.PercentageToken || tt == css.DimensionToken {
+		if tt == css.NumberToken && (prop == css.Z_Index || prop == css.Counter_Increment || prop == css.Counter_Reset || prop == css.Orphans || prop == css.Widows) {
+			return tt, data // integers
+		}
 		n := len(data)
 		if tt == css.PercentageToken {
 			n--
