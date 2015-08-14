@@ -193,7 +193,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				if m.Minify("text/css;inline=1", attrMinifyBuffer, buffer.NewReader(val)) == nil {
 					val = attrMinifyBuffer.Bytes()
 				}
-			} else if tag == svg.Path && attr == svg.D {
+			} else if attr == svg.D {
 				val = shortenPathData(val)
 			} else if attr == svg.ViewBox {
 				j := 0
@@ -229,7 +229,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				} else if hex, ok := minifyCSS.ShortenColorName[css.ToHash(val)]; ok {
 					val = hex
 				} else if len(val) > 5 && parse.Equal(val[:4], []byte("rgb(")) && val[len(val)-1] == ')' {
-					// TODO: handle rgb(x, y, z)
+					// TODO: handle rgb(x, y, z) and hsl(x, y, z)
 				}
 			} else if dim, n := shortenDimension(val); n == len(val) {
 				val = dim
