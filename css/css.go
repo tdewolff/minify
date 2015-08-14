@@ -331,7 +331,7 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 			} else if d < minify.Epsilon {
 				values[0].Data = []byte("transparent")
 				values = values[:1]
-				fun = css.None
+				fun = 0
 				nArgs = 0
 			}
 		}
