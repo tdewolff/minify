@@ -103,7 +103,7 @@ Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 
 The CSS minifier will only use safe minifications:
 
-- remove comments and (most) whitespace
+- remove comments and unnecessary whitespace
 - remove trailing semicolons
 - optimize `margin`, `padding` and `border-width` number of sides
 - shorten numbers by removing unnecessary `+` and zeros and rewriting with/without exponent
@@ -148,8 +148,8 @@ Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 <sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.
 
 TODO:
-- shorten local variables / function parameters
-- better semicolon omission
+- shorten local variables / function parameters names
+- precise semicolon and newline omission
 
 ## JSON [![GoDoc](http://godoc.org/github.com/tdewolff/minify/json?status.svg)](http://godoc.org/github.com/tdewolff/minify/json) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/json)](http://gocover.io/github.com/tdewolff/minify/json)
 
