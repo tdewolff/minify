@@ -43,7 +43,7 @@ These industry-grade minifiers are written in Java and are generally slow too. F
 
 Additionally many of these minifier either do not follow the specifications or drag a lot of legacy code around. When you are still trying to support IE6 I don't suppose you are squeezing out every bit of performance out of your web application. Supporting old mistakes or work-arounds is not a fairly long-term vision.
 
-However, implementing an HTML minifier is the bare minimum. HTML documents can contain embedded resources such as CSS, JS and SVG file formats. Thus for increased minification of HTML, other file format minifiers must be present too. A minifier is really not a single-trick pony, but should minify a range of mediatype to be successful.
+However, implementing an HTML minifier is the bare minimum. HTML documents can contain embedded resources such as CSS, JS and SVG file formats. Thus for increased minification of HTML, other file format minifiers must be present too. A minifier should really handle a number of mediatypes to be successful.
 
 This minifier proves to be that fast, zero-configurable, modern, extensive minifier which stream-minifies files and can minify them concurrently.
 
