@@ -23,10 +23,30 @@ var (
 
 const maxAttrLookup = 4
 
+// Options is a set of configurations for the Minifier.
+type Options struct {
+	OmmitDefaultAttributes bool
+}
+
+var DefaultOptions = Options{
+	OmmitDefaultAttributes: true,
+}
+
 ////////////////////////////////////////////////////////////////
 
-// Minify minifies HTML data, it reads from r and writes to w.
+// Minify minifies HTML data, it reads from r and writes to w using the DefaultOptions.
 func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
+	return minifyhtml(m, DefaultOptions, "", w, r)
+}
+
+// MinifyWithOptions returns an HTML minifier with the provided Options.
+func MinifyWithOptions(options Options) minify.Func {
+	return func(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
+		return minifyhtml(m, options, "", w, r)
+	}
+}
+
+func minifyhtml(m minify.Minifier, options Options, _ string, w io.Writer, r io.Reader) error {
 	var rawTag html.Hash
 	var rawTagMediatype []byte
 	precededBySpace := true // on true the next text token must not start with a space
@@ -294,24 +314,26 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					}
 
 					// default attribute values can be ommited
-					if attr.Hash == html.Type && (t.Hash == html.Script && parse.Equal(val, []byte("text/javascript")) ||
-						t.Hash == html.Style && parse.Equal(val, []byte("text/css")) ||
-						t.Hash == html.Link && parse.Equal(val, []byte("text/css")) ||
-						t.Hash == html.Input && parse.Equal(val, []byte("text")) ||
-						t.Hash == html.Button && parse.Equal(val, []byte("submit"))) ||
-						attr.Hash == html.Language && t.Hash == html.Script ||
-						attr.Hash == html.Method && parse.Equal(val, []byte("get")) ||
-						attr.Hash == html.Enctype && parse.Equal(val, []byte("application/x-www-form-urlencoded")) ||
-						attr.Hash == html.Colspan && parse.Equal(val, []byte("1")) ||
-						attr.Hash == html.Rowspan && parse.Equal(val, []byte("1")) ||
-						attr.Hash == html.Shape && parse.Equal(val, []byte("rect")) ||
-						attr.Hash == html.Span && parse.Equal(val, []byte("1")) ||
-						attr.Hash == html.Clear && parse.Equal(val, []byte("none")) ||
-						attr.Hash == html.Frameborder && parse.Equal(val, []byte("1")) ||
-						attr.Hash == html.Scrolling && parse.Equal(val, []byte("auto")) ||
-						attr.Hash == html.Valuetype && parse.Equal(val, []byte("data")) ||
-						attr.Hash == html.Media && t.Hash == html.Style && parse.Equal(val, []byte("all")) {
-						continue
+					if options.OmmitDefaultAttributes {
+						if attr.Hash == html.Type && (t.Hash == html.Script && parse.Equal(val, []byte("text/javascript")) ||
+							t.Hash == html.Style && parse.Equal(val, []byte("text/css")) ||
+							t.Hash == html.Link && parse.Equal(val, []byte("text/css")) ||
+							t.Hash == html.Input && parse.Equal(val, []byte("text")) ||
+							t.Hash == html.Button && parse.Equal(val, []byte("submit"))) ||
+							attr.Hash == html.Language && t.Hash == html.Script ||
+							attr.Hash == html.Method && parse.Equal(val, []byte("get")) ||
+							attr.Hash == html.Enctype && parse.Equal(val, []byte("application/x-www-form-urlencoded")) ||
+							attr.Hash == html.Colspan && parse.Equal(val, []byte("1")) ||
+							attr.Hash == html.Rowspan && parse.Equal(val, []byte("1")) ||
+							attr.Hash == html.Shape && parse.Equal(val, []byte("rect")) ||
+							attr.Hash == html.Span && parse.Equal(val, []byte("1")) ||
+							attr.Hash == html.Clear && parse.Equal(val, []byte("none")) ||
+							attr.Hash == html.Frameborder && parse.Equal(val, []byte("1")) ||
+							attr.Hash == html.Scrolling && parse.Equal(val, []byte("auto")) ||
+							attr.Hash == html.Valuetype && parse.Equal(val, []byte("data")) ||
+							attr.Hash == html.Media && t.Hash == html.Style && parse.Equal(val, []byte("all")) {
+							continue
+						}
 					}
 					// CSS and JS minifiers for attribute inline code
 					if attr.Hash == html.Style {
