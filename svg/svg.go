@@ -114,7 +114,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				}
 			} else if tag == svg.Metadata {
 				for {
-					if t := *tb.Shift(); t.TokenType == xml.EndTagToken && svg.ToHash(t.Data) == tag || t.TokenType == xml.StartTagCloseVoidToken || t.TokenType == xml.ErrorToken {
+					if t := *tb.Shift(); (t.TokenType == xml.EndTagToken || t.TokenType == xml.StartTagCloseVoidToken) && svg.ToHash(t.Data) == tag || t.TokenType == xml.ErrorToken {
 						break
 					}
 				}
