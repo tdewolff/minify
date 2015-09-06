@@ -212,17 +212,18 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 								name.Data = nil
 							}
 						}
-						if rel := attr[2]; rel == nil || !parse.EqualFold(rel.AttrVal, externalBytes) {
-							if href := attr[3]; href != nil {
-								if len(href.AttrVal) > 5 && parse.EqualFold(href.AttrVal[:4], []byte{'h', 't', 't', 'p'}) {
-									if href.AttrVal[4] == ':' {
-										href.AttrVal = href.AttrVal[5:]
-									} else if (href.AttrVal[4] == 's' || href.AttrVal[4] == 'S') && href.AttrVal[5] == ':' {
-										href.AttrVal = href.AttrVal[6:]
-									}
-								}
-							}
-						}
+						// TODO: omit http or https according to URL, specified through options
+						// if rel := attr[2]; rel == nil || !parse.EqualFold(rel.AttrVal, externalBytes) {
+						// 	if href := attr[3]; href != nil {
+						// 		if len(href.AttrVal) > 5 && parse.EqualFold(href.AttrVal[:4], []byte{'h', 't', 't', 'p'}) {
+						// 			if href.AttrVal[4] == ':' {
+						// 				href.AttrVal = href.AttrVal[5:]
+						// 			} else if (href.AttrVal[4] == 's' || href.AttrVal[4] == 'S') && href.AttrVal[5] == ':' {
+						// 				href.AttrVal = href.AttrVal[6:]
+						// 			}
+						// 		}
+						// 	}
+						// }
 					}
 				} else if t.Hash == html.Meta {
 					if attr := getAttributes(tb, &attrIntBuffer, &attrTokenBuffer, html.Content, html.Http_Equiv, html.Charset, html.Name); attr != nil {
@@ -334,13 +335,15 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							continue
 						}
 					} else if t.Hash != html.A && urlAttrMap[attr.Hash] && len(val) > 5 { // anchors are already handled
-						if parse.EqualFold(val[:4], []byte{'h', 't', 't', 'p'}) {
-							if val[4] == ':' {
-								val = val[5:]
-							} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
-								val = val[6:]
-							}
-						} else if parse.EqualFold(val[:5], []byte{'d', 'a', 't', 'a', ':'}) {
+						// TODO: omit http or https according to URL, specified through options
+						// if parse.EqualFold(val[:4], []byte{'h', 't', 't', 'p'}) {
+						// 	if val[4] == ':' {
+						// 		val = val[5:]
+						// 	} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
+						// 		val = val[6:]
+						// 	}
+						// } else
+						if parse.EqualFold(val[:5], []byte{'d', 'a', 't', 'a', ':'}) {
 							val = minify.DataURI(m, val)
 						}
 						if len(val) == 0 {
