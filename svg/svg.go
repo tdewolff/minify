@@ -31,6 +31,8 @@ var (
 // Minify minifies SVG data, it reads from r and writes to w.
 func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	var tag svg.Hash
+	defaultStyleType := "text/css"
+	defaultInlineStyleType := "text/css;inline=1"
 
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
@@ -55,7 +57,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 		case xml.TextToken:
 			t.Data = parse.ReplaceMultiple(parse.Trim(t.Data, parse.IsWhitespace), parse.IsWhitespace, ' ')
 			if tag == svg.Style && len(t.Data) > 0 {
-				if err := m.Minify("text/css", w, buffer.NewReader(t.Data)); err != nil {
+				if err := m.Minify(defaultStyleType, w, buffer.NewReader(t.Data)); err != nil {
 					if err == minify.ErrNotExist { // no minifier, write the original
 						if _, err := w.Write(t.Data); err != nil {
 							return err
@@ -73,7 +75,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 			t.Data = parse.ReplaceMultiple(parse.Trim(t.Data, parse.IsWhitespace), parse.IsWhitespace, ' ')
 			if tag == svg.Style && len(t.Data) > 0 {
-				if err := m.Minify("text/css", w, buffer.NewReader(t.Data)); err != nil {
+				if err := m.Minify(defaultStyleType, w, buffer.NewReader(t.Data)); err != nil {
 					if err == minify.ErrNotExist { // no minifier, write the original
 						if _, err := w.Write(t.Data); err != nil {
 							return err
@@ -112,7 +114,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				}
 			} else if tag == svg.Metadata {
 				for {
-					if t := *tb.Shift(); t.TokenType == xml.EndTagToken && svg.ToHash(t.Data) == tag || t.TokenType == xml.StartTagCloseVoidToken || t.TokenType == xml.ErrorToken {
+					if t := *tb.Shift(); (t.TokenType == xml.EndTagToken || t.TokenType == xml.StartTagCloseVoidToken) && svg.ToHash(t.Data) == tag || t.TokenType == xml.ErrorToken {
 						break
 					}
 				}
@@ -188,9 +190,13 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				return err
 			}
 
-			if attr == svg.Style {
+			if tag == svg.Svg && attr == svg.ContentStyleType {
+				val = minify.ContentType(val)
+				defaultStyleType = string(val)
+				defaultInlineStyleType = defaultStyleType + ";inline=1"
+			} else if attr == svg.Style {
 				attrMinifyBuffer.Reset()
-				if m.Minify("text/css;inline=1", attrMinifyBuffer, buffer.NewReader(val)) == nil {
+				if m.Minify(defaultInlineStyleType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
 					val = attrMinifyBuffer.Bytes()
 				}
 			} else if attr == svg.D {
