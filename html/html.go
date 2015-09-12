@@ -12,13 +12,12 @@ import (
 )
 
 var (
-	ltBytes       = []byte("<")
-	gtBytes       = []byte(">")
-	isBytes       = []byte("=")
-	spaceBytes    = []byte(" ")
-	endBytes      = []byte("</")
-	externalBytes = []byte("external")
-	httpBytes     = []byte("http")
+	ltBytes    = []byte("<")
+	gtBytes    = []byte(">")
+	isBytes    = []byte("=")
+	spaceBytes = []byte(" ")
+	endBytes   = []byte("</")
+	httpBytes  = []byte("http")
 )
 
 const maxAttrLookup = 4
@@ -26,7 +25,9 @@ const maxAttrLookup = 4
 ////////////////////////////////////////////////////////////////
 
 // Minify minifies HTML data, it reads from r and writes to w.
-func Minify(m minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string]string) error {
+func Minify(m *minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string]string) error {
+	scheme := m.Get("scheme")
+
 	var rawTag html.Hash
 	var rawTagMediatype []byte
 	precededBySpace := true // on true the next text token must not start with a space
@@ -211,18 +212,25 @@ func Minify(m minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string]
 								name.Data = nil
 							}
 						}
-						// TODO: omit http or https according to URL, specified through options
-						// if rel := attr[2]; rel == nil || !parse.EqualFold(rel.AttrVal, externalBytes) {
-						// 	if href := attr[3]; href != nil {
-						// 		if len(href.AttrVal) > 5 && parse.EqualFold(href.AttrVal[:4], []byte{'h', 't', 't', 'p'}) {
-						// 			if href.AttrVal[4] == ':' {
-						// 				href.AttrVal = href.AttrVal[5:]
-						// 			} else if (href.AttrVal[4] == 's' || href.AttrVal[4] == 'S') && href.AttrVal[5] == ':' {
-						// 				href.AttrVal = href.AttrVal[6:]
-						// 			}
-						// 		}
-						// 	}
-						// }
+						if rel := attr[2]; rel == nil {
+							if href := attr[3]; href != nil {
+								if len(href.AttrVal) > 5 && parse.EqualFold(href.AttrVal[:4], []byte{'h', 't', 't', 'p'}) {
+									if href.AttrVal[4] == ':' {
+										if scheme == "http" {
+											href.AttrVal = href.AttrVal[5:]
+										} else {
+											parse.ToLower(href.AttrVal[:4])
+										}
+									} else if (href.AttrVal[4] == 's' || href.AttrVal[4] == 'S') && href.AttrVal[5] == ':' {
+										if scheme == "https" {
+											href.AttrVal = href.AttrVal[6:]
+										} else {
+											parse.ToLower(href.AttrVal[:5])
+										}
+									}
+								}
+							}
+						}
 					}
 				} else if t.Hash == html.Meta {
 					if attr := getAttributes(tb, &attrIntBuffer, &attrTokenBuffer, html.Content, html.Http_Equiv, html.Charset, html.Name); attr != nil {
@@ -333,15 +341,21 @@ func Minify(m minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string]
 							continue
 						}
 					} else if t.Hash != html.A && urlAttrMap[attr.Hash] && len(val) > 5 { // anchors are already handled
-						// TODO: omit http or https according to URL, specified through options
-						// if parse.EqualFold(val[:4], []byte{'h', 't', 't', 'p'}) {
-						// 	if val[4] == ':' {
-						// 		val = val[5:]
-						// 	} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
-						// 		val = val[6:]
-						// 	}
-						// } else
-						if parse.EqualFold(val[:5], []byte{'d', 'a', 't', 'a', ':'}) {
+						if parse.EqualFold(val[:4], []byte{'h', 't', 't', 'p'}) {
+							if val[4] == ':' {
+								if scheme == "http" {
+									val = val[5:]
+								} else {
+									parse.ToLower(val[:4])
+								}
+							} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
+								if scheme == "https" {
+									val = val[6:]
+								} else {
+									parse.ToLower(val[:5])
+								}
+							}
+						} else if parse.EqualFold(val[:5], []byte{'d', 'a', 't', 'a', ':'}) {
 							val = minify.DataURI(m, val)
 						}
 						if len(val) == 0 {

@@ -21,6 +21,7 @@ import (
 func assertHTML(t *testing.T, input, expected string) {
 	m := minify.New()
 	m.AddFunc("text/html", Minify)
+	m.Set("scheme", "http")
 	b := &bytes.Buffer{}
 	assert.Nil(t, Minify(m, b, bytes.NewBufferString(input), "text/html", nil), "Minify must not return error in "+input)
 	assert.Equal(t, expected, b.String(), "Minify must give expected result in "+input)
@@ -50,8 +51,8 @@ func TestHTML(t *testing.T) {
 	assertHTML(t, "<span>&amp;</span>", "<span>&amp;</span>")
 	assertHTML(t, "<span clear=none method=GET></span>", "<span></span>")
 	assertHTML(t, "<span onload=\"javascript:x;\"></span>", "<span onload=x;></span>")
-	//assertHTML(t, "<span href=\"http://test\"></span>", "<span href=//test></span>")
-	//assertHTML(t, "<span href=\"HtTpS://test\"></span>", "<span href=//test></span>")
+	assertHTML(t, "<span href=\"http://test\"></span>", "<span href=//test></span>")
+	assertHTML(t, "<span href=\"HtTpS://test\"></span>", "<span href=https://test></span>")
 	assertHTML(t, "<span selected=\"selected\"></span>", "<span selected></span>")
 	assertHTML(t, "<noscript><html><img id=\"x\"></noscript>", "<noscript><img id=x></noscript>")
 	assertHTML(t, "<body id=\"main\"></body>", "<body id=main>")
@@ -86,29 +87,28 @@ func TestHTML(t *testing.T) {
 	assertHTML(t, "<DIV TITLE=\"blah\">boo</DIV>", "<div title=blah>boo</div>")
 	assertHTML(t, "<p title\n\n\t  =\n     \"bar\">foo</p>", "<p title=bar>foo")
 	assertHTML(t, "<p class=\" foo      \">foo bar baz</p>", "<p class=foo>foo bar baz")
-	//assertHTML(t, "<a href=\"   http://example.com  \">x</a>", "<a href=//example.com>x</a>")
+	assertHTML(t, "<a href=\"   http://example.com  \">x</a>", "<a href=//example.com>x</a>")
 	assertHTML(t, "<input maxlength=\"     5 \">", "<input maxlength=5>")
 	assertHTML(t, "<input type=\"text\">", "<input>")
 	assertHTML(t, "<form method=\"get\">", "<form>")
 	assertHTML(t, "<script language=\"Javascript\">alert(1)</script>", "<script>alert(1)</script>")
 	assertHTML(t, "<script></script>", "")
 	assertHTML(t, "<p onclick=\" JavaScript: x\">x</p>", "<p onclick=\" x\">x")
-	//assertHTML(t, "<link rel=\"stylesheet\" type=\"text/css\" href=\"http://example.com\">", "<link rel=stylesheet href=//example.com>")
+	assertHTML(t, "<link rel=\"stylesheet\" type=\"text/css\" href=\"http://example.com\">", "<link rel=stylesheet href=//example.com>")
 	assertHTML(t, "<span Selected=\"selected\"></span>", "<span selected></span>")
 	assertHTML(t, "<table><thead><tr><th>foo</th><th>bar</th></tr></thead><tfoot><tr><th>baz</th><th>qux</th></tr></tfoot><tbody><tr><td>boo</td><td>moo</td></tr></tbody></table>",
 		"<table><thead><tr><th>foo<th>bar<tfoot><tr><th>baz<th>qux<tbody><tr><td>boo<td>moo</table>")
 	assertHTML(t, "<select><option>foo</option><option>bar</option></select>", "<select><option>foo<option>bar</select>")
 
-	//assertHTML(t, `<!doctype html> <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"> <head profile="http://dublincore.org/documents/dcq-html/"> <!-- Barlesque 2.75.0 --> <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`, `<!doctype html><html xmlns=//www.w3.org/1999/xhtml xml:lang=en><head profile=//dublincore.org/documents/dcq-html/><meta charset=utf-8>`)
+	assertHTML(t, `<!doctype html> <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"> <head profile="http://dublincore.org/documents/dcq-html/"> <!-- Barlesque 2.75.0 --> <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`, `<!doctype html><html xmlns=//www.w3.org/1999/xhtml xml:lang=en><head profile=//dublincore.org/documents/dcq-html/><meta charset=utf-8>`)
 	assertHTML(t, `<meta name="keywords" content="A, B">`, `<meta name=keywords content=A,B>`)
 	assertHTML(t, `<script type="text/html"><![CDATA[ <img id="x"> ]]></script>`, `<script type=text/html><img id=x></script>`)
 	assertHTML(t, `<iframe><html> <p> x </p> </html></iframe>`, `<iframe><p>x</iframe>`)
-	//assertHTML(t, `<svg xmlns="http://www.w3.org/2000/svg"><path d="x"/></svg>`, `<svg xmlns=//www.w3.org/2000/svg><path d="x"/></svg>`)
+	assertHTML(t, `<svg xmlns="http://www.w3.org/2000/svg"><path d="x"/></svg>`, `<svg xmlns=//www.w3.org/2000/svg><path d="x"/></svg>`)
 	assertHTML(t, `<math> &int;_a_^b^{f(x)<over>1+x} dx </math>`, `<math> &int;_a_^b^{f(x)<over>1+x} dx </math>`)
 	assertHTML(t, `<script language="x" charset="x" src="y"></script>`, `<script src=y></script>`)
 	assertHTML(t, `<style media="all">x</style>`, `<style>x</style>`)
-	//assertHTML(t, `<a href="https://x">y</a>`, `<a href=//x>y</a>`)
-	//assertHTML(t, `<a href="https://x" rel="external">y</a>`, `<a href=https://x rel=external>y</a>`)
+	assertHTML(t, `<a href="https://x">y</a>`, `<a href=https://x>y</a>`)
 	assertHTML(t, `<a id="abc" name="abc">y</a>`, `<a id=abc>y</a>`)
 	assertHTML(t, `<a id="" value="">y</a>`, `<a value>y</a>`)
 
@@ -120,7 +120,7 @@ func TestHTML(t *testing.T) {
 func TestSpecialTagClosing(t *testing.T) {
 	m := minify.New()
 	m.AddFunc("text/html", Minify)
-	m.AddFunc("text/css", func(m minify.Minifier, w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
+	m.AddFunc("text/css", func(m *minify.Minifier, w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
 		b, _ := ioutil.ReadAll(r)
 		assert.Equal(t, "</script>", string(b))
 		w.Write(b)
