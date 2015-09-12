@@ -14,10 +14,10 @@ and the `minify` command should be in your `$GOPATH/bin`.
 
 	Usage: minify [options] [file]
 	Options:
-	  -o: Output file (stdout when empty)
-	  -x: File extension (css, html, js, json, svg or xml), optional for input files
-	  -d: Directory to search for files
-	  -r: Recursively minify everything
+	  -o:    Output file (stdout when empty)
+	  -type: File extension (css, css-inline, html, js, json, svg or xml), optional for input files
+	  -d:    Directory to search for files
+	  -r:    Recursively minify everything
 
 ## Examples
 The following commands are variations one can use to minify a file:
@@ -25,11 +25,11 @@ The following commands are variations one can use to minify a file:
 ```sh
 $ minify -o file.min.html file.html
 
-$ minify -x css -o file.min.less file.less
+$ minify -type css -o file.min.less file.less
 
-$ minify -x js < file.js > file.min.js
+$ minify -type js < file.js > file.min.js
 
-$ cat file.html | minify -x html > file.min.html
+$ cat file.html | minify -type html > file.min.html
 ```
 
 It is also possible to overwrite the input file by the output file. However, this won't work with input/output redirection streams. Using the following command the input file will be loaded into memory first before writing to the output file:
