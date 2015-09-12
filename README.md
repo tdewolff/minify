@@ -43,7 +43,7 @@ These industry-grade minifiers are written in Java and are generally slow too. F
 
 Additionally many of these minifier either do not follow the specifications or drag a lot of legacy code around. When you are still trying to support IE6 I don't suppose you are squeezing out every bit of performance out of your web application. Supporting old mistakes or work-arounds is not a fairly long-term vision.
 
-However, implementing an HTML minifier is the bare minimum. HTML documents can contain embedded resources such as CSS, JS and SVG file formats. Thus for increased minification of HTML, other file format minifiers must be present too. A minifier should really handle a number of mediatypes to be successful.
+However, implementing an HTML minifier is the bare minimum. HTML documents can contain embedded resources such as CSS, JS and SVG file formats. Thus for increased minification of HTML, other file format minifiers must be present too. A minifier should really handle a number of mimetypes to be successful.
 
 This minifier proves to be that fast, zero-configurable, modern, extensive minifier which stream-minifies files and can minify them concurrently.
 
@@ -117,7 +117,7 @@ The CSS minifier will only use safe minifications:
 - lowercase all identifiers except classes, IDs and URLs to enhance gzip compression
 - shorten MS alpha function
 - rewrite data URIs with base64 or ASCII whichever is shorter
-- calls minifier for data URI mediatypes, thus you can compress embedded SVG files if you have that minifier attached
+- calls minifier for data URI mimetypes, thus you can compress embedded SVG files if you have that minifier attached
 
 It does purposely not use the following techniques:
 
@@ -209,7 +209,7 @@ import (
 
 ## Usage
 ### New
-Retrieve a minifier struct which holds a map of mediatype &#8594; minifier functions.
+Retrieve a minifier struct which holds a map of mimetype &#8594; minifier functions.
 ``` go
 m := minify.New()
 ```
@@ -226,76 +226,76 @@ m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 ```
 
 ### From reader
-Minify from an `io.Reader` to an `io.Writer` for a specific mediatype.
+Minify from an `io.Reader` to an `io.Writer` for a specific mimetype.
 ``` go
-if err := m.Minify(mediatype, w, r); err != nil {
+if err := m.Minify(w, r, mimetype, nil); err != nil {
 	log.Fatal("Minify:", err)
 }
 ```
 
-Minify HTML, CSS or JS directly from an `io.Reader` to an `io.Writer`. The passed mediatype is not required for these functions, but are filled out for clarity.
+Minify HTML, CSS or JS directly from an `io.Reader` to an `io.Writer`. The passed mimetype is not required for these functions, but are filled out for clarity.
 ``` go
-if err := css.Minify(m, "text/css", w, r); err != nil {
+if err := css.Minify(m, w, r, "text/css", nil); err != nil {
 	log.Fatal("css.Minify:", err)
 }
 
-if err := html.Minify(m, "text/html", w, r); err != nil {
+if err := html.Minify(m, w, r, "text/html", nil); err != nil {
 	log.Fatal("html.Minify:", err)
 }
 
-if err := js.Minify(m, "text/javascript", w, r); err != nil {
+if err := js.Minify(m, w, r, "text/javascript", nil); err != nil {
 	log.Fatal("js.Minify:", err)
 }
 
-if err := json.Minify(m, "application/json", w, r); err != nil {
+if err := json.Minify(m, w, r, "application/json", nil); err != nil {
 	log.Fatal("json.Minify:", err)
 }
 
-if err := svg.Minify(m, "image/svg+xml", w, r); err != nil {
+if err := svg.Minify(m, w, r, "image/svg+xml", nil); err != nil {
 	log.Fatal("svg.Minify:", err)
 }
 
-if err := xml.Minify(m, "text/xml", w, r); err != nil {
+if err := xml.Minify(m, w, r, "text/xml", nil); err != nil {
 	log.Fatal("xml.Minify:", err)
 }
 ```
 
 ### From bytes
-Minify from and to a `[]byte` for a specific mediatype.
+Minify from and to a `[]byte` for a specific mimetype.
 ``` go
-b, err = minify.Bytes(m, mediatype, b)
+b, err = m.Bytes(b, mimetype, params)
 if err != nil {
 	log.Fatal("minify.Bytes:", err)
 }
 ```
 
 ### From string
-Minify from and to a `string` for a specific mediatype.
+Minify from and to a `string` for a specific mimetype.
 ``` go
-s, err = minify.String(m, mediatype, s)
+s, err = m.String(s, mimetype, params)
 if err != nil {
 	log.Fatal("minify.String:", err)
 }
 ```
 
 ### Custom minifier
-Add a function for a specific mediatype.
+Add a function for a specific mimetype.
 ``` go
-m.AddFunc(mediatype, func(m minify.Minifier, mediatype string, w io.Writer, r io.Reader) error {
+m.AddFunc(mimetype, func(m *minify.Minifier, w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
 	// ...
 	return nil
 })
 ```
 
-Add a command `cmd` with arguments `args` for a specific mediatype.
+Add a command `cmd` with arguments `args` for a specific mimetype.
 ``` go
-m.AddCmd(mediatype, exec.Command(cmd, args...))
+m.AddCmd(mimetype, exec.Command(cmd, args...))
 ```
 
 ### Mediatypes
-Mediatypes can contain parameters (`type/subtype; key1=val2; key2=val2`). Minifiers can also be added using a regular expression. For example a minifier with `image/.*` will match any image mime.
+Using the `params map[string]string` argument one can pass parameters to the minifier, such as seen in mediatypes (`type/subtype; key1=val2; key2=val2`). Examples are the encoding or charset. Parameters must be explicitly split before calling `Minify`, which can be done using the standard library `mime.ParseMediaType`.
 
-Mediatypes such as `text/plain; charset=UTF-8` will be processed by `text/plain` or any regexp it matches. The mediatype string is passed to the minifier function which can retrieve the parameters using the standard library `mime.ParseMediaType`.
+Minifiers can also be added using a regular expression. For example a minifier with `image/.*` will match any image mime.
 
 ## Examples
 Basic example that minifies from stdin to stdout and loads the default HTML, CSS and JS minifiers. Optionally, one can enable `java -jar build/compiler.jar` to run for JS (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/)). Note that reading the file into a buffer first and writing to a pre-allocated buffer would be faster (but would disable streaming).
@@ -353,7 +353,7 @@ func main() {
 	m := minify.New()
 
 	// remove newline and space bytes
-	m.AddFunc("text/plain", func(m minify.Minifier, mediatype string, w io.Writer, r io.Reader) error {
+	m.AddFunc("text/plain", func(m *minify.Minifier, mimetype string, w io.Writer, r io.Reader) error {
 		rb := bufio.NewReader(r)
 		for {
 			line, err := rb.ReadString('\n')
@@ -370,7 +370,7 @@ func main() {
 		return nil
 	})
 
-	out, err := minify.String(m, "text/plain", "Because my coffee was too cold, I heated it in the microwave.")
+	out, err := m.String("text/plain", "Because my coffee was too cold, I heated it in the microwave.")
 	if err != nil {
 		log.Fatal("Minify:", err)
 	}
