@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func assertDataURI(t *testing.T, m Minifier, s, e string) {
+func assertDataURI(t *testing.T, m *Minifier, s, e string) {
 	assert.Equal(t, e, string(DataURI(m, []byte(s))), "data URIs must match")
 }
 
@@ -27,7 +27,7 @@ func TestContentType(t *testing.T) {
 
 func TestDataURI(t *testing.T) {
 	m := New()
-	m.AddFunc("text/x", func(m Minifier, w io.Writer, r io.Reader, mediatype string, options map[string]string) error {
+	m.AddFunc("text/x", func(m *Minifier, w io.Writer, r io.Reader, mediatype string, options map[string]string) error {
 		b, _ := ioutil.ReadAll(r)
 		assert.Equal(t, "<?x?>", string(b))
 		w.Write(b)

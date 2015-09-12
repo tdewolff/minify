@@ -29,7 +29,7 @@ var (
 ////////////////////////////////////////////////////////////////
 
 // Minify minifies SVG data, it reads from r and writes to w.
-func Minify(m minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string]string) error {
+func Minify(m *minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string]string) error {
 	var tag svg.Hash
 	defaultStyleType := "text/css"
 
