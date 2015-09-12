@@ -13,9 +13,8 @@ import (
 
 func assertSVG(t *testing.T, input, expected string) {
 	m := minify.New()
-	m.AddFunc("image/svg+xml", Minify)
 	b := &bytes.Buffer{}
-	assert.Nil(t, m.Minify("image/svg+xml", b, bytes.NewBufferString(input)), "Minify must not return error in "+input)
+	assert.Nil(t, Minify(m, b, bytes.NewBufferString(input), "image/svg+xml", nil), "Minify must not return error in "+input)
 	assert.Equal(t, expected, b.String(), "Minify must give expected result in "+input)
 }
 
@@ -55,7 +54,7 @@ func ExampleMinify() {
 	m.AddFunc("image/svg+xml", Minify)
 	m.AddFunc("text/css", css.Minify)
 
-	if err := m.Minify("image/svg+xml", os.Stdout, os.Stdin); err != nil {
+	if err := m.Minify(os.Stdout, os.Stdin, "image/svg+xml", nil); err != nil {
 		fmt.Println("minify.Minify:", err)
 	}
 }

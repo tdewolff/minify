@@ -26,13 +26,12 @@ const maxAttrLookup = 4
 ////////////////////////////////////////////////////////////////
 
 // Minify minifies HTML data, it reads from r and writes to w.
-func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
+func Minify(m minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string]string) error {
 	var rawTag html.Hash
 	var rawTagMediatype []byte
 	precededBySpace := true // on true the next text token must not start with a space
 	defaultScriptType := "text/javascript"
 	defaultStyleType := "text/css"
-	defaultInlineStyleType := "text/css;inline=1"
 
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
@@ -70,25 +69,25 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			// CSS and JS minifiers for inline code
 			if rawTag != 0 {
 				if rawTag == html.Style || rawTag == html.Script || rawTag == html.Iframe || rawTag == html.Svg || rawTag == html.Math {
-					var mediatype string
+					var mimetype string
 					if rawTag == html.Iframe {
-						mediatype = "text/html"
+						mimetype = "text/html"
 					} else if len(rawTagMediatype) > 0 {
-						mediatype = string(rawTagMediatype)
+						mimetype = string(rawTagMediatype)
 					} else if rawTag == html.Script {
-						mediatype = defaultScriptType
+						mimetype = defaultScriptType
 					} else if rawTag == html.Style {
-						mediatype = defaultStyleType
+						mimetype = defaultStyleType
 					} else if rawTag == html.Svg {
-						mediatype = "image/svg+xml"
+						mimetype = "image/svg+xml"
 					} else if rawTag == html.Math {
-						mediatype = "application/mathml+xml"
+						mimetype = "application/mathml+xml"
 					}
 					// ignore CDATA
 					if trimmedData := parse.Trim(t.Data, parse.IsWhitespace); len(trimmedData) > 12 && bytes.Equal(trimmedData[:9], []byte("<![CDATA[")) && bytes.Equal(trimmedData[len(trimmedData)-3:], []byte("]]>")) {
 						t.Data = trimmedData[9 : len(trimmedData)-3]
 					}
-					if err := m.Minify(mediatype, w, buffer.NewReader(t.Data)); err != nil {
+					if err := m.Minify(w, buffer.NewReader(t.Data), mimetype, nil); err != nil {
 						if _, err := w.Write(t.Data); err != nil {
 							return err
 						}
@@ -237,7 +236,6 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 									content.AttrVal = []byte("utf-8")
 								} else if parse.EqualFold(httpEquiv.AttrVal, []byte("content-style-type")) {
 									defaultStyleType = string(content.AttrVal)
-									defaultInlineStyleType = defaultStyleType + ";inline=1"
 								} else if parse.EqualFold(httpEquiv.AttrVal, []byte("content-script-type")) {
 									defaultScriptType = string(content.AttrVal)
 								}
@@ -317,7 +315,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					// CSS and JS minifiers for attribute inline code
 					if attr.Hash == html.Style {
 						attrMinifyBuffer.Reset()
-						if m.Minify(defaultInlineStyleType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
+						if m.Minify(attrMinifyBuffer, buffer.NewReader(val), defaultStyleType, map[string]string{"inline": "1"}) == nil {
 							val = attrMinifyBuffer.Bytes()
 						}
 						if len(val) == 0 {
@@ -328,7 +326,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							val = val[11:]
 						}
 						attrMinifyBuffer.Reset()
-						if m.Minify(defaultScriptType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
+						if m.Minify(attrMinifyBuffer, buffer.NewReader(val), defaultScriptType, nil) == nil {
 							val = attrMinifyBuffer.Bytes()
 						}
 						if len(val) == 0 {

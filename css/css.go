@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"io"
-	"mime"
 	"strconv"
 
 	"github.com/tdewolff/minify"
@@ -33,11 +32,9 @@ type cssMinifier struct {
 ////////////////////////////////////////////////////////////////
 
 // Minify minifies CSS data, it reads from r and writes to w.
-func Minify(m minify.Minifier, mediatype string, w io.Writer, r io.Reader) error {
+func Minify(m minify.Minifier, w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
 	isStylesheet := true
-	if len(mediatype) >= len(";inline=0") && mediatype[len(mediatype)-len(";inline=0"):] == ";inline=1" {
-		isStylesheet = false
-	} else if _, params, err := mime.ParseMediaType(mediatype); err == nil && params["inline"] == "1" {
+	if params != nil && params["inline"] == "1" {
 		isStylesheet = false
 	}
 	c := &cssMinifier{

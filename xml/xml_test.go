@@ -13,9 +13,8 @@ import (
 
 func assertXML(t *testing.T, input, expected string) {
 	m := minify.New()
-	m.AddFunc("text/xml", Minify)
 	b := &bytes.Buffer{}
-	assert.Nil(t, m.Minify("text/xml", b, bytes.NewBufferString(input)), "Minify must not return error in "+input)
+	assert.Nil(t, Minify(m, b, bytes.NewBufferString(input), "text/xml", nil), "Minify must not return error in "+input)
 	assert.Equal(t, expected, b.String(), "Minify must give expected result in "+input)
 }
 
@@ -51,7 +50,7 @@ func ExampleMinify() {
 	m := minify.New()
 	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), Minify)
 
-	if err := m.Minify("text/xml", os.Stdout, os.Stdin); err != nil {
+	if err := m.Minify(os.Stdout, os.Stdin, "text/xml", nil); err != nil {
 		fmt.Println("minify.Minify:", err)
 	}
 }

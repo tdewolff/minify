@@ -29,10 +29,9 @@ var (
 ////////////////////////////////////////////////////////////////
 
 // Minify minifies SVG data, it reads from r and writes to w.
-func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
+func Minify(m minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string]string) error {
 	var tag svg.Hash
 	defaultStyleType := "text/css"
-	defaultInlineStyleType := "text/css;inline=1"
 
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
@@ -57,7 +56,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 		case xml.TextToken:
 			t.Data = parse.ReplaceMultiple(parse.Trim(t.Data, parse.IsWhitespace), parse.IsWhitespace, ' ')
 			if tag == svg.Style && len(t.Data) > 0 {
-				if err := m.Minify(defaultStyleType, w, buffer.NewReader(t.Data)); err != nil {
+				if err := m.Minify(w, buffer.NewReader(t.Data), defaultStyleType, nil); err != nil {
 					if err == minify.ErrNotExist { // no minifier, write the original
 						if _, err := w.Write(t.Data); err != nil {
 							return err
@@ -75,7 +74,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 			t.Data = parse.ReplaceMultiple(parse.Trim(t.Data, parse.IsWhitespace), parse.IsWhitespace, ' ')
 			if tag == svg.Style && len(t.Data) > 0 {
-				if err := m.Minify(defaultStyleType, w, buffer.NewReader(t.Data)); err != nil {
+				if err := m.Minify(w, buffer.NewReader(t.Data), defaultStyleType, nil); err != nil {
 					if err == minify.ErrNotExist { // no minifier, write the original
 						if _, err := w.Write(t.Data); err != nil {
 							return err
@@ -193,10 +192,9 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			if tag == svg.Svg && attr == svg.ContentStyleType {
 				val = minify.ContentType(val)
 				defaultStyleType = string(val)
-				defaultInlineStyleType = defaultStyleType + ";inline=1"
 			} else if attr == svg.Style {
 				attrMinifyBuffer.Reset()
-				if m.Minify(defaultInlineStyleType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
+				if m.Minify(attrMinifyBuffer, buffer.NewReader(val), defaultStyleType, map[string]string{"inline": "1"}) == nil {
 					val = attrMinifyBuffer.Bytes()
 				}
 			} else if attr == svg.D {

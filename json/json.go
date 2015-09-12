@@ -15,7 +15,7 @@ var (
 )
 
 // Minify minifies JSON data, it reads from r and writes to w.
-func Minify(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
+func Minify(_ minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string]string) error {
 	skipComma := true
 	p := json.NewParser(r)
 	for {

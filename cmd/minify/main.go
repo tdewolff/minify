@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"mime"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -98,7 +99,11 @@ func main() {
 		if ext != "" {
 			mediatype = extMime[ext]
 		}
-		if err := m.Minify(mediatype, w, r); err != nil {
+		mimetype, params, err := mime.ParseMediaType(string(mediatype))
+		if err != nil {
+			mimetype = string(mediatype)
+		}
+		if err := m.Minify(w, r, mimetype, params); err != nil {
 			if err == minify.ErrNotExist {
 				io.Copy(w, r)
 			} else {

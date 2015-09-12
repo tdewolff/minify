@@ -26,7 +26,7 @@ var (
 ////////////////////////////////////////////////////////////////
 
 // Minify minifies XML data, it reads from r and writes to w.
-func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
+func Minify(m minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string]string) error {
 	precededBySpace := true // on true the next text token must not start with a space
 
 	attrByteBuffer := make([]byte, 0, 64)

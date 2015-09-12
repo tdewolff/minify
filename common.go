@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"math"
+	"mime"
 	"net/url"
 
 	"github.com/tdewolff/parse"
@@ -43,7 +44,11 @@ func ContentType(b []byte) []byte {
 // DataURI minifies a data URI and calls a minifier by the specified mediatype. Specifications: https://www.ietf.org/rfc/rfc2397.txt.
 func DataURI(m Minifier, dataURI []byte) []byte {
 	if mediatype, data, err := parse.DataURI(dataURI); err == nil {
-		dataURI, _ = Bytes(m, string(mediatype), data)
+		mimetype, params, err := mime.ParseMediaType(string(mediatype))
+		if err != nil {
+			mimetype = string(mediatype)
+		}
+		dataURI, _ = Bytes(m, data, mimetype, params)
 		base64Len := len(";base64") + base64.StdEncoding.EncodedLen(len(dataURI))
 		asciiLen := len(dataURI)
 		for _, c := range dataURI {

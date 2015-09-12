@@ -27,7 +27,7 @@ func TestContentType(t *testing.T) {
 
 func TestDataURI(t *testing.T) {
 	m := New()
-	m.AddFunc("text/x", func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
+	m.AddFunc("text/x", func(m Minifier, w io.Writer, r io.Reader, mediatype string, options map[string]string) error {
 		b, _ := ioutil.ReadAll(r)
 		assert.Equal(t, "<?x?>", string(b))
 		w.Write(b)
