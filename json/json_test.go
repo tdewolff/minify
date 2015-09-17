@@ -11,17 +11,22 @@ import (
 	"github.com/tdewolff/minify"
 )
 
-func assertJSON(t *testing.T, input, expected string) {
-	m := minify.New()
-	b := &bytes.Buffer{}
-	assert.Nil(t, Minify(m, "application/json", b, bytes.NewBufferString(input)), "Minify must not return error in "+input)
-	assert.Equal(t, expected, b.String(), "Minify must give expected result in "+input)
-}
-
 func TestJSON(t *testing.T) {
-	assertJSON(t, "{ \"a\": [1, 2] }", "{\"a\":[1,2]}")
-	assertJSON(t, "[{ \"a\": [{\"x\": null}, true] }]", "[{\"a\":[{\"x\":null},true]}]")
-	assertJSON(t, "{ \"a\": 1, \"b\": 2 }", "{\"a\":1,\"b\":2}")
+	var jsonTests = []struct {
+		json     string
+		expected string
+	}{
+		{"{ \"a\": [1, 2] }", "{\"a\":[1,2]}"},
+		{"[{ \"a\": [{\"x\": null}, true] }]", "[{\"a\":[{\"x\":null},true]}]"},
+		{"{ \"a\": 1, \"b\": 2 }", "{\"a\":1,\"b\":2}"},
+	}
+
+	m := minify.New()
+	for _, tt := range jsonTests {
+		b := &bytes.Buffer{}
+		assert.Nil(t, Minify(m, "application/json", b, bytes.NewBufferString(tt.json)), "Minify must not return error in "+tt.json)
+		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.json)
+	}
 }
 
 ////////////////////////////////////////////////////////////////
