@@ -82,6 +82,8 @@ func TestHTML(t *testing.T) {
 	assertHTML(t, m, "<p>x </p>y", "<p>x</p>y")
 	assertHTML(t, m, "x <p>y</p>", "x<p>y")
 	assertHTML(t, m, " <!doctype html> <!--comment--> <html> <body><p></p></body></html>", "<!doctype html><p>") // spaces before html and at the start of html are dropped
+	assertHTML(t, m, "<p>x<br> y", "<p>x<br>y")
+	assertHTML(t, m, "<p>x </b> <b> y", "<p>x</b> <b>y")
 
 	// from HTML Minifier
 	assertHTML(t, m, "<DIV TITLE=\"blah\">boo</DIV>", "<div title=blah>boo</div>")

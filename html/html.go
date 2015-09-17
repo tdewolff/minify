@@ -29,7 +29,7 @@ const maxAttrLookup = 4
 func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	var rawTag html.Hash
 	var rawTagMediatype []byte
-	precededBySpace := true // on true the next text token must not start with a space
+	omitSpace := true // if true the next leading space is omitted
 	defaultScriptType := "text/javascript"
 	defaultStyleType := "text/css"
 	defaultInlineStyleType := "text/css;inline=1"
@@ -98,41 +98,42 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				}
 			} else if t.Data = parse.ReplaceMultiple(t.Data, parse.IsWhitespace, ' '); len(t.Data) > 0 {
 				// whitespace removal; trim left
-				if precededBySpace && t.Data[0] == ' ' {
+				if omitSpace && t.Data[0] == ' ' {
 					t.Data = t.Data[1:]
 				}
 
 				// whitespace removal; trim right
-				precededBySpace = false
+				omitSpace = false
 				if len(t.Data) == 0 {
-					precededBySpace = true
+					omitSpace = true
 				} else if t.Data[len(t.Data)-1] == ' ' {
-					precededBySpace = true
-					trim := false
+					omitSpace = true
 					i := 0
 					for {
 						next := tb.Peek(i)
-						// trim if EOF, text token with whitespace begin or block token
+						// trim if EOF, text token with leading whitespace or block token
 						if next.TokenType == html.ErrorToken {
-							trim = true
+							t.Data = t.Data[:len(t.Data)-1]
+							omitSpace = false
 							break
 						} else if next.TokenType == html.TextToken {
 							// remove if the text token starts with a whitespace
-							trim = (len(next.Data) > 0 && parse.IsWhitespace(next.Data[0]))
+							if len(next.Data) > 0 && parse.IsWhitespace(next.Data[0]) {
+								t.Data = t.Data[:len(t.Data)-1]
+								omitSpace = false
+							}
 							break
 						} else if next.TokenType == html.StartTagToken || next.TokenType == html.EndTagToken {
+							// remove when followed up by a block tag
 							if !inlineTagMap[next.Hash] {
-								trim = true
+								t.Data = t.Data[:len(t.Data)-1]
+								omitSpace = false
 								break
 							} else if next.TokenType == html.StartTagToken {
 								break
 							}
 						}
 						i++
-					}
-					if trim {
-						t.Data = t.Data[:len(t.Data)-1]
-						precededBySpace = false
 					}
 				}
 				if _, err := w.Write(t.Data); err != nil {
@@ -149,7 +150,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 
 			if !inlineTagMap[t.Hash] {
-				precededBySpace = true
+				omitSpace = true // omit spaces after block elements
 				if t.TokenType == html.StartTagToken && rawTagMap[t.Hash] {
 					// ignore empty script and style tags
 					if !hasAttributes && (t.Hash == html.Script || t.Hash == html.Style) {
