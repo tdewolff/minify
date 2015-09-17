@@ -335,20 +335,19 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						if len(val) == 0 {
 							continue
 						}
-					} else if t.Hash != html.A && urlAttrMap[attr.Hash] && len(val) > 5 { // anchors are already handled
+					} else if urlAttrMap[attr.Hash] && len(val) > 5 { // anchors are already handled
 						// TODO: omit http or https according to URL, specified through options
+						//if t.Hash != html.A {
 						// if parse.EqualFold(val[:4], []byte{'h', 't', 't', 'p'}) {
 						// 	if val[4] == ':' {
 						// 		val = val[5:]
 						// 	} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
 						// 		val = val[6:]
 						// 	}
+						// }
 						// } else
 						if parse.EqualFold(val[:5], []byte{'d', 'a', 't', 'a', ':'}) {
 							val = minify.DataURI(m, val)
-						}
-						if len(val) == 0 {
-							continue
 						}
 					}
 
