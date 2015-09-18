@@ -159,12 +159,12 @@ func TestCSSInlineMediatype(t *testing.T) {
 	assert.Equal(t, css, w.String(), "Minify must give expected result in "+css)
 }
 
-// func TestReaderErrors(t *testing.T) {
-// 	m := minify.New()
-// 	r := test.NewErrorReader(0)
-// 	w := &bytes.Buffer{}
-// 	assert.Equal(t, test.ErrPlain, Minify(m, "text/html", w, r), "Minify must return error at first read")
-// }
+func TestReaderErrors(t *testing.T) {
+	m := minify.New()
+	r := test.NewErrorReader(0)
+	w := &bytes.Buffer{}
+	assert.Equal(t, test.ErrPlain, Minify(m, "text/css", w, r), "Minify must return error at first read")
+}
 
 func TestWriterErrors(t *testing.T) {
 	var errorTests = []struct {
