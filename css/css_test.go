@@ -4,132 +4,192 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/minify"
+	"github.com/tdewolff/test"
 )
 
-func assertCSS(t *testing.T, m *minify.Minify, isStylesheet bool, input, expected string) {
-	mediatype := "text/css"
-	if !isStylesheet {
-		if len(input)%2 == 0 {
-			mediatype = "text/css;inline=1"
-		} else {
-			mediatype = "text/css; inline=1"
-		}
+func TestCSS(t *testing.T) {
+	var cssTests = []struct {
+		css      string
+		expected string
+	}{
+		{"i { key: value; key2: value; }", "i{key:value;key2:value}"},
+		{".cla .ss > #id { x:y; }", ".cla .ss>#id{x:y}"},
+		{".cla[id ^= L] { x:y; }", ".cla[id^=L]{x:y}"},
+		{"area:focus { outline : 0;}", "area:focus{outline:0}"},
+		{"@import 'file';", "@import 'file'"},
+		{"@font-face { x:y; }", "@font-face{x:y}"},
+
+		{"input[type=\"radio\"]{x:y}", "input[type=radio]{x:y}"},
+		{"DIV{margin:1em}", "div{margin:1em}"},
+		{".CLASS{margin:1em}", ".CLASS{margin:1em}"},
+		{"@MEDIA all{}", "@media all{}"},
+		{"@media only screen and (max-width : 800px){}", "@media only screen and (max-width:800px){}"},
+		{"@media (-webkit-min-device-pixel-ratio:1.5),(min-resolution:1.5dppx){}", "@media(-webkit-min-device-pixel-ratio:1.5),(min-resolution:1.5dppx){}"},
+		{"[class^=icon-] i[class^=icon-],i[class*=\" icon-\"]{x:y}", "[class^=icon-] i[class^=icon-],i[class*=\" icon-\"]{x:y}"},
+		{"html{line-height:1;}html{line-height:1;}", "html{line-height:1}html{line-height:1}"},
+		{".clearfix { *zoom: 1; }", ".clearfix{*zoom:1}"},
+		{"a { b: 1", "a{b:1}"},
+
+		// coverage
+		{"a, b + c { x:y; }", "a,b+c{x:y}"},
+
+		// go-fuzz
+		{"input[type=\"\x00\"] {  a: b\n}.a{}", "input[type=\"\x00\"] {  a: b\n}.a{}"},
+		{"a{a:)'''", "a{a:)'''}"},
 	}
 
-	b := &bytes.Buffer{}
-	assert.Nil(t, Minify(m, mediatype, b, bytes.NewBufferString(input)), "Minify must not return error in "+input)
-	assert.Equal(t, expected, b.String(), "Minify must give expected result in "+input)
+	m := minify.New()
+	for _, tt := range cssTests {
+		b := &bytes.Buffer{}
+		assert.Nil(t, Minify(m, "text/css", b, bytes.NewBufferString(tt.css)), "Minify must not return error in "+tt.css)
+		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.css)
+	}
 }
 
-////////////////////////////////////////////////////////////////
+func TestCSSInline(t *testing.T) {
+	var cssTests = []struct {
+		css      string
+		expected string
+	}{
+		{"/*comment*/", ""},
+		{";", ""},
+		{"empty:", "empty:"},
+		{"key: value;", "key:value"},
+		{"margin: 0 1; padding: 0 1;", "margin:0 1;padding:0 1"},
+		{"color: #FF0000;", "color:red"},
+		{"color: #000000;", "color:#000"},
+		{"color: black;", "color:#000"},
+		{"color: rgb(255,255,255);", "color:#fff"},
+		{"color: rgb(100%,100%,100%);", "color:#fff"},
+		{"color: rgba(255,0,0,1);", "color:red"},
+		{"color: rgba(255,0,0,2);", "color:red"},
+		{"color: rgba(255,0,0,0.5);", "color:rgba(255,0,0,.5)"},
+		{"color: rgba(255,0,0,-1);", "color:transparent"},
+		{"color: hsl(0,100%,50%);", "color:red"},
+		{"color: hsla(1,2%,3%,1);", "color:#080807"},
+		{"color: hsla(1,2%,3%,0);", "color:transparent"},
+		{"color: hsl(48,100%,50%);", "color:#fc0"},
+		{"font-weight: bold; font-weight: normal;", "font-weight:700;font-weight:400"},
+		{"font: bold \"Times new Roman\",\"Sans-Serif\";", "font:700 times new roman,\"sans-serif\""},
+		{"outline: none;", "outline:0"},
+		{"outline: none !important;", "outline:0!important"},
+		{"border-left: none;", "border-left:0"},
+		{"margin: 1 1 1 1;", "margin:1"},
+		{"margin: 1 2 1 2;", "margin:1 2"},
+		{"margin: 1 2 3 2;", "margin:1 2 3"},
+		{"margin: 1 2 3 4;", "margin:1 2 3 4"},
+		{"margin: 1 1 1 a;", "margin:1 1 1 a"},
+		{"margin: 1 1 1 1 !important;", "margin:1!important"},
+		{"padding:.2em .4em .2em", "padding:.2em .4em"},
+		{"margin: 0em;", "margin:0"},
+		{"font-family:'Arial', 'Times New Roman';", "font-family:arial,times new roman"},
+		{"background:url('http://domain.com/image.png');", "background:url(http://domain.com/image.png)"},
+		{"filter: progid : DXImageTransform.Microsoft.BasicImage(rotation=1);", "filter:progid:DXImageTransform.Microsoft.BasicImage(rotation=1)"},
+		{"filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=0);", "filter:alpha(opacity=0)"},
+		{"content: \"a\\\nb\";", "content:\"ab\""},
+		{"content: \"a\\\r\nb\\\r\nc\";", "content:\"abc\""},
+		{"content: \"\";", "content:\"\""},
 
-func TestCSS(t *testing.T) {
+		{"font:27px/13px arial,sans-serif", "font:27px/13px arial,sans-serif"},
+		{"text-decoration: none !important", "text-decoration:none!important"},
+		{"color:#fff", "color:#fff"},
+		{"border:2px rgb(255,255,255);", "border:2px #fff"},
+		{"margin:-1px", "margin:-1px"},
+		{"margin:+1px", "margin:1px"},
+		{"margin:0.5em", "margin:.5em"},
+		{"margin:-0.5em", "margin:-.5em"},
+		{"margin:05em", "margin:5em"},
+		{"margin:.50em", "margin:.5em"},
+		{"margin:5.0em", "margin:5em"},
+		{"color:#c0c0c0", "color:silver"},
+		{"-ms-filter: \"progid:DXImageTransform.Microsoft.Alpha(Opacity=80)\";", "-ms-filter:\"alpha(opacity=80)\""},
+		{"filter: progid:DXImageTransform.Microsoft.Alpha(Opacity = 80);", "filter:alpha(opacity=80)"},
+		{"MARGIN:1EM", "margin:1em"},
+		{"color:CYAN", "color:cyan"},
+		{"background:URL(x.PNG);", "background:url(x.PNG)"},
+		{"background:url(/*nocomment*/)", "background:url(/*nocomment*/)"},
+		{"background:url(data:,text)", "background:url(data:,text)"},
+		{"background:url('data:text/xml; version = 2.0,content')", "background:url(data:text/xml;version=2.0,content)"},
+		{"background:url('data:\\'\",text')", "background:url('data:\\'\",text')"},
+		{"margin:0 0 18px 0;", "margin:0 0 18px"},
+		{"background:none", "background:0 0"},
+		{"background:none 1 1", "background:none 1 1"},
+		{"z-index:1000", "z-index:1000"},
+
+		// coverage
+		{"margin: 1 1;", "margin:1"},
+		{"margin: 1 2;", "margin:1 2"},
+		{"margin: 1 1 1;", "margin:1"},
+		{"margin: 1 2 1;", "margin:1 2"},
+		{"margin: 1 2 3;", "margin:1 2 3"},
+		{"margin: 0%;", "margin:0"},
+		{"color: rgb(255,64,64);", "color:#ff4040"},
+		{"color: rgb(256,-34,2342435);", "color:#f0f"},
+		{"color: rgb(120%,-45%,234234234%);", "color:#f0f"},
+		{"color: rgb(0, 1, ident);", "color:rgb(0,1,ident)"},
+		{"color: rgb(ident);", "color:rgb(ident)"},
+		{"margin: rgb(ident);", "margin:rgb(ident)"},
+		{"filter: progid:b().c.Alpha(rgba(x));", "filter:progid:b().c.Alpha(rgba(x))"},
+
+		// go-fuzz
+		{"FONT-FAMILY: ru\"", "font-family:ru\""},
+	}
+
 	m := minify.New()
-	m.AddFunc("text/css", Minify)
+	for _, tt := range cssTests {
+		r := bytes.NewBufferString(tt.css)
+		w := &bytes.Buffer{}
+		assert.Nil(t, Minify(m, "text/css;inline=1", w, r), "Minify must not return error in "+tt.css)
+		assert.Equal(t, tt.expected, w.String(), "Minify must give expected result in "+tt.css)
+	}
+}
 
-	assertCSS(t, m, false, "/*comment*/", "")
-	assertCSS(t, m, false, ";", "")
-	assertCSS(t, m, false, "key: value;", "key:value")
-	assertCSS(t, m, false, "margin: 0 1; padding: 0 1;", "margin:0 1;padding:0 1")
-	assertCSS(t, m, false, "color: #FF0000;", "color:red")
-	assertCSS(t, m, false, "color: #000000;", "color:#000")
-	assertCSS(t, m, false, "color: black;", "color:#000")
-	assertCSS(t, m, false, "color: rgb(255,255,255);", "color:#fff")
-	assertCSS(t, m, false, "color: rgb(100%,100%,100%);", "color:#fff")
-	assertCSS(t, m, false, "color: rgba(255,0,0,1);", "color:red")
-	assertCSS(t, m, false, "color: rgba(255,0,0,2);", "color:red")
-	assertCSS(t, m, false, "color: rgba(255,0,0,0.5);", "color:rgba(255,0,0,.5)")
-	assertCSS(t, m, false, "color: rgba(255,0,0,-1);", "color:transparent")
-	assertCSS(t, m, false, "color: hsl(0,100%,50%);", "color:red")
-	assertCSS(t, m, false, "color: hsla(1,2%,3%,1);", "color:#080807")
-	assertCSS(t, m, false, "color: hsla(1,2%,3%,0);", "color:transparent")
-	assertCSS(t, m, false, "font-weight: bold; font-weight: normal;", "font-weight:700;font-weight:400")
-	assertCSS(t, m, false, "font: bold \"Times new Roman\",\"Sans-Serif\";", "font:700 times new roman,\"sans-serif\"")
-	assertCSS(t, m, false, "outline: none;", "outline:0")
-	assertCSS(t, m, false, "outline: none !important;", "outline:0!important")
-	assertCSS(t, m, false, "border-left: none;", "border-left:0")
-	assertCSS(t, m, false, "margin: 1 1 1 1;", "margin:1")
-	assertCSS(t, m, false, "margin: 1 2 1 2;", "margin:1 2")
-	assertCSS(t, m, false, "margin: 1 2 3 2;", "margin:1 2 3")
-	assertCSS(t, m, false, "margin: 1 2 3 4;", "margin:1 2 3 4")
-	assertCSS(t, m, false, "margin: 1 1 1 a;", "margin:1 1 1 a")
-	assertCSS(t, m, false, "margin: 1 1 1 1 !important;", "margin:1!important")
-	assertCSS(t, m, false, "padding:.2em .4em .2em", "padding:.2em .4em")
-	assertCSS(t, m, false, "margin: 0em;", "margin:0")
-	assertCSS(t, m, false, "font-family:'Arial', 'Times New Roman';", "font-family:arial,times new roman")
-	assertCSS(t, m, false, "background:url('http://domain.com/image.png');", "background:url(http://domain.com/image.png)")
-	assertCSS(t, m, false, "filter: progid : DXImageTransform.Microsoft.BasicImage(rotation=1);", "filter:progid:DXImageTransform.Microsoft.BasicImage(rotation=1)")
-	assertCSS(t, m, false, "filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=0);", "filter:alpha(opacity=0)")
-	assertCSS(t, m, false, "content: \"a\\\nb\";", "content:\"ab\"")
-	assertCSS(t, m, false, "content: \"a\\\r\nb\\\r\nc\";", "content:\"abc\"")
-	assertCSS(t, m, false, "content: \"\";", "content:\"\"")
-	assertCSS(t, m, true, "i { key: value; key2: value; }", "i{key:value;key2:value}")
-	assertCSS(t, m, true, ".cla .ss > #id { x:y; }", ".cla .ss>#id{x:y}")
-	assertCSS(t, m, true, ".cla[id ^= L] { x:y; }", ".cla[id^=L]{x:y}")
-	assertCSS(t, m, true, "area:focus { outline : 0;}", "area:focus{outline:0}")
-	assertCSS(t, m, true, "@import 'file';", "@import 'file'")
-	assertCSS(t, m, true, "@font-face { x:y; }", "@font-face{x:y}")
+func TestCSSInlineMediatype(t *testing.T) {
+	css := `color:red`
+	m := minify.New()
 
-	assertCSS(t, m, false, "font:27px/13px arial,sans-serif", "font:27px/13px arial,sans-serif")
-	assertCSS(t, m, false, "text-decoration: none !important", "text-decoration:none!important")
-	assertCSS(t, m, false, "color:#fff", "color:#fff")
-	assertCSS(t, m, false, "border:2px rgb(255,255,255);", "border:2px #fff")
-	assertCSS(t, m, false, "margin:-1px", "margin:-1px")
-	assertCSS(t, m, false, "margin:+1px", "margin:1px")
-	assertCSS(t, m, false, "margin:0.5em", "margin:.5em")
-	assertCSS(t, m, false, "margin:-0.5em", "margin:-.5em")
-	assertCSS(t, m, false, "margin:05em", "margin:5em")
-	assertCSS(t, m, false, "margin:.50em", "margin:.5em")
-	assertCSS(t, m, false, "margin:5.0em", "margin:5em")
-	assertCSS(t, m, false, "color:#c0c0c0", "color:silver")
-	assertCSS(t, m, false, "-ms-filter: \"progid:DXImageTransform.Microsoft.Alpha(Opacity=80)\";", "-ms-filter:\"alpha(opacity=80)\"")
-	assertCSS(t, m, false, "filter: progid:DXImageTransform.Microsoft.Alpha(Opacity = 80);", "filter:alpha(opacity=80)")
-	assertCSS(t, m, false, "MARGIN:1EM", "margin:1em")
-	assertCSS(t, m, false, "color:CYAN", "color:cyan")
-	assertCSS(t, m, false, "background:URL(x.PNG);", "background:url(x.PNG)")
-	assertCSS(t, m, false, "background:url(/*nocomment*/)", "background:url(/*nocomment*/)")
-	assertCSS(t, m, false, "background:url(data:,text)", "background:url(data:,text)")
-	assertCSS(t, m, false, "background:url('data:text/xml; version = 2.0,content')", "background:url(data:text/xml;version=2.0,content)")
-	assertCSS(t, m, false, "background:url('data:\\'\",text')", "background:url('data:\\'\",text')")
-	assertCSS(t, m, false, "margin:0 0 18px 0;", "margin:0 0 18px")
-	assertCSS(t, m, true, "input[type=\"radio\"]{x:y}", "input[type=radio]{x:y}")
-	assertCSS(t, m, true, "DIV{margin:1em}", "div{margin:1em}")
-	assertCSS(t, m, true, ".CLASS{margin:1em}", ".CLASS{margin:1em}")
-	assertCSS(t, m, true, "@MEDIA all{}", "@media all{}")
-	assertCSS(t, m, true, "@media only screen and (max-width : 800px){}", "@media only screen and (max-width:800px){}")
-	assertCSS(t, m, true, "@media (-webkit-min-device-pixel-ratio:1.5),(min-resolution:1.5dppx){}", "@media(-webkit-min-device-pixel-ratio:1.5),(min-resolution:1.5dppx){}")
-	assertCSS(t, m, true, "[class^=icon-] i[class^=icon-],i[class*=\" icon-\"]{x:y}", "[class^=icon-] i[class^=icon-],i[class*=\" icon-\"]{x:y}")
-	assertCSS(t, m, true, "html{line-height:1;}html{line-height:1;}", "html{line-height:1}html{line-height:1}")
-	assertCSS(t, m, true, ".clearfix { *zoom: 1; }", ".clearfix{*zoom:1}")
-	assertCSS(t, m, true, "a { b: 1", "a{b:1}")
-	assertCSS(t, m, false, "background:none", "background:0 0")
-	assertCSS(t, m, false, "background:none 1 1", "background:none 1 1")
-	assertCSS(t, m, false, "z-index:1000", "z-index:1000")
+	r := bytes.NewBufferString(css)
+	w := &bytes.Buffer{}
+	assert.Nil(t, Minify(m, "text/css ; inline = 1", w, r), "Minify must not return error in "+css)
+	assert.Equal(t, css, w.String(), "Minify must give expected result in "+css)
+}
 
-	// coverage
-	assertCSS(t, m, false, "margin: 1 1;", "margin:1")
-	assertCSS(t, m, false, "margin: 1 2;", "margin:1 2")
-	assertCSS(t, m, false, "margin: 1 1 1;", "margin:1")
-	assertCSS(t, m, false, "margin: 1 2 1;", "margin:1 2")
-	assertCSS(t, m, false, "margin: 1 2 3;", "margin:1 2 3")
-	assertCSS(t, m, false, "margin: 0%;", "margin:0")
-	assertCSS(t, m, false, "color: rgb(255,64,64);", "color:#ff4040")
-	assertCSS(t, m, false, "color: rgb(256,-34,2342435);", "color:#f0f")
-	assertCSS(t, m, false, "color: rgb(120%,-45%,234234234%);", "color:#f0f")
-	assertCSS(t, m, false, "color: rgb(0, 1, ident);", "color:rgb(0,1,ident)")
-	assertCSS(t, m, false, "color: rgb(ident);", "color:rgb(ident)")
-	assertCSS(t, m, false, "margin: rgb(ident);", "margin:rgb(ident)")
-	assertCSS(t, m, false, "filter: progid:b().c.Alpha(rgba(x));", "filter:progid:b().c.Alpha(rgba(x))")
-	assertCSS(t, m, true, "a, b + c { x:y; }", "a,b+c{x:y}")
+func TestReaderErrors(t *testing.T) {
+	m := minify.New()
+	r := test.NewErrorReader(0)
+	w := &bytes.Buffer{}
+	assert.Equal(t, test.ErrPlain, Minify(m, "text/css", w, r), "Minify must return error at first read")
+}
 
-	// go-fuzz
-	assertCSS(t, m, false, "FONT-FAMILY: ru\"", "font-family:ru\"")
-	assertCSS(t, m, true, "input[type=\"\x00\"] {  a: b\n}.a{}", "input[type=\"\x00\"] {  a: b\n}.a{}")
-	assertCSS(t, m, true, "a{a:)'''", "a{a:)'''}")
+func TestWriterErrors(t *testing.T) {
+	var errorTests = []struct {
+		css string
+		n   []int
+	}{
+		{`@import 'file'`, []int{0, 2}},
+		{`@media all{}`, []int{0, 2, 3, 4}},
+		{`a[id^="L"]{margin:2in!important;color:red}`, []int{0, 4, 6, 7, 8, 9, 10, 11}},
+		{`a{color:rgb(255,0,0)}`, []int{4}},
+		{`a{color:rgb(255,255,255)}`, []int{4}},
+		{`a{color:hsl(0,100%,50%)}`, []int{4}},
+		{`a{color:hsl(360,100%,100%)}`, []int{4}},
+		{`a{color:f(arg)}`, []int{4}},
+		{`<!--`, []int{0}},
+	}
+
+	m := minify.New()
+	for _, tt := range errorTests {
+		for _, n := range tt.n {
+			r := bytes.NewBufferString(tt.css)
+			w := test.NewErrorWriter(n)
+			assert.Equal(t, test.ErrPlain, Minify(m, "text/css", w, r), "Minify must return error in "+tt.css+" at write "+strconv.FormatInt(int64(n), 10))
+		}
+	}
 }
 
 ////////////////////////////////////////////////////////////////
