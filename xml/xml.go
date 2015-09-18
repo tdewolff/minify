@@ -80,24 +80,24 @@ func Minify(m *minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string
 					precededBySpace = true
 				} else if t.Data[len(t.Data)-1] == ' ' {
 					precededBySpace = true
-					trim := false
 					i := 0
 					for {
 						next := tb.Peek(i)
 						// trim if EOF, text token with whitespace begin or block token
 						if next.TokenType == xml.StartTagToken || next.TokenType == xml.EndTagToken || next.TokenType == xml.ErrorToken {
-							trim = true
+							t.Data = t.Data[:len(t.Data)-1]
+							precededBySpace = false
 							break
 						} else if next.TokenType == xml.TextToken {
 							// remove if the text token starts with a whitespace
-							trim = (len(next.Data) > 0 && parse.IsWhitespace(next.Data[0]))
+							if len(next.Data) > 0 && parse.IsWhitespace(next.Data[0]) {
+								t.Data = t.Data[:len(t.Data)-1]
+								precededBySpace = false
+
+							}
 							break
 						}
 						i++
-					}
-					if trim {
-						t.Data = t.Data[:len(t.Data)-1]
-						precededBySpace = false
 					}
 				}
 				if _, err := w.Write(t.Data); err != nil {
@@ -119,23 +119,6 @@ func Minify(m *minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string
 				return err
 			}
 		case xml.AttributeToken:
-			if len(t.AttrVal) < 2 {
-				if _, err := w.Write(spaceBytes); err != nil {
-					return err
-				}
-				if _, err := w.Write(t.Data); err != nil {
-					return err
-				}
-				if _, err := w.Write(isBytes); err != nil {
-					return err
-				}
-				if _, err := w.Write(t.AttrVal); err != nil {
-					return err
-				}
-				continue
-			}
-
-			val := t.AttrVal[1 : len(t.AttrVal)-1]
 			if _, err := w.Write(spaceBytes); err != nil {
 				return err
 			}
@@ -146,10 +129,16 @@ func Minify(m *minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string
 				return err
 			}
 
-			// prefer single or double quotes depending on what occurs more often in value
-			val = xml.EscapeAttrVal(&attrByteBuffer, val)
-			if _, err := w.Write(val); err != nil {
-				return err
+			if len(t.AttrVal) < 2 {
+				if _, err := w.Write(t.AttrVal); err != nil {
+					return err
+				}
+			} else {
+				// prefer single or double quotes depending on what occurs more often in value
+				val := xml.EscapeAttrVal(&attrByteBuffer, t.AttrVal[1:len(t.AttrVal)-1])
+				if _, err := w.Write(val); err != nil {
+					return err
+				}
 			}
 		case xml.StartTagCloseToken:
 			next := tb.Peek(0)

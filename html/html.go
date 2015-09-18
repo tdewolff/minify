@@ -30,7 +30,7 @@ func Minify(m *minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string
 
 	var rawTag html.Hash
 	var rawTagMediatype []byte
-	precededBySpace := true // on true the next text token must not start with a space
+	omitSpace := true // if true the next leading space is omitted
 	defaultScriptType := "text/javascript"
 	defaultStyleType := "text/css"
 
@@ -98,41 +98,42 @@ func Minify(m *minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string
 				}
 			} else if t.Data = parse.ReplaceMultiple(t.Data, parse.IsWhitespace, ' '); len(t.Data) > 0 {
 				// whitespace removal; trim left
-				if precededBySpace && t.Data[0] == ' ' {
+				if omitSpace && t.Data[0] == ' ' {
 					t.Data = t.Data[1:]
 				}
 
 				// whitespace removal; trim right
-				precededBySpace = false
+				omitSpace = false
 				if len(t.Data) == 0 {
-					precededBySpace = true
+					omitSpace = true
 				} else if t.Data[len(t.Data)-1] == ' ' {
-					precededBySpace = true
-					trim := false
+					omitSpace = true
 					i := 0
 					for {
 						next := tb.Peek(i)
-						// trim if EOF, text token with whitespace begin or block token
+						// trim if EOF, text token with leading whitespace or block token
 						if next.TokenType == html.ErrorToken {
-							trim = true
+							t.Data = t.Data[:len(t.Data)-1]
+							omitSpace = false
 							break
 						} else if next.TokenType == html.TextToken {
 							// remove if the text token starts with a whitespace
-							trim = (len(next.Data) > 0 && parse.IsWhitespace(next.Data[0]))
+							if len(next.Data) > 0 && parse.IsWhitespace(next.Data[0]) {
+								t.Data = t.Data[:len(t.Data)-1]
+								omitSpace = false
+							}
 							break
 						} else if next.TokenType == html.StartTagToken || next.TokenType == html.EndTagToken {
+							// remove when followed up by a block tag
 							if !inlineTagMap[next.Hash] {
-								trim = true
+								t.Data = t.Data[:len(t.Data)-1]
+								omitSpace = false
 								break
 							} else if next.TokenType == html.StartTagToken {
 								break
 							}
 						}
 						i++
-					}
-					if trim {
-						t.Data = t.Data[:len(t.Data)-1]
-						precededBySpace = false
 					}
 				}
 				if _, err := w.Write(t.Data); err != nil {
@@ -149,7 +150,7 @@ func Minify(m *minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string
 			}
 
 			if !inlineTagMap[t.Hash] {
-				precededBySpace = true
+				omitSpace = true // omit spaces after block elements
 				if t.TokenType == html.StartTagToken && rawTagMap[t.Hash] {
 					// ignore empty script and style tags
 					if !hasAttributes && (t.Hash == html.Script || t.Hash == html.Style) {
@@ -340,8 +341,8 @@ func Minify(m *minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string
 						if len(val) == 0 {
 							continue
 						}
-					} else if t.Hash != html.A && urlAttrMap[attr.Hash] && len(val) > 5 { // anchors are already handled
-						if parse.EqualFold(val[:4], []byte{'h', 't', 't', 'p'}) {
+					} else if urlAttrMap[attr.Hash] && len(val) > 5 {
+						if t.Hash != html.A && parse.EqualFold(val[:4], []byte{'h', 't', 't', 'p'}) { // anchors are already handled
 							if val[4] == ':' {
 								if scheme == "http" {
 									val = val[5:]
@@ -357,9 +358,6 @@ func Minify(m *minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string
 							}
 						} else if parse.EqualFold(val[:5], []byte{'d', 'a', 't', 'a', ':'}) {
 							val = minify.DataURI(m, val)
-						}
-						if len(val) == 0 {
-							continue
 						}
 					}
 

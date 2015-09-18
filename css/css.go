@@ -43,10 +43,7 @@ func Minify(m *minify.Minifier, w io.Writer, r io.Reader, mimetype string, param
 		p: css.NewParser(r, isStylesheet),
 	}
 
-	if err := c.minifyGrammar(); err != nil {
-		if err == io.EOF {
-			return nil
-		}
+	if err := c.minifyGrammar(); err != nil && err != io.EOF {
 		return err
 	}
 	return nil
@@ -117,7 +114,6 @@ func (c *cssMinifier) minifyGrammar() error {
 			return err
 		}
 	}
-	return nil
 }
 
 func (c *cssMinifier) minifySelectors(property []byte, values []css.Token) error {

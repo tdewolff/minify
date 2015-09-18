@@ -4,35 +4,61 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/minify"
+	"github.com/tdewolff/test"
 )
 
-func assertJS(t *testing.T, input, expected string) {
+func TestCSS(t *testing.T) {
+	var jsTests = []struct {
+		js       string
+		expected string
+	}{
+		{"/*comment*/", ""},
+		{"// comment\na", "a"},
+		{"function x(){}", "function x(){}"},
+		{"function x(a, b){}", "function x(a,b){}"},
+		{"a  b", "a b"},
+		{"a\n\nb", "a\nb"},
+		{"a// comment\nb", "a\nb"},
+		{"''\na", "''\na"},
+		{"''\n''", "''''"},
+		{"]\n0", "]\n0"},
+		{"a\n{", "a\n{"},
+		{";\na", ";a"},
+		{",\na", ",a"},
+		{"a + ++b", "a+ ++b"},                                          // JSMin caution
+		{"var a=/\\s?auto?\\s?/i\nvar", "var a=/\\s?auto?\\s?/i\nvar"}, // #14
+	}
+
 	m := minify.New()
-	b := &bytes.Buffer{}
-	assert.Nil(t, Minify(m, b, bytes.NewBufferString(input), "text/javascript", nil), "Minify must not return error in "+input)
-	assert.Equal(t, expected, b.String(), "Minify must give expected result in "+input)
+	for _, tt := range jsTests {
+		b := &bytes.Buffer{}
+		assert.Nil(t, Minify(m, b, bytes.NewBufferString(tt.js), "text/javascript", nil), "Minify must not return error in "+tt.js)
+		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.js)
+	}
 }
 
-func TestCSS(t *testing.T) {
-	assertJS(t, "/*comment*/", "")
-	assertJS(t, "// comment\na", "a")
-	assertJS(t, "function x(){}", "function x(){}")
-	assertJS(t, "function x(a, b){}", "function x(a,b){}")
-	assertJS(t, "a  b", "a b")
-	assertJS(t, "a\n\nb", "a\nb")
-	assertJS(t, "a// comment\nb", "a\nb")
-	assertJS(t, "''\na", "''\na")
-	assertJS(t, "''\n''", "''''")
-	assertJS(t, "]\n0", "]\n0")
-	assertJS(t, "a\n{", "a\n{")
-	assertJS(t, ";\na", ";a")
-	assertJS(t, ",\na", ",a")
-	assertJS(t, "a + ++b", "a+ ++b")                                          // JSMin caution
-	assertJS(t, "var a=/\\s?auto?\\s?/i\nvar", "var a=/\\s?auto?\\s?/i\nvar") // #14
+func TestReaderErrors(t *testing.T) {
+	m := minify.New()
+	r := test.NewErrorReader(0)
+	w := &bytes.Buffer{}
+	assert.Equal(t, test.ErrPlain, Minify(m, w, r, "text/javascript", nil), "Minify must return error at first read")
+}
+
+func TestWriterErrors(t *testing.T) {
+	var errorTests = []int{0, 1, 4}
+
+	m := minify.New()
+	for _, n := range errorTests {
+		// writes:                  01 2345
+		r := bytes.NewBufferString("a\n{5 5")
+		w := test.NewErrorWriter(n)
+		assert.Equal(t, test.ErrPlain, Minify(m, w, r, "text/javascript", nil), "Minify must return error at write "+strconv.FormatInt(int64(n), 10))
+	}
 }
 
 ////////////////////////////////////////////////////////////////
