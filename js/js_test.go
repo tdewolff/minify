@@ -12,7 +12,7 @@ import (
 	"github.com/tdewolff/test"
 )
 
-func TestCSS(t *testing.T) {
+func TestJS(t *testing.T) {
 	var jsTests = []struct {
 		js       string
 		expected string
@@ -32,6 +32,9 @@ func TestCSS(t *testing.T) {
 		{",\na", ",a"},
 		{"a + ++b", "a+ ++b"},                                          // JSMin caution
 		{"var a=/\\s?auto?\\s?/i\nvar", "var a=/\\s?auto?\\s?/i\nvar"}, // #14
+		{"{return;}", "{return}"},
+		{"{var index=0;index++}", "{var a=0;a++}"},
+		{"function f(argument){return argument}", "function f(a){return a}"},
 	}
 
 	m := minify.New()
