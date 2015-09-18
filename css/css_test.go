@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/minify"
+	"github.com/tdewolff/test"
 )
 
 func TestCSS(t *testing.T) {
@@ -56,6 +58,7 @@ func TestCSSInline(t *testing.T) {
 	}{
 		{"/*comment*/", ""},
 		{";", ""},
+		{"empty:", "empty:"},
 		{"key: value;", "key:value"},
 		{"margin: 0 1; padding: 0 1;", "margin:0 1;padding:0 1"},
 		{"color: #FF0000;", "color:red"},
@@ -70,6 +73,7 @@ func TestCSSInline(t *testing.T) {
 		{"color: hsl(0,100%,50%);", "color:red"},
 		{"color: hsla(1,2%,3%,1);", "color:#080807"},
 		{"color: hsla(1,2%,3%,0);", "color:transparent"},
+		{"color: hsl(48,100%,50%);", "color:#fc0"},
 		{"font-weight: bold; font-weight: normal;", "font-weight:700;font-weight:400"},
 		{"font: bold \"Times new Roman\",\"Sans-Serif\";", "font:700 times new roman,\"sans-serif\""},
 		{"outline: none;", "outline:0"},
@@ -138,9 +142,53 @@ func TestCSSInline(t *testing.T) {
 
 	m := minify.New()
 	for _, tt := range cssTests {
-		b := &bytes.Buffer{}
-		assert.Nil(t, Minify(m, "text/css;inline=1", b, bytes.NewBufferString(tt.css)), "Minify must not return error in "+tt.css)
-		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.css)
+		r := bytes.NewBufferString(tt.css)
+		w := &bytes.Buffer{}
+		assert.Nil(t, Minify(m, "text/css;inline=1", w, r), "Minify must not return error in "+tt.css)
+		assert.Equal(t, tt.expected, w.String(), "Minify must give expected result in "+tt.css)
+	}
+}
+
+func TestCSSInlineMediatype(t *testing.T) {
+	css := `color:red`
+	m := minify.New()
+
+	r := bytes.NewBufferString(css)
+	w := &bytes.Buffer{}
+	assert.Nil(t, Minify(m, "text/css ; inline = 1", w, r), "Minify must not return error in "+css)
+	assert.Equal(t, css, w.String(), "Minify must give expected result in "+css)
+}
+
+// func TestReaderErrors(t *testing.T) {
+// 	m := minify.New()
+// 	r := test.NewErrorReader(0)
+// 	w := &bytes.Buffer{}
+// 	assert.Equal(t, test.ErrPlain, Minify(m, "text/html", w, r), "Minify must return error at first read")
+// }
+
+func TestWriterErrors(t *testing.T) {
+	var errorTests = []struct {
+		css string
+		n   []int
+	}{
+		{`@import 'file'`, []int{0, 2}},
+		{`@media all{}`, []int{0, 2, 3, 4}},
+		{`a[id^="L"]{margin:2in!important;color:red}`, []int{0, 4, 6, 7, 8, 9, 10, 11}},
+		{`a{color:rgb(255,0,0)}`, []int{4}},
+		{`a{color:rgb(255,255,255)}`, []int{4}},
+		{`a{color:hsl(0,100%,50%)}`, []int{4}},
+		{`a{color:hsl(360,100%,100%)}`, []int{4}},
+		{`a{color:f(arg)}`, []int{4}},
+		{`<!--`, []int{0}},
+	}
+
+	m := minify.New()
+	for _, tt := range errorTests {
+		for _, n := range tt.n {
+			r := bytes.NewBufferString(tt.css)
+			w := test.NewErrorWriter(n)
+			assert.Equal(t, test.ErrPlain, Minify(m, "text/css", w, r), "Minify must return error in "+tt.css+" at write "+strconv.FormatInt(int64(n), 10))
+		}
 	}
 }
 
