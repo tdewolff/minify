@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/minify"
+	"github.com/tdewolff/test"
 )
 
 func TestCSS(t *testing.T) {
@@ -37,6 +39,25 @@ func TestCSS(t *testing.T) {
 		b := &bytes.Buffer{}
 		assert.Nil(t, Minify(m, "text/javascript", b, bytes.NewBufferString(tt.js)), "Minify must not return error in "+tt.js)
 		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.js)
+	}
+}
+
+func TestReaderErrors(t *testing.T) {
+	m := minify.New()
+	r := test.NewErrorReader(0)
+	w := &bytes.Buffer{}
+	assert.Equal(t, test.ErrPlain, Minify(m, "text/javascript", w, r), "Minify must return error at first read")
+}
+
+func TestWriterErrors(t *testing.T) {
+	var errorTests = []int{0, 1, 4}
+
+	m := minify.New()
+	for _, n := range errorTests {
+		// writes:                  01 2345
+		r := bytes.NewBufferString("a\n{5 5")
+		w := test.NewErrorWriter(n)
+		assert.Equal(t, test.ErrPlain, Minify(m, "text/javascript", w, r), "Minify must return error at write "+strconv.FormatInt(int64(n), 10))
 	}
 }
 
