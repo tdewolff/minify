@@ -81,6 +81,7 @@ func TestHTML(t *testing.T) {
 		{`<p>x </b> <b> y`, `<p>x</b> <b>y`},
 		{`a <code>code</code> b`, `a <code>code</code> b`},
 		{`a <code></code> b`, `a <code></code>b`},
+		{`a <script>script</script> b`, `a <script>script</script>b`},
 
 		// from HTML Minifier
 		{`<DIV TITLE="blah">boo</DIV>`, `<div title=blah>boo</div>`},
