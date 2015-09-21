@@ -96,6 +96,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				} else if _, err := w.Write(t.Data); err != nil {
 					return err
 				}
+				omitSpace = len(t.Data) > 0 && t.Data[len(t.Data)-1] == ' '
 			} else if t.Data = parse.ReplaceMultiple(t.Data, parse.IsWhitespace, ' '); len(t.Data) > 0 {
 				// whitespace removal; trim left
 				if omitSpace && t.Data[0] == ' ' {
@@ -147,11 +148,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				if next := tb.Peek(0); next.TokenType == html.AttributeToken {
 					hasAttributes = true
 				}
-			}
-
-			if !inlineTagMap[t.Hash] {
-				omitSpace = true // omit spaces after block elements
-				if t.TokenType == html.StartTagToken && rawTagMap[t.Hash] {
+				if rawTagMap[t.Hash] {
 					// ignore empty script and style tags
 					if !hasAttributes && (t.Hash == html.Script || t.Hash == html.Style) {
 						if next := tb.Peek(1); next.TokenType == html.EndTagToken {
@@ -163,6 +160,10 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					rawTag = t.Hash
 					rawTagMediatype = []byte{}
 				}
+			}
+
+			if !inlineTagMap[t.Hash] {
+				omitSpace = true // omit spaces after block elements
 
 				// remove superfluous ending tags
 				if !hasAttributes && (t.Hash == html.Html || t.Hash == html.Head || t.Hash == html.Body || t.Hash == html.Colgroup) {

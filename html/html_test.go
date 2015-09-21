@@ -79,6 +79,8 @@ func TestHTML(t *testing.T) {
 		{` <!doctype html> <!--comment--> <html> <body><p></p></body></html>`, `<!doctype html><p>`}, // spaces before html and at the start of html are dropped
 		{`<p>x<br> y`, `<p>x<br>y`},
 		{`<p>x </b> <b> y`, `<p>x</b> <b>y`},
+		{`a <code>code</code> b`, `a <code>code</code> b`},
+		{`a <code></code> b`, `a <code></code>b`},
 
 		// from HTML Minifier
 		{`<DIV TITLE="blah">boo</DIV>`, `<div title=blah>boo</div>`},
@@ -104,13 +106,13 @@ func TestHTML(t *testing.T) {
 		{`<a id="" value="">y</a>`, `<a value>y</a>`},
 
 		// protocol
-		//{`<span href="http://test"></span>`, `<span href=//test></span>`},
-		//{`<span href="HtTpS://test"></span>`, `<span href=//test></span>`},
-		//{`<a href="   http://example.com  ">x</a>`, `<a href=//example.com>x</a>`},
-		//{`<link rel="stylesheet" type="text/css" href="http://example.com">`, `<link rel=stylesheet href=//example.com>`},
-		//{`<!doctype html> <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"> <head profile="http://dublincore.org/documents/dcq-html/"> <!-- Barlesque 2.75.0 --> <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`,
-		//	`<!doctype html><html xmlns=//www.w3.org/1999/xhtml xml:lang=en><head profile=//dublincore.org/documents/dcq-html/><meta charset=utf-8>`},
-		//{`<svg xmlns="http://www.w3.org/2000/svg"><path d="x"/></svg>`, `<svg xmlns=//www.w3.org/2000/svg><path d="x"/></svg>`},
+		// {`<span href="http://test"></span>`, `<span href=//test></span>`},
+		// {`<span href="HtTpS://test"></span>`, `<span href=//test></span>`},
+		// {`<a href="   http://example.com  ">x</a>`, `<a href=//example.com>x</a>`},
+		// {`<link rel="stylesheet" type="text/css" href="http://example.com">`, `<link rel=stylesheet href=//example.com>`},
+		// {`<!doctype html> <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"> <head profile="http://dublincore.org/documents/dcq-html/"> <!-- Barlesque 2.75.0 --> <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`,
+		// 	`<!doctype html><html xmlns=//www.w3.org/1999/xhtml xml:lang=en><head profile=//dublincore.org/documents/dcq-html/><meta charset=utf-8>`},
+		// {`<svg xmlns="http://www.w3.org/2000/svg"><path d="x"/></svg>`, `<svg xmlns=//www.w3.org/2000/svg><path d="x"/></svg>`},
 
 		// go-fuzz
 		{`<meta e t n content=ful><a b`, `<meta e t n content=ful><a b>`},
