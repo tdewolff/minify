@@ -96,7 +96,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				} else if _, err := w.Write(t.Data); err != nil {
 					return err
 				}
-				if inlineTagMap[rawTag] && rawTag != html.Script {
+				if !nonPhrasingTagMap[rawTag] && rawTag != html.Script {
 					omitSpace = len(t.Data) > 0 && t.Data[len(t.Data)-1] == ' '
 				}
 			} else if t.Data = parse.ReplaceMultiple(t.Data, parse.IsWhitespace, ' '); len(t.Data) > 0 {
@@ -128,7 +128,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							break
 						} else if next.TokenType == html.StartTagToken || next.TokenType == html.EndTagToken {
 							// remove when followed up by a block tag
-							if !inlineTagMap[next.Hash] {
+							if nonPhrasingTagMap[next.Hash] {
 								t.Data = t.Data[:len(t.Data)-1]
 								omitSpace = false
 								break
@@ -163,32 +163,31 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					rawTagMediatype = []byte{}
 				}
 			}
-
-			if !inlineTagMap[t.Hash] {
+			if nonPhrasingTagMap[t.Hash] {
 				omitSpace = true // omit spaces after block elements
+			}
 
-				// remove superfluous ending tags
-				if !hasAttributes && (t.Hash == html.Html || t.Hash == html.Head || t.Hash == html.Body || t.Hash == html.Colgroup) {
+			// remove superfluous ending tags
+			if !hasAttributes && (t.Hash == html.Html || t.Hash == html.Head || t.Hash == html.Body || t.Hash == html.Colgroup) {
+				break
+			} else if t.TokenType == html.EndTagToken {
+				if t.Hash == html.Thead || t.Hash == html.Tbody || t.Hash == html.Tfoot || t.Hash == html.Tr || t.Hash == html.Th || t.Hash == html.Td ||
+					t.Hash == html.Optgroup || t.Hash == html.Option || t.Hash == html.Dd || t.Hash == html.Dt ||
+					t.Hash == html.Li || t.Hash == html.Rb || t.Hash == html.Rt || t.Hash == html.Rtc || t.Hash == html.Rp {
 					break
-				} else if t.TokenType == html.EndTagToken {
-					if t.Hash == html.Thead || t.Hash == html.Tbody || t.Hash == html.Tfoot || t.Hash == html.Tr || t.Hash == html.Th || t.Hash == html.Td ||
-						t.Hash == html.Optgroup || t.Hash == html.Option || t.Hash == html.Dd || t.Hash == html.Dt ||
-						t.Hash == html.Li || t.Hash == html.Rb || t.Hash == html.Rt || t.Hash == html.Rtc || t.Hash == html.Rp {
-						break
-					} else if t.Hash == html.P {
-						i := 0
-						for {
-							next := tb.Peek(i)
-							i++
-							// continue if text token is empty or whitespace
-							if next.TokenType == html.TextToken && parse.IsAllWhitespace(next.Data) {
-								continue
-							}
-							if next.TokenType == html.ErrorToken || next.TokenType == html.EndTagToken && next.Hash != html.A || next.TokenType == html.StartTagToken && blockTagMap[next.Hash] {
-								break SWITCH
-							}
-							break
+				} else if t.Hash == html.P {
+					i := 0
+					for {
+						next := tb.Peek(i)
+						i++
+						// continue if text token is empty or whitespace
+						if next.TokenType == html.TextToken && parse.IsAllWhitespace(next.Data) {
+							continue
 						}
+						if next.TokenType == html.ErrorToken || next.TokenType == html.EndTagToken && next.Hash != html.A || next.TokenType == html.StartTagToken && nonPhrasingTagMap[next.Hash] {
+							break SWITCH
+						}
+						break
 					}
 				}
 			}
