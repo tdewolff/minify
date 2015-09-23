@@ -51,7 +51,7 @@ type Minify struct {
 	regexp  []regexpFunc
 }
 
-// New returns a new Minify. It is the same as doing `Minify{}`.
+// New returns a new Minify.
 func New() *Minify {
 	return &Minify{
 		map[string]Func{},

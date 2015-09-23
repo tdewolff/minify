@@ -237,8 +237,8 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				} else if len(val) > 5 && parse.Equal(val[:4], []byte("rgb(")) && val[len(val)-1] == ')' {
 					// TODO: handle rgb(x, y, z) and hsl(x, y, z)
 				}
-			} else if dim, n := shortenDimension(val); n == len(val) {
-				val = dim
+			} else if n, m := parse.Dimension(val); n+m == len(val) { // TODO: inefficient, temporary measure
+				val, _ = shortenDimension(val)
 			}
 
 			// prefer single or double quotes depending on what occurs more often in value
