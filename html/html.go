@@ -339,7 +339,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						if len(val) == 0 {
 							continue
 						}
-					} else if urlAttrMap[attr.Hash] && len(val) > 5 { // anchors are already handled
+					} else if len(val) > 5 && urlAttrMap[attr.Hash] { // anchors are already handled
 						// TODO: omit http or https according to URL, specified through options
 						//if t.Hash != html.A {
 						// if parse.EqualFold(val[:4], []byte{'h', 't', 't', 'p'}) {
