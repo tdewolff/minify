@@ -26,6 +26,8 @@ var (
 	pathBytes       = []byte("path")
 )
 
+const maxAttrLookup = 6
+
 ////////////////////////////////////////////////////////////////
 
 // Minify minifies SVG data, it reads from r and writes to w.
@@ -36,9 +38,10 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
+	attrTokenBuffer := make([]*svg.Token, 0, maxAttrLookup)
 
 	l := xml.NewLexer(r)
-	tb := xml.NewTokenBuffer(l)
+	tb := svg.NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()
 		if t.TokenType == xml.CDATAToken {
@@ -119,7 +122,11 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					}
 				}
 				break
-			} else if tag == svg.Line || tag == svg.Rect {
+			} else if tag == svg.Rect {
+				getAttributes(&attrTokenBuffer, tb, svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
+				if id := attrTokenBuffer[0]; id != nil {
+
+				}
 				// TODO: shape2path also for polygon and polyline
 				// x1, y1, x2, y2 float64 := 0, 0, 0, 0
 				// valid := true
@@ -358,4 +365,28 @@ func shortenDimension(b []byte) ([]byte, int) {
 		return b, n + m
 	}
 	return b, 0
+}
+
+////////////////////////////////////////////////////////////////
+
+func getAttributes(attrTokenBuffer *[]*svg.Token, tb *svg.TokenBuffer, hashes ...svg.Hash) {
+	*attrTokenBuffer = (*attrTokenBuffer)[:len(hashes)]
+	for j, _ := range *attrTokenBuffer {
+		(*attrTokenBuffer)[j] = nil
+	}
+	for i := 0; ; i++ {
+		t := tb.Peek(i)
+		if t.TokenType != xml.AttributeToken {
+			break
+		}
+		for j, hash := range hashes {
+			if t.Hash == hash {
+				if len(t.AttrVal) > 1 && t.AttrVal[0] == '"' {
+					t.AttrVal = parse.Trim(t.AttrVal[1:len(t.AttrVal)-1], parse.IsWhitespace) // quotes will be readded in attribute loop if necessary
+				}
+				(*attrTokenBuffer)[j] = t
+				break
+			}
+		}
+	}
 }

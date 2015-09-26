@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/css"
+	"github.com/tdewolff/parse/svg"
+	"github.com/tdewolff/parse/xml"
 )
 
 func TestSVG(t *testing.T) {
@@ -52,6 +55,20 @@ func TestSVG(t *testing.T) {
 	}
 }
 
+func TestGetAttribute(t *testing.T) {
+	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
+	attrTokenBuffer := make([]*svg.Token, 0, maxAttrLookup)
+	l := xml.NewLexer(r)
+	tb := svg.NewTokenBuffer(l)
+	tb.Shift()
+	getAttributes(&attrTokenBuffer, tb, svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
+	for i := 0; i < 6; i++ {
+		assert.NotNil(t, attrTokenBuffer[i], "Attr is nil")
+		j, _ := strconv.ParseInt(string(attrTokenBuffer[i].AttrVal), 10, 32)
+		assert.Equal(t, i, int(j), "Attr data is bad")
+	}
+}
+
 ////////////////////////////////////////////////////////////////
 
 func ExampleMinify() {
@@ -61,5 +78,19 @@ func ExampleMinify() {
 
 	if err := m.Minify("image/svg+xml", os.Stdout, os.Stdin); err != nil {
 		fmt.Println("minify.Minify:", err)
+	}
+}
+
+////////////////////////////////////////////////////////////////
+
+func BenchmarkGetAttributes(b *testing.B) {
+	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
+	attrTokenBuffer := make([]*svg.Token, 0, maxAttrLookup)
+	l := xml.NewLexer(r)
+	tb := svg.NewTokenBuffer(l)
+	tb.Shift()
+	tb.Peek(6)
+	for i := 0; i < b.N; i++ {
+		getAttributes(&attrTokenBuffer, tb, svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
 	}
 }
