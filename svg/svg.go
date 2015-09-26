@@ -3,6 +3,7 @@ package svg // import "github.com/tdewolff/minify/svg"
 
 import (
 	"io"
+	"strconv"
 
 	"github.com/tdewolff/buffer"
 	"github.com/tdewolff/minify"
@@ -24,6 +25,8 @@ var (
 	cdataStartBytes = []byte("<![CDATA[")
 	cdataEndBytes   = []byte("]]>")
 	pathBytes       = []byte("path")
+	dBytes          = []byte("d")
+	zeroBytes       = []byte("0")
 )
 
 const maxAttrLookup = 6
@@ -100,13 +103,13 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				}
 			}
 		case xml.StartTagToken:
-			tag = svg.ToHash(t.Data)
+			tag = t.Hash
 			if containerTagMap[tag] { // skip empty containers
 				i := 0
 				for {
 					next := tb.Peek(i)
 					i++
-					if next.TokenType == xml.EndTagToken && svg.ToHash(next.Data) == tag || next.TokenType == xml.StartTagCloseVoidToken || next.TokenType == xml.ErrorToken {
+					if next.TokenType == xml.EndTagToken && next.Hash == tag || next.TokenType == xml.StartTagCloseVoidToken || next.TokenType == xml.ErrorToken {
 						for j := 0; j < i; j++ {
 							tb.Shift()
 						}
@@ -116,60 +119,94 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					}
 				}
 			} else if tag == svg.Metadata {
-				for {
-					if t := *tb.Shift(); (t.TokenType == xml.EndTagToken || t.TokenType == xml.StartTagCloseVoidToken) && svg.ToHash(t.Data) == tag || t.TokenType == xml.ErrorToken {
-						break
-					}
-				}
+				skipTag(tb, tag)
 				break
+			} else if tag == svg.Line {
+				getAttributes(&attrTokenBuffer, tb, svg.X1, svg.Y1, svg.X2, svg.Y2)
+				i := 0
+				x1, y1, x2, y2 := zeroBytes, zeroBytes, zeroBytes, zeroBytes
+				if attrTokenBuffer[0] != nil {
+					x1 = minify.Number(attrTokenBuffer[0].AttrVal)
+					attrTokenBuffer[0].Data = nil
+				}
+				if attrTokenBuffer[1] != nil {
+					y1 = minify.Number(attrTokenBuffer[1].AttrVal)
+					attrTokenBuffer[1].Data = nil
+					i = 1
+				}
+				if attrTokenBuffer[2] != nil {
+					x2 = minify.Number(attrTokenBuffer[2].AttrVal)
+					attrTokenBuffer[2].Data = nil
+					i = 2
+				}
+				if attrTokenBuffer[3] != nil {
+					y2 = minify.Number(attrTokenBuffer[3].AttrVal)
+					attrTokenBuffer[3].Data = nil
+					i = 3
+				}
+
+				d := make([]byte, 0, 7+len(x1)+len(y1)+len(x2)+len(y2))
+				d = append(d, '"', 'M')
+				d = append(d, x1...)
+				d = append(d, ' ')
+				d = append(d, y1...)
+				d = append(d, 'L')
+				d = append(d, x2...)
+				d = append(d, ' ')
+				d = append(d, y2...)
+				d = append(d, 'z', '"')
+				shortenPathData(d[1 : len(d)-1])
+
+				t.Data = pathBytes
+				attrTokenBuffer[i].Data = dBytes
+				attrTokenBuffer[i].AttrVal = d
 			} else if tag == svg.Rect {
 				getAttributes(&attrTokenBuffer, tb, svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
-				if id := attrTokenBuffer[0]; id != nil {
+				if attrTokenBuffer[4] == nil && attrTokenBuffer[5] == nil {
+					i := 0
+					x, y, w, h := zeroBytes, zeroBytes, zeroBytes, zeroBytes
+					if attrTokenBuffer[0] != nil {
+						x = minify.Number(attrTokenBuffer[0].AttrVal)
+						attrTokenBuffer[0].Data = nil
+					}
+					if attrTokenBuffer[1] != nil {
+						y = minify.Number(attrTokenBuffer[1].AttrVal)
+						attrTokenBuffer[1].Data = nil
+						i = 1
+					}
+					if attrTokenBuffer[2] != nil {
+						w = minify.Number(attrTokenBuffer[2].AttrVal)
+						attrTokenBuffer[2].Data = nil
+						i = 2
+					}
+					if attrTokenBuffer[3] != nil {
+						h = minify.Number(attrTokenBuffer[3].AttrVal)
+						attrTokenBuffer[3].Data = nil
+						i = 3
+					}
+					if len(w) == 0 || len(w) == 1 && w[0] == '0' || len(h) == 0 || len(h) == 1 && h[0] == '0' {
+						skipTag(tb, tag)
+						break
+					}
 
+					d := make([]byte, 0, 9+2*len(x)+2*len(y)+len(w)+len(h))
+					d = append(d, '"', 'M')
+					d = append(d, x...)
+					d = append(d, ' ')
+					d = append(d, y...)
+					d = append(d, 'h')
+					d = append(d, w...)
+					d = append(d, 'v')
+					d = append(d, h...)
+					d = append(d, 'H')
+					d = append(d, x...)
+					d = append(d, 'z', '"')
+					shortenPathData(d[1 : len(d)-1])
+
+					t.Data = pathBytes
+					attrTokenBuffer[i].Data = dBytes
+					attrTokenBuffer[i].AttrVal = d
 				}
-				// TODO: shape2path also for polygon and polyline
-				// x1, y1, x2, y2 float64 := 0, 0, 0, 0
-				// valid := true
-				// i := 0
-				// for {
-				// 	next := tb.Peek(i)
-				// 	i++
-				// 	if next.TokenType != xml.AttributeToken {
-				// 		break
-				// 	}
-				// 	v *int
-				// 	attr := svg.ToHash(next.Data)
-				// 	if tag == svg.Line {
-				// 		if attr == svg.X1 {
-				// 			v = &x1
-				// 		} else if attr == svg.Y1 {
-				// 			v = &y1
-				// 		} else if attr == svg.X2 {
-				// 			v = &x2
-				// 		} else if attr == svg.Y2 {
-				// 			v = &Y2
-				// 		} else {
-				// 			continue
-				// 		}
-				// 	} else if attr == svg.X { // rect
-				// 		v = &x1
-				// 	} else if attr == svg.Y {
-				// 		v = &y1
-				// 	} else if attr == svg.Width {
-				// 		v = &x2
-				// 	} else if attr == svg.Height {
-				// 		v = &Y2
-				// 	} else if attr == svg.Rx || attr == svg.Ry {
-				// 		valid = false
-				// 		break
-				// 	} else {
-				// 		continue
-				// 	}
-
-				// }
-				// if valid {
-				// 	t.Data = pathBytes
-				// }
 			}
 			if _, err := w.Write(ltBytes); err != nil {
 				return err
@@ -178,10 +215,10 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				return err
 			}
 		case xml.AttributeToken:
-			if len(t.AttrVal) < 2 {
+			if len(t.AttrVal) < 2 || t.Data == nil { // data is nil when attribute has been removed
 				continue
 			}
-			attr := svg.ToHash(t.Data)
+			attr := t.Hash
 			val := parse.ReplaceMultiple(parse.Trim(t.AttrVal[1:len(t.AttrVal)-1], parse.IsWhitespace), parse.IsWhitespace, ' ')
 			if tag == svg.Svg && attr == svg.Version {
 				continue
@@ -292,63 +329,261 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	}
 }
 
+// type pathInstruction struct {
+// 	cmd   byte
+// 	param [7][]byte // elliptical arc has seven parameters
+// }
+
+// func readPathData(pathBuffer *[]pathInstruction, b []byte) {
+// 	for i := 0; i < len(b); {
+// 		c := b[i]
+// 	COMMAND:
+// 		if c == 'H' || c == 'h' || c == 'V' || c == 'v' || c == 'M' || c == 'm' || c == 'L' || c == 'l' || c == 'T' || c == 't' || c == 'S' || c == 's' || c == 'Q' || c == 'q' || c == 'C' || c == 'c' || c == 'A' || c == 'a' {
+// 			instruction := pathInstruction{cmd: c}
+// 			i++
+// 			n := 2
+// 			if c == 'H' || c == 'h' || c == 'V' || c == 'v' {
+// 				n = 1
+// 			} else if c == 'S' || c == 's' || c == 'Q' || c == 'q' {
+// 				n = 4
+// 			} else if c == 'C' || c == 'c' {
+// 				n = 6
+// 			} else if c == 'A' || c == 'a' {
+// 				n = 7
+// 			}
+// 			for j := 0; j < n; j++ {
+// 				for len(b) > i && (b[i] < '0' || b[i] > '9') && b[i] != '-' && b[i] != '.' && b[i] != '+' {
+// 					i++
+// 				}
+// 				if n := parse.Number(b[i:]); n > 0 {
+// 					instruction.param[j] = b[i : i+n]
+// 					i += n
+// 				}
+// 			}
+// 			*pathBuffer = append(*pathBuffer, instruction)
+// 		} else {
+// 			i++
+// 			continue
+// 		}
+// 		for len(b) > i && (b[i] == ' ' || b[i] == ',' || b[i] == '\n' || b[i] == '\r' || b[i] == '\t') {
+// 			i++
+// 		}
+// 		if len(b) > i && (b[i] >= '0' && b[i] <= '9' || b[i] == '-' || b[i] == '.' || b[i] == '+') {
+// 			goto COMMAND
+// 		}
+// 	}
+// }
+
 func shortenPathData(b []byte) []byte {
 	cmd := byte(0)
-	prevDigit := false
-	prevDigitRequiresSpace := true
+	coords := [][]byte{}
+
+	var x, y, x0, y0 float64
+
 	j := 0
-	start := 0
 	for i := 0; i < len(b); i++ {
 		c := b[i]
-		if c == ' ' || c == ',' || c == '\t' || c == '\n' || c == '\r' {
-			if start != 0 {
-				j += copy(b[j:], b[start:i])
-			} else {
-				j += i
-			}
-			start = i + 1
-		} else if n := parse.Number(b[i:]); n > 0 {
-			if start != 0 {
-				j += copy(b[j:], b[start:i])
-			} else {
-				j += i
-			}
-			num := minify.Number(b[i : i+n])
-			if prevDigit && (num[0] >= '0' && num[0] <= '9' || num[0] == '.' && prevDigitRequiresSpace) {
-				b[j] = ' '
-				j++
-			}
-			prevDigit = true
-			prevDigitRequiresSpace = true
-			for _, c := range num {
-				if c == '.' || c == 'e' || c == 'E' {
-					prevDigitRequiresSpace = false
-					break
-				}
-			}
-			j += copy(b[j:], num)
-			start = i + n
-			i += n - 1
-		} else {
-			if cmd == c {
-				if start != 0 {
-					j += copy(b[j:], b[start:i])
-				} else {
-					j += i
-				}
-				start = i + 1
-			} else {
+		if c == ' ' || c == ',' || c == '\n' || c == '\r' || c == '\t' {
+			continue
+		} else if c >= 'A' { // any command
+			if cmd == 0 {
 				cmd = c
-				prevDigit = false
+			} else if c != cmd {
+				x1, y1 := x0, y0
+				if cmd == 'M' {
+					x1 = toFloat(coords[len(coords)-2])
+					y1 = toFloat(coords[len(coords)-1])
+				} else if cmd == 'm' {
+					x1 += toFloat(coords[len(coords)-2])
+					y1 += toFloat(coords[len(coords)-1])
+				}
+				j += shortenPathDataInstruction(b[j:], cmd, coords, &x, &y)
+				if cmd == 'M' || cmd == 'm' || cmd == 'Z' || cmd == 'z' {
+					x0 = x1
+					y0 = y1
+					x = x0
+					y = y0
+				}
+				cmd = c
+				coords = coords[:0]
 			}
+		} else if n := parse.Number(b[i:]); n > 0 {
+			coords = append(coords, minify.Number(b[i:i+n]))
+			i += n - 1
 		}
 	}
-	if start != 0 {
-		j += copy(b[j:], b[start:])
-		return b[:j]
-	}
-	return b
+	j += shortenPathDataInstruction(b[j:], cmd, coords, &x, &y)
+	return b[:j]
 }
+
+func shortenPathDataInstructionCoords(b []byte, cmd byte, coords [][]byte) int {
+	prevDigit := false
+	prevDigitRequiresSpace := true
+
+	b[0] = cmd
+	j := 1
+	for _, coord := range coords {
+		if prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && prevDigitRequiresSpace) && len(b) > j {
+			b[j] = ' '
+			j++
+		}
+		prevDigit = true
+		prevDigitRequiresSpace = true
+		for _, c := range coord {
+			if c == '.' || c == 'e' || c == 'E' {
+				prevDigitRequiresSpace = false
+				break
+			}
+		}
+		if len(b) < j+len(coord) {
+			return -1
+		}
+		j += copy(b[j:], coord)
+	}
+	return j
+}
+
+func shortenPathDataInstruction(b []byte, cmd byte, coords [][]byte, x *float64, y *float64) int {
+	n := len(coords)
+	cmdIsRelative := cmd >= 'a'
+
+	// get new cursor coordinates
+	ax, ay := *x, *y
+	if n >= 2 && (cmd == 'L' || cmd == 'l' || cmd == 'C' || cmd == 'c' || cmd == 'S' || cmd == 's' || cmd == 'Q' || cmd == 'q' || cmd == 'T' || cmd == 't' || cmd == 'A' || cmd == 'a') {
+		ax = toFloat(coords[n-2])
+		ay = toFloat(coords[n-1])
+	} else if n >= 1 && (cmd == 'H' || cmd == 'h' || cmd == 'V' || cmd == 'v') {
+		if cmd == 'H' || cmd == 'h' {
+			ax = toFloat(coords[n-1])
+		} else {
+			ay = toFloat(coords[n-1])
+		}
+	}
+
+	// make path with absolute/relative different
+	b2 := make([]byte, len(b))
+	cmd2 := cmd - 'A' + 'a'
+	coords2 := [][]byte{}
+	dx, dy := -*x, -*y
+	if cmdIsRelative {
+		cmd2 = cmd - 'a' + 'A'
+		dx, dy = *x, *y
+	}
+	for i, coord := range coords {
+		f := toFloat(coord)
+		if cmd == 'L' || cmd == 'l' || cmd == 'C' || cmd == 'c' || cmd == 'S' || cmd == 's' || cmd == 'Q' || cmd == 'q' || cmd == 'T' || cmd == 't' || cmd == 'M' || cmd == 'm' {
+			if i%2 == 0 {
+				f += dx
+			} else {
+				f += dy
+			}
+		} else if cmd == 'H' || cmd == 'h' {
+			f += dx
+		} else if cmd == 'V' || cmd == 'v' {
+			f += dy
+		} else if cmd == 'A' || cmd == 'a' {
+			if i%7 == 5 {
+				f += dx
+			} else if i%7 == 6 {
+				f += dy
+			}
+		} else {
+			continue
+		}
+		coord2 := strconv.AppendFloat([]byte{}, f, 'f', -1, 64)
+		coords2 = append(coords2, minify.Number(coord2))
+	}
+
+	// choose shortest, relative or absolute path?
+	j2 := shortenPathDataInstructionCoords(b2, cmd2, coords2)
+	j := shortenPathDataInstructionCoords(b, cmd, coords)
+	if j == -1 {
+		panic("j can't be -1")
+	}
+	if j2 != -1 && j2 < j {
+		j = j2
+		copy(b, b2)
+	}
+
+	// set new cursor coordinates
+	if cmdIsRelative {
+		*x += ax
+		*y += ay
+	} else {
+		*x = ax
+		*y = ay
+	}
+	return j
+}
+
+func toFloat(b []byte) float64 {
+	f, err := strconv.ParseFloat(string(b), 64)
+	if err != nil {
+		panic(err)
+	}
+	return f
+}
+
+// func shortenPathDataOld(b []byte) []byte {
+// 	cmd := byte(0)
+// 	coords := [][]byte{}
+// 	nCoord := 0
+
+// 	//var x, y, x0, y0 float64
+
+// 	j := 0
+// 	start := 0
+// 	for i := 0; i < len(b); i++ {
+// 		c := b[i]
+// 		if c == ' ' || c == ',' || c == '\n' || c == '\r' || c == '\t' {
+// 			if start != 0 {
+// 				j += copy(b[j:], b[start:i])
+// 			} else {
+// 				j += i
+// 			}
+// 			start = i + 1
+// 		} else if n := parse.Number(b[i:]); n > 0 {
+// 			if start != 0 {
+// 				j += copy(b[j:], b[start:i])
+// 			} else {
+// 				j += i
+// 			}
+// 			num := minify.Number(b[i : i+n])
+// 			if prevDigit && (num[0] >= '0' && num[0] <= '9' || num[0] == '.' && prevDigitRequiresSpace) {
+// 				b[j] = ' '
+// 				j++
+// 			}
+// 			prevDigit = true
+// 			prevDigitRequiresSpace = true
+// 			for _, c := range num {
+// 				if c == '.' || c == 'e' || c == 'E' {
+// 					prevDigitRequiresSpace = false
+// 					break
+// 				}
+// 			}
+// 			j += copy(b[j:], num)
+// 			start = i + n
+// 			i += n - 1
+// 		} else {
+// 			if cmd == c {
+// 				if start != 0 {
+// 					j += copy(b[j:], b[start:i])
+// 				} else {
+// 					j += i
+// 				}
+// 				start = i + 1
+// 			} else {
+// 				cmd = c
+// 				prevDigit = false
+// 			}
+// 		}
+// 	}
+// 	if start != 0 {
+// 		j += copy(b[j:], b[start:])
+// 		return b[:j]
+// 	}
+// 	return b
+// }
 
 func shortenDimension(b []byte) ([]byte, int) {
 	if n, m := parse.Dimension(b); n > 0 {
@@ -387,6 +622,14 @@ func getAttributes(attrTokenBuffer *[]*svg.Token, tb *svg.TokenBuffer, hashes ..
 				(*attrTokenBuffer)[j] = t
 				break
 			}
+		}
+	}
+}
+
+func skipTag(tb *svg.TokenBuffer, tag svg.Hash) {
+	for {
+		if t := *tb.Shift(); (t.TokenType == xml.EndTagToken || t.TokenType == xml.StartTagCloseVoidToken) && t.Hash == tag || t.TokenType == xml.ErrorToken {
+			break
 		}
 	}
 }

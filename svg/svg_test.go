@@ -28,16 +28,17 @@ func TestSVG(t *testing.T) {
 		{"<path x=\" a \n b \"/>", `<path x="a b"/>`},
 		{`<path x="5.0px" y="0%"/>`, `<path x="5" y="0"/>`},
 		{`<svg viewBox="5.0px 5px 240 0.10"><path/></svg>`, `<svg viewBox="5 5 240 .1"><path/></svg>`},
-		{`<path d="M 100 100 L 300 100 L 200 100 z"/>`, `<path d="M100 100L300 100 200 100z"/>`},
+		{`<path d="M 100 100 L 300 100 L 200 100 z"/>`, `<path d="M100 100l200 0 100 0z"/>`},
 		{`<path d="M100 -100M200 300z"/>`, `<path d="M100-100 200 300z"/>`},
 		{`<path d="M0.5 0.6 M -100 0.5z"/>`, `<path d="M.5.6-100 .5z"/>`},
 		{`<path d="M01.0 0.6 z"/>`, `<path d="M1 .6z"/>`},
+		{`<path d="M20 20l-10-10z"/>`, `<path d="M20 20L10 10z"/>`},
 		{`<?xml version="1.0" encoding="utf-8"?>`, ``},
 		{`<svg viewbox="0 0 16 16"><path/></svg>`, `<svg viewbox="0 0 16 16"><path/></svg>`},
 		{`<g></g>`, ``},
 		{`<path fill="#ffffff"/>`, `<path fill="#fff"/>`},
-		//{`<line x1="5" y1="10" x2="20" y2="40"/>`, `<path d="M5 10l15 30"/>`},
-		//{`<rect x="5" y="10" width="20" height="40"/>`, `<path d="M5 10h20v40H5z"/>`},
+		{`<line x1="5" y1="10" x2="20" y2="40"/>`, `<path d="M5 10L20 40z"/>`},
+		{`<rect x="5" y="10" width="20" height="40"/>`, `<path d="M5 10h20v40H5z"/>`},
 		{`<svg contentStyleType="text/json ; charset=iso-8859-1"><style>{a : true}</style></svg>`, `<svg contentStyleType="text/json;charset=iso-8859-1"><style>{a : true}</style></svg>`},
 		{`<metadata><dc:title /></metadata>`, ``},
 
@@ -54,6 +55,34 @@ func TestSVG(t *testing.T) {
 		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.svg)
 	}
 }
+
+// func TestReadPathData(t *testing.T) {
+// 	var pathInstructions = []pathInstruction{
+// 		{'M', [7][]byte{[]byte("1"), []byte("2")}},
+// 		{'L', [7][]byte{[]byte("3"), []byte("4")}},
+// 		{'H', [7][]byte{[]byte("5")}},
+// 		{'V', [7][]byte{[]byte("6")}},
+// 		{'C', [7][]byte{[]byte("7"), []byte("8"), []byte("9"), []byte("10"), []byte("11"), []byte("12")}},
+// 		{'S', [7][]byte{[]byte("13"), []byte("14"), []byte("15"), []byte("16")}},
+// 		{'Q', [7][]byte{[]byte("17"), []byte("18"), []byte("19"), []byte("20")}},
+// 		{'T', [7][]byte{[]byte("21"), []byte("22")}},
+// 		{'A', [7][]byte{[]byte("23"), []byte("24"), []byte("25"), []byte("26"), []byte("27"), []byte("28"), []byte("29")}},
+// 		{'H', [7][]byte{[]byte("30")}},
+// 		{'H', [7][]byte{[]byte("31")}},
+// 	}
+
+// 	b := []byte("M1,2 L3 4 H5 V6 C7 8 9 10 11 12 S13 14 15 16 Q17 18 19 20 T21 22 A23 24 25 26 27 28 29 H30 31 Z")
+// 	pathBuffer := []pathInstruction{}
+// 	readPathData(&pathBuffer, b)
+
+// 	assert.Equal(t, len(pathInstructions), len(pathBuffer), "Path data must match number of instructions")
+// 	if len(pathInstructions) == len(pathBuffer) {
+// 		for i, instruction := range pathInstructions {
+// 			assert.Equal(t, instruction.cmd, pathBuffer[i].cmd, "Commands must match")
+// 			assert.Equal(t, instruction.param, pathBuffer[i].param, "Parameters must match")
+// 		}
+// 	}
+// }
 
 func TestGetAttribute(t *testing.T) {
 	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
