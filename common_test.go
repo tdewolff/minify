@@ -3,6 +3,9 @@ package minify // import "github.com/tdewolff/minify"
 import (
 	"io"
 	"io/ioutil"
+	"math"
+	"math/rand"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,6 +17,14 @@ func assertDataURI(t *testing.T, m Minifier, s, e string) {
 
 func assertNumber(t *testing.T, x, e string) {
 	assert.Equal(t, e, string(Number([]byte(x))), "numbers must match in "+x)
+}
+
+func assertLenInt(t *testing.T, x int64) {
+	e := 1
+	if x != 0 {
+		e = int(math.Log10(math.Abs(float64(x)))) + 1
+	}
+	assert.Equal(t, e, lenInt64(int64(x)), "number lengths must match for "+strconv.FormatInt(x, 10))
 }
 
 ////////////////////////////////////////////////////////////////
@@ -45,6 +56,7 @@ func TestDataURI(t *testing.T) {
 
 func TestNumber(t *testing.T) {
 	assertNumber(t, "0", "0")
+	assertNumber(t, ".0", "0")
 	assertNumber(t, "1.0", "1")
 	assertNumber(t, "0.1", ".1")
 	assertNumber(t, "+1", "1")
@@ -65,4 +77,39 @@ func TestNumber(t *testing.T) {
 	assertNumber(t, ".0001000009", ".0001000009")
 	assertNumber(t, ".0001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009", ".0001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009")
 	//assertNumber(t, "96px", "1in")
+}
+
+func TestLenInt(t *testing.T) {
+	assertLenInt(t, 0)
+	assertLenInt(t, 1)
+	assertLenInt(t, 10)
+	assertLenInt(t, 99)
+}
+
+////////////////
+
+var num []int64
+
+func TestMain(t *testing.T) {
+	for j := 0; j < 1000; j++ {
+		num = append(num, rand.Int63n(1000))
+	}
+}
+
+func BenchmarkLenIntLog(b *testing.B) {
+	n := 0
+	for i := 0; i < b.N; i++ {
+		for j := 0; j < 1000; j++ {
+			n += int(math.Log10(math.Abs(float64(num[j])))) + 1
+		}
+	}
+}
+
+func BenchmarkLenIntSwitch(b *testing.B) {
+	n := 0
+	for i := 0; i < b.N; i++ {
+		for j := 0; j < 1000; j++ {
+			n += lenInt64(num[j])
+		}
+	}
 }
