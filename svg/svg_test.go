@@ -56,34 +56,6 @@ func TestSVG(t *testing.T) {
 	}
 }
 
-// func TestReadPathData(t *testing.T) {
-// 	var pathInstructions = []pathInstruction{
-// 		{'M', [7][]byte{[]byte("1"), []byte("2")}},
-// 		{'L', [7][]byte{[]byte("3"), []byte("4")}},
-// 		{'H', [7][]byte{[]byte("5")}},
-// 		{'V', [7][]byte{[]byte("6")}},
-// 		{'C', [7][]byte{[]byte("7"), []byte("8"), []byte("9"), []byte("10"), []byte("11"), []byte("12")}},
-// 		{'S', [7][]byte{[]byte("13"), []byte("14"), []byte("15"), []byte("16")}},
-// 		{'Q', [7][]byte{[]byte("17"), []byte("18"), []byte("19"), []byte("20")}},
-// 		{'T', [7][]byte{[]byte("21"), []byte("22")}},
-// 		{'A', [7][]byte{[]byte("23"), []byte("24"), []byte("25"), []byte("26"), []byte("27"), []byte("28"), []byte("29")}},
-// 		{'H', [7][]byte{[]byte("30")}},
-// 		{'H', [7][]byte{[]byte("31")}},
-// 	}
-
-// 	b := []byte("M1,2 L3 4 H5 V6 C7 8 9 10 11 12 S13 14 15 16 Q17 18 19 20 T21 22 A23 24 25 26 27 28 29 H30 31 Z")
-// 	pathBuffer := []pathInstruction{}
-// 	readPathData(&pathBuffer, b)
-
-// 	assert.Equal(t, len(pathInstructions), len(pathBuffer), "Path data must match number of instructions")
-// 	if len(pathInstructions) == len(pathBuffer) {
-// 		for i, instruction := range pathInstructions {
-// 			assert.Equal(t, instruction.cmd, pathBuffer[i].cmd, "Commands must match")
-// 			assert.Equal(t, instruction.param, pathBuffer[i].param, "Parameters must match")
-// 		}
-// 	}
-// }
-
 func TestGetAttribute(t *testing.T) {
 	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
 	attrTokenBuffer := make([]*svg.Token, 0, maxAttrLookup)
@@ -121,5 +93,13 @@ func BenchmarkGetAttributes(b *testing.B) {
 	tb.Peek(6)
 	for i := 0; i < b.N; i++ {
 		getAttributes(&attrTokenBuffer, tb, svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
+	}
+}
+
+func BenchmarkShortenPathData(b *testing.B) {
+	pathDataBuffer := &pathData{}
+	r := []byte("M8.64,223.948c0,0,143.468,3.431,185.777-181.808c2.673-11.702-1.23-20.154,1.316-33.146h16.287c0,0-3.14,17.248,1.095,30.848c21.392,68.692-4.179,242.343-204.227,196.59L8.64,223.948z")
+	for i := 0; i < b.N; i++ {
+		shortenPathData(r, pathDataBuffer)
 	}
 }

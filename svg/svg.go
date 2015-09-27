@@ -3,7 +3,6 @@ package svg // import "github.com/tdewolff/minify/svg"
 
 import (
 	"io"
-	"strconv"
 
 	"github.com/tdewolff/buffer"
 	"github.com/tdewolff/minify"
@@ -42,6 +41,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
 	attrTokenBuffer := make([]*svg.Token, 0, maxAttrLookup)
+	pathDataBuffer := &pathData{}
 
 	l := xml.NewLexer(r)
 	tb := svg.NewTokenBuffer(l)
@@ -155,7 +155,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				d = append(d, ' ')
 				d = append(d, y2...)
 				d = append(d, 'z', '"')
-				shortenPathData(d[1 : len(d)-1])
+				shortenPathData(d[1:len(d)-1], pathDataBuffer)
 
 				t.Data = pathBytes
 				attrTokenBuffer[i].Data = dBytes
@@ -201,7 +201,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					d = append(d, 'H')
 					d = append(d, x...)
 					d = append(d, 'z', '"')
-					shortenPathData(d[1 : len(d)-1])
+					shortenPathData(d[1:len(d)-1], pathDataBuffer)
 
 					t.Data = pathBytes
 					attrTokenBuffer[i].Data = dBytes
@@ -244,7 +244,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					val = attrMinifyBuffer.Bytes()
 				}
 			} else if attr == svg.D {
-				val = shortenPathData(val)
+				val = shortenPathData(val, pathDataBuffer)
 			} else if attr == svg.ViewBox {
 				j := 0
 				newVal := val[:0]
@@ -374,155 +374,172 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 // 	}
 // }
 
-func shortenPathData(b []byte) []byte {
-	cmd := byte(0)
-	coords := [][]byte{}
+// func shortenPathData(b []byte) []byte {
+// 	cmd := byte(0)
+// 	coords := [][]byte{}
 
-	var x, y, x0, y0 float64
+// 	var x, y, x0, y0 float64
 
-	j := 0
-	for i := 0; i < len(b); i++ {
-		c := b[i]
-		if c == ' ' || c == ',' || c == '\n' || c == '\r' || c == '\t' {
-			continue
-		} else if c >= 'A' { // any command
-			if cmd == 0 {
-				cmd = c
-			} else if c != cmd {
-				x1, y1 := x0, y0
-				if cmd == 'M' {
-					x1 = toFloat(coords[len(coords)-2])
-					y1 = toFloat(coords[len(coords)-1])
-				} else if cmd == 'm' {
-					x1 += toFloat(coords[len(coords)-2])
-					y1 += toFloat(coords[len(coords)-1])
-				}
-				j += shortenPathDataInstruction(b[j:], cmd, coords, &x, &y)
-				if cmd == 'M' || cmd == 'm' || cmd == 'Z' || cmd == 'z' {
-					x0 = x1
-					y0 = y1
-					x = x0
-					y = y0
-				}
-				cmd = c
-				coords = coords[:0]
-			}
-		} else if n := parse.Number(b[i:]); n > 0 {
-			coords = append(coords, minify.Number(b[i:i+n]))
-			i += n - 1
-		}
-	}
-	j += shortenPathDataInstruction(b[j:], cmd, coords, &x, &y)
-	return b[:j]
-}
+// 	j := 0
+// 	for i := 0; i < len(b); i++ {
+// 		c := b[i]
+// 		if c == ' ' || c == ',' || c == '\n' || c == '\r' || c == '\t' {
+// 			continue
+// 		} else if c >= 'A' { // any command
+// 			if cmd == 0 {
+// 				cmd = c
+// 			} else if c != cmd {
+// 				x1, y1 := x0, y0
+// 				if cmd == 'M' {
+// 					x1 = toFloat(coords[len(coords)-2])
+// 					y1 = toFloat(coords[len(coords)-1])
+// 				} else if cmd == 'm' {
+// 					x1 += toFloat(coords[len(coords)-2])
+// 					y1 += toFloat(coords[len(coords)-1])
+// 				}
+// 				j += shortenPathDataInstruction(b[j:], cmd, coords, &x, &y)
+// 				if cmd == 'M' || cmd == 'm' || cmd == 'Z' || cmd == 'z' {
+// 					x0 = x1
+// 					y0 = y1
+// 					x = x0
+// 					y = y0
+// 				}
+// 				cmd = c
+// 				coords = coords[:0]
+// 			}
+// 		} else if n := parse.Number(b[i:]); n > 0 {
+// 			coords = append(coords, minify.Number(b[i:i+n]))
+// 			i += n - 1
+// 		}
+// 	}
+// 	j += shortenPathDataInstruction(b[j:], cmd, coords, &x, &y)
+// 	return b[:j]
+// }
 
-func shortenPathDataInstructionCoords(b []byte, cmd byte, coords [][]byte) int {
-	prevDigit := false
-	prevDigitRequiresSpace := true
+// func shortenPathDataInstruction(b []byte, cmd byte, coords [][]byte, x *float64, y *float64) int {
+// 	n := len(coords)
+// 	cmdIsRelative := cmd >= 'a'
 
-	b[0] = cmd
-	j := 1
-	for _, coord := range coords {
-		if prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && prevDigitRequiresSpace) && len(b) > j {
-			b[j] = ' '
-			j++
-		}
-		prevDigit = true
-		prevDigitRequiresSpace = true
-		for _, c := range coord {
-			if c == '.' || c == 'e' || c == 'E' {
-				prevDigitRequiresSpace = false
-				break
-			}
-		}
-		if len(b) < j+len(coord) {
-			return -1
-		}
-		j += copy(b[j:], coord)
-	}
-	return j
-}
+// 	// get new cursor coordinates
+// 	ax, ay := *x, *y
+// 	if n >= 2 && (cmd == 'L' || cmd == 'l' || cmd == 'C' || cmd == 'c' || cmd == 'S' || cmd == 's' || cmd == 'Q' || cmd == 'q' || cmd == 'T' || cmd == 't' || cmd == 'A' || cmd == 'a') {
+// 		ax = toFloat(coords[n-2])
+// 		ay = toFloat(coords[n-1])
+// 	} else if n >= 1 && (cmd == 'H' || cmd == 'h' || cmd == 'V' || cmd == 'v') {
+// 		if cmd == 'H' || cmd == 'h' {
+// 			ax = toFloat(coords[n-1])
+// 		} else {
+// 			ay = toFloat(coords[n-1])
+// 		}
+// 	}
 
-func shortenPathDataInstruction(b []byte, cmd byte, coords [][]byte, x *float64, y *float64) int {
-	n := len(coords)
-	cmdIsRelative := cmd >= 'a'
+// 	// make an alternative path with absolute/relative altered
+// 	bAlter := make([]byte, 0, len(b))
+// 	cmdAlter := cmd - 'A' + 'a'
+// 	dx, dy := -*x, -*y
+// 	if cmdIsRelative {
+// 		cmdAlter = cmd - 'a' + 'A'
+// 		dx, dy = *x, *y
+// 	}
+// 	bAlter = shortenPathDataInstructionCoordsAlter(bAlter, cmdAlter, coords, dx, dy)
 
-	// get new cursor coordinates
-	ax, ay := *x, *y
-	if n >= 2 && (cmd == 'L' || cmd == 'l' || cmd == 'C' || cmd == 'c' || cmd == 'S' || cmd == 's' || cmd == 'Q' || cmd == 'q' || cmd == 'T' || cmd == 't' || cmd == 'A' || cmd == 'a') {
-		ax = toFloat(coords[n-2])
-		ay = toFloat(coords[n-1])
-	} else if n >= 1 && (cmd == 'H' || cmd == 'h' || cmd == 'V' || cmd == 'v') {
-		if cmd == 'H' || cmd == 'h' {
-			ax = toFloat(coords[n-1])
-		} else {
-			ay = toFloat(coords[n-1])
-		}
-	}
+// 	// choose shortest, relative or absolute path?
+// 	j := shortenPathDataInstructionCoords(b, cmd, coords)
+// 	jAlter := len(bAlter)
+// 	if jAlter < j {
+// 		j = jAlter
+// 		copy(b, bAlter)
+// 	}
 
-	// make path with absolute/relative different
-	b2 := make([]byte, len(b))
-	cmd2 := cmd - 'A' + 'a'
-	coords2 := [][]byte{}
-	dx, dy := -*x, -*y
-	if cmdIsRelative {
-		cmd2 = cmd - 'a' + 'A'
-		dx, dy = *x, *y
-	}
-	for i, coord := range coords {
-		f := toFloat(coord)
-		if cmd == 'L' || cmd == 'l' || cmd == 'C' || cmd == 'c' || cmd == 'S' || cmd == 's' || cmd == 'Q' || cmd == 'q' || cmd == 'T' || cmd == 't' || cmd == 'M' || cmd == 'm' {
-			if i%2 == 0 {
-				f += dx
-			} else {
-				f += dy
-			}
-		} else if cmd == 'H' || cmd == 'h' {
-			f += dx
-		} else if cmd == 'V' || cmd == 'v' {
-			f += dy
-		} else if cmd == 'A' || cmd == 'a' {
-			if i%7 == 5 {
-				f += dx
-			} else if i%7 == 6 {
-				f += dy
-			}
-		} else {
-			continue
-		}
-		coord2 := strconv.AppendFloat([]byte{}, f, 'f', -1, 64)
-		coords2 = append(coords2, minify.Number(coord2))
-	}
+// 	// set new cursor coordinates
+// 	if cmdIsRelative {
+// 		*x += ax
+// 		*y += ay
+// 	} else {
+// 		*x = ax
+// 		*y = ay
+// 	}
+// 	return j
+// }
 
-	// choose shortest, relative or absolute path?
-	j2 := shortenPathDataInstructionCoords(b2, cmd2, coords2)
-	j := shortenPathDataInstructionCoords(b, cmd, coords)
-	if j == -1 {
-		panic("j can't be -1")
-	}
-	if j2 != -1 && j2 < j {
-		j = j2
-		copy(b, b2)
-	}
+// func shortenPathDataInstructionCoords(b []byte, cmd byte, coords [][]byte) int {
+// 	prevDigit := false
+// 	prevDigitRequiresSpace := true
 
-	// set new cursor coordinates
-	if cmdIsRelative {
-		*x += ax
-		*y += ay
-	} else {
-		*x = ax
-		*y = ay
-	}
-	return j
-}
+// 	b[0] = cmd
+// 	j := 1
+// 	for _, coord := range coords {
+// 		if prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && prevDigitRequiresSpace) {
+// 			b[j] = ' '
+// 			j++
+// 		}
+// 		prevDigit = true
+// 		prevDigitRequiresSpace = true
+// 		for _, c := range coord {
+// 			if c == '.' || c == 'e' || c == 'E' {
+// 				prevDigitRequiresSpace = false
+// 				break
+// 			}
+// 		}
+// 		j += copy(b[j:], coord)
+// 	}
+// 	return j
+// }
 
-func toFloat(b []byte) float64 {
-	f, err := strconv.ParseFloat(string(b), 64)
-	if err != nil {
-		panic(err)
-	}
-	return f
-}
+// func shortenPathDataInstructionCoordsAlter(b []byte, cmd byte, coords [][]byte, dx, dy float64) []byte {
+// 	prevDigit := false
+// 	prevDigitRequiresSpace := true
+
+// 	coordBuf := []byte{}
+
+// 	b = append(b, cmd)
+// 	for i, coord := range coords {
+// 		f := toFloat(coord)
+// 		if cmd == 'L' || cmd == 'l' || cmd == 'C' || cmd == 'c' || cmd == 'S' || cmd == 's' || cmd == 'Q' || cmd == 'q' || cmd == 'T' || cmd == 't' || cmd == 'M' || cmd == 'm' {
+// 			if i%2 == 0 {
+// 				f += dx
+// 			} else {
+// 				f += dy
+// 			}
+// 		} else if cmd == 'H' || cmd == 'h' {
+// 			f += dx
+// 		} else if cmd == 'V' || cmd == 'v' {
+// 			f += dy
+// 		} else if cmd == 'A' || cmd == 'a' {
+// 			if i%7 == 5 {
+// 				f += dx
+// 			} else if i%7 == 6 {
+// 				f += dy
+// 			}
+// 		} else {
+// 			continue
+// 		}
+// 		coordBuf = strconv.AppendFloat(coordBuf[:0], f, 'f', -1, 32)
+// 		coordBuf = minify.Number(coordBuf)
+
+// 		if prevDigit && (coordBuf[0] >= '0' && coordBuf[0] <= '9' || coordBuf[0] == '.' && prevDigitRequiresSpace) {
+// 			b = append(b, ' ')
+// 		}
+// 		prevDigit = true
+// 		prevDigitRequiresSpace = true
+// 		for _, c := range coordBuf {
+// 			if c == '.' || c == 'e' || c == 'E' {
+// 				prevDigitRequiresSpace = false
+// 				break
+// 			}
+// 		}
+// 		b = append(b, coordBuf...)
+// 	}
+// 	return b
+// }
+
+// func toFloat(b []byte) float64 {
+// 	f, err := strconv.ParseFloat(string(b), 64)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	return f
+// }
 
 // func shortenPathDataOld(b []byte) []byte {
 // 	cmd := byte(0)
