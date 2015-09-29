@@ -2,7 +2,6 @@ package svg
 
 import (
 	"strconv"
-	"unsafe"
 
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/parse"
@@ -174,8 +173,7 @@ func (p *pathData) copyAlteredInstruction(b []byte, cmd byte, dx, dy float64) []
 }
 
 func toFloat(b []byte) float64 {
-	s := *(*string)(unsafe.Pointer(&b))
-	f, err := strconv.ParseFloat(s, 64)
+	f, err := strconv.ParseFloat(parse.UnsafeToString(b), 64)
 	if err != nil {
 		panic(err)
 	}
