@@ -109,7 +109,7 @@ func Number(num []byte) []byte {
 		dot = end
 	}
 
-	// trim leading zeros but one
+	// trim leading zeros but leave at least one digit
 	for start < end-1 && num[start] == '0' {
 		start++
 	}
@@ -127,8 +127,7 @@ func Number(num []byte) []byte {
 			num[start] = '0'
 			return num[start : start+1]
 		}
-	}
-	if start < end && num[start] == '0' {
+	} else if start == end-1 && num[start] == '0' {
 		return num[start:end]
 	}
 
