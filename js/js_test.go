@@ -30,9 +30,14 @@ func TestJS(t *testing.T) {
 		{"a\n{", "a\n{"},
 		{";\na", ";a"},
 		{",\na", ",a"},
+		{"}\na", "}\na"},
+		{"+\na", "+\na"},
+		{"+\n(", "+\n("},
+		{"+\n\"\"", "+\"\""},
 		{"a + ++b", "a+ ++b"},                                          // JSMin caution
 		{"var a=/\\s?auto?\\s?/i\nvar", "var a=/\\s?auto?\\s?/i\nvar"}, // #14
 		{"{return;}", "{return}"},
+		{"({return;})", "({return})"},
 	}
 
 	m := minify.New()
