@@ -76,6 +76,7 @@ func TestNumber(t *testing.T) {
 	assertNumber(t, ".000100009", "100009e-9")
 	assertNumber(t, ".0001000009", ".0001000009")
 	assertNumber(t, ".0001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009", ".0001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009")
+	assertNumber(t, "E\x1f", "E\x1f") // fuzz
 	//assertNumber(t, "96px", "1in")
 }
 
@@ -89,6 +90,32 @@ func TestLenInt(t *testing.T) {
 ////////////////
 
 var num []int64
+
+func RandNumBytes() []byte {
+	b := []byte{}
+	n := rand.Int() % 10
+	for i := 0; i < n; i++ {
+		b = append(b, byte(rand.Int()%10)+'0')
+	}
+	if rand.Int()%2 == 0 {
+		b = append(b, '.')
+		n = rand.Int() % 10
+		for i := 0; i < n; i++ {
+			b = append(b, byte(rand.Int()%10)+'0')
+		}
+	}
+	if rand.Int()%2 == 0 {
+		b = append(b, 'e')
+		if rand.Int()%2 == 0 {
+			b = append(b, '-')
+		}
+		n = rand.Int() % 5
+		for i := 0; i < n; i++ {
+			b = append(b, byte(rand.Int()%10)+'0')
+		}
+	}
+	return b
+}
 
 func TestMain(t *testing.T) {
 	for j := 0; j < 1000; j++ {
@@ -111,5 +138,11 @@ func BenchmarkLenIntSwitch(b *testing.B) {
 		for j := 0; j < 1000; j++ {
 			n += lenInt64(num[j])
 		}
+	}
+}
+
+func BenchmarkNumber(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Number(RandNumBytes())
 	}
 }
