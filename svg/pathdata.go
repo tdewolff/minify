@@ -7,7 +7,7 @@ import (
 	"github.com/tdewolff/parse"
 )
 
-type pathData struct {
+type PathData struct {
 	x, y   float64
 	coords [][]byte
 
@@ -15,7 +15,7 @@ type pathData struct {
 	coordBuffer []byte
 }
 
-func shortenPathData(b []byte, p *pathData) []byte {
+func ShortenPathData(b []byte, p *PathData) []byte {
 	var x0, y0 float64
 	var cmd byte
 
@@ -58,7 +58,7 @@ func shortenPathData(b []byte, p *pathData) []byte {
 	return b[:j]
 }
 
-func (p *pathData) copyInstruction(b []byte, cmd byte) int {
+func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 	n := len(p.coords)
 	cmdIsRelative := cmd >= 'a'
 
@@ -103,7 +103,7 @@ func (p *pathData) copyInstruction(b []byte, cmd byte) int {
 	return j
 }
 
-func (p *pathData) copyCurrentInstruction(b []byte, cmd byte) int {
+func (p *PathData) copyCurrentInstruction(b []byte, cmd byte) int {
 	prevDigit := false
 	prevDigitRequiresSpace := true
 
@@ -127,7 +127,7 @@ func (p *pathData) copyCurrentInstruction(b []byte, cmd byte) int {
 	return j
 }
 
-func (p *pathData) copyAlteredInstruction(b []byte, cmd byte, dx, dy float64) []byte {
+func (p *PathData) copyAlteredInstruction(b []byte, cmd byte, dx, dy float64) []byte {
 	prevDigit := false
 	prevDigitRequiresSpace := true
 

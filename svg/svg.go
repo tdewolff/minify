@@ -41,7 +41,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
 	attrTokenBuffer := make([]*svg.Token, 0, maxAttrLookup)
-	pathDataBuffer := &pathData{}
+	pathDataBuffer := &PathData{}
 
 	l := xml.NewLexer(r)
 	tb := svg.NewTokenBuffer(l)
@@ -155,7 +155,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				d = append(d, ' ')
 				d = append(d, y2...)
 				d = append(d, 'z', '"')
-				shortenPathData(d[1:len(d)-1], pathDataBuffer)
+				ShortenPathData(d[1:len(d)-1], pathDataBuffer)
 
 				t.Data = pathBytes
 				attrTokenBuffer[i].Data = dBytes
@@ -201,11 +201,56 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					d = append(d, 'H')
 					d = append(d, x...)
 					d = append(d, 'z', '"')
-					shortenPathData(d[1:len(d)-1], pathDataBuffer)
+					ShortenPathData(d[1:len(d)-1], pathDataBuffer)
 
 					t.Data = pathBytes
 					attrTokenBuffer[i].Data = dBytes
 					attrTokenBuffer[i].AttrVal = d
+				}
+			} else if tag == svg.Polygon || tag == svg.Polyline {
+				getAttributes(&attrTokenBuffer, tb, svg.Points)
+				if attrTokenBuffer[0] != nil {
+					points := attrTokenBuffer[0].AttrVal
+
+					i := 0
+					for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
+						i++
+					}
+					if i == len(points) {
+						break
+					}
+					for i < len(points) && !(points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
+						i++
+					}
+					for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
+						i++
+					}
+					if i == len(points) {
+						break
+					}
+					for i < len(points) && !(points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
+						i++
+					}
+					endMoveTo := i
+					for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
+						i++
+					}
+					startLineTo := i
+
+					d := make([]byte, 0, 2+len(points))
+					d = append(d, '"', 'M')
+					d = append(d, points[:endMoveTo]...)
+					d = append(d, 'L')
+					d = append(d, points[startLineTo:]...)
+					if tag == svg.Polygon {
+						d = append(d, 'z')
+					}
+					d = append(d, '"')
+					ShortenPathData(d[1:len(d)-1], pathDataBuffer)
+
+					t.Data = pathBytes
+					attrTokenBuffer[0].Data = dBytes
+					attrTokenBuffer[0].AttrVal = d
 				}
 			}
 			if _, err := w.Write(ltBytes); err != nil {
@@ -244,7 +289,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					val = attrMinifyBuffer.Bytes()
 				}
 			} else if attr == svg.D {
-				val = shortenPathData(val, pathDataBuffer)
+				val = ShortenPathData(val, pathDataBuffer)
 			} else if attr == svg.ViewBox {
 				j := 0
 				newVal := val[:0]

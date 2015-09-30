@@ -39,13 +39,13 @@ func TestSVG(t *testing.T) {
 		{`<path fill="#ffffff"/>`, `<path fill="#fff"/>`},
 		{`<line x1="5" y1="10" x2="20" y2="40"/>`, `<path d="M5 10L20 40z"/>`},
 		{`<rect x="5" y="10" width="20" height="40"/>`, `<path d="M5 10h20v40H5z"/>`},
+		{`<polygon points="1,2 3,4"/>`, `<path d="M1 2L3 4z"/>`},
+		{`<polyline points="1,2 3,4"/>`, `<path d="M1 2L3 4"/>`},
 		{`<svg contentStyleType="text/json ; charset=iso-8859-1"><style>{a : true}</style></svg>`, `<svg contentStyleType="text/json;charset=iso-8859-1"><style>{a : true}</style></svg>`},
 		{`<metadata><dc:title /></metadata>`, ``},
 
 		// from SVGO
 		{`<!DOCTYPE bla><?xml?><!-- comment --><metadata/>`, ``},
-
-		{`<polygon fill="none" stroke="#000" points="-0.1,"/>`, `<polygon fill="none" stroke="#000" points="-0.1,"/>`}, // #45
 	}
 
 	m := minify.New()
@@ -97,9 +97,9 @@ func BenchmarkGetAttributes(b *testing.B) {
 }
 
 func BenchmarkShortenPathData(b *testing.B) {
-	pathDataBuffer := &pathData{}
+	pathDataBuffer := &PathData{}
 	r := []byte("M8.64,223.948c0,0,143.468,3.431,185.777-181.808c2.673-11.702-1.23-20.154,1.316-33.146h16.287c0,0-3.14,17.248,1.095,30.848c21.392,68.692-4.179,242.343-204.227,196.59L8.64,223.948z")
 	for i := 0; i < b.N; i++ {
-		shortenPathData(r, pathDataBuffer)
+		ShortenPathData(r, pathDataBuffer)
 	}
 }
