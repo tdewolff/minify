@@ -8,10 +8,11 @@ import (
 )
 
 type PathData struct {
-	x, y   float64
-	coords [][]byte
+	x, y        float64
+	coords      [][]byte
+	coordFloats []float64
 
-	alterBuffer []byte
+	altBuffer   []byte
 	coordBuffer []byte
 }
 
@@ -21,36 +22,30 @@ func ShortenPathData(b []byte, p *PathData) []byte {
 
 	p.x, p.y = 0.0, 0.0
 	p.coords = p.coords[:0]
+	p.coordFloats = p.coordFloats[:0]
 
 	j := 0
 	for i := 0; i < len(b); i++ {
 		c := b[i]
 		if c == ' ' || c == ',' || c == '\n' || c == '\r' || c == '\t' {
 			continue
-		} else if c >= 'A' { // any command
-			if cmd == 0 {
-				cmd = c
-			} else if c != cmd {
-				x1, y1 := x0, y0
-				if cmd == 'M' {
-					x1 = toFloat(p.coords[len(p.coords)-2])
-					y1 = toFloat(p.coords[len(p.coords)-1])
-				} else if cmd == 'm' {
-					x1 += toFloat(p.coords[len(p.coords)-2])
-					y1 += toFloat(p.coords[len(p.coords)-1])
-				}
+		} else if c >= 'A' && (cmd == 0 || cmd != c) { // any command
+			if cmd != 0 {
 				j += p.copyInstruction(b[j:], cmd)
-				if cmd == 'M' || cmd == 'm' || cmd == 'Z' || cmd == 'z' {
-					x0 = x1
-					y0 = y1
+				if cmd == 'M' || cmd == 'm' {
+					x0 = p.x
+					y0 = p.y
+				} else if cmd == 'Z' || cmd == 'z' {
 					p.x = x0
 					p.y = y0
 				}
-				cmd = c
-				p.coords = p.coords[:0]
 			}
+			cmd = c
+			p.coords = p.coords[:0]
+			p.coordFloats = p.coordFloats[:0]
 		} else if n := parse.Number(b[i:]); n > 0 {
-			p.coords = append(p.coords, minify.Number(b[i:i+n]))
+			p.coords = append(p.coords, b[i:i+n])
+			p.coordFloats = append(p.coordFloats, toFloat(b[i:i+n]))
 			i += n - 1
 		}
 	}
@@ -60,56 +55,59 @@ func ShortenPathData(b []byte, p *PathData) []byte {
 
 func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 	n := len(p.coords)
-	cmdIsRelative := cmd >= 'a'
+	isRelativeCmd := cmd >= 'a'
 
 	// get new cursor coordinates
 	ax, ay := p.x, p.y
-	if n >= 2 && (cmd == 'L' || cmd == 'l' || cmd == 'C' || cmd == 'c' || cmd == 'S' || cmd == 's' || cmd == 'Q' || cmd == 'q' || cmd == 'T' || cmd == 't' || cmd == 'A' || cmd == 'a') {
-		ax = toFloat(p.coords[n-2])
-		ay = toFloat(p.coords[n-1])
+	if n >= 2 && (cmd == 'M' || cmd == 'm' || cmd == 'L' || cmd == 'l' || cmd == 'C' || cmd == 'c' || cmd == 'S' || cmd == 's' || cmd == 'Q' || cmd == 'q' || cmd == 'T' || cmd == 't' || cmd == 'A' || cmd == 'a') {
+		ax = p.coordFloats[n-2]
+		ay = p.coordFloats[n-1]
 	} else if n >= 1 && (cmd == 'H' || cmd == 'h' || cmd == 'V' || cmd == 'v') {
 		if cmd == 'H' || cmd == 'h' {
-			ax = toFloat(p.coords[n-1])
+			ax = p.coordFloats[n-1]
 		} else {
-			ay = toFloat(p.coords[n-1])
+			ay = p.coordFloats[n-1]
 		}
+	} else if cmd == 'Z' || cmd == 'z' {
+		b[0] = 'z'
+		return 1
+	} else {
+		return 0
 	}
 
-	// make an alternative path with absolute/relative altered
-	cmdAlter := cmd - 'A' + 'a'
-	dx, dy := -p.x, -p.y
-	if cmdIsRelative {
-		cmdAlter = cmd - 'a' + 'A'
-		dx, dy = p.x, p.y
+	// make a current and alternated path with absolute/relative altered
+	b = p.shortenCurPosInstruction(b, cmd)
+	if isRelativeCmd {
+		p.altBuffer = p.shortenAltPosInstruction(p.altBuffer[:0], cmd-'a'+'A', p.x, p.y)
+	} else {
+		p.altBuffer = p.shortenAltPosInstruction(p.altBuffer[:0], cmd-'A'+'a', -p.x, -p.y)
 	}
-	p.alterBuffer = p.copyAlteredInstruction(p.alterBuffer[:0], cmdAlter, dx, dy)
 
 	// choose shortest, relative or absolute path?
-	j := p.copyCurrentInstruction(b, cmd)
-	jAlter := len(p.alterBuffer)
-	if jAlter < j {
-		j = jAlter
-		copy(b, p.alterBuffer)
+	if len(p.altBuffer) < len(b) {
+		copy(b, p.altBuffer)
+		b = b[:len(p.altBuffer)]
 	}
 
 	// set new cursor coordinates
-	if cmdIsRelative {
+	if isRelativeCmd {
 		p.x += ax
 		p.y += ay
 	} else {
 		p.x = ax
 		p.y = ay
 	}
-	return j
+	return len(b)
 }
 
-func (p *PathData) copyCurrentInstruction(b []byte, cmd byte) int {
+func (p *PathData) shortenCurPosInstruction(b []byte, cmd byte) []byte {
 	prevDigit := false
 	prevDigitRequiresSpace := true
 
 	b[0] = cmd
 	j := 1
 	for _, coord := range p.coords {
+		coord := minify.Number(coord)
 		if prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && prevDigitRequiresSpace) {
 			b[j] = ' '
 			j++
@@ -124,16 +122,15 @@ func (p *PathData) copyCurrentInstruction(b []byte, cmd byte) int {
 		}
 		j += copy(b[j:], coord)
 	}
-	return j
+	return b[:j]
 }
 
-func (p *PathData) copyAlteredInstruction(b []byte, cmd byte, dx, dy float64) []byte {
+func (p *PathData) shortenAltPosInstruction(b []byte, cmd byte, dx, dy float64) []byte {
 	prevDigit := false
 	prevDigitRequiresSpace := true
 
 	b = append(b, cmd)
-	for i, coord := range p.coords {
-		f := toFloat(coord)
+	for i, f := range p.coordFloats {
 		if cmd == 'L' || cmd == 'l' || cmd == 'C' || cmd == 'c' || cmd == 'S' || cmd == 's' || cmd == 'Q' || cmd == 'q' || cmd == 'T' || cmd == 't' || cmd == 'M' || cmd == 'm' {
 			if i%2 == 0 {
 				f += dx
@@ -154,28 +151,29 @@ func (p *PathData) copyAlteredInstruction(b []byte, cmd byte, dx, dy float64) []
 			continue
 		}
 		p.coordBuffer = strconv.AppendFloat(p.coordBuffer[:0], f, 'f', -1, 32)
-		p.coordBuffer = minify.Number(p.coordBuffer)
 
-		if prevDigit && (p.coordBuffer[0] >= '0' && p.coordBuffer[0] <= '9' || p.coordBuffer[0] == '.' && prevDigitRequiresSpace) {
+		coord := minify.Number(p.coordBuffer)
+		if prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && prevDigitRequiresSpace) {
 			b = append(b, ' ')
 		}
 		prevDigit = true
 		prevDigitRequiresSpace = true
-		for _, c := range p.coordBuffer {
+		for _, c := range coord {
 			if c == '.' || c == 'e' || c == 'E' {
 				prevDigitRequiresSpace = false
 				break
 			}
 		}
-		b = append(b, p.coordBuffer...)
+		b = append(b, coord...)
 	}
 	return b
 }
 
 func toFloat(b []byte) float64 {
-	f, err := strconv.ParseFloat(parse.UnsafeToString(b), 64)
+	f, err := strconv.ParseFloat(string(b), 64)
 	if err != nil {
-		panic(err)
+		return 0.0
+		//panic(err)
 	}
 	return f
 }
