@@ -20,11 +20,8 @@ func assertNumber(t *testing.T, x, e string) {
 }
 
 func assertLenInt(t *testing.T, x int64) {
-	e := 1
-	if x != 0 {
-		e = int(math.Log10(math.Abs(float64(x)))) + 1
-	}
-	assert.Equal(t, e, lenInt64(int64(x)), "number lengths must match for "+strconv.FormatInt(x, 10))
+	s := strconv.FormatInt(x, 10)
+	assert.Equal(t, len(s), lenInt64(int64(x)), "number lengths must match for "+s)
 }
 
 ////////////////////////////////////////////////////////////////
@@ -46,6 +43,9 @@ func TestDataURI(t *testing.T) {
 	})
 	assertDataURI(t, m, "data:text/x,<?x?>", "data:text/x,%3C%3Fx%3F%3E")
 	assertDataURI(t, m, "data:,text", "data:,text")
+	assertDataURI(t, m, "data:text/plain;charset=us-ascii,text", "data:,text")
+	assertDataURI(t, m, "data:TEXT/PLAIN;CHARSET=US-ASCII,text", "data:,text")
+	assertDataURI(t, m, "data:text/plain;charset=us-asciiz,text", "data:;charset=us-asciiz,text")
 	assertDataURI(t, m, "data:;base64,dGV4dA==", "data:,text")
 	assertDataURI(t, m, "data:text/svg+xml;base64,PT09PT09", "data:text/svg+xml;base64,PT09PT09")
 	assertDataURI(t, m, "data:text/xml;version=2.0,content", "data:text/xml;version=2.0,content")
@@ -76,6 +76,7 @@ func TestNumber(t *testing.T) {
 	assertNumber(t, ".000100009", "100009e-9")
 	assertNumber(t, ".0001000009", ".0001000009")
 	assertNumber(t, ".0001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009", ".0001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009")
+	assertNumber(t, "E\x1f", "") // fuzz
 	//assertNumber(t, "96px", "1in")
 }
 
@@ -84,11 +85,56 @@ func TestLenInt(t *testing.T) {
 	assertLenInt(t, 1)
 	assertLenInt(t, 10)
 	assertLenInt(t, 99)
+
+	// coverage
+	assertLenInt(t, 100)
+	assertLenInt(t, 1000)
+	assertLenInt(t, 10000)
+	assertLenInt(t, 100000)
+	assertLenInt(t, 1000000)
+	assertLenInt(t, 10000000)
+	assertLenInt(t, 100000000)
+	assertLenInt(t, 1000000000)
+	assertLenInt(t, 10000000000)
+	assertLenInt(t, 100000000000)
+	assertLenInt(t, 1000000000000)
+	assertLenInt(t, 10000000000000)
+	assertLenInt(t, 100000000000000)
+	assertLenInt(t, 1000000000000000)
+	assertLenInt(t, 10000000000000000)
+	assertLenInt(t, 100000000000000000)
+	assertLenInt(t, 1000000000000000000)
 }
 
 ////////////////
 
 var num []int64
+
+func RandNumBytes() []byte {
+	b := []byte{}
+	n := rand.Int() % 10
+	for i := 0; i < n; i++ {
+		b = append(b, byte(rand.Int()%10)+'0')
+	}
+	if rand.Int()%2 == 0 {
+		b = append(b, '.')
+		n = rand.Int() % 10
+		for i := 0; i < n; i++ {
+			b = append(b, byte(rand.Int()%10)+'0')
+		}
+	}
+	if rand.Int()%2 == 0 {
+		b = append(b, 'e')
+		if rand.Int()%2 == 0 {
+			b = append(b, '-')
+		}
+		n = rand.Int() % 5
+		for i := 0; i < n; i++ {
+			b = append(b, byte(rand.Int()%10)+'0')
+		}
+	}
+	return b
+}
 
 func TestMain(t *testing.T) {
 	for j := 0; j < 1000; j++ {
@@ -111,5 +157,11 @@ func BenchmarkLenIntSwitch(b *testing.B) {
 		for j := 0; j < 1000; j++ {
 			n += lenInt64(num[j])
 		}
+	}
+}
+
+func BenchmarkNumber(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Number(RandNumBytes())
 	}
 }

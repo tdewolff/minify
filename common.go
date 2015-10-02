@@ -64,8 +64,15 @@ func DataURI(m Minifier, dataURI []byte) []byte {
 			dataURI = []byte(url.QueryEscape(string(dataURI)))
 			dataURI = bytes.Replace(dataURI, []byte("\""), []byte("\\\""), -1)
 		}
-		if len(mediatype) >= len("text/plain") && bytes.HasPrefix(mediatype, []byte("text/plain")) {
+		if len("text/plain") <= len(mediatype) && parse.EqualFold(mediatype[:len("text/plain")], []byte("text/plain")) {
 			mediatype = mediatype[len("text/plain"):]
+		}
+		for i := 0; i+len(";charset=us-ascii") <= len(mediatype); i++ {
+			// must start with semicolon and be followed by end of mediatype or semicolon
+			if mediatype[i] == ';' && parse.EqualFold(mediatype[i+1:i+len(";charset=us-ascii")], []byte("charset=us-ascii")) && (i+len(";charset=us-ascii") >= len(mediatype) || mediatype[i+len(";charset=us-ascii")] == ';') {
+				mediatype = append(mediatype[:i], mediatype[i+len(";charset=us-ascii"):]...)
+				break
+			}
 		}
 		dataURI = append(append(append([]byte("data:"), mediatype...), ','), dataURI...)
 	}
@@ -109,7 +116,7 @@ func Number(num []byte) []byte {
 		dot = end
 	}
 
-	// trim leading zeros but one
+	// trim leading zeros but leave at least one digit
 	for start < end-1 && num[start] == '0' {
 		start++
 	}
@@ -127,8 +134,7 @@ func Number(num []byte) []byte {
 			num[start] = '0'
 			return num[start : start+1]
 		}
-	}
-	if start < end && num[start] == '0' {
+	} else if start == end-1 && num[start] == '0' {
 		return num[start:end]
 	}
 
