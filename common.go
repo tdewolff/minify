@@ -67,6 +67,12 @@ func DataURI(m Minifier, dataURI []byte) []byte {
 		if len(mediatype) >= len("text/plain") && bytes.HasPrefix(mediatype, []byte("text/plain")) {
 			mediatype = mediatype[len("text/plain"):]
 		}
+		for i := 0; i < len(mediatype)-len(";charset=us-ascii")+1; i++ {
+			if mediatype[i] == ';' && parse.Equal(mediatype[i+1:i+len(";charset=")], []byte("charset=")) && parse.EqualFold(mediatype[i+len(";charset="):i+len(";charset=us-ascii")], []byte("us-ascii")) {
+				mediatype = append(mediatype[:i], mediatype[i+len(";charset=us-ascii"):]...)
+				break
+			}
+		}
 		dataURI = append(append(append([]byte("data:"), mediatype...), ','), dataURI...)
 	}
 	return dataURI
