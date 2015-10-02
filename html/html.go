@@ -27,6 +27,7 @@ const maxAttrLookup = 4
 // Minify minifies HTML data, it reads from r and writes to w.
 func Minify(m *minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string]string) error {
 	scheme := m.Get("scheme")
+	stripDefaultAttrVals := m.Get("disable-default-value-omission") != "1"
 
 	var rawTag html.Hash
 	var rawTagMediatype []byte
@@ -306,7 +307,7 @@ func Minify(m *minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string
 					}
 
 					// default attribute values can be ommited
-					if attr.Hash == html.Type && (t.Hash == html.Script && parse.Equal(val, []byte("text/javascript")) ||
+					if stripDefaultAttrVals && (attr.Hash == html.Type && (t.Hash == html.Script && parse.Equal(val, []byte("text/javascript")) ||
 						t.Hash == html.Style && parse.Equal(val, []byte("text/css")) ||
 						t.Hash == html.Link && parse.Equal(val, []byte("text/css")) ||
 						t.Hash == html.Input && parse.Equal(val, []byte("text")) ||
@@ -322,7 +323,7 @@ func Minify(m *minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string
 						attr.Hash == html.Frameborder && parse.Equal(val, []byte("1")) ||
 						attr.Hash == html.Scrolling && parse.Equal(val, []byte("auto")) ||
 						attr.Hash == html.Valuetype && parse.Equal(val, []byte("data")) ||
-						attr.Hash == html.Media && t.Hash == html.Style && parse.Equal(val, []byte("all")) {
+						attr.Hash == html.Media && t.Hash == html.Style && parse.Equal(val, []byte("all"))) {
 						continue
 					}
 					// CSS and JS minifiers for attribute inline code
