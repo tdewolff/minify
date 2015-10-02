@@ -20,11 +20,8 @@ func assertNumber(t *testing.T, x, e string) {
 }
 
 func assertLenInt(t *testing.T, x int64) {
-	e := 1
-	if x != 0 {
-		e = int(math.Log10(math.Abs(float64(x)))) + 1
-	}
-	assert.Equal(t, e, lenInt64(int64(x)), "number lengths must match for "+strconv.FormatInt(x, 10))
+	s := strconv.FormatInt(x, 10)
+	assert.Equal(t, len(s), lenInt64(int64(x)), "number lengths must match for "+s)
 }
 
 ////////////////////////////////////////////////////////////////
@@ -85,6 +82,25 @@ func TestLenInt(t *testing.T) {
 	assertLenInt(t, 1)
 	assertLenInt(t, 10)
 	assertLenInt(t, 99)
+
+	// coverage
+	assertLenInt(t, 100)
+	assertLenInt(t, 1000)
+	assertLenInt(t, 10000)
+	assertLenInt(t, 100000)
+	assertLenInt(t, 1000000)
+	assertLenInt(t, 10000000)
+	assertLenInt(t, 100000000)
+	assertLenInt(t, 1000000000)
+	assertLenInt(t, 10000000000)
+	assertLenInt(t, 100000000000)
+	assertLenInt(t, 1000000000000)
+	assertLenInt(t, 10000000000000)
+	assertLenInt(t, 100000000000000)
+	assertLenInt(t, 1000000000000000)
+	assertLenInt(t, 10000000000000000)
+	assertLenInt(t, 100000000000000000)
+	assertLenInt(t, 1000000000000000000)
 }
 
 ////////////////
