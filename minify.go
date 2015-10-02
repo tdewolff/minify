@@ -46,9 +46,10 @@ type Minifier struct {
 	regexp  []regexpFunc
 }
 
-// New returns a new Minify.
-func New() *Minify {
-	return &Minify{
+// New returns a new Minifier.
+func New() *Minifier {
+	return &Minifier{
+		map[string]string{},
 		map[string]Func{},
 		[]regexpFunc{},
 	}
