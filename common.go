@@ -64,11 +64,12 @@ func DataURI(m Minifier, dataURI []byte) []byte {
 			dataURI = []byte(url.QueryEscape(string(dataURI)))
 			dataURI = bytes.Replace(dataURI, []byte("\""), []byte("\\\""), -1)
 		}
-		if len(mediatype) >= len("text/plain") && bytes.HasPrefix(mediatype, []byte("text/plain")) {
+		if len("text/plain") <= len(mediatype) && parse.EqualFold(mediatype[:len("text/plain")], []byte("text/plain")) {
 			mediatype = mediatype[len("text/plain"):]
 		}
-		for i := 0; i < len(mediatype)-len(";charset=us-ascii")+1; i++ {
-			if mediatype[i] == ';' && parse.Equal(mediatype[i+1:i+len(";charset=")], []byte("charset=")) && parse.EqualFold(mediatype[i+len(";charset="):i+len(";charset=us-ascii")], []byte("us-ascii")) {
+		for i := 0; i+len(";charset=us-ascii") <= len(mediatype); i++ {
+			// must start with semicolon and be followed by end of mediatype or semicolon
+			if mediatype[i] == ';' && parse.EqualFold(mediatype[i+1:i+len(";charset=us-ascii")], []byte("charset=us-ascii")) && (i+len(";charset=us-ascii") >= len(mediatype) || mediatype[i+len(";charset=us-ascii")] == ';') {
 				mediatype = append(mediatype[:i], mediatype[i+len(";charset=us-ascii"):]...)
 				break
 			}
