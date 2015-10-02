@@ -3,7 +3,6 @@ package minify // import "github.com/tdewolff/minify"
 import (
 	"bytes"
 	"encoding/base64"
-	"math"
 	"mime"
 	"net/url"
 
@@ -115,8 +114,8 @@ func Number(num []byte) []byte {
 		dot = end
 	}
 
-	// trim leading zeros
-	for start < end && num[start] == '0' {
+	// trim leading zeros but leave at least one digit
+	for start < end-1 && num[start] == '0' {
 		start++
 	}
 	// trim trailing zeros
@@ -129,9 +128,12 @@ func Number(num []byte) []byte {
 	}
 	if i == dot {
 		end = dot
-	}
-	if start == end {
-		return zeroBytes
+		if start == end {
+			num[start] = '0'
+			return num[start : start+1]
+		}
+	} else if start == end-1 && num[start] == '0' {
+		return num[start:end]
 	}
 
 	// shorten mantissa by increasing/decreasing the exponent
@@ -161,10 +163,7 @@ func Number(num []byte) []byte {
 
 	// append the exponent or change the mantissa to incorporate the exponent
 	relExp := exp + int64(end-start) // exp when the first non-zero digit is directly after the dot
-	n := 0                           // number of exp digits
-	if exp != 0 {
-		n = int(math.Log10(math.Abs(float64(exp)))) + 1
-	}
+	n := lenInt64(exp)               // number of exp digits
 	if exp == 0 {
 		if neg {
 			start--
@@ -210,4 +209,49 @@ func Number(num []byte) []byte {
 		num[start] = '-'
 	}
 	return num[start:end]
+}
+
+func lenInt64(i int64) int {
+	if i < 0 {
+		i = -i
+	}
+	switch {
+	case i < 10:
+		return 1
+	case i < 100:
+		return 2
+	case i < 1000:
+		return 3
+	case i < 10000:
+		return 4
+	case i < 100000:
+		return 5
+	case i < 1000000:
+		return 6
+	case i < 10000000:
+		return 7
+	case i < 100000000:
+		return 8
+	case i < 1000000000:
+		return 9
+	case i < 10000000000:
+		return 10
+	case i < 100000000000:
+		return 11
+	case i < 1000000000000:
+		return 12
+	case i < 10000000000000:
+		return 13
+	case i < 100000000000000:
+		return 14
+	case i < 1000000000000000:
+		return 15
+	case i < 10000000000000000:
+		return 16
+	case i < 100000000000000000:
+		return 17
+	case i < 1000000000000000000:
+		return 18
+	}
+	return 19
 }

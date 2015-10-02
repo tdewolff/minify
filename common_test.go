@@ -3,6 +3,9 @@ package minify // import "github.com/tdewolff/minify"
 import (
 	"io"
 	"io/ioutil"
+	"math"
+	"math/rand"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,6 +17,11 @@ func assertDataURI(t *testing.T, m *Minifier, s, e string) {
 
 func assertNumber(t *testing.T, x, e string) {
 	assert.Equal(t, e, string(Number([]byte(x))), "numbers must match in "+x)
+}
+
+func assertLenInt(t *testing.T, x int64) {
+	s := strconv.FormatInt(x, 10)
+	assert.Equal(t, len(s), lenInt64(int64(x)), "number lengths must match for "+s)
 }
 
 ////////////////////////////////////////////////////////////////
@@ -45,6 +53,7 @@ func TestDataURI(t *testing.T) {
 
 func TestNumber(t *testing.T) {
 	assertNumber(t, "0", "0")
+	assertNumber(t, ".0", "0")
 	assertNumber(t, "1.0", "1")
 	assertNumber(t, "0.1", ".1")
 	assertNumber(t, "+1", "1")
@@ -64,5 +73,92 @@ func TestNumber(t *testing.T) {
 	assertNumber(t, ".000100009", "100009e-9")
 	assertNumber(t, ".0001000009", ".0001000009")
 	assertNumber(t, ".0001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009", ".0001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009")
+	assertNumber(t, "E\x1f", "") // fuzz
 	//assertNumber(t, "96px", "1in")
+}
+
+func TestLenInt(t *testing.T) {
+	assertLenInt(t, 0)
+	assertLenInt(t, 1)
+	assertLenInt(t, 10)
+	assertLenInt(t, 99)
+
+	// coverage
+	assertLenInt(t, 100)
+	assertLenInt(t, 1000)
+	assertLenInt(t, 10000)
+	assertLenInt(t, 100000)
+	assertLenInt(t, 1000000)
+	assertLenInt(t, 10000000)
+	assertLenInt(t, 100000000)
+	assertLenInt(t, 1000000000)
+	assertLenInt(t, 10000000000)
+	assertLenInt(t, 100000000000)
+	assertLenInt(t, 1000000000000)
+	assertLenInt(t, 10000000000000)
+	assertLenInt(t, 100000000000000)
+	assertLenInt(t, 1000000000000000)
+	assertLenInt(t, 10000000000000000)
+	assertLenInt(t, 100000000000000000)
+	assertLenInt(t, 1000000000000000000)
+}
+
+////////////////
+
+var num []int64
+
+func RandNumBytes() []byte {
+	b := []byte{}
+	n := rand.Int() % 10
+	for i := 0; i < n; i++ {
+		b = append(b, byte(rand.Int()%10)+'0')
+	}
+	if rand.Int()%2 == 0 {
+		b = append(b, '.')
+		n = rand.Int() % 10
+		for i := 0; i < n; i++ {
+			b = append(b, byte(rand.Int()%10)+'0')
+		}
+	}
+	if rand.Int()%2 == 0 {
+		b = append(b, 'e')
+		if rand.Int()%2 == 0 {
+			b = append(b, '-')
+		}
+		n = rand.Int() % 5
+		for i := 0; i < n; i++ {
+			b = append(b, byte(rand.Int()%10)+'0')
+		}
+	}
+	return b
+}
+
+func TestMain(t *testing.T) {
+	for j := 0; j < 1000; j++ {
+		num = append(num, rand.Int63n(1000))
+	}
+}
+
+func BenchmarkLenIntLog(b *testing.B) {
+	n := 0
+	for i := 0; i < b.N; i++ {
+		for j := 0; j < 1000; j++ {
+			n += int(math.Log10(math.Abs(float64(num[j])))) + 1
+		}
+	}
+}
+
+func BenchmarkLenIntSwitch(b *testing.B) {
+	n := 0
+	for i := 0; i < b.N; i++ {
+		for j := 0; j < 1000; j++ {
+			n += lenInt64(num[j])
+		}
+	}
+}
+
+func BenchmarkNumber(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Number(RandNumBytes())
+	}
 }

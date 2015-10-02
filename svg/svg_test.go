@@ -40,6 +40,8 @@ func TestSVG(t *testing.T) {
 
 		// from SVGO
 		{`<!DOCTYPE bla><?xml?><!-- comment --><metadata/>`, ``},
+
+		{`<polygon fill="none" stroke="#000" points="-0.1,"/>`, `<polygon fill="none" stroke="#000" points="-0.1,"/>`}, // #45
 	}
 
 	m := minify.New()
