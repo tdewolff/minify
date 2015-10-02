@@ -39,7 +39,7 @@ func TestCSS(t *testing.T) {
 		{"a, b + c { x:y; }", "a,b+c{x:y}"},
 
 		// go-fuzz
-		{"input[type=\"\x00\"] {  a: b\n}.a{}", "input[type=\"\x00\"] {  a: b\n}.a{}"},
+		{"input[type=\"\x00\"] {  a: b\n}.a{}", "input[type=\"\x00\"]{a:b}.a{}"},
 		{"a{a:)'''", "a{a:)'''}"},
 	}
 
