@@ -9,17 +9,20 @@ import (
 )
 
 var (
-	spaceBytes   = []byte(" ")
-	newlineBytes = []byte("\n")
+	spaceBytes     = []byte(" ")
+	newlineBytes   = []byte("\n")
+	semicolonBytes = []byte(";")
 )
 
 // Minify minifies JS data, it reads from r and writes to w.
 func Minify(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	l := js.NewLexer(r)
-	lineTerminatorQueued := false
-	whitespaceQueued := false
 	prev := js.LineTerminatorToken
 	prevLast := byte(' ')
+	lineTerminatorQueued := false
+	whitespaceQueued := false
+	semicolonQueued := false
+
 	for {
 		tt, text := l.Next()
 		if tt == js.ErrorToken {
@@ -27,36 +30,43 @@ func Minify(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				return l.Err()
 			}
 			return nil
-		} else if tt == js.CommentToken {
-			continue
-		}
-
-		if tt == js.LineTerminatorToken {
+		} else if tt == js.LineTerminatorToken {
 			lineTerminatorQueued = true
-			continue
 		} else if tt == js.WhitespaceToken {
 			whitespaceQueued = true
-			continue
-		} else {
+		} else if tt == js.PunctuatorToken && text[0] == ';' {
+			prev = tt
+			prevLast = ';'
+			semicolonQueued = true
+		} else if tt != js.CommentToken {
 			first := text[0]
 			if (prev == js.IdentifierToken || prev == js.NumericToken || prev == js.PunctuatorToken || prev == js.StringToken || prev == js.RegexpToken) && (tt == js.IdentifierToken || tt == js.NumericToken || tt == js.PunctuatorToken || tt == js.RegexpToken) {
-				if lineTerminatorQueued && (tt != js.PunctuatorToken || first == '{' || first == '[' || first == '(' || first == '+' || first == '-') && (prev != js.PunctuatorToken || prevLast == '}' || prevLast == ']' || prevLast == ')' || prevLast == '+' || prevLast == '-' || prevLast == '"' || prevLast == '\'') {
+				if lineTerminatorQueued && (prev != js.PunctuatorToken || prevLast == '}' || prevLast == ']' || prevLast == ')' || prevLast == '+' || prevLast == '-' || prevLast == '"' || prevLast == '\'') && (tt != js.PunctuatorToken || first == '{' || first == '[' || first == '(' || first == '+' || first == '-') {
 					if _, err := w.Write(newlineBytes); err != nil {
 						return err
 					}
-				} else if whitespaceQueued && (prev != js.StringToken && prev != js.PunctuatorToken && tt != js.PunctuatorToken || first == prevLast && (prevLast == '+' || prevLast == '-')) {
+					semicolonQueued = false
+				} else if whitespaceQueued && (prev != js.StringToken && prev != js.PunctuatorToken && tt != js.PunctuatorToken || (prevLast == '+' || prevLast == '-') && first == prevLast) {
 					if _, err := w.Write(spaceBytes); err != nil {
 						return err
 					}
 				}
 			}
-			lineTerminatorQueued = false
-			whitespaceQueued = false
+
+			if semicolonQueued && (tt != js.PunctuatorToken || first != '}') {
+				if _, err := w.Write(semicolonBytes); err != nil {
+					return err
+				}
+			}
+			if _, err := w.Write(text); err != nil {
+				return err
+			}
+
 			prev = tt
 			prevLast = text[len(text)-1]
-		}
-		if _, err := w.Write(text); err != nil {
-			return err
+			lineTerminatorQueued = false
+			whitespaceQueued = false
+			semicolonQueued = false
 		}
 	}
 }
