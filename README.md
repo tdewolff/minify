@@ -400,13 +400,13 @@ func (m MinifyResponseWriter) Write(b []byte) (int, error) {
 	return m.Writer.Write(b)
 }
 
-func MinifyFilter(res http.ResponseWriter) http.ResponseWriter {
+func MinifyFilter(res http.ResponseWriter, mimetype string) http.ResponseWriter {
 	m := minify.New()
 	// add other minfiers
 
 	pr, pw := io.Pipe()
 	go func(w io.Writer) {
-		if err := m.Minify("mime/type", w, pr); err != nil {
+		if err := m.Minify(mimetype, w, pr); err != nil {
 			panic(err)
 		}
 	}(res)
