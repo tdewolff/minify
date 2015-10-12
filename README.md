@@ -36,6 +36,9 @@ See the [Wiki](https://github.com/tdewolff/minify/wiki) for a roadmap of what is
 		- [Custom minifier](#custom-minifier)
 		- [Mediatypes](#mediatypes)
 	- [Examples](#examples)
+		- [Common minifiers](#common-minifiers)
+		- [Custom minifier](#custom-minifier)
+		- [ResponseWriter](#responsewriter)
 	- [License](#license)
 
 ## Prologue
@@ -303,6 +306,7 @@ Mediatypes can contain parameters (`type/subtype; key1=val2; key2=val2`). Minifi
 Mediatypes such as `text/plain; charset=UTF-8` will be processed by `text/plain` or any regexp it matches. The mediatype string is passed to the minifier function which can retrieve the parameters using the standard library `mime.ParseMediaType`.
 
 ## Examples
+### Common minifiers
 Basic example that minifies from stdin to stdout and loads the default HTML, CSS and JS minifiers. Optionally, one can enable `java -jar build/compiler.jar` to run for JS (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/)). Note that reading the file into a buffer first and writing to a pre-allocated buffer would be faster (but would disable streaming).
 ``` go
 package main
@@ -339,6 +343,7 @@ func main() {
 }
 ```
 
+### Custom minifier
 Custom minifier showing an example that implements the minifier function interface. Within a custom minifier, it is possible to call any minifier function (through `m minify.Minifier`) recursively when dealing with embedded resources.
 ``` go
 package main
@@ -380,6 +385,32 @@ func main() {
 		log.Fatal("Minify:", err)
 	}
 	fmt.Println(out)
+}
+```
+
+### ResponseWriter
+ResponseWriter example which returns a ResponseWriter that minifies the content and then writes to the original ResponseWriter. Any write after applying this filter will be minified.
+``` go
+type MinifyResponseWriter struct {
+	http.ResponseWriter
+	io.Writer
+}
+
+func (m MinifyResponseWriter) Write(b []byte) (int, error) {
+	return m.Writer.Write(b)
+}
+
+func MinifyFilter(res http.ResponseWriter) http.ResponseWriter {
+	m := minify.New()
+	// add other minfiers
+
+	pr, pw := io.Pipe()
+	go func(w io.Writer) {
+		if err := m.Minify("mime/type", w, pr); err != nil {
+			panic(err)
+		}
+	}(res)
+	return MinifyResponseWriter{res, pw}
 }
 ```
 
