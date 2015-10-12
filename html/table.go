@@ -116,8 +116,8 @@ var booleanAttrMap = map[html.Hash]bool{
 }
 
 var caseInsensitiveAttrMap = map[html.Hash]bool{
-	html.Accept_Charset: true,
 	html.Accept:         true,
+	html.Accept_Charset: true,
 	html.Align:          true,
 	html.Alink:          true,
 	html.Axis:           true,
