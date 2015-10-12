@@ -37,7 +37,7 @@ See the [Wiki](https://github.com/tdewolff/minify/wiki) for a roadmap of what is
 		- [Mediatypes](#mediatypes)
 	- [Examples](#examples)
 		- [Common minifiers](#common-minifiers)
-		- [Custom minifier](#custom-minifier)
+		- [Custom minifier](#custom-minifier-1)
 		- [ResponseWriter](#responsewriter)
 	- [License](#license)
 
