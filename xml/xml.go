@@ -68,7 +68,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				return err
 			}
 		case xml.TextToken:
-			if t.Data = parse.ReplaceMultiple(t.Data, parse.IsWhitespace, ' '); len(t.Data) > 0 {
+			if t.Data = parse.ReplaceMultipleWhitespace(t.Data); len(t.Data) > 0 {
 				// whitespace removal; trim left
 				if t.Data[0] == ' ' && precededBySpace {
 					t.Data = t.Data[1:]

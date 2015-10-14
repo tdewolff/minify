@@ -100,7 +100,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					omitSpace = len(t.Data) > 0 && t.Data[len(t.Data)-1] == ' '
 				}
 			} else {
-				t.Data = parse.ReplaceMultiple(t.Data, parse.IsWhitespace, ' ')
+				t.Data = parse.ReplaceMultipleWhitespace(t.Data)
 
 				// whitespace removal; trim left
 				if omitSpace && t.Data[0] == ' ' {
