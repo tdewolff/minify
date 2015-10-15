@@ -111,7 +111,7 @@ func TestLenInt(t *testing.T) {
 var num []int64
 
 func RandNumBytes() []byte {
-	b := []byte{}
+	var b []byte
 	n := rand.Int() % 10
 	for i := 0; i < n; i++ {
 		b = append(b, byte(rand.Int()%10)+'0')

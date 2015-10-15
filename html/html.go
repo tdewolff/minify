@@ -161,7 +161,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					}
 					rawTagHash = t.Hash
 					rawTagTraits = t.Traits
-					rawTagMediatype = []byte{}
+					rawTagMediatype = nil
 				}
 			}
 			if t.Traits&nonPhrasingTag != 0 {
