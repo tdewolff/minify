@@ -24,7 +24,8 @@ func Minify(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	semicolonQueued := false
 
 	for {
-		tt, text, _ := l.Next()
+		tt, text, n := l.Next()
+		l.Free(n)
 		if tt == js.ErrorToken {
 			if l.Err() != io.EOF {
 				return l.Err()
