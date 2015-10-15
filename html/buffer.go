@@ -1,9 +1,11 @@
-package html // import "github.com/tdewolff/parse/html"
+package html // import "github.com/tdewolff/minify/html"
+
+import "github.com/tdewolff/parse/html"
 
 // Token is a single token unit with an attribute value (if given) and hash of the data.
 type Token struct {
-	TokenType
-	Hash    Hash
+	html.TokenType
+	Hash    html.Hash
 	Data    []byte
 	AttrVal []byte
 	n       int
@@ -11,14 +13,14 @@ type Token struct {
 
 // TokenBuffer is a buffer that allows for token look-ahead.
 type TokenBuffer struct {
-	l *Lexer
+	l *html.Lexer
 
 	buf []Token
 	pos int
 }
 
 // NewTokenBuffer returns a new TokenBuffer.
-func NewTokenBuffer(l *Lexer) *TokenBuffer {
+func NewTokenBuffer(l *html.Lexer) *TokenBuffer {
 	return &TokenBuffer{
 		l:   l,
 		buf: make([]Token, 0, 8),
@@ -28,12 +30,12 @@ func NewTokenBuffer(l *Lexer) *TokenBuffer {
 func (z *TokenBuffer) read(t *Token) {
 	tt, data, n := z.l.Next()
 	var attrVal []byte
-	var hash Hash
-	if tt == AttributeToken {
+	var hash html.Hash
+	if tt == html.AttributeToken {
 		attrVal = z.l.AttrVal()
-		hash = ToHash(data)
-	} else if tt == StartTagToken || tt == EndTagToken {
-		hash = ToHash(data)
+		hash = html.ToHash(data)
+	} else if tt == html.StartTagToken || tt == html.EndTagToken {
+		hash = html.ToHash(data)
 	}
 	t.TokenType = tt
 	t.Data = data
@@ -47,7 +49,7 @@ func (z *TokenBuffer) read(t *Token) {
 func (z *TokenBuffer) Peek(pos int) *Token {
 	pos += z.pos
 	if pos >= len(z.buf) {
-		if len(z.buf) > 0 && z.buf[len(z.buf)-1].TokenType == ErrorToken {
+		if len(z.buf) > 0 && z.buf[len(z.buf)-1].TokenType == html.ErrorToken {
 			return &z.buf[len(z.buf)-1]
 		}
 
@@ -65,7 +67,7 @@ func (z *TokenBuffer) Peek(pos int) *Token {
 		buf = buf[:p]
 		for i := d; i < p; i++ {
 			z.read(&buf[i])
-			if buf[i].TokenType == ErrorToken {
+			if buf[i].TokenType == html.ErrorToken {
 				p = i + 1
 				break
 			}

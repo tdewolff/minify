@@ -37,10 +37,10 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
 	attrIntBuffer := make([]int, 0, maxAttrLookup)
-	attrTokenBuffer := make([]*html.Token, 0, maxAttrLookup)
+	attrTokenBuffer := make([]*Token, 0, maxAttrLookup)
 
 	l := html.NewLexer(r)
-	tb := html.NewTokenBuffer(l)
+	tb := NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()
 	SWITCH:
@@ -382,7 +382,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 ////////////////////////////////////////////////////////////////
 
-func getAttributes(tb *html.TokenBuffer, attrIndexBuffer *[]int, attrTokenBuffer *[]*html.Token, hashes ...html.Hash) []*html.Token {
+func getAttributes(tb *TokenBuffer, attrIndexBuffer *[]int, attrTokenBuffer *[]*Token, hashes ...html.Hash) []*Token {
 	*attrIndexBuffer = (*attrIndexBuffer)[:len(hashes)]
 	*attrTokenBuffer = (*attrTokenBuffer)[:len(hashes)]
 	for j, _ := range *attrIndexBuffer {
