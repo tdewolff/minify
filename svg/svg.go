@@ -311,7 +311,8 @@ func shortenPathData(b []byte) []byte {
 			}
 			prevDigit = true
 			prevDigitRequiresSpace = true
-			for _, c := range num {
+			for i := 0; i < len(num); i++ {
+				c := num[i]
 				if c == '.' || c == 'e' || c == 'E' {
 					prevDigitRequiresSpace = false
 					break

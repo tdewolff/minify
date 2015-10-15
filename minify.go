@@ -90,8 +90,8 @@ func (m *Minify) AddCmdRegexp(mediatype *regexp.Regexp, cmd *exec.Cmd) {
 // Mediatype may take the form of 'text/plain', 'text/*', '*/*' or 'text/plain; charset=UTF-8; version=2.0'.
 func (m Minify) Minify(mediatype string, w io.Writer, r io.Reader) error {
 	mimetype := mediatype
-	for i, c := range mediatype {
-		if c == ';' {
+	for i := 0; i < len(mediatype); i++ {
+		if mediatype[i] == ';' {
 			mimetype = mediatype[:i]
 			break
 		}
