@@ -19,11 +19,9 @@ var (
 	voidBytes       = []byte("/>")
 	isBytes         = []byte("=")
 	spaceBytes      = []byte(" ")
-	emptyBytes      = []byte("\"\"")
 	endBytes        = []byte("</")
 	cdataStartBytes = []byte("<![CDATA[")
 	cdataEndBytes   = []byte("]]>")
-	pathBytes       = []byte("path")
 )
 
 ////////////////////////////////////////////////////////////////

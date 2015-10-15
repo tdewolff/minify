@@ -8,6 +8,7 @@ type Token struct {
 	Hash    html.Hash
 	Data    []byte
 	AttrVal []byte
+	Traits  traits
 	n       int
 }
 
@@ -31,16 +32,20 @@ func (z *TokenBuffer) read(t *Token) {
 	tt, data, n := z.l.Next()
 	var attrVal []byte
 	var hash html.Hash
+	var traits traits
 	if tt == html.AttributeToken {
 		attrVal = z.l.AttrVal()
 		hash = html.ToHash(data)
+		traits = attrMap[hash]
 	} else if tt == html.StartTagToken || tt == html.EndTagToken {
 		hash = html.ToHash(data)
+		traits = tagMap[hash]
 	}
 	t.TokenType = tt
 	t.Data = data
 	t.AttrVal = attrVal
 	t.Hash = hash
+	t.Traits = traits
 	t.n = n
 }
 

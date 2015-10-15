@@ -12,13 +12,11 @@ import (
 )
 
 var (
-	ltBytes       = []byte("<")
-	gtBytes       = []byte(">")
-	isBytes       = []byte("=")
-	spaceBytes    = []byte(" ")
-	endBytes      = []byte("</")
-	externalBytes = []byte("external")
-	httpBytes     = []byte("http")
+	ltBytes    = []byte("<")
+	gtBytes    = []byte(">")
+	isBytes    = []byte("=")
+	spaceBytes = []byte(" ")
+	endBytes   = []byte("</")
 )
 
 const maxAttrLookup = 4
@@ -27,7 +25,8 @@ const maxAttrLookup = 4
 
 // Minify minifies HTML data, it reads from r and writes to w.
 func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
-	var rawTag html.Hash
+	var rawTagHash html.Hash
+	var rawTagTraits traits
 	var rawTagMediatype []byte
 	omitSpace := true // if true the next leading space is omitted
 	defaultScriptType := "text/javascript"
@@ -68,21 +67,21 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 		case html.TextToken:
 			// CSS and JS minifiers for inline code
-			if rawTag != 0 {
-				if rawTag == html.Style || rawTag == html.Script || rawTag == html.Iframe || rawTag == html.Svg || rawTag == html.Math {
+			if rawTagHash != 0 {
+				if rawTagHash == html.Style || rawTagHash == html.Script || rawTagHash == html.Iframe || rawTagHash == html.Svg || rawTagHash == html.Math {
 					var mediatype string
-					if rawTag == html.Iframe {
+					if rawTagHash == html.Iframe {
 						mediatype = "text/html"
+					} else if rawTagHash == html.Svg {
+						mediatype = "image/svg+xml"
+					} else if rawTagHash == html.Math {
+						mediatype = "application/mathml+xml"
 					} else if len(rawTagMediatype) > 0 {
 						mediatype = string(rawTagMediatype)
-					} else if rawTag == html.Script {
+					} else if rawTagHash == html.Script {
 						mediatype = defaultScriptType
-					} else if rawTag == html.Style {
+					} else if rawTagHash == html.Style {
 						mediatype = defaultStyleType
-					} else if rawTag == html.Svg {
-						mediatype = "image/svg+xml"
-					} else if rawTag == html.Math {
-						mediatype = "application/mathml+xml"
 					}
 					// ignore CDATA
 					if trimmedData := parse.Trim(t.Data, parse.IsWhitespace); len(trimmedData) > 12 && bytes.Equal(trimmedData[:9], []byte("<![CDATA[")) && bytes.Equal(trimmedData[len(trimmedData)-3:], []byte("]]>")) {
@@ -96,7 +95,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				} else if _, err := w.Write(t.Data); err != nil {
 					return err
 				}
-				if !nonPhrasingTagMap[rawTag] && rawTag != html.Script {
+				if rawTagTraits&nonPhrasingTag == 0 && rawTagHash != html.Script {
 					omitSpace = len(t.Data) > 0 && t.Data[len(t.Data)-1] == ' '
 				}
 			} else {
@@ -130,7 +129,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							break
 						} else if next.TokenType == html.StartTagToken || next.TokenType == html.EndTagToken {
 							// remove when followed up by a block tag
-							if nonPhrasingTagMap[next.Hash] {
+							if next.Traits&nonPhrasingTag != 0 {
 								t.Data = t.Data[:len(t.Data)-1]
 								omitSpace = false
 								break
@@ -146,13 +145,13 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				}
 			}
 		case html.StartTagToken, html.EndTagToken:
-			rawTag = 0
+			rawTagHash = 0
 			hasAttributes := false
 			if t.TokenType == html.StartTagToken {
 				if next := tb.Peek(0); next.TokenType == html.AttributeToken {
 					hasAttributes = true
 				}
-				if rawTagMap[t.Hash] {
+				if t.Traits&rawTag != 0 {
 					// ignore empty script and style tags
 					if !hasAttributes && (t.Hash == html.Script || t.Hash == html.Style) {
 						if next := tb.Peek(1); next.TokenType == html.EndTagToken {
@@ -161,11 +160,12 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							break
 						}
 					}
-					rawTag = t.Hash
+					rawTagHash = t.Hash
+					rawTagTraits = t.Traits
 					rawTagMediatype = []byte{}
 				}
 			}
-			if nonPhrasingTagMap[t.Hash] {
+			if t.Traits&nonPhrasingTag != 0 {
 				omitSpace = true // omit spaces after block elements
 			}
 
@@ -186,7 +186,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						if next.TokenType == html.TextToken && parse.IsAllWhitespace(next.Data) {
 							continue
 						}
-						if next.TokenType == html.ErrorToken || next.TokenType == html.EndTagToken && next.Hash != html.A || next.TokenType == html.StartTagToken && nonPhrasingTagMap[next.Hash] {
+						if next.TokenType == html.ErrorToken || next.TokenType == html.EndTagToken && next.Hash != html.A || next.TokenType == html.StartTagToken && next.Traits&nonPhrasingTag != 0 {
 							break SWITCH
 						}
 						break
@@ -289,13 +289,13 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						attr.Hash == html.Value && t.Hash == html.Input) {
 						continue // omit empty attribute values
 					}
-					if caseInsensitiveAttrMap[attr.Hash] {
+					if attr.Traits&caselessAttr != 0 {
 						val = parse.ToLower(val)
 						if attr.Hash == html.Enctype || attr.Hash == html.Codetype || attr.Hash == html.Accept || attr.Hash == html.Type && (t.Hash == html.A || t.Hash == html.Link || t.Hash == html.Object || t.Hash == html.Param || t.Hash == html.Script || t.Hash == html.Style || t.Hash == html.Source) {
 							val = minify.ContentType(val)
 						}
 					}
-					if rawTag != 0 && attr.Hash == html.Type {
+					if rawTagHash != 0 && attr.Hash == html.Type {
 						rawTagMediatype = val
 					}
 
@@ -339,7 +339,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						if len(val) == 0 {
 							continue
 						}
-					} else if len(val) > 5 && urlAttrMap[attr.Hash] { // anchors are already handled
+					} else if len(val) > 5 && attr.Traits&urlAttr != 0 { // anchors are already handled
 						// TODO: omit http or https according to URL, specified through options
 						//if t.Hash != html.A {
 						// if parse.EqualFold(val[:4], []byte{'h', 't', 't', 'p'}) {
@@ -361,7 +361,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					if _, err := w.Write(attr.Data); err != nil {
 						return err
 					}
-					if len(val) > 0 && !booleanAttrMap[attr.Hash] {
+					if len(val) > 0 && attr.Traits&booleanAttr == 0 {
 						if _, err := w.Write(isBytes); err != nil {
 							return err
 						}
@@ -385,7 +385,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 func getAttributes(tb *TokenBuffer, attrIndexBuffer *[]int, attrTokenBuffer *[]*Token, hashes ...html.Hash) []*Token {
 	*attrIndexBuffer = (*attrIndexBuffer)[:len(hashes)]
 	*attrTokenBuffer = (*attrTokenBuffer)[:len(hashes)]
-	for j, _ := range *attrIndexBuffer {
+	for j := range *attrIndexBuffer {
 		(*attrIndexBuffer)[j] = 0
 	}
 	i := 0

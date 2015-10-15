@@ -383,7 +383,7 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 				s, err := strconv.ParseFloat(string(values[3].Data[:len(values[3].Data)-1]), 32)
 				l, err := strconv.ParseFloat(string(values[5].Data[:len(values[5].Data)-1]), 32)
 				if err == nil {
-					r, g, b := css.Hsl2Rgb(h/360.0, s/100.0, l/100.0)
+					r, g, b := css.HSL2RGB(h/360.0, s/100.0, l/100.0)
 					rgb := []byte{byte((r * 255.0) + 0.5), byte((g * 255.0) + 0.5), byte((b * 255.0) + 0.5)}
 					val := make([]byte, 7)
 					val[0] = '#'
@@ -488,7 +488,7 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 				uri = uri[1 : len(uri)-1]
 			}
 			uri = minify.DataURI(c.m, uri)
-			if css.IsUrlUnquoted(uri) {
+			if css.IsURLUnquoted(uri) {
 				data = append(append([]byte("url("), uri...), ')')
 			} else {
 				data = append(append(append([]byte("url("), delim), uri...), delim, ')')
