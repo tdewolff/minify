@@ -32,7 +32,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	attrByteBuffer := make([]byte, 0, 64)
 
 	l := xml.NewLexer(r)
-	tb := xml.NewTokenBuffer(l)
+	tb := NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()
 		if t.TokenType == xml.CDATAToken {
