@@ -144,7 +144,7 @@ It's great that so many other tools make comparison tables: [CSS Minifier Compar
 
 The JS minifier is pretty basic. It removes comments, whitespace and line breaks whenever it can. It follows the rules by [JSMin](http://www.crockford.com/javascript/jsmin.html) but additionally fixes the error in the 'caution' section.
 
-Minification typically runs at about 45MB/s ~= 160GB/h.
+Minification typically runs at about 40MB/s ~= 150GB/h.
 
 Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
