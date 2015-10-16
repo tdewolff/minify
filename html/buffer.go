@@ -29,24 +29,20 @@ func NewTokenBuffer(l *html.Lexer) *TokenBuffer {
 }
 
 func (z *TokenBuffer) read(t *Token) {
-	tt, data, n := z.l.Next()
-	var attrVal []byte
-	var hash html.Hash
-	var traits traits
-	if tt == html.AttributeToken {
-		attrVal = z.l.AttrVal()
-		hash = html.ToHash(data)
-		traits = attrMap[hash]
-	} else if tt == html.StartTagToken || tt == html.EndTagToken {
-		hash = html.ToHash(data)
-		traits = tagMap[hash]
+	t.TokenType, t.Data, t.n = z.l.Next()
+	if t.TokenType == html.AttributeToken {
+		t.AttrVal = z.l.AttrVal()
+		t.Hash = html.ToHash(t.Data)
+		t.Traits = attrMap[t.Hash]
+	} else if t.TokenType == html.StartTagToken || t.TokenType == html.EndTagToken {
+		t.AttrVal = nil
+		t.Hash = html.ToHash(t.Data)
+		t.Traits = tagMap[t.Hash]
+	} else {
+		t.AttrVal = nil
+		t.Hash = 0
+		t.Traits = 0
 	}
-	t.TokenType = tt
-	t.Data = data
-	t.AttrVal = attrVal
-	t.Hash = hash
-	t.Traits = traits
-	t.n = n
 }
 
 // Peek returns the ith element and possibly does an allocation.
