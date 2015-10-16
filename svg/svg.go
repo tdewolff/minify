@@ -36,7 +36,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	attrByteBuffer := make([]byte, 0, 64)
 
 	l := xml.NewLexer(r)
-	tb := xml.NewTokenBuffer(l)
+	tb := NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()
 		if t.TokenType == xml.CDATAToken {
@@ -95,13 +95,13 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				}
 			}
 		case xml.StartTagToken:
-			tag = svg.ToHash(t.Data)
-			if containerTagMap[tag] { // skip empty containers
+			tag = t.Hash
+			if containerTagMap[t.Hash] { // skip empty containers
 				i := 0
 				for {
 					next := tb.Peek(i)
 					i++
-					if next.TokenType == xml.EndTagToken && svg.ToHash(next.Data) == tag || next.TokenType == xml.StartTagCloseVoidToken || next.TokenType == xml.ErrorToken {
+					if next.TokenType == xml.EndTagToken && next.Hash == t.Hash || next.TokenType == xml.StartTagCloseVoidToken || next.TokenType == xml.ErrorToken {
 						for j := 0; j < i; j++ {
 							tb.Shift()
 						}
@@ -110,14 +110,14 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						break
 					}
 				}
-			} else if tag == svg.Metadata {
+			} else if t.Hash == svg.Metadata {
 				for {
-					if t := *tb.Shift(); (t.TokenType == xml.EndTagToken || t.TokenType == xml.StartTagCloseVoidToken) && svg.ToHash(t.Data) == tag || t.TokenType == xml.ErrorToken {
+					if next := *tb.Shift(); (next.TokenType == xml.EndTagToken || next.TokenType == xml.StartTagCloseVoidToken) && next.Hash == t.Hash || next.TokenType == xml.ErrorToken {
 						break
 					}
 				}
 				break
-			} else if tag == svg.Line || tag == svg.Rect {
+			} else if t.Hash == svg.Line || t.Hash == svg.Rect {
 				// TODO: shape2path also for polygon and polyline
 				// x1, y1, x2, y2 float64 := 0, 0, 0, 0
 				// valid := true
@@ -172,9 +172,8 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			if len(t.AttrVal) < 2 {
 				continue
 			}
-			attr := svg.ToHash(t.Data)
 			val := parse.ReplaceMultipleWhitespace(parse.Trim(t.AttrVal[1:len(t.AttrVal)-1], parse.IsWhitespace))
-			if tag == svg.Svg && attr == svg.Version {
+			if tag == svg.Svg && t.Hash == svg.Version {
 				continue
 			}
 
@@ -188,18 +187,18 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				return err
 			}
 
-			if tag == svg.Svg && attr == svg.ContentStyleType {
+			if tag == svg.Svg && t.Hash == svg.ContentStyleType {
 				val = minify.ContentType(val)
 				defaultStyleType = string(val)
 				defaultInlineStyleType = defaultStyleType + ";inline=1"
-			} else if attr == svg.Style {
+			} else if t.Hash == svg.Style {
 				attrMinifyBuffer.Reset()
 				if m.Minify(defaultInlineStyleType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
 					val = attrMinifyBuffer.Bytes()
 				}
-			} else if attr == svg.D {
+			} else if t.Hash == svg.D {
 				val = shortenPathData(val)
-			} else if attr == svg.ViewBox {
+			} else if t.Hash == svg.ViewBox {
 				j := 0
 				newVal := val[:0]
 				for i := 0; i < 4; i++ {
@@ -220,7 +219,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					}
 				}
 				val = newVal
-			} else if colorAttrMap[attr] && len(val) > 0 {
+			} else if colorAttrMap[t.Hash] && len(val) > 0 {
 				parse.ToLower(val)
 				if val[0] == '#' {
 					if name, ok := minifyCSS.ShortenColorHex[string(val)]; ok {
