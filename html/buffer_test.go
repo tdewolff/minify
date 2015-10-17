@@ -16,7 +16,7 @@ func TestBuffer(t *testing.T) {
 	tok := z.Shift()
 	assert.Equal(t, html.P, tok.Hash, "first token must be <p>")
 	assert.Equal(t, 0, z.pos, "must have shifted first token and restored position")
-	assert.Equal(t, 0, len(z.buf), "must have shifted first token and restored position")
+	assert.Equal(t, 0, len(z.buf), "must have shifted first token and restored length")
 
 	assert.Equal(t, html.Href, z.Peek(2).Hash, "third token must be href")
 	assert.Equal(t, 0, z.pos, "must not have changed positon after peeking")

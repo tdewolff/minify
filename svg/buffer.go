@@ -54,26 +54,27 @@ func (z *TokenBuffer) Peek(pos int) *Token {
 		}
 
 		c := cap(z.buf)
-		p := pos - z.pos + 1
+		d := len(z.buf) - z.pos
+		p := pos - z.pos + 1 // required peek length
 		var buf []Token
 		if 2*p > c {
 			buf = make([]Token, 0, 2*c+p)
 		} else {
 			buf = z.buf
 		}
-		d := len(z.buf) - z.pos
 		copy(buf[:d], z.buf[z.pos:])
 
 		buf = buf[:p]
+		pos -= z.pos
 		for i := d; i < p; i++ {
 			z.read(&buf[i])
 			if buf[i].TokenType == xml.ErrorToken {
-				p = i + 1
+				buf = buf[:i+1]
+				pos = i
 				break
 			}
 		}
-		pos = p - 1
-		z.pos, z.buf = 0, buf[:p]
+		z.pos, z.buf = 0, buf
 	}
 	return &z.buf[pos]
 }

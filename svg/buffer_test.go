@@ -17,7 +17,7 @@ func TestBuffer(t *testing.T) {
 	tok := z.Shift()
 	assert.Equal(t, svg.Svg, tok.Hash, "first token must be <svg>")
 	assert.Equal(t, 0, z.pos, "must have shifted first token and restored position")
-	assert.Equal(t, 0, len(z.buf), "must have shifted first token and restored position")
+	assert.Equal(t, 0, len(z.buf), "must have shifted first token and restored length")
 
 	assert.Equal(t, svg.D, z.Peek(2).Hash, "third token must be d")
 	assert.Equal(t, 0, z.pos, "must not have changed positon after peeking")
