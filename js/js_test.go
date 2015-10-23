@@ -12,7 +12,7 @@ import (
 	"github.com/tdewolff/test"
 )
 
-func TestCSS(t *testing.T) {
+func TestJS(t *testing.T) {
 	var jsTests = []struct {
 		js       string
 		expected string
@@ -30,6 +30,10 @@ func TestCSS(t *testing.T) {
 		{"a\n{", "a\n{"},
 		{";\na", ";a"},
 		{",\na", ",a"},
+		{"}\na", "}\na"},
+		{"+\na", "+\na"},
+		{"+\n(", "+\n("},
+		{"+\n\"\"", "+\"\""},
 		{"a + ++b", "a+ ++b"},                                          // JSMin caution
 		{"var a=/\\s?auto?\\s?/i\nvar", "var a=/\\s?auto?\\s?/i\nvar"}, // #14
 	}
