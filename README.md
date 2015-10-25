@@ -2,6 +2,8 @@
 
 [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
+**WARNING: an API change is happening soon, be aware or continue using the old API in tag v1.0.0
+
 **Update: [online live demo](http://pi.tacodewolff.nl:8080/minify) running on a Raspberry Pi 2.**
 
 **Update: [command-line-interface](https://github.com/tdewolff/minify/tree/master/cmd/minify) executable `minify` provided for tooling.**
