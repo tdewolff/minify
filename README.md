@@ -10,7 +10,7 @@ It associates minification functions with mime types, allowing embedded resource
 
 Bottleneck for minification is mainly io and can be significantly sped up by having the file loaded into memory and providing a `Bytes() []byte` function like `bytes.Buffer` does.
 
-** Roadmap **
+**Roadmap**
 
 * [x] HTML parser and minifier
 * [x] CSS parser and minifier
@@ -33,9 +33,9 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 
 **Table of Contents**
 
-**[Online live demo](http://pi.tacodewolff.nl:8080/minify) running on a Raspberry Pi 2.**
+[Online live demo](http://pi.tacodewolff.nl:8080/minify) running on a Raspberry Pi 2.
 
-**[Command-line-interface](https://github.com/tdewolff/minify/tree/master/cmd/minify) executable `minify` provided for tooling.**
+[Command-line-interface](https://github.com/tdewolff/minify/tree/master/cmd/minify) executable `minify` provided for tooling.
 
 - [Minify](#minify--)
 	- [Prologue](#prologue)
