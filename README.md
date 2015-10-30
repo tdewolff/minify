@@ -2,11 +2,7 @@
 
 [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**WARNING: an API change is happening soon, be aware or continue using the old API in tag v1.0.0
-
-**Update: [online live demo](http://pi.tacodewolff.nl:8080/minify) running on a Raspberry Pi 2.**
-
-**Update: [command-line-interface](https://github.com/tdewolff/minify/tree/master/cmd/minify) executable `minify` provided for tooling.**
+**WARNING: an API change is happening soon, be aware or continue using the old API in tag v1.0.0**
 
 Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3, JS, JSON, SVG and XML minifiers and provides an interface to implement any minifier. Minification is the process of removing bytes from a file (such as whitespace) without changing its output and therefore speeding up transmission over the internet. The implemented minifiers are high performance and streaming (which implies O(n)).
 
@@ -14,9 +10,32 @@ It associates minification functions with mime types, allowing embedded resource
 
 Bottleneck for minification is mainly io and can be significantly sped up by having the file loaded into memory and providing a `Bytes() []byte` function like `bytes.Buffer` does.
 
-See the [Wiki](https://github.com/tdewolff/minify/wiki) for a roadmap of what is planned for the future.
+** Roadmap **
+
+* [x] HTML parser and minifier
+* [x] CSS parser and minifier
+* [x] Command line tool
+* [x] JSON parser and minifier
+* [x] JS lexer and minifier implementing JSMin
+* [x] Improve CSS parser to implement the same technique as HTML/JSON does (ie. a lightweight parser)
+* [x] XML parser and minifier according to the specs
+* [x] Optimize and test JSON minification
+* [x] Optimize and test XML minification
+* [x] Optimize and test CSS minification
+* [x] SVG minifier using the XML parser
+* [ ] Expand SVG minifier using https://github.com/svg/svgo techniques
+* [x] Test with https://github.com/dvyukov/go-fuzz, *found >10 bugs*
+* [ ] JS lightweight parser
+* [ ] JS minifier with local variable renaming
+* [ ] Optimize the CSS parser to use the same parsing style as the JS parser
+* [ ] Options feature to disable techniques
+* [ ] HTML templates minification, e.g. Go HTML templates or doT.js templates etc.
 
 **Table of Contents**
+
+**[Online live demo](http://pi.tacodewolff.nl:8080/minify) running on a Raspberry Pi 2.**
+
+**[Command-line-interface](https://github.com/tdewolff/minify/tree/master/cmd/minify) executable `minify` provided for tooling.**
 
 - [Minify](#minify--)
 	- [Prologue](#prologue)
