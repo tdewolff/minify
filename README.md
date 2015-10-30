@@ -10,27 +10,6 @@ It associates minification functions with mime types, allowing embedded resource
 
 Bottleneck for minification is mainly io and can be significantly sped up by having the file loaded into memory and providing a `Bytes() []byte` function like `bytes.Buffer` does.
 
-**Roadmap**
-
-* [x] HTML parser and minifier
-* [x] CSS parser and minifier
-* [x] Command line tool
-* [x] JSON parser and minifier
-* [x] JS lexer and minifier implementing JSMin
-* [x] Improve CSS parser to implement the same technique as HTML/JSON does (ie. a lightweight parser)
-* [x] XML parser and minifier according to the specs
-* [x] Optimize and test JSON minification
-* [x] Optimize and test XML minification
-* [x] Optimize and test CSS minification
-* [x] SVG minifier using the XML parser
-* [ ] Expand SVG minifier using https://github.com/svg/svgo techniques
-* [x] Test with https://github.com/dvyukov/go-fuzz, *found >10 bugs*
-* [ ] JS lightweight parser
-* [ ] JS minifier with local variable renaming
-* [ ] Optimize the CSS parser to use the same parsing style as the JS parser
-* [ ] Options feature to disable techniques
-* [ ] HTML templates minification, e.g. Go HTML templates or doT.js templates etc.
-
 **Table of Contents**
 
 [Online live demo](http://pi.tacodewolff.nl:8080/minify) running on a Raspberry Pi 2.
@@ -62,6 +41,27 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 		- [ResponseWriter](#responsewriter)
 	- [License](#license)
 
+**Roadmap**
+
+* [x] HTML parser and minifier
+* [x] CSS parser and minifier
+* [x] Command line tool
+* [x] JSON parser and minifier
+* [x] JS lexer and minifier implementing JSMin
+* [x] Improve CSS parser to implement the same technique as HTML/JSON does (ie. a lightweight parser)
+* [x] XML parser and minifier according to the specs
+* [x] Optimize and test JSON minification
+* [x] Optimize and test XML minification
+* [x] Optimize and test CSS minification
+* [x] SVG minifier using the XML parser
+* [ ] Expand SVG minifier using https://github.com/svg/svgo techniques
+* [x] Test with https://github.com/dvyukov/go-fuzz, *found >10 bugs*
+* [ ] JS lightweight parser
+* [ ] JS minifier with local variable renaming
+* [ ] Optimize the CSS parser to use the same parsing style as the JS parser
+* [ ] Options feature to disable techniques
+* [ ] HTML templates minification, e.g. Go HTML templates or doT.js templates etc.
+
 ## Prologue
 Minifiers or bindings to minifiers exist in almost all programming languages. Some implementations are merely using several regular-expressions to trim whitespace and comments (even though regex for parsing HTML/XML is ill-advised, for a good read see [Regular Expressions: Now You Have Two Problems](http://blog.codinghorror.com/regular-expressions-now-you-have-two-problems/)). Some implementations are much more profound, such as the [YUI Compressor](http://yui.github.io/yuicompressor/), [Google Closure Compiler](https://github.com/google/closure-compiler) for JS and the [HTML Compressor](https://code.google.com/p/htmlcompressor/).
 
@@ -87,12 +87,12 @@ Website | Original | Minified | Ratio | Time<sup>&#42;</sup>
 
 <sup>&#42;&#42;</sup>Is already somewhat minified, so this doesn't reflect the full potential of this minifier.
 
-[HTML Compressor](https://code.google.com/p/htmlcompressor/) performs worse in output size (for HTML and CSS) and speed; it is a magnitude slower. Its whitespace removal is not precise or the user must provide the tags around which can be trimmed. According to HTML Compressor, it produces smaller files than a couple of other libraries. With HTML and CSS minification this package is better, but JS minification it is still too basic.
-
 ### Alternatives
-An alternative library written in Go is [https://github.com/dchest/htmlmin](https://github.com/dchest/htmlmin). It is simpler (less bugs but not handling edge-cases) but slower. Also [https://github.com/omeid/jsmin](https://github.com/omeid/jsmin) contains a port of JSMin, just like this JS minifier, but is slower.
+[HTML Compressor](https://code.google.com/p/htmlcompressor/) performs worse in output size (for HTML and CSS) and speed; it is a magnitude slower. Its whitespace removal is not precise or the user must provide the tags around which can be trimmed.
 
-Other alternatives are bindings for existing minifiers written in other languages. These are inevitably more robust and tested but will often be slower. For example, Java-based minifiers incur overhead of starting up the JVM.
+An alternative library written in Go is [https://github.com/dchest/htmlmin](https://github.com/dchest/htmlmin). It is simpler but slower. Also [https://github.com/omeid/jsmin](https://github.com/omeid/jsmin) contains a port of JSMin, just like this JS minifier, but is slower.
+
+Other alternatives are bindings to existing minifiers written in other languages. These are inevitably more robust and tested but will often be slower. For example, Java-based minifiers incur overhead of starting up the JVM.
 
 ## HTML [![GoDoc](http://godoc.org/github.com/tdewolff/minify/html?status.svg)](http://godoc.org/github.com/tdewolff/minify/html) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/html)](http://gocover.io/github.com/tdewolff/minify/html)
 
@@ -113,9 +113,8 @@ After recent benchmarking and profiling it became really fast and minifies pages
 
 However, be careful when doing on-the-fly minification. Minification typically trims off 10% and does this at worst around about 20MB/s. This means users have to download slower than 2MB/s to make on-the-fly minification worthwhile. This may or may not apply in your situation. Rather use caching!
 
-### Beware
-#### Whitespace removal
-The whitespace removal mechanism collapses all sequences of whitespace (spaces, newlines, tabs, ...) to a single space. It trims all text parts (in between tags) depending on whether it was preceded by a space from a previous piece of text and whether it is followed up by a block element or an inline element. In the former case we can omit spaces while for inline elements whitespace has significance.
+### Whitespace removal
+The whitespace removal mechanism collapses all sequences of whitespace (spaces, newlines, tabs) to a single space. It trims all text parts (in between tags) depending on whether it was preceded by a space from a previous piece of text and whether it is followed up by a block element or an inline element. In the former case we can omit spaces while for inline elements whitespace has significance.
 
 Make sure your HTML doesn't depend on whitespace between `block` elements that have been changed to `inline` or `inline-block` elements using CSS. Your layout *should not* depend on those whitespaces as the minifier will remove them. An example is a menu consisting of multiple `<li>` that have `display:inline-block` applied and have whitespace in between them. It is bad practise to rely on whitespace for element positioning anyways!
 
@@ -258,34 +257,34 @@ m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 Minify from an `io.Reader` to an `io.Writer` for a specific mediatype.
 ``` go
 if err := m.Minify(mediatype, w, r); err != nil {
-	log.Fatal("Minify:", err)
+	panic(err)
 }
 ```
 
 Minify HTML, CSS or JS directly from an `io.Reader` to an `io.Writer`. The passed mediatype is not required for these functions, but are filled out for clarity.
 ``` go
 if err := css.Minify(m, "text/css", w, r); err != nil {
-	log.Fatal("css.Minify:", err)
+	panic(err)
 }
 
 if err := html.Minify(m, "text/html", w, r); err != nil {
-	log.Fatal("html.Minify:", err)
+	panic(err)
 }
 
 if err := js.Minify(m, "text/javascript", w, r); err != nil {
-	log.Fatal("js.Minify:", err)
+	panic(err)
 }
 
 if err := json.Minify(m, "application/json", w, r); err != nil {
-	log.Fatal("json.Minify:", err)
+	panic(err)
 }
 
 if err := svg.Minify(m, "image/svg+xml", w, r); err != nil {
-	log.Fatal("svg.Minify:", err)
+	panic(err)
 }
 
 if err := xml.Minify(m, "text/xml", w, r); err != nil {
-	log.Fatal("xml.Minify:", err)
+	panic(err)
 }
 ```
 
@@ -294,7 +293,7 @@ Minify from and to a `[]byte` for a specific mediatype.
 ``` go
 b, err = minify.Bytes(m, mediatype, b)
 if err != nil {
-	log.Fatal("minify.Bytes:", err)
+	panic(err)
 }
 ```
 
@@ -303,7 +302,7 @@ Minify from and to a `string` for a specific mediatype.
 ``` go
 s, err = minify.String(m, mediatype, s)
 if err != nil {
-	log.Fatal("minify.String:", err)
+	panic(err)
 }
 ```
 
@@ -359,7 +358,7 @@ func main() {
 	// m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
 
 	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
-		log.Fatal("Minify:", err)
+		panic(err)
 	}
 }
 ```
@@ -379,7 +378,6 @@ import (
 	"github.com/tdewolff/minify"
 )
 
-// Outputs "Becausemycoffeewastoocold,Iheateditinthemicrowave."
 func main() {
 	m := minify.New()
 
@@ -403,9 +401,10 @@ func main() {
 
 	out, err := minify.String(m, "text/plain", "Because my coffee was too cold, I heated it in the microwave.")
 	if err != nil {
-		log.Fatal("Minify:", err)
+		panic(err)
 	}
 	fmt.Println(out)
+	// Output: Becausemycoffeewastoocold,Iheateditinthemicrowave.
 }
 ```
 
