@@ -12,13 +12,11 @@ import (
 )
 
 var (
-	ltBytes       = []byte("<")
-	gtBytes       = []byte(">")
-	isBytes       = []byte("=")
-	spaceBytes    = []byte(" ")
-	endBytes      = []byte("</")
-	externalBytes = []byte("external")
-	httpBytes     = []byte("http")
+	ltBytes    = []byte("<")
+	gtBytes    = []byte(">")
+	isBytes    = []byte("=")
+	spaceBytes = []byte(" ")
+	endBytes   = []byte("</")
 )
 
 const maxAttrLookup = 4
@@ -27,7 +25,8 @@ const maxAttrLookup = 4
 
 // Minify minifies HTML data, it reads from r and writes to w.
 func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
-	var rawTag html.Hash
+	var rawTagHash html.Hash
+	var rawTagTraits traits
 	var rawTagMediatype []byte
 	omitSpace := true // if true the next leading space is omitted
 	defaultScriptType := "text/javascript"
@@ -36,11 +35,10 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
-	attrIntBuffer := make([]int, 0, maxAttrLookup)
-	attrTokenBuffer := make([]*html.Token, 0, maxAttrLookup)
+	attrTokenBuffer := make([]*Token, 0, maxAttrLookup)
 
 	l := html.NewLexer(r)
-	tb := html.NewTokenBuffer(l)
+	tb := NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()
 	SWITCH:
@@ -68,21 +66,21 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 		case html.TextToken:
 			// CSS and JS minifiers for inline code
-			if rawTag != 0 {
-				if rawTag == html.Style || rawTag == html.Script || rawTag == html.Iframe || rawTag == html.Svg || rawTag == html.Math {
+			if rawTagHash != 0 {
+				if rawTagHash == html.Style || rawTagHash == html.Script || rawTagHash == html.Iframe || rawTagHash == html.Svg || rawTagHash == html.Math {
 					var mediatype string
-					if rawTag == html.Iframe {
+					if rawTagHash == html.Iframe {
 						mediatype = "text/html"
+					} else if rawTagHash == html.Svg {
+						mediatype = "image/svg+xml"
+					} else if rawTagHash == html.Math {
+						mediatype = "application/mathml+xml"
 					} else if len(rawTagMediatype) > 0 {
 						mediatype = string(rawTagMediatype)
-					} else if rawTag == html.Script {
+					} else if rawTagHash == html.Script {
 						mediatype = defaultScriptType
-					} else if rawTag == html.Style {
+					} else if rawTagHash == html.Style {
 						mediatype = defaultStyleType
-					} else if rawTag == html.Svg {
-						mediatype = "image/svg+xml"
-					} else if rawTag == html.Math {
-						mediatype = "application/mathml+xml"
 					}
 					// ignore CDATA
 					if trimmedData := parse.Trim(t.Data, parse.IsWhitespace); len(trimmedData) > 12 && bytes.Equal(trimmedData[:9], []byte("<![CDATA[")) && bytes.Equal(trimmedData[len(trimmedData)-3:], []byte("]]>")) {
@@ -96,11 +94,11 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				} else if _, err := w.Write(t.Data); err != nil {
 					return err
 				}
-				if !nonPhrasingTagMap[rawTag] && rawTag != html.Script {
+				if rawTagTraits&nonPhrasingTag == 0 && rawTagHash != html.Script {
 					omitSpace = len(t.Data) > 0 && t.Data[len(t.Data)-1] == ' '
 				}
 			} else {
-				t.Data = parse.ReplaceMultiple(t.Data, parse.IsWhitespace, ' ')
+				t.Data = parse.ReplaceMultipleWhitespace(t.Data)
 
 				// whitespace removal; trim left
 				if omitSpace && t.Data[0] == ' ' {
@@ -130,7 +128,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							break
 						} else if next.TokenType == html.StartTagToken || next.TokenType == html.EndTagToken {
 							// remove when followed up by a block tag
-							if nonPhrasingTagMap[next.Hash] {
+							if next.Traits&nonPhrasingTag != 0 {
 								t.Data = t.Data[:len(t.Data)-1]
 								omitSpace = false
 								break
@@ -146,13 +144,13 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				}
 			}
 		case html.StartTagToken, html.EndTagToken:
-			rawTag = 0
+			rawTagHash = 0
 			hasAttributes := false
 			if t.TokenType == html.StartTagToken {
 				if next := tb.Peek(0); next.TokenType == html.AttributeToken {
 					hasAttributes = true
 				}
-				if rawTagMap[t.Hash] {
+				if t.Traits&rawTag != 0 {
 					// ignore empty script and style tags
 					if !hasAttributes && (t.Hash == html.Script || t.Hash == html.Style) {
 						if next := tb.Peek(1); next.TokenType == html.EndTagToken {
@@ -161,11 +159,12 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 							break
 						}
 					}
-					rawTag = t.Hash
-					rawTagMediatype = []byte{}
+					rawTagHash = t.Hash
+					rawTagTraits = t.Traits
+					rawTagMediatype = nil
 				}
 			}
-			if nonPhrasingTagMap[t.Hash] {
+			if t.Traits&nonPhrasingTag != 0 {
 				omitSpace = true // omit spaces after block elements
 			}
 
@@ -186,7 +185,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						if next.TokenType == html.TextToken && parse.IsAllWhitespace(next.Data) {
 							continue
 						}
-						if next.TokenType == html.ErrorToken || next.TokenType == html.EndTagToken && next.Hash != html.A || next.TokenType == html.StartTagToken && nonPhrasingTagMap[next.Hash] {
+						if next.TokenType == html.ErrorToken || next.TokenType == html.EndTagToken && next.Hash != html.A || next.TokenType == html.StartTagToken && next.Traits&nonPhrasingTag != 0 {
 							break SWITCH
 						}
 						break
@@ -211,57 +210,54 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			if hasAttributes {
 				// rewrite attributes with interdependent conditions
 				if t.Hash == html.A {
-					if attr := getAttributes(tb, &attrIntBuffer, &attrTokenBuffer, html.Id, html.Name, html.Rel, html.Href); attr != nil {
-						if id := attr[0]; id != nil {
-							if name := attr[1]; name != nil && parse.Equal(id.AttrVal, name.AttrVal) {
-								name.Data = nil
+					getAttributes(&attrTokenBuffer, tb, html.Id, html.Name, html.Rel, html.Href)
+					if id := attrTokenBuffer[0]; id != nil {
+						if name := attrTokenBuffer[1]; name != nil && parse.Equal(id.AttrVal, name.AttrVal) {
+							name.Data = nil
+						}
+					}
+					// TODO: omit http or https according to URL, specified through options
+					// if rel := attrTokenBuffer[2]; rel == nil || !parse.EqualFold(rel.AttrVal, externalBytes) {
+					// 	if href := attrTokenBuffer[3]; href != nil {
+					// 		if len(href.AttrVal) > 5 && parse.EqualFold(href.AttrVal[:4], []byte{'h', 't', 't', 'p'}) {
+					// 			if href.AttrVal[4] == ':' {
+					// 				href.AttrVal = href.AttrVal[5:]
+					// 			} else if (href.AttrVal[4] == 's' || href.AttrVal[4] == 'S') && href.AttrVal[5] == ':' {
+					// 				href.AttrVal = href.AttrVal[6:]
+					// 			}
+					// 		}
+					// 	}
+					// }
+				} else if t.Hash == html.Meta {
+					getAttributes(&attrTokenBuffer, tb, html.Content, html.Http_Equiv, html.Charset, html.Name)
+					if content := attrTokenBuffer[0]; content != nil {
+						if httpEquiv := attrTokenBuffer[1]; httpEquiv != nil {
+							content.AttrVal = minify.ContentType(content.AttrVal)
+							if charset := attrTokenBuffer[2]; charset == nil && parse.EqualFold(httpEquiv.AttrVal, []byte("content-type")) && parse.Equal(content.AttrVal, []byte("text/html;charset=utf-8")) {
+								httpEquiv.Data = nil
+								content.Data = []byte("charset")
+								content.Hash = html.Charset
+								content.AttrVal = []byte("utf-8")
+							} else if parse.EqualFold(httpEquiv.AttrVal, []byte("content-style-type")) {
+								defaultStyleType = string(content.AttrVal)
+								defaultInlineStyleType = defaultStyleType + ";inline=1"
+							} else if parse.EqualFold(httpEquiv.AttrVal, []byte("content-script-type")) {
+								defaultScriptType = string(content.AttrVal)
 							}
 						}
-						// TODO: omit http or https according to URL, specified through options
-						// if rel := attr[2]; rel == nil || !parse.EqualFold(rel.AttrVal, externalBytes) {
-						// 	if href := attr[3]; href != nil {
-						// 		if len(href.AttrVal) > 5 && parse.EqualFold(href.AttrVal[:4], []byte{'h', 't', 't', 'p'}) {
-						// 			if href.AttrVal[4] == ':' {
-						// 				href.AttrVal = href.AttrVal[5:]
-						// 			} else if (href.AttrVal[4] == 's' || href.AttrVal[4] == 'S') && href.AttrVal[5] == ':' {
-						// 				href.AttrVal = href.AttrVal[6:]
-						// 			}
-						// 		}
-						// 	}
-						// }
-					}
-				} else if t.Hash == html.Meta {
-					if attr := getAttributes(tb, &attrIntBuffer, &attrTokenBuffer, html.Content, html.Http_Equiv, html.Charset, html.Name); attr != nil {
-						if content := attr[0]; content != nil {
-							if httpEquiv := attr[1]; httpEquiv != nil {
-								content.AttrVal = minify.ContentType(content.AttrVal)
-								if charset := attr[2]; charset == nil && parse.EqualFold(httpEquiv.AttrVal, []byte("content-type")) && parse.Equal(content.AttrVal, []byte("text/html;charset=utf-8")) {
-									httpEquiv.Data = nil
-									content.Data = []byte("charset")
-									content.Hash = html.Charset
-									content.AttrVal = []byte("utf-8")
-								} else if parse.EqualFold(httpEquiv.AttrVal, []byte("content-style-type")) {
-									defaultStyleType = string(content.AttrVal)
-									defaultInlineStyleType = defaultStyleType + ";inline=1"
-								} else if parse.EqualFold(httpEquiv.AttrVal, []byte("content-script-type")) {
-									defaultScriptType = string(content.AttrVal)
-								}
-							}
-							if name := attr[3]; name != nil {
-								if parse.EqualFold(name.AttrVal, []byte("keywords")) {
-									content.AttrVal = bytes.Replace(content.AttrVal, []byte(", "), []byte(","), -1)
-								} else if parse.EqualFold(name.AttrVal, []byte("viewport")) {
-									content.AttrVal = bytes.Replace(content.AttrVal, []byte(" "), []byte(""), -1)
-								}
+						if name := attrTokenBuffer[3]; name != nil {
+							if parse.EqualFold(name.AttrVal, []byte("keywords")) {
+								content.AttrVal = bytes.Replace(content.AttrVal, []byte(", "), []byte(","), -1)
+							} else if parse.EqualFold(name.AttrVal, []byte("viewport")) {
+								content.AttrVal = bytes.Replace(content.AttrVal, []byte(" "), []byte(""), -1)
 							}
 						}
 					}
 				} else if t.Hash == html.Script {
-					if attr := getAttributes(tb, &attrIntBuffer, &attrTokenBuffer, html.Src, html.Charset); attr != nil {
-						if src := attr[0]; src != nil {
-							if charset := attr[1]; charset != nil {
-								charset.Data = nil
-							}
+					getAttributes(&attrTokenBuffer, tb, html.Src, html.Charset)
+					if src := attrTokenBuffer[0]; src != nil {
+						if charset := attrTokenBuffer[1]; charset != nil {
+							charset.Data = nil
 						}
 					}
 				}
@@ -289,13 +285,13 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						attr.Hash == html.Value && t.Hash == html.Input) {
 						continue // omit empty attribute values
 					}
-					if caseInsensitiveAttrMap[attr.Hash] {
+					if attr.Traits&caselessAttr != 0 {
 						val = parse.ToLower(val)
 						if attr.Hash == html.Enctype || attr.Hash == html.Codetype || attr.Hash == html.Accept || attr.Hash == html.Type && (t.Hash == html.A || t.Hash == html.Link || t.Hash == html.Object || t.Hash == html.Param || t.Hash == html.Script || t.Hash == html.Style || t.Hash == html.Source) {
 							val = minify.ContentType(val)
 						}
 					}
-					if rawTag != 0 && attr.Hash == html.Type {
+					if rawTagHash != 0 && attr.Hash == html.Type {
 						rawTagMediatype = val
 					}
 
@@ -339,7 +335,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 						if len(val) == 0 {
 							continue
 						}
-					} else if len(val) > 5 && urlAttrMap[attr.Hash] { // anchors are already handled
+					} else if len(val) > 5 && attr.Traits&urlAttr != 0 { // anchors are already handled
 						// TODO: omit http or https according to URL, specified through options
 						//if t.Hash != html.A {
 						// if parse.EqualFold(val[:4], []byte{'h', 't', 't', 'p'}) {
@@ -361,7 +357,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					if _, err := w.Write(attr.Data); err != nil {
 						return err
 					}
-					if len(val) > 0 && !booleanAttrMap[attr.Hash] {
+					if len(val) > 0 && attr.Traits&booleanAttr == 0 {
 						if _, err := w.Write(isBytes); err != nil {
 							return err
 						}
@@ -382,35 +378,24 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 ////////////////////////////////////////////////////////////////
 
-func getAttributes(tb *html.TokenBuffer, attrIndexBuffer *[]int, attrTokenBuffer *[]*html.Token, hashes ...html.Hash) []*html.Token {
-	*attrIndexBuffer = (*attrIndexBuffer)[:len(hashes)]
+func getAttributes(attrTokenBuffer *[]*Token, tb *TokenBuffer, hashes ...html.Hash) {
 	*attrTokenBuffer = (*attrTokenBuffer)[:len(hashes)]
-	for j, _ := range *attrIndexBuffer {
-		(*attrIndexBuffer)[j] = 0
+	for j, _ := range *attrTokenBuffer {
+		(*attrTokenBuffer)[j] = nil
 	}
-	i := 0
-	for {
+	for i := 0; ; i++ {
 		t := tb.Peek(i)
 		if t.TokenType != html.AttributeToken {
 			break
 		}
 		for j, hash := range hashes {
 			if t.Hash == hash {
-				(*attrIndexBuffer)[j] = i + 1
+				if len(t.AttrVal) > 1 && (t.AttrVal[0] == '"' || t.AttrVal[0] == '\'') {
+					t.AttrVal = parse.Trim(t.AttrVal[1:len(t.AttrVal)-1], parse.IsWhitespace) // quotes will be readded in attribute loop if necessary
+				}
+				(*attrTokenBuffer)[j] = t
+				break
 			}
 		}
-		i++
 	}
-	for j, i := range *attrIndexBuffer {
-		if i > 0 {
-			t := tb.Peek(i - 1)
-			if len(t.AttrVal) > 1 && (t.AttrVal[0] == '"' || t.AttrVal[0] == '\'') {
-				t.AttrVal = parse.Trim(t.AttrVal[1:len(t.AttrVal)-1], parse.IsWhitespace) // quotes will be readded in attribute loop if necessary
-			}
-			(*attrTokenBuffer)[j] = t
-		} else {
-			(*attrTokenBuffer)[j] = nil
-		}
-	}
-	return *attrTokenBuffer
 }

@@ -21,7 +21,8 @@ func Minify(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	lineTerminatorQueued := false
 	whitespaceQueued := false
 	for {
-		tt, text := l.Next()
+		tt, text, n := l.Next()
+		l.Free(n)
 		if tt == js.ErrorToken {
 			if l.Err() != io.EOF {
 				return l.Err()

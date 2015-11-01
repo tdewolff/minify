@@ -74,14 +74,14 @@ However, implementing an HTML minifier is the bare minimum. HTML documents can c
 This minifier proves to be that fast and encompassing minifier which stream-minifies files and can minify them concurrently.
 
 ## Comparison
-HTML (with JS and CSS) minification typically runs at about 30MB/s ~= 100GB/h, depending on the composition of the file.
+HTML (with JS and CSS) minification typically runs at about 35MB/s ~= 120GB/h, depending on the composition of the file.
 
 Website | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
 [Amazon](http://www.amazon.com/) | 463kB | **414kB** | 89% | 13ms
 [BBC](http://www.bbc.com/) | 113kB | **96kB** | 85% | 4ms
-[StackOverflow](http://stackoverflow.com/) | 201kB | **182kB** | 91% | 7ms
-[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | **410kB** | 94%<sup>&#42;&#42;</sup> | 14ms
+[StackOverflow](http://stackoverflow.com/) | 201kB | **182kB** | 91% | 6ms
+[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | **410kB** | 94%<sup>&#42;&#42;</sup> | 12ms
 
 <sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies a lot but it's important to see it's in the 10ms range! The benchmark uses all the minifiers and excludes reading from and writing to the file from the measurement.
 
@@ -124,8 +124,8 @@ Minification typically runs at about 20MB/s ~= 70GB/h.
 
 Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
-[Bootstrap](http://getbootstrap.com/) | 134kB | **111kB** | 83% | 6ms
-[Gumby](http://gumbyframework.com/) | 182kB | **167kB** | 91% | 9ms
+[Bootstrap](http://getbootstrap.com/) | 134kB | **111kB** | 83% | 5ms
+[Gumby](http://gumbyframework.com/) | 182kB | **167kB** | 90% | 8ms
 
 <sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.
 
@@ -164,13 +164,13 @@ It's great that so many other tools make comparison tables: [CSS Minifier Compar
 
 The JS minifier is pretty basic. It removes comments, whitespace and line breaks whenever it can. It follows the rules by [JSMin](http://www.crockford.com/javascript/jsmin.html) but additionally fixes the error in the 'caution' section.
 
-Minification typically runs at about 45MB/s ~= 160GB/h.
+Minification typically runs at about 40MB/s ~= 150GB/h.
 
 Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
-[ACE](https://github.com/ajaxorg/ace-builds) | 616kB | **433kB** | 70% | 13ms
-[jQuery](http://jquery.com/download/) | 242kB | **130kB** | 54% | 5ms
-[jQuery UI](http://jqueryui.com/download/) | 459kB | **300kB** | 65% | 11ms
+[ACE](https://github.com/ajaxorg/ace-builds) | 616kB | **433kB** | 70% | 14ms
+[jQuery](http://jquery.com/download/) | 242kB | **130kB** | 54% | 6ms
+[jQuery UI](http://jqueryui.com/download/) | 459kB | **300kB** | 65% | 12ms
 [Moment](http://momentjs.com/) | 97kB | **51kB** | 52% | 2ms
 
 <sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.

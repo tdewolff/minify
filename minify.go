@@ -78,7 +78,7 @@ func (m *Minify) AddCmd(mediatype string, cmd *exec.Cmd) {
 	m.literal[mediatype] = cmdFunc(cmd)
 }
 
-// AddCmd adds a minify function to the mediatype => function map (unsafe for concurrent use) that executes a command to process the minification.
+// AddCmdRegexp adds a minify function to the mediatype => function map (unsafe for concurrent use) that executes a command to process the minification.
 // It allows the use of external tools like ClosureCompiler, UglifyCSS, etc. for a specific mediatype regular expression.
 // Be aware that running external tools will slow down minification a lot!
 func (m *Minify) AddCmdRegexp(mediatype *regexp.Regexp, cmd *exec.Cmd) {
@@ -90,8 +90,8 @@ func (m *Minify) AddCmdRegexp(mediatype *regexp.Regexp, cmd *exec.Cmd) {
 // Mediatype may take the form of 'text/plain', 'text/*', '*/*' or 'text/plain; charset=UTF-8; version=2.0'.
 func (m Minify) Minify(mediatype string, w io.Writer, r io.Reader) error {
 	mimetype := mediatype
-	for i, c := range mediatype {
-		if c == ';' {
+	for i := 0; i < len(mediatype); i++ {
+		if mediatype[i] == ';' {
 			mimetype = mediatype[:i]
 			break
 		}
