@@ -56,8 +56,9 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 * [x] SVG minifier using the XML parser
 * [ ] Expand SVG minifier using https://github.com/svg/svgo techniques
 * [x] Test with https://github.com/dvyukov/go-fuzz, *found >10 bugs*
-* [ ] JS lightweight parser
-* [ ] JS minifier with local variable renaming
+* [x] Make parsers zero-copy
+* [ ] ~~JS lightweight parser~~
+* [ ] JS minifier with local variable renaming and better semicolon and newline omission
 * [ ] Optimize the CSS parser to use the same parsing style as the JS parser
 * [ ] Options feature to disable techniques
 * [ ] HTML templates minification, e.g. Go HTML templates or doT.js templates etc.
