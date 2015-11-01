@@ -58,6 +58,7 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 * [x] Test with https://github.com/dvyukov/go-fuzz, *found >10 bugs*
 * [x] Make parsers zero-copy
 * [ ] ~~JS lightweight parser~~
+* [ ] Use ECMAScript 6 for JS lexer instead of 5.1
 * [ ] JS minifier with local variable renaming and better semicolon and newline omission
 * [ ] Optimize the CSS parser to use the same parsing style as the JS parser
 * [ ] Options feature to disable techniques
