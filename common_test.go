@@ -12,7 +12,7 @@ import (
 )
 
 func TestContentType(t *testing.T) {
-	var tests = []struct {
+	var contentTypeTests = []struct {
 		contentType string
 		expected    string
 	}{
@@ -21,13 +21,13 @@ func TestContentType(t *testing.T) {
 		{"text/html; charset=UTF-8 ; param = \" ; \"", "text/html;charset=utf-8;param=\" ; \""},
 		{"text/html, text/css", "text/html,text/css"},
 	}
-	for _, tt := range tests {
+	for _, tt := range contentTypeTests {
 		assert.Equal(t, tt.expected, string(ContentType([]byte(tt.contentType))), "ContentType must give expected result in "+tt.contentType)
 	}
 }
 
 func TestDataURI(t *testing.T) {
-	var tests = []struct {
+	var dataURITests = []struct {
 		dataURI  string
 		expected string
 	}{
@@ -50,13 +50,13 @@ func TestDataURI(t *testing.T) {
 		w.Write(b)
 		return nil
 	})
-	for _, tt := range tests {
+	for _, tt := range dataURITests {
 		assert.Equal(t, tt.expected, string(DataURI(m, []byte(tt.dataURI))), "DataURI must give expected result in "+tt.dataURI)
 	}
 }
 
 func TestNumber(t *testing.T) {
-	var tests = []struct {
+	var numberTests = []struct {
 		number   string
 		expected string
 	}{
@@ -84,13 +84,13 @@ func TestNumber(t *testing.T) {
 		{"E\x1f", ""}, // fuzz
 		//{"96px", "1in"},
 	}
-	for _, tt := range tests {
+	for _, tt := range numberTests {
 		assert.Equal(t, tt.expected, string(Number([]byte(tt.number))), "Number must give expected result in "+tt.number)
 	}
 }
 
 func TestLenInt(t *testing.T) {
-	var tests = []struct {
+	var lenIntTests = []struct {
 		number   int64
 		expected int
 	}{
@@ -118,7 +118,7 @@ func TestLenInt(t *testing.T) {
 		{100000000000000000, 18},
 		{1000000000000000000, 19},
 	}
-	for _, tt := range tests {
+	for _, tt := range lenIntTests {
 		assert.Equal(t, tt.expected, lenInt64(tt.number), "lenInt must give expected result in "+strconv.FormatInt(tt.number, 10))
 	}
 }
