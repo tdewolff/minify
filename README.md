@@ -47,7 +47,7 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 * [x] CSS parser and minifier
 * [x] Command line tool
 * [x] JSON parser and minifier
-* [x] JS lexer and minifier implementing JSMin
+* [x] JS lexer and basic minifier
 * [x] Improve CSS parser to implement the same technique as HTML/JSON does (ie. a lightweight parser)
 * [x] XML parser and minifier according to the specs
 * [x] Optimize and test JSON minification
@@ -163,7 +163,7 @@ It's great that so many other tools make comparison tables: [CSS Minifier Compar
 
 ## JS [![GoDoc](http://godoc.org/github.com/tdewolff/minify/js?status.svg)](http://godoc.org/github.com/tdewolff/minify/js) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/js)](http://gocover.io/github.com/tdewolff/minify/js)
 
-The JS minifier is pretty basic. It removes comments, whitespace and line breaks whenever it can. It follows the rules by [JSMin](http://www.crockford.com/javascript/jsmin.html) but additionally fixes the error in the 'caution' section.
+The JS minifier is pretty basic. It removes comments, whitespace and line breaks whenever it can. It employs all the rules that [JSMin](http://www.crockford.com/javascript/jsmin.html) does too, but has additional improvements. For example the prefix-postfix bug is fixed.
 
 Minification typically runs at about 40MB/s ~= 150GB/h.
 
