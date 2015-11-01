@@ -166,11 +166,11 @@ It's great that so many other tools make comparison tables: [CSS Minifier Compar
 
 The JS minifier is pretty basic. It removes comments, whitespace and line breaks whenever it can. It employs all the rules that [JSMin](http://www.crockford.com/javascript/jsmin.html) does too, but has additional improvements. For example the prefix-postfix bug is fixed.
 
-Minification typically runs at about 40MB/s ~= 150GB/h.
+Minification typically runs at about 40MB/s ~= 150GB/h. Common speeds of PHP and JS implementations are about 100-300kB/s (see [Uglify2](http://lisperator.net/uglifyjs/), [Adventures in PHP web asset minimization](https://www.happyassassin.net/2014/12/29/adventures-in-php-web-asset-minimization/)).
 
 Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
-[ACE](https://github.com/ajaxorg/ace-builds) | 616kB | **433kB** | 70% | 14ms
+[ACE](https://github.com/ajaxorg/ace-builds) | 630kB | **442kB** | 70% | 16ms
 [jQuery](http://jquery.com/download/) | 242kB | **130kB** | 54% | 6ms
 [jQuery UI](http://jqueryui.com/download/) | 459kB | **300kB** | 65% | 12ms
 [Moment](http://momentjs.com/) | 97kB | **51kB** | 52% | 2ms
