@@ -11,29 +11,38 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func assertDataURI(t *testing.T, m Minifier, s, e string) {
-	assert.Equal(t, e, string(DataURI(m, []byte(s))), "data URIs must match")
-}
-
-func assertNumber(t *testing.T, x, e string) {
-	assert.Equal(t, e, string(Number([]byte(x))), "numbers must match in "+x)
-}
-
-func assertLenInt(t *testing.T, x int64) {
-	s := strconv.FormatInt(x, 10)
-	assert.Equal(t, len(s), lenInt64(int64(x)), "number lengths must match for "+s)
-}
-
-////////////////////////////////////////////////////////////////
-
 func TestContentType(t *testing.T) {
-	assert.Equal(t, "text/html", string(ContentType([]byte("text/html"))))
-	assert.Equal(t, "text/html;charset=utf-8", string(ContentType([]byte("text/html; charset=UTF-8"))))
-	assert.Equal(t, "text/html;charset=utf-8;param=\" ; \"", string(ContentType([]byte("text/html; charset=UTF-8 ; param = \" ; \""))))
-	assert.Equal(t, "text/html,text/css", string(ContentType([]byte("text/html, text/css"))))
+	var tests = []struct {
+		contentType string
+		expected    string
+	}{
+		{"text/html", "text/html"},
+		{"text/html; charset=UTF-8", "text/html;charset=utf-8"},
+		{"text/html; charset=UTF-8 ; param = \" ; \"", "text/html;charset=utf-8;param=\" ; \""},
+		{"text/html, text/css", "text/html,text/css"},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.expected, string(ContentType([]byte(tt.contentType))), "ContentType must give expected result in "+tt.contentType)
+	}
 }
 
 func TestDataURI(t *testing.T) {
+	var tests = []struct {
+		dataURI  string
+		expected string
+	}{
+		{"data:,text", "data:,text"},
+		{"data:text/plain;charset=us-ascii,text", "data:,text"},
+		{"data:TEXT/PLAIN;CHARSET=US-ASCII,text", "data:,text"},
+		{"data:text/plain;charset=us-asciiz,text", "data:;charset=us-asciiz,text"},
+		{"data:;base64,dGV4dA==", "data:,text"},
+		{"data:text/svg+xml;base64,PT09PT09", "data:text/svg+xml;base64,PT09PT09"},
+		{"data:text/xml;version=2.0,content", "data:text/xml;version=2.0,content"},
+		{"data:text/xml; version = 2.0,content", "data:text/xml;version=2.0,content"},
+		{"data:,=====", "data:,%3D%3D%3D%3D%3D"},
+		{"data:,======", "data:;base64,PT09PT09"},
+		{"data:text/x,<?x?>", "data:text/x,%3C%3Fx%3F%3E"},
+	}
 	m := New()
 	m.AddFunc("text/x", func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
 		b, _ := ioutil.ReadAll(r)
@@ -41,69 +50,77 @@ func TestDataURI(t *testing.T) {
 		w.Write(b)
 		return nil
 	})
-	assertDataURI(t, m, "data:text/x,<?x?>", "data:text/x,%3C%3Fx%3F%3E")
-	assertDataURI(t, m, "data:,text", "data:,text")
-	assertDataURI(t, m, "data:text/plain;charset=us-ascii,text", "data:,text")
-	assertDataURI(t, m, "data:TEXT/PLAIN;CHARSET=US-ASCII,text", "data:,text")
-	assertDataURI(t, m, "data:text/plain;charset=us-asciiz,text", "data:;charset=us-asciiz,text")
-	assertDataURI(t, m, "data:;base64,dGV4dA==", "data:,text")
-	assertDataURI(t, m, "data:text/svg+xml;base64,PT09PT09", "data:text/svg+xml;base64,PT09PT09")
-	assertDataURI(t, m, "data:text/xml;version=2.0,content", "data:text/xml;version=2.0,content")
-	assertDataURI(t, m, "data:text/xml; version = 2.0,content", "data:text/xml;version=2.0,content")
-	assertDataURI(t, m, "data:,=====", "data:,%3D%3D%3D%3D%3D")
-	assertDataURI(t, m, "data:,======", "data:;base64,PT09PT09")
+	for _, tt := range tests {
+		assert.Equal(t, tt.expected, string(DataURI(m, []byte(tt.dataURI))), "DataURI must give expected result in "+tt.dataURI)
+	}
 }
 
 func TestNumber(t *testing.T) {
-	assertNumber(t, "0", "0")
-	assertNumber(t, ".0", "0")
-	assertNumber(t, "1.0", "1")
-	assertNumber(t, "0.1", ".1")
-	assertNumber(t, "+1", "1")
-	assertNumber(t, "-1", "-1")
-	assertNumber(t, "-0.1", "-.1")
-	assertNumber(t, "100", "100")
-	assertNumber(t, "1000", "1e3")
-	assertNumber(t, "0.001", ".001")
-	assertNumber(t, "0.0001", "1e-4")
-	assertNumber(t, "100e1", "1e3")
-	assertNumber(t, "1.1e+1", "11")
-	assertNumber(t, "0.252", ".252")
-	assertNumber(t, "1.252", "1.252")
-	assertNumber(t, "-1.252", "-1.252")
-	assertNumber(t, "0.075", ".075")
-	assertNumber(t, "789012345678901234567890123456789e9234567890123456789", "789012345678901234567890123456789e9234567890123456789")
-	assertNumber(t, ".000100009", "100009e-9")
-	assertNumber(t, ".0001000009", ".0001000009")
-	assertNumber(t, ".0001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009", ".0001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009")
-	assertNumber(t, "E\x1f", "") // fuzz
-	//assertNumber(t, "96px", "1in")
+	var tests = []struct {
+		number   string
+		expected string
+	}{
+		{"0", "0"},
+		{".0", "0"},
+		{"1.0", "1"},
+		{"0.1", ".1"},
+		{"+1", "1"},
+		{"-1", "-1"},
+		{"-0.1", "-.1"},
+		{"100", "100"},
+		{"1000", "1e3"},
+		{"0.001", ".001"},
+		{"0.0001", "1e-4"},
+		{"100e1", "1e3"},
+		{"1.1e+1", "11"},
+		{"0.252", ".252"},
+		{"1.252", "1.252"},
+		{"-1.252", "-1.252"},
+		{"0.075", ".075"},
+		{"789012345678901234567890123456789e9234567890123456789", "789012345678901234567890123456789e9234567890123456789"},
+		{".000100009", "100009e-9"},
+		{".0001000009", ".0001000009"},
+		{".0001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009", ".0001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009"},
+		{"E\x1f", ""}, // fuzz
+		//{"96px", "1in"},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.expected, string(Number([]byte(tt.number))), "Number must give expected result in "+tt.number)
+	}
 }
 
 func TestLenInt(t *testing.T) {
-	assertLenInt(t, 0)
-	assertLenInt(t, 1)
-	assertLenInt(t, 10)
-	assertLenInt(t, 99)
+	var tests = []struct {
+		number   int64
+		expected int
+	}{
+		{0, 1},
+		{1, 1},
+		{10, 2},
+		{99, 2},
 
-	// coverage
-	assertLenInt(t, 100)
-	assertLenInt(t, 1000)
-	assertLenInt(t, 10000)
-	assertLenInt(t, 100000)
-	assertLenInt(t, 1000000)
-	assertLenInt(t, 10000000)
-	assertLenInt(t, 100000000)
-	assertLenInt(t, 1000000000)
-	assertLenInt(t, 10000000000)
-	assertLenInt(t, 100000000000)
-	assertLenInt(t, 1000000000000)
-	assertLenInt(t, 10000000000000)
-	assertLenInt(t, 100000000000000)
-	assertLenInt(t, 1000000000000000)
-	assertLenInt(t, 10000000000000000)
-	assertLenInt(t, 100000000000000000)
-	assertLenInt(t, 1000000000000000000)
+		// coverage
+		{100, 3},
+		{1000, 4},
+		{10000, 5},
+		{100000, 6},
+		{1000000, 7},
+		{10000000, 8},
+		{100000000, 9},
+		{1000000000, 10},
+		{10000000000, 11},
+		{100000000000, 12},
+		{1000000000000, 13},
+		{10000000000000, 14},
+		{100000000000000, 15},
+		{1000000000000000, 16},
+		{10000000000000000, 17},
+		{100000000000000000, 18},
+		{1000000000000000000, 19},
+	}
+	for _, tt := range tests {
+		assert.Equal(t, tt.expected, lenInt64(tt.number), "lenInt must give expected result in "+strconv.FormatInt(tt.number, 10))
+	}
 }
 
 ////////////////
