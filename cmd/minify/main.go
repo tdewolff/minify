@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"mime"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -51,7 +50,7 @@ func main() {
 		input = flag.Arg(0)
 	}
 
-	mediatype := ""
+	mimetype := ""
 	r := io.Reader(os.Stdin)
 	w := io.Writer(os.Stdout)
 	m := minify.New()
@@ -97,13 +96,9 @@ func main() {
 			w = out
 		}
 		if filetype != "" {
-			mediatype, _ = extMime[filetype]
+			mimetype, _ = extMime[filetype]
 		}
-		mimetype, params, err := mime.ParseMediaType(string(mediatype))
-		if err != nil {
-			mimetype = string(mediatype)
-		}
-		if err := m.Minify(w, r, mimetype, params); err != nil {
+		if err := m.Minify(w, r, mimetype, nil); err != nil {
 			if err == minify.ErrNotExist {
 				io.Copy(w, r)
 			} else {
