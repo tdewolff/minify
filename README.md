@@ -3,19 +3,18 @@
 [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 **WARNING: the API has changed, be aware or continue using the old API in tag v1.1.0**
-**RECENT CHANGES:**
 
 In package `minify`
- - Type `Minify` &#8594; `M`
- - Function `AddFuncRegexp` &#8594; `AddFuncPattern`
- - Function `AddCmdRegexp` &#8594; `AddCmdPattern`
+ - Type `Minify` &#8594; `M` as returned by `New()`
+ - Function `AddFuncRegexp(...)` &#8594; `AddFuncPattern(...)`
+ - Function `AddCmdRegexp(...)` &#8594; `AddCmdPattern(...)`
  - Function `Minify(mediatype string, w io.Writer, r io.Reader)` &#8594; `Minify(w io.Writer, r io.Reader, mimetype string, params map[string]string)`
- - New function `Add` which lets you add a `Minifier` struct with a `Minify` function.
- - New function `AddPattern` which is the same as `Add` but taking a regular expression for mimetype.
+ - New function `Add(...)` which lets you add a `Minifier` interface.
+ - New function `AddPattern(...)` which is the same as `Add(...)` but taking a regular expression for mimetype.
 
-In subpackages of `minify` such as `minify/html`, `minify/css`, ...
+In subpackages of `minify` such as `html`, `css`, ...
  - Function `Minify(m minify.Minifier, mediatype string, w io.Writer, r io.Reader)` &#8594; `Minify(w io.Writer, r io.Reader, m *minify.M, params map[string]string)`
- - New function `Minify` with `Minifier` struct receiver, this contains all options for the minifier.
+ - New function `func (c *Minifier) Minify(...)` where `Minifier` contains options for the minifier.
 
 **HOW TO FIX YOUR CODE**
 
