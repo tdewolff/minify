@@ -22,14 +22,13 @@ import (
 )
 
 var extMime = map[string]string{
-	"css":        "text/css",
-	"css-inline": "text/css;inline=1",
-	"htm":        "text/html",
-	"html":       "text/html",
-	"js":         "application/javascript",
-	"json":       "application/json",
-	"svg":        "image/svg+xml",
-	"xml":        "text/xml",
+	"css":  "text/css",
+	"htm":  "text/html",
+	"html": "text/html",
+	"js":   "application/javascript",
+	"json": "application/json",
+	"svg":  "image/svg+xml",
+	"xml":  "text/xml",
 }
 
 func main() {
@@ -60,8 +59,8 @@ func main() {
 	m.AddFunc("text/html", html.Minify)
 	m.AddFunc("application/javascript", js.Minify)
 	m.AddFunc("image/svg+xml", svg.Minify)
-	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
-	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
+	m.AddFuncPattern(regexp.MustCompile("[/+]json$"), json.Minify)
+	m.AddFuncPattern(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
 	filenames := make(map[string]string)
 	if directory != "" {

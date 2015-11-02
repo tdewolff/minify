@@ -23,10 +23,21 @@ const maxAttrLookup = 4
 
 ////////////////////////////////////////////////////////////////
 
+type Minifier struct {
+	DefaultAttrVals bool
+	TemplateDelims  [2][]byte
+}
+
+func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+	return (&Minifier{}).Minify(m, w, r, params)
+}
+
 // Minify minifies HTML data, it reads from r and writes to w.
-func Minify(m *minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string]string) error {
-	scheme := m.Get("scheme")
-	stripDefaultAttrVals := m.Get("disable-default-value-omission") != "1"
+func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+	var scheme string
+	if params != nil {
+		scheme, _ = params["scheme"]
+	}
 
 	var rawTagHash html.Hash
 	var rawTagTraits traits
@@ -302,7 +313,7 @@ func Minify(m *minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string
 					}
 
 					// default attribute values can be ommited
-					if stripDefaultAttrVals && (attr.Hash == html.Type && (t.Hash == html.Script && parse.Equal(val, []byte("text/javascript")) ||
+					if !o.DefaultAttrVals && (attr.Hash == html.Type && (t.Hash == html.Script && parse.Equal(val, []byte("text/javascript")) ||
 						t.Hash == html.Style && parse.Equal(val, []byte("text/css")) ||
 						t.Hash == html.Link && parse.Equal(val, []byte("text/css")) ||
 						t.Hash == html.Input && parse.Equal(val, []byte("text")) ||

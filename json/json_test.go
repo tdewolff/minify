@@ -26,7 +26,7 @@ func TestJSON(t *testing.T) {
 	m := minify.New()
 	for _, tt := range jsonTests {
 		b := &bytes.Buffer{}
-		assert.Nil(t, Minify(m, b, bytes.NewBufferString(tt.json), "application/json", nil), "Minify must not return error in "+tt.json)
+		assert.Nil(t, Minify(m, b, bytes.NewBufferString(tt.json), nil), "Minify must not return error in "+tt.json)
 		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.json)
 	}
 }
@@ -35,7 +35,7 @@ func TestReaderErrors(t *testing.T) {
 	m := minify.New()
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}
-	assert.Equal(t, test.ErrPlain, Minify(m, w, r, "application/json", nil), "Minify must return error at first read")
+	assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
@@ -46,7 +46,7 @@ func TestWriterErrors(t *testing.T) {
 		// writes:                  012  3456  78  90
 		r := bytes.NewBufferString(`{"key":[100,200]}`)
 		w := test.NewErrorWriter(n)
-		assert.Equal(t, test.ErrPlain, Minify(m, w, r, "application/json", nil), "Minify must return error at write "+strconv.FormatInt(int64(n), 10))
+		assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at write "+strconv.FormatInt(int64(n), 10))
 	}
 }
 
@@ -54,7 +54,7 @@ func TestWriterErrors(t *testing.T) {
 
 func ExampleMinify() {
 	m := minify.New()
-	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), Minify)
+	m.AddFuncPattern(regexp.MustCompile("[/+]json$"), Minify)
 
 	if err := m.Minify(os.Stdout, os.Stdin, "application/json", nil); err != nil {
 		fmt.Println("minify.Minify:", err)

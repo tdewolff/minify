@@ -24,19 +24,26 @@ var (
 )
 
 type cssMinifier struct {
-	m *minify.Minifier
+	m *minify.M
 	w io.Writer
 	p *css.Parser
 }
 
 ////////////////////////////////////////////////////////////////
 
+type Minifier struct{}
+
+func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+	return (&Minifier{}).Minify(m, w, r, params)
+}
+
 // Minify minifies CSS data, it reads from r and writes to w.
-func Minify(m *minify.Minifier, w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
+func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	isStylesheet := true
 	if params != nil && params["inline"] == "1" {
 		isStylesheet = false
 	}
+
 	c := &cssMinifier{
 		m: m,
 		w: w,

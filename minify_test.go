@@ -28,7 +28,7 @@ func helperCommand(t *testing.T, s ...string) *exec.Cmd {
 	return cmd
 }
 
-func helperMinifyString(t *testing.T, m *Minifier, mediatype string) string {
+func helperMinifyString(t *testing.T, m *M, mediatype string) string {
 	mimetype, params, err := mime.ParseMediaType(mediatype)
 	assert.Nil(t, err, "mime.ParseMediaType must not return error for '"+mediatype+"'")
 	s, err := m.String("", mimetype, params)
@@ -38,36 +38,36 @@ func helperMinifyString(t *testing.T, m *Minifier, mediatype string) string {
 
 ////////////////////////////////////////////////////////////////
 
-var m *Minifier
+var m *M
 
 func init() {
 	m = New()
-	m.AddFunc("dummy/copy", func(m *Minifier, w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
+	m.AddFunc("dummy/copy", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
 		io.Copy(w, r)
 		return nil
 	})
-	m.AddFunc("dummy/nil", func(m *Minifier, w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
+	m.AddFunc("dummy/nil", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
 		return nil
 	})
-	m.AddFunc("dummy/err", func(m *Minifier, w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
+	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
 		return errDummy
 	})
-	m.AddFunc("dummy/charset", func(m *Minifier, w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
+	m.AddFunc("dummy/charset", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
 		w.Write([]byte(params["charset"]))
 		return nil
 	})
-	m.AddFunc("dummy/params", func(m *Minifier, w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
+	m.AddFunc("dummy/params", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
 		return m.Minify(w, r, params["type"]+"/"+params["sub"], nil)
 	})
-	m.AddFunc("type/sub", func(m *Minifier, w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
+	m.AddFunc("type/sub", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
 		w.Write([]byte("type/sub"))
 		return nil
 	})
-	m.AddFuncRegexp(regexp.MustCompile("^type/.+$"), func(m *Minifier, w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
+	m.AddFuncPattern(regexp.MustCompile("^type/.+$"), func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
 		w.Write([]byte("type/*"))
 		return nil
 	})
-	m.AddFuncRegexp(regexp.MustCompile("^.+/.+$"), func(m *Minifier, w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
+	m.AddFuncPattern(regexp.MustCompile("^.+/.+$"), func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
 		w.Write([]byte("*/*"))
 		return nil
 	})
@@ -99,14 +99,14 @@ func TestAdd(t *testing.T) {
 	m := New()
 	w := &bytes.Buffer{}
 	r := bytes.NewBufferString("test")
-	m.AddFunc("dummy/err", func(m *Minifier, w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
+	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
 		return errDummy
 	})
 	assert.Equal(t, errDummy, m.Minify(nil, nil, "dummy/err", nil), "must return errDummy for dummy/err")
 
 	m.AddCmd("dummy/copy", helperCommand(t, "dummy/copy"))
 	m.AddCmd("dummy/err", helperCommand(t, "dummy/err"))
-	m.AddCmdRegexp(regexp.MustCompile("err$"), helperCommand(t, "werr"))
+	m.AddCmdPattern(regexp.MustCompile("err$"), helperCommand(t, "werr"))
 	assert.Nil(t, m.Minify(w, r, "dummy/copy", nil), "must return nil for dummy/copy command")
 	assert.Equal(t, "test", w.String(), "must return input string for dummy/copy command")
 	assert.Equal(t, "exit status 1", m.Minify(w, r, "dummy/err", nil).Error(), "must return proper exit status when command encounters error")
@@ -157,7 +157,7 @@ func TestHelperProcess(*testing.T) {
 
 func ExampleMinify_Custom() {
 	m := New()
-	m.AddFunc("text/plain", func(m *Minifier, w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
+	m.AddFunc("text/plain", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
 		// remove all spaces
 		rb := bufio.NewReader(r)
 		for {
