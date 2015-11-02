@@ -380,7 +380,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 
 func getAttributes(attrTokenBuffer *[]*Token, tb *TokenBuffer, hashes ...html.Hash) {
 	*attrTokenBuffer = (*attrTokenBuffer)[:len(hashes)]
-	for j, _ := range *attrTokenBuffer {
+	for j := range *attrTokenBuffer {
 		(*attrTokenBuffer)[j] = nil
 	}
 	for i := 0; ; i++ {
