@@ -122,11 +122,11 @@ func TestHTML(t *testing.T) {
 
 	m := minify.New()
 	m.AddFunc("text/html", Minify)
-	m.AddFunc("text/css", func(_ *minify.Minifier, w io.Writer, r io.Reader, _ map[string]string) error {
+	m.AddFunc("text/css", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 		_, err := io.Copy(w, r)
 		return err
 	})
-	m.AddFunc("text/javascript", func(_ *minify.Minifier, w io.Writer, r io.Reader, _ map[string]string) error {
+	m.AddFunc("text/javascript", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 		_, err := io.Copy(w, r)
 		return err
 	})
@@ -141,7 +141,7 @@ func TestHTML(t *testing.T) {
 func TestSpecialTagClosing(t *testing.T) {
 	m := minify.New()
 	m.AddFunc("text/html", Minify)
-	m.AddFunc("text/css", func(_ *minify.Minifier, w io.Writer, r io.Reader, _ string, _ map[string]string) error {
+	m.AddFunc("text/css", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 		b, err := ioutil.ReadAll(r)
 		assert.Nil(t, err, "ioutil.ReadAll must not return error")
 		assert.Equal(t, "</script>", string(b))
