@@ -15,17 +15,17 @@ var ErrNotExist = errors.New("minify function does not exist for mimetype")
 
 ////////////////////////////////////////////////////////////////
 
-type minifierFunc func(*M, io.Writer, io.Reader, map[string]string) error
+type minifierFunc func(io.Writer, io.Reader, *M, map[string]string) error
 
-func (f minifierFunc) Minify(m *M, w io.Writer, r io.Reader, params map[string]string) error {
-	return f(m, w, r, params)
+func (f minifierFunc) Minify(w io.Writer, r io.Reader, m *M, params map[string]string) error {
+	return f(w, r, m, params)
 }
 
 // Minifier is the interface for minifiers.
 // The *M parameter is used for minifying embedded resources, such as JS within HTML.
 // The map[string]string is for parameter passing (charset=UTF-8 for example).
 type Minifier interface {
-	Minify(*M, io.Writer, io.Reader, map[string]string) error
+	Minify(io.Writer, io.Reader, *M, map[string]string) error
 }
 
 ////////////////////////////////////////////////////////////////
@@ -39,7 +39,7 @@ type cmdMinifier struct {
 	cmd *exec.Cmd
 }
 
-func (c *cmdMinifier) Minify(_ *M, w io.Writer, r io.Reader, _ map[string]string) error {
+func (c *cmdMinifier) Minify(w io.Writer, r io.Reader, _ *M, _ map[string]string) error {
 	cmd := &exec.Cmd{}
 	*cmd = *c.cmd // concurrency safety
 	cmd.Stdout = w
@@ -100,14 +100,14 @@ func (m *M) AddCmdPattern(pattern *regexp.Regexp, cmd *exec.Cmd) {
 // Mimetype may take the form of 'text/plain', 'text/*' or '*/*'.
 func (m *M) Minify(w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
 	if minifier, ok := m.literal[mimetype]; ok {
-		if err := minifier.Minify(m, w, r, params); err != nil {
+		if err := minifier.Minify(w, r, m, params); err != nil {
 			return err
 		}
 		return nil
 	}
 	for _, minifier := range m.pattern {
 		if minifier.pattern.MatchString(mimetype) {
-			if err := minifier.Minify(m, w, r, params); err != nil {
+			if err := minifier.Minify(w, r, m, params); err != nil {
 				return err
 			}
 			return nil

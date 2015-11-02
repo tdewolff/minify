@@ -47,7 +47,7 @@ func TestSVG(t *testing.T) {
 	m := minify.New()
 	for _, tt := range svgTests {
 		b := &bytes.Buffer{}
-		assert.Nil(t, Minify(m, b, bytes.NewBufferString(tt.svg), nil), "Minify must not return error in "+tt.svg)
+		assert.Nil(t, Minify(b, bytes.NewBufferString(tt.svg), m, nil), "Minify must not return error in "+tt.svg)
 		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.svg)
 	}
 }

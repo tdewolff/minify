@@ -272,27 +272,27 @@ if err := m.Minify(w, r, mimetype, map[string]string{"charset": "UTF-8"}); err !
 
 Minify HTML, CSS or JS directly from an `io.Reader` to an `io.Writer`. The passed mimetype is not required for these functions, but are filled out for clarity.
 ``` go
-if err := css.Minify(m, w, r, params); err != nil {
+if err := css.Minify(w, r, m, params); err != nil {
 	panic(err)
 }
 
-if err := html.Minify(m, w, r, params); err != nil {
+if err := html.Minify(w, r, m, params); err != nil {
 	panic(err)
 }
 
-if err := js.Minify(m, w, r, params); err != nil {
+if err := js.Minify(w, r, m, params); err != nil {
 	panic(err)
 }
 
-if err := json.Minify(m, w, r, params); err != nil {
+if err := json.Minify(w, r, m, params); err != nil {
 	panic(err)
 }
 
-if err := svg.Minify(m, w, r, params); err != nil {
+if err := svg.Minify(w, r, m, params); err != nil {
 	panic(err)
 }
 
-if err := xml.Minify(m, w, r, params); err != nil {
+if err := xml.Minify(r, m, params); err != nil {
 	panic(err)
 }
 ```
@@ -318,7 +318,7 @@ if err != nil {
 ### Custom minifier
 Add a function for a specific mimetype.
 ``` go
-m.AddFunc(mimetype, func(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+m.AddFunc(mimetype, func(w io.Writer, r io.Reader, m *minify.M, params map[string]string) error {
 	// ...
 	return nil
 })
@@ -391,7 +391,7 @@ func main() {
 	m := minify.New()
 
 	// remove newline and space bytes
-	m.AddFunc("text/plain", func(m *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
+	m.AddFunc("text/plain", func(w io.Writer, r io.Reader, m *minify.M, params map[string]string) error {
 		rb := bufio.NewReader(r)
 		for {
 			line, err := rb.ReadString('\n')

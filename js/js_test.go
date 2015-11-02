@@ -41,7 +41,7 @@ func TestJS(t *testing.T) {
 	m := minify.New()
 	for _, tt := range jsTests {
 		b := &bytes.Buffer{}
-		assert.Nil(t, Minify(m, b, bytes.NewBufferString(tt.js), nil), "Minify must not return error in "+tt.js)
+		assert.Nil(t, Minify(b, bytes.NewBufferString(tt.js), m, nil), "Minify must not return error in "+tt.js)
 		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.js)
 	}
 }
@@ -50,7 +50,7 @@ func TestReaderErrors(t *testing.T) {
 	m := minify.New()
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}
-	assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at first read")
+	assert.Equal(t, test.ErrPlain, Minify(w, r, m, nil), "Minify must return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
@@ -61,7 +61,7 @@ func TestWriterErrors(t *testing.T) {
 		// writes:                  01 2345
 		r := bytes.NewBufferString("a\n{5 5")
 		w := test.NewErrorWriter(n)
-		assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at write "+strconv.FormatInt(int64(n), 10))
+		assert.Equal(t, test.ErrPlain, Minify(w, r, m, nil), "Minify must return error at write "+strconv.FormatInt(int64(n), 10))
 	}
 }
 

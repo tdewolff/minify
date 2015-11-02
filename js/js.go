@@ -17,12 +17,12 @@ var (
 
 type Minifier struct{}
 
-func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
-	return (&Minifier{}).Minify(m, w, r, params)
+func Minify(w io.Writer, r io.Reader, m *minify.M, params map[string]string) error {
+	return (&Minifier{}).Minify(w, r, m, params)
 }
 
 // Minify minifies JS data, it reads from r and writes to w.
-func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
+func (o *Minifier) Minify(w io.Writer, r io.Reader, _ *minify.M, _ map[string]string) error {
 	l := js.NewLexer(r)
 	prev := js.LineTerminatorToken
 	prevLast := byte(' ')
