@@ -1,9 +1,4 @@
 language: go
-go:
- - 1.2
- - 1.3
- - release
- - tip
-
+go: release
 script:
  - go test -v ./...
