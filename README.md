@@ -259,34 +259,41 @@ m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 Minify from an `io.Reader` to an `io.Writer` for a specific mimetype.
 ``` go
 if err := m.Minify(w, r, mimetype, nil); err != nil {
-	panic("Minify:", err)
+	panic(err)
+}
+```
+
+Minify from an `io.Reader` to an `io.Writer` for a specific mimetype with mimetype parameters.
+``` go
+if err := m.Minify(w, r, mimetype, map[string]string{"charset": "UTF-8"}); err != nil {
+	panic(err)
 }
 ```
 
 Minify HTML, CSS or JS directly from an `io.Reader` to an `io.Writer`. The passed mimetype is not required for these functions, but are filled out for clarity.
 ``` go
-if err := css.Minify(m, w, r, "text/css", nil); err != nil {
-	panic("css.Minify:", err)
+if err := css.Minify(m, w, r, params); err != nil {
+	panic(err)
 }
 
-if err := html.Minify(m, w, r, "text/html", nil); err != nil {
-	panic("html.Minify:", err)
+if err := html.Minify(m, w, r, params); err != nil {
+	panic(err)
 }
 
-if err := js.Minify(m, w, r, "text/javascript", nil); err != nil {
-	panic("js.Minify:", err)
+if err := js.Minify(m, w, r, params); err != nil {
+	panic(err)
 }
 
-if err := json.Minify(m, w, r, "application/json", nil); err != nil {
-	panic("json.Minify:", err)
+if err := json.Minify(m, w, r, params); err != nil {
+	panic(err)
 }
 
-if err := svg.Minify(m, w, r, "image/svg+xml", nil); err != nil {
-	panic("svg.Minify:", err)
+if err := svg.Minify(m, w, r, params); err != nil {
+	panic(err)
 }
 
-if err := xml.Minify(m, w, r, "text/xml", nil); err != nil {
-	panic("xml.Minify:", err)
+if err := xml.Minify(m, w, r, params); err != nil {
+	panic(err)
 }
 ```
 
@@ -311,7 +318,7 @@ if err != nil {
 ### Custom minifier
 Add a function for a specific mimetype.
 ``` go
-m.AddFunc(mimetype, func(m *minify.Minifier, w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
+m.AddFunc(mimetype, func(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	// ...
 	return nil
 })
@@ -353,8 +360,8 @@ func main() {
 	m.AddFunc("text/html", html.Minify)
 	m.AddFunc("text/javascript", js.Minify)
 	m.AddFunc("image/svg+xml", svg.Minify)
-	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
-	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
+	m.AddFuncPattern(regexp.MustCompile("[/+]json$"), json.Minify)
+	m.AddFuncPattern(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
 	// Or use the following for better minification of JS but lower speed:
 	// m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
@@ -384,7 +391,7 @@ func main() {
 	m := minify.New()
 
 	// remove newline and space bytes
-	m.AddFunc("text/plain", func(m *minify.Minifier, w io.Writer, r io.Reader, mimetype string, _ map[string]string) error {
+	m.AddFunc("text/plain", func(m *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 		rb := bufio.NewReader(r)
 		for {
 			line, err := rb.ReadString('\n')
@@ -401,7 +408,7 @@ func main() {
 		return nil
 	})
 
-	out, err := m.String("text/plain", "Because my coffee was too cold, I heated it in the microwave.")
+	out, err := m.String("text/plain", nil, "Because my coffee was too cold, I heated it in the microwave.")
 	if err != nil {
 		panic(err)
 	}

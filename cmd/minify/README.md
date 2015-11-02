@@ -15,7 +15,7 @@ and the `minify` command should be in your `$GOPATH/bin`.
 	Usage: minify [options] [file]
 	Options:
 	  -o:    Output file (stdout when empty)
-	  -type: File extension (css, css-inline, html, js, json, svg or xml), optional for input files
+	  -type: File extension (css, html, js, json, svg or xml), optional for input files
 	  -d:    Directory to search for files
 	  -r:    Recursively minify everything
 
