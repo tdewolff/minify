@@ -42,7 +42,7 @@ func main() {
 		flag.PrintDefaults()
 	}
 	flag.StringVar(&output, "o", "", "Output file (stdout when empty)")
-	flag.StringVar(&filetype, "type", "", "File extension (css, html, js, json, svg or xml), optional for input files")
+	flag.StringVar(&filetype, "type", "", "Filetype (css, html, js, json, svg or xml), optional for input files")
 	flag.StringVar(&directory, "d", "", "Directory to search for files")
 	flag.BoolVar(&recursive, "r", false, "Recursively minify everything")
 	flag.Parse()
@@ -83,7 +83,7 @@ func main() {
 				r = b
 			}
 			if filetype == "" {
-				filetype = filepath.Ext(input)
+				filetype = filepath.Ext(input)[1:]
 			}
 		}
 		if output != "" {
