@@ -15,15 +15,15 @@ var ErrNotExist = errors.New("minify function does not exist for mimetype")
 
 ////////////////////////////////////////////////////////////////
 
-type MinifierFunc func(*M, io.Writer, io.Reader, map[string]string) error
+type minifierFunc func(*M, io.Writer, io.Reader, map[string]string) error
 
-func (f MinifierFunc) Minify(m *M, w io.Writer, r io.Reader, params map[string]string) error {
+func (f minifierFunc) Minify(m *M, w io.Writer, r io.Reader, params map[string]string) error {
 	return f(m, w, r, params)
 }
 
-// Func is the function interface for minifiers.
-// The Minifier parameter is used for embedded resources, such as JS within HTML.
-// The mediatype string is for wildcard minifiers so they know what they minify and for parameter passing (charset for example).
+// Minifier is the interface for minifiers.
+// The *M parameter is used for minifying embedded resources, such as JS within HTML.
+// The map[string]string is for parameter passing (charset=UTF-8 for example).
 type Minifier interface {
 	Minify(*M, io.Writer, io.Reader, map[string]string) error
 }
@@ -63,36 +63,34 @@ func New() *M {
 	}
 }
 
-// AddFunc adds a minify function to the mimetype => function map (unsafe for concurrent use).
-// It allows one to implement a custom minifier for a specific mimetype.
+// Add adds a minifier to the mimetype => function map (unsafe for concurrent use).
 func (m *M) Add(mimetype string, minifier Minifier) {
 	m.literal[mimetype] = minifier
 }
 
-func (m *M) AddFunc(mimetype string, minifierFunc MinifierFunc) {
-	m.literal[mimetype] = minifierFunc
+// AddFunc adds a minify function to the mimetype => function map (unsafe for concurrent use).
+func (m *M) AddFunc(mimetype string, minifier minifierFunc) {
+	m.literal[mimetype] = minifier
 }
 
-// AddFuncRegexp adds a minify function to the mimetype => function map (unsafe for concurrent use).
-// It allows one to implement a custom minifier for a specific mimetype regular expression.
+// AddPattern adds a minifier to the mimetype => function map (unsafe for concurrent use).
 func (m *M) AddPattern(pattern *regexp.Regexp, minifier Minifier) {
 	m.pattern = append(m.pattern, patternMinifier{pattern, minifier})
 }
 
-func (m *M) AddFuncPattern(pattern *regexp.Regexp, minifierFunc MinifierFunc) {
-	m.pattern = append(m.pattern, patternMinifier{pattern, minifierFunc})
+// AddFuncPattern adds a minify function to the mimetype => function map (unsafe for concurrent use).
+func (m *M) AddFuncPattern(pattern *regexp.Regexp, minifier minifierFunc) {
+	m.pattern = append(m.pattern, patternMinifier{pattern, minifier})
 }
 
 // AddCmd adds a minify function to the mimetype => function map (unsafe for concurrent use) that executes a command to process the minification.
 // It allows the use of external tools like ClosureCompiler, UglifyCSS, etc. for a specific mimetype.
-// Be aware that running external tools will slow down minification a lot!
 func (m *M) AddCmd(mimetype string, cmd *exec.Cmd) {
 	m.literal[mimetype] = &cmdMinifier{cmd}
 }
 
 // AddCmdRegexp adds a minify function to the mimetype => function map (unsafe for concurrent use) that executes a command to process the minification.
 // It allows the use of external tools like ClosureCompiler, UglifyCSS, etc. for a specific mimetype regular expression.
-// Be aware that running external tools will slow down minification a lot!
 func (m *M) AddCmdPattern(pattern *regexp.Regexp, cmd *exec.Cmd) {
 	m.pattern = append(m.pattern, patternMinifier{pattern, &cmdMinifier{cmd}})
 }
