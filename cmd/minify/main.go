@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"mime"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -33,7 +34,7 @@ var extMime = map[string]string{
 func main() {
 	input := ""
 	output := ""
-	ext := ""
+	filetype := ""
 	directory := ""
 	recursive := false
 
@@ -42,7 +43,7 @@ func main() {
 		flag.PrintDefaults()
 	}
 	flag.StringVar(&output, "o", "", "Output file (stdout when empty)")
-	flag.StringVar(&ext, "x", "", "File extension (css, html, js, json, svg or xml), optional for input files")
+	flag.StringVar(&filetype, "type", "", "File extension (css, html, js, json, svg or xml), optional for input files")
 	flag.StringVar(&directory, "d", "", "Directory to search for files")
 	flag.BoolVar(&recursive, "r", false, "Recursively minify everything")
 	flag.Parse()
@@ -82,8 +83,8 @@ func main() {
 				io.Copy(b, r)
 				r = b
 			}
-			if ext == "" {
-				ext = filepath.Ext(input)
+			if filetype == "" {
+				filetype = filepath.Ext(input)
 			}
 		}
 		if output != "" {
@@ -95,10 +96,14 @@ func main() {
 			defer out.Close()
 			w = out
 		}
-		if ext != "" {
-			mediatype = extMime[ext]
+		if filetype != "" {
+			mediatype, _ = extMime[filetype]
 		}
-		if err := m.Minify(mediatype, w, r); err != nil {
+		mimetype, params, err := mime.ParseMediaType(string(mediatype))
+		if err != nil {
+			mimetype = string(mediatype)
+		}
+		if err := m.Minify(w, r, mimetype, params); err != nil {
 			if err == minify.ErrNotExist {
 				io.Copy(w, r)
 			} else {
