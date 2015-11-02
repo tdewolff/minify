@@ -120,7 +120,7 @@ func (m *M) Minify(w io.Writer, r io.Reader, mimetype string, params map[string]
 
 // Bytes minifies an array of bytes (safe for concurrent use). When an error occurs it return the original array and the error.
 // It returns an error when no such mimetype exists (ErrNotExist) or any error occurred in the minifier function.
-func (m *M) Bytes(mimetype string, params map[string]string, v []byte) ([]byte, error) {
+func (m *M) Bytes(v []byte, mimetype string, params map[string]string) ([]byte, error) {
 	out := buffer.NewWriter(make([]byte, 0, len(v)))
 	if err := m.Minify(out, buffer.NewReader(v), mimetype, params); err != nil {
 		return v, err
@@ -130,7 +130,7 @@ func (m *M) Bytes(mimetype string, params map[string]string, v []byte) ([]byte, 
 
 // String minifies a string (safe for concurrent use). When an error occurs it return the original string and the error.
 // It returns an error when no such mimetype exists (ErrNotExist) or any error occurred in the minifier function.
-func (m *M) String(mimetype string, params map[string]string, v string) (string, error) {
+func (m *M) String(v string, mimetype string, params map[string]string) (string, error) {
 	out := buffer.NewWriter(make([]byte, 0, len(v)))
 	if err := m.Minify(out, buffer.NewReader([]byte(v)), mimetype, params); err != nil {
 		return v, err
