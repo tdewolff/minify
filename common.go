@@ -44,7 +44,7 @@ func DataURI(m *M, dataURI []byte) []byte {
 		if err != nil {
 			mimetype = string(mediatype)
 		}
-		dataURI, _ = m.Bytes(data, mimetype, params)
+		dataURI, _ = m.Bytes(mimetype, params, data)
 		base64Len := len(";base64") + base64.StdEncoding.EncodedLen(len(dataURI))
 		asciiLen := len(dataURI)
 		for i := 0; i < len(dataURI); i++ {
