@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"mime"
+	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
@@ -154,7 +155,7 @@ func TestHelperProcess(*testing.T) {
 
 ////////////////////////////////////////////////////////////////
 
-func ExampleMinifier_Minify() {
+func ExampleMinify_Custom() {
 	m := New()
 	m.AddFunc("text/plain", func(m *Minifier, w io.Writer, r io.Reader, mimetype string, params map[string]string) error {
 		// remove all spaces
@@ -178,4 +179,26 @@ func ExampleMinifier_Minify() {
 	if err := m.Minify(os.Stdout, os.Stdin, "text/plain", nil); err != nil {
 		fmt.Println("minify.Minify:", err)
 	}
+}
+
+type MinifierResponseWriter struct {
+	http.ResponseWriter
+	io.Writer
+}
+
+func (m MinifierResponseWriter) Write(b []byte) (int, error) {
+	return m.Writer.Write(b)
+}
+
+func ExampleMinify_ResponseWriter(res http.ResponseWriter) http.ResponseWriter {
+	m := New()
+	// add other minfiers
+
+	pr, pw := io.Pipe()
+	go func(w io.Writer) {
+		if err := m.Minify(w, pr, "mime/type", nil); err != nil {
+			panic(err)
+		}
+	}(res)
+	return MinifierResponseWriter{res, pw}
 }

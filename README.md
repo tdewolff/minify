@@ -2,9 +2,7 @@
 
 [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**Update: [online live demo](http://pi.tacodewolff.nl:8080/minify) running on a Raspberry Pi 2.**
-
-**Update: [command-line-interface](https://github.com/tdewolff/minify/tree/master/cmd/minify) executable `minify` provided for tooling.**
+**WARNING: an API change is happening soon, be aware or continue using the old API in tag v1.0.0**
 
 Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3, JS, JSON, SVG and XML minifiers and provides an interface to implement any minifier. Minification is the process of removing bytes from a file (such as whitespace) without changing its output and therefore speeding up transmission over the internet. The implemented minifiers are high performance and streaming (which implies O(n)).
 
@@ -12,9 +10,11 @@ It associates minification functions with mime types, allowing embedded resource
 
 Bottleneck for minification is mainly io and can be significantly sped up by having the file loaded into memory and providing a `Bytes() []byte` function like `bytes.Buffer` does.
 
-See the [Wiki](https://github.com/tdewolff/minify/wiki) for a roadmap of what is planned for the future.
-
 **Table of Contents**
+
+[Online live demo](http://pi.tacodewolff.nl:8080/minify) running on a Raspberry Pi 2.
+
+[Command-line-interface](https://github.com/tdewolff/minify/tree/master/cmd/minify) executable `minify` provided for tooling.
 
 - [Minify](#minify--)
 	- [Prologue](#prologue)
@@ -36,39 +36,65 @@ See the [Wiki](https://github.com/tdewolff/minify/wiki) for a roadmap of what is
 		- [Custom minifier](#custom-minifier)
 		- [Mediatypes](#mediatypes)
 	- [Examples](#examples)
+		- [Common minifiers](#common-minifiers)
+		- [Custom minifier](#custom-minifier-1)
+		- [ResponseWriter](#responsewriter)
 	- [License](#license)
+
+**Roadmap**
+
+* [x] HTML parser and minifier
+* [x] CSS parser and minifier
+* [x] Command line tool
+* [x] JSON parser and minifier
+* [x] JS lexer and basic minifier
+* [x] Improve CSS parser to implement the same technique as HTML/JSON does (ie. a lightweight parser)
+* [x] XML parser and minifier according to the specs
+* [x] Optimize and test JSON minification
+* [x] Optimize and test XML minification
+* [x] Optimize and test CSS minification
+* [x] SVG minifier using the XML parser
+* [ ] Expand SVG minifier using https://github.com/svg/svgo techniques
+* [x] Test with https://github.com/dvyukov/go-fuzz, *found >10 bugs*
+* [x] Make parsers zero-copy
+* [ ] ~~JS lightweight parser~~
+* [x] Use ECMAScript 6 for JS lexer instead of 5.1
+* [ ] JS minifier with local variable renaming and better semicolon and newline omission
+* [ ] Optimize the CSS parser to use the same parsing style as the JS parser
+* [ ] Options feature to disable techniques
+* [ ] HTML templates minification, e.g. Go HTML templates or doT.js templates etc.
 
 ## Prologue
 Minifiers or bindings to minifiers exist in almost all programming languages. Some implementations are merely using several regular-expressions to trim whitespace and comments (even though regex for parsing HTML/XML is ill-advised, for a good read see [Regular Expressions: Now You Have Two Problems](http://blog.codinghorror.com/regular-expressions-now-you-have-two-problems/)). Some implementations are much more profound, such as the [YUI Compressor](http://yui.github.io/yuicompressor/), [Google Closure Compiler](https://github.com/google/closure-compiler) for JS and the [HTML Compressor](https://code.google.com/p/htmlcompressor/).
 
-These industry-grade minifiers are written in Java and are generally slow too. Futhermore, these tools provide a large number of configurations which is often confusing or not needed. Regular-expression based minifiers are slow anyways because they often use multiple regular-expressions, each of which parses the complete document. While regular-expressions are overkill (or ill-advised) for parsing HTML/CSS/JS documents, parsing it a number of times is certainly not speeding things up. Other implementations are often written in uncompiled languages such as JS, which is great for bindings with [Grunt](http://gruntjs.com/) for example, but catastrophic for the minification speed of large files or projects with many files.
+These industry-grade minifiers are written in Java and are generally relatively slow. Futhermore, these tools provide a large number of configurations which is often confusing or not required. Regular-expression based minifiers are slow anyways because they use multiple regular-expressions, each of which parses the complete document. While regular-expressions are overkill (or ill-advised) for parsing HTML/CSS/JS documents, parsing it a number of times is certainly not speeding things up. Other implementations are mostly written in uncompiled languages such as JS, which is great for bindings with [Grunt](http://gruntjs.com/) for example, but catastrophic for the minification speed of large files or projects with many files.
 
-Additionally many of these minifier either do not follow the specifications or drag a lot of legacy code around. When you are still trying to support IE6 I don't suppose you are squeezing out every bit of performance out of your web application. Supporting old mistakes or work-arounds is not a fairly long-term vision.
+Additionally, many of these minifier either do not follow the specifications or drag a lot of legacy code around. When you are still trying to support IE6 I don't suppose you are squeezing out every bit of performance from your web applications. Supporting old mistakes or work-arounds is not a fairly long-term vision and seldomly justified.
 
 However, implementing an HTML minifier is the bare minimum. HTML documents can contain embedded resources such as CSS, JS and SVG file formats. Thus for increased minification of HTML, other file format minifiers must be present too. A minifier should really handle a number of mimetypes to be successful.
 
-This minifier proves to be that fast, zero-configurable, modern, extensive minifier which stream-minifies files and can minify them concurrently.
+This minifier proves to be that fast and encompassing minifier which stream-minifies files and can minify them concurrently.
 
 ## Comparison
-HTML (with JS and CSS) minification typically runs at about 30MB/s ~= 100GB/h, depending on the composition of the file.
+HTML (with JS and CSS) minification typically runs at about 35MB/s ~= 120GB/h, depending on the composition of the file.
 
 Website | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
 [Amazon](http://www.amazon.com/) | 463kB | **414kB** | 89% | 13ms
 [BBC](http://www.bbc.com/) | 113kB | **96kB** | 85% | 4ms
-[StackOverflow](http://stackoverflow.com/) | 201kB | **182kB** | 91% | 7ms
-[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | **410kB** | 94%<sup>&#42;&#42;</sup> | 14ms
+[StackOverflow](http://stackoverflow.com/) | 201kB | **182kB** | 91% | 6ms
+[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | **410kB** | 94%<sup>&#42;&#42;</sup> | 12ms
 
 <sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies a lot but it's important to see it's in the 10ms range! The benchmark uses all the minifiers and excludes reading from and writing to the file from the measurement.
 
 <sup>&#42;&#42;</sup>Is already somewhat minified, so this doesn't reflect the full potential of this minifier.
 
-[HTML Compressor](https://code.google.com/p/htmlcompressor/) performs worse in output size (for HTML and CSS) and speed; it is a magnitude slower. Its whitespace removal is not precise or the user must provide the tags around which can be trimmed. According to HTML Compressor, it produces smaller files than a couple of other libraries. With HTML and CSS minification this package is better, but JS minification it is still too basic.
-
 ### Alternatives
-An alternative library written in Go is [https://github.com/dchest/htmlmin](https://github.com/dchest/htmlmin). It is simpler (less bugs but not handling edge-cases) but slower. Also [https://github.com/omeid/jsmin](https://github.com/omeid/jsmin) contains a port of JSMin, just like this JS minifier, but is slower.
+[HTML Compressor](https://code.google.com/p/htmlcompressor/) performs worse in output size (for HTML and CSS) and speed; it is a magnitude slower. Its whitespace removal is not precise or the user must provide the tags around which can be trimmed.
 
-Other alternatives are bindings for existing minifiers written in other languages. These are inevitably more robust and tested but will often be slower. For example, Java-based minifiers incur overhead of starting up the JVM.
+An alternative library written in Go is [https://github.com/dchest/htmlmin](https://github.com/dchest/htmlmin). It is simpler but slower. Also [https://github.com/omeid/jsmin](https://github.com/omeid/jsmin) contains a port of JSMin, just like this JS minifier, but is slower.
+
+Other alternatives are bindings to existing minifiers written in other languages. These are inevitably more robust and tested but will often be slower. For example, Java-based minifiers incur overhead of starting up the JVM.
 
 ## HTML [![GoDoc](http://godoc.org/github.com/tdewolff/minify/html?status.svg)](http://godoc.org/github.com/tdewolff/minify/html) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/html)](http://gocover.io/github.com/tdewolff/minify/html)
 
@@ -89,9 +115,8 @@ After recent benchmarking and profiling it became really fast and minifies pages
 
 However, be careful when doing on-the-fly minification. Minification typically trims off 10% and does this at worst around about 20MB/s. This means users have to download slower than 2MB/s to make on-the-fly minification worthwhile. This may or may not apply in your situation. Rather use caching!
 
-### Beware
-#### Whitespace removal
-The whitespace removal mechanism collapses all sequences of whitespace (spaces, newlines, tabs, ...) to a single space. It trims all text parts (in between tags) depending on whether it was preceded by a space from a previous piece of text and whether it is followed up by a block element or an inline element. In the former case we can omit spaces while for inline elements whitespace has significance.
+### Whitespace removal
+The whitespace removal mechanism collapses all sequences of whitespace (spaces, newlines, tabs) to a single space. It trims all text parts (in between tags) depending on whether it was preceded by a space from a previous piece of text and whether it is followed up by a block element or an inline element. In the former case we can omit spaces while for inline elements whitespace has significance.
 
 Make sure your HTML doesn't depend on whitespace between `block` elements that have been changed to `inline` or `inline-block` elements using CSS. Your layout *should not* depend on those whitespaces as the minifier will remove them. An example is a menu consisting of multiple `<li>` that have `display:inline-block` applied and have whitespace in between them. It is bad practise to rely on whitespace for element positioning anyways!
 
@@ -101,8 +126,8 @@ Minification typically runs at about 20MB/s ~= 70GB/h.
 
 Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
-[Bootstrap](http://getbootstrap.com/) | 134kB | **111kB** | 83% | 6ms
-[Gumby](http://gumbyframework.com/) | 182kB | **167kB** | 91% | 9ms
+[Bootstrap](http://getbootstrap.com/) | 134kB | **111kB** | 83% | 5ms
+[Gumby](http://gumbyframework.com/) | 182kB | **167kB** | 90% | 8ms
 
 <sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.
 
@@ -139,15 +164,15 @@ It's great that so many other tools make comparison tables: [CSS Minifier Compar
 
 ## JS [![GoDoc](http://godoc.org/github.com/tdewolff/minify/js?status.svg)](http://godoc.org/github.com/tdewolff/minify/js) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/js)](http://gocover.io/github.com/tdewolff/minify/js)
 
-The JS minifier is pretty basic. It removes comments, whitespace and line breaks whenever it can. It follows the rules by [JSMin](http://www.crockford.com/javascript/jsmin.html) but additionally fixes the error in the 'caution' section.
+The JS minifier is pretty basic. It removes comments, whitespace and line breaks whenever it can. It employs all the rules that [JSMin](http://www.crockford.com/javascript/jsmin.html) does too, but has additional improvements. For example the prefix-postfix bug is fixed.
 
-Minification typically runs at about 45MB/s ~= 160GB/h.
+Minification typically runs at about 40MB/s ~= 150GB/h. Common speeds of PHP and JS implementations are about 100-300kB/s (see [Uglify2](http://lisperator.net/uglifyjs/), [Adventures in PHP web asset minimization](https://www.happyassassin.net/2014/12/29/adventures-in-php-web-asset-minimization/)).
 
 Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
-[ACE](https://github.com/ajaxorg/ace-builds) | 616kB | **433kB** | 70% | 13ms
-[jQuery](http://jquery.com/download/) | 242kB | **130kB** | 54% | 5ms
-[jQuery UI](http://jqueryui.com/download/) | 459kB | **300kB** | 65% | 11ms
+[ACE](https://github.com/ajaxorg/ace-builds) | 630kB | **442kB** | 70% | 16ms
+[jQuery](http://jquery.com/download/) | 242kB | **130kB** | 54% | 6ms
+[jQuery UI](http://jqueryui.com/download/) | 459kB | **300kB** | 65% | 12ms
 [Moment](http://momentjs.com/) | 97kB | **51kB** | 52% | 2ms
 
 <sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.
@@ -234,34 +259,34 @@ m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 Minify from an `io.Reader` to an `io.Writer` for a specific mimetype.
 ``` go
 if err := m.Minify(w, r, mimetype, nil); err != nil {
-	log.Fatal("Minify:", err)
+	panic("Minify:", err)
 }
 ```
 
 Minify HTML, CSS or JS directly from an `io.Reader` to an `io.Writer`. The passed mimetype is not required for these functions, but are filled out for clarity.
 ``` go
 if err := css.Minify(m, w, r, "text/css", nil); err != nil {
-	log.Fatal("css.Minify:", err)
+	panic("css.Minify:", err)
 }
 
 if err := html.Minify(m, w, r, "text/html", nil); err != nil {
-	log.Fatal("html.Minify:", err)
+	panic("html.Minify:", err)
 }
 
 if err := js.Minify(m, w, r, "text/javascript", nil); err != nil {
-	log.Fatal("js.Minify:", err)
+	panic("js.Minify:", err)
 }
 
 if err := json.Minify(m, w, r, "application/json", nil); err != nil {
-	log.Fatal("json.Minify:", err)
+	panic("json.Minify:", err)
 }
 
 if err := svg.Minify(m, w, r, "image/svg+xml", nil); err != nil {
-	log.Fatal("svg.Minify:", err)
+	panic("svg.Minify:", err)
 }
 
 if err := xml.Minify(m, w, r, "text/xml", nil); err != nil {
-	log.Fatal("xml.Minify:", err)
+	panic("xml.Minify:", err)
 }
 ```
 
@@ -270,7 +295,7 @@ Minify from and to a `[]byte` for a specific mimetype.
 ``` go
 b, err = m.Bytes(b, mimetype, params)
 if err != nil {
-	log.Fatal("minify.Bytes:", err)
+	panic(err)
 }
 ```
 
@@ -279,7 +304,7 @@ Minify from and to a `string` for a specific mimetype.
 ``` go
 s, err = m.String(s, mimetype, params)
 if err != nil {
-	log.Fatal("minify.String:", err)
+	panic(err)
 }
 ```
 
@@ -303,6 +328,7 @@ Using the `params map[string]string` argument one can pass parameters to the min
 Minifiers can also be added using a regular expression. For example a minifier with `image/.*` will match any image mime.
 
 ## Examples
+### Common minifiers
 Basic example that minifies from stdin to stdout and loads the default HTML, CSS and JS minifiers. Optionally, one can enable `java -jar build/compiler.jar` to run for JS (for example the [ClosureCompiler](https://code.google.com/p/closure-compiler/)). Note that reading the file into a buffer first and writing to a pre-allocated buffer would be faster (but would disable streaming).
 ``` go
 package main
@@ -333,12 +359,13 @@ func main() {
 	// Or use the following for better minification of JS but lower speed:
 	// m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
 
-	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
-		log.Fatal("Minify:", err)
+	if err := m.Minify(os.Stdout, os.Stdin, "text/html", nil); err != nil {
+		panic(err)
 	}
 }
 ```
 
+### Custom minifier
 Custom minifier showing an example that implements the minifier function interface. Within a custom minifier, it is possible to call any minifier function (through `m minify.Minifier`) recursively when dealing with embedded resources.
 ``` go
 package main
@@ -353,12 +380,11 @@ import (
 	"github.com/tdewolff/minify"
 )
 
-// Outputs "Becausemycoffeewastoocold,Iheateditinthemicrowave."
 func main() {
 	m := minify.New()
 
 	// remove newline and space bytes
-	m.AddFunc("text/plain", func(m *minify.Minifier, mimetype string, w io.Writer, r io.Reader) error {
+	m.AddFunc("text/plain", func(m *minify.Minifier, w io.Writer, r io.Reader, mimetype string, _ map[string]string) error {
 		rb := bufio.NewReader(r)
 		for {
 			line, err := rb.ReadString('\n')
@@ -377,9 +403,36 @@ func main() {
 
 	out, err := m.String("text/plain", "Because my coffee was too cold, I heated it in the microwave.")
 	if err != nil {
-		log.Fatal("Minify:", err)
+		panic(err)
 	}
 	fmt.Println(out)
+	// Output: Becausemycoffeewastoocold,Iheateditinthemicrowave.
+}
+```
+
+### ResponseWriter
+ResponseWriter example which returns a ResponseWriter that minifies the content and then writes to the original ResponseWriter. Any write after applying this filter will be minified.
+``` go
+type MinifyResponseWriter struct {
+	http.ResponseWriter
+	io.Writer
+}
+
+func (m MinifyResponseWriter) Write(b []byte) (int, error) {
+	return m.Writer.Write(b)
+}
+
+func MinifyFilter(res http.ResponseWriter, mimetype string) http.ResponseWriter {
+	m := minify.New()
+	// add other minfiers
+
+	pr, pw := io.Pipe()
+	go func(w io.Writer) {
+		if err := m.Minify(w, pr, mimetype, nil); err != nil {
+			panic(err)
+		}
+	}(res)
+	return MinifyResponseWriter{res, pw}
 }
 ```
 

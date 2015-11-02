@@ -85,7 +85,7 @@ func (m *Minifier) AddCmd(mimetype string, cmd *exec.Cmd) {
 	m.literal[mimetype] = cmdFunc(cmd)
 }
 
-// AddCmd adds a minify function to the mimetype => function map (unsafe for concurrent use) that executes a command to process the minification.
+// AddCmdRegexp adds a minify function to the mimetype => function map (unsafe for concurrent use) that executes a command to process the minification.
 // It allows the use of external tools like ClosureCompiler, UglifyCSS, etc. for a specific mimetype regular expression.
 // Be aware that running external tools will slow down minification a lot!
 func (m *Minifier) AddCmdRegexp(mimetype *regexp.Regexp, cmd *exec.Cmd) {
