@@ -2,7 +2,26 @@
 
 [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**WARNING: an API change is happening soon, be aware or continue using the old API in tag v1.0.0**
+**WARNING: the API has changed, be aware or continue using the old API in tag v1.1.0**
+**CHANGES:**
+In package `minify`
+ - `Minify` &#8594; `M`
+ - `AddFuncRegexp` &#8594; `AddFuncPattern`
+ - `AddCmdRegexp` &#8594; `AddCmdPattern`
+ - `Minify(mediatype string, w io.Writer, r io.Reader)` &#8594; `Minify(w io.Writer, r io.Reader, mimetype string, params map[string]string)`
+ - New function `Add` which lets you add a `Minifier` struct with a `Minify` function.
+ - New function `AddPattern` which is the same as `Add` but taking a regular expression for mimetype.
+
+In subpackages of `minify` such as `minify/html`, `minify/css`, ...
+ - `Minify(m minify.Minifier, mediatype string, w io.Writer, r io.Reader)` &#8594; `Minify(w io.Writer, r io.Reader, m *minify.M, params map[string]string)`
+ - New function `Minify` with `Minifier` struct receiver, this contains all options for the minifier.
+
+**FIX YOUR CODE**
+If `m` is the type returned by `minify.New()` and `w` and `r` are your writer and reader respectfully, then:
+ - Change `m.Minify("text/html", w, r)` &#8594; `m.Minify(w, r, "text/html", nil)` or any mimetype
+ - Change `html.Minify(m, "text/html", w, r)` &#8594; `html.Minify(w, r, m, nil)` also for `css`, `js`, ...
+
+---
 
 Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3, JS, JSON, SVG and XML minifiers and provides an interface to implement any minifier. Minification is the process of removing bytes from a file (such as whitespace) without changing its output and therefore speeding up transmission over the internet. The implemented minifiers are high performance and streaming (which implies O(n)).
 
@@ -316,9 +335,28 @@ if err != nil {
 ```
 
 ### Custom minifier
-Add a function for a specific mimetype.
+Add a minifier for a specific mimetype.
+``` go
+type CustomMinifier struct {
+	KeepLineBreaks bool
+}
+
+func (c *CustomMinifier) Minify(w io.Writer, r io.Reader, m *minify.M, params map[string]string) error {
+	// ...
+	return nil
+}
+
+m.Add(mimetype, &CustomMinifier{KeepLineBreaks: true})
+m.AddPattern(regexp.MustCompile("/x-custom$"), &CustomMinifier{KeepLineBreaks: true})
+```
+
+Add a minify function for a specific mimetype.
 ``` go
 m.AddFunc(mimetype, func(w io.Writer, r io.Reader, m *minify.M, params map[string]string) error {
+	// ...
+	return nil
+})
+m.AddFuncPattern(regexp.MustCompile("/x-custom$"), func(w io.Writer, r io.Reader, m *minify.M, params map[string]string) error {
 	// ...
 	return nil
 })
@@ -327,6 +365,7 @@ m.AddFunc(mimetype, func(w io.Writer, r io.Reader, m *minify.M, params map[strin
 Add a command `cmd` with arguments `args` for a specific mimetype.
 ``` go
 m.AddCmd(mimetype, exec.Command(cmd, args...))
+m.AddCmdPattern(regexp.MustCompile("/x-custom$"), exec.Command(cmd, args...))
 ```
 
 ### Mediatypes
