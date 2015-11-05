@@ -202,3 +202,10 @@ func ExampleMinify_ResponseWriter(res http.ResponseWriter) http.ResponseWriter {
 	}(res)
 	return MinifierResponseWriter{res, pw}
 }
+
+func ExampleMinify_ResponseWriter2(res http.ResponseWriter) io.WriteCloser {
+	m := New()
+	// add other minfiers
+
+	return m.MinifyWriter(res, "mime/type", nil)
+}

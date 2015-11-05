@@ -135,3 +135,16 @@ func (m *M) String(v string, mimetype string, params map[string]string) (string,
 	}
 	return string(out.Bytes()), nil
 }
+
+////////////////////////////////////////////////////////////////
+
+func (m *M) MinifyWriter(w io.Writer, mimetype string, params map[string]string) io.WriteCloser {
+	pr, pw := io.Pipe()
+	go func() {
+		if err := m.Minify(w, pr, mimetype, params); err != nil {
+			pr.CloseWithError(err)
+		}
+		pr.Close()
+	}()
+	return pw
+}
