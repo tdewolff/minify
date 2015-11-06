@@ -28,12 +28,12 @@ var (
 
 type Minifier struct{}
 
-func Minify(m *minify.M, w io.Writer, r io.Reader, params map[int]string) error {
+func Minify(m *minify.M, w io.Writer, r io.Reader, params interface{}) error {
 	return (&Minifier{}).Minify(m, w, r, params)
 }
 
 // Minify minifies SVG data, it reads from r and writes to w.
-func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[int]string) error {
+func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ interface{}) error {
 	var tag svg.Hash
 	defaultStyleType := "text/css"
 
@@ -197,7 +197,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[int]strin
 				defaultStyleType = string(val)
 			} else if t.Hash == svg.Style {
 				attrMinifyBuffer.Reset()
-				if m.Minify(attrMinifyBuffer, buffer.NewReader(val), defaultStyleType, map[int]string{minifyCSS.Inline: "1"}) == nil {
+				if m.Minify(attrMinifyBuffer, buffer.NewReader(val), defaultStyleType, minifyCSS.Params{Inline: true}) == nil {
 					val = attrMinifyBuffer.Bytes()
 				}
 			} else if t.Hash == svg.D {

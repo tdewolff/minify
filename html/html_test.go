@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"regexp"
 	"strconv"
@@ -121,11 +122,11 @@ func TestHTML(t *testing.T) {
 
 	m := minify.New()
 	m.AddFunc("text/html", Minify)
-	m.AddFunc("text/css", func(_ *minify.M, w io.Writer, r io.Reader, _ map[int]string) error {
+	m.AddFunc("text/css", func(_ *minify.M, w io.Writer, r io.Reader, _ interface{}) error {
 		_, err := io.Copy(w, r)
 		return err
 	})
-	m.AddFunc("text/javascript", func(_ *minify.M, w io.Writer, r io.Reader, _ map[int]string) error {
+	m.AddFunc("text/javascript", func(_ *minify.M, w io.Writer, r io.Reader, _ interface{}) error {
 		_, err := io.Copy(w, r)
 		return err
 	})
@@ -137,10 +138,30 @@ func TestHTML(t *testing.T) {
 	}
 }
 
+func TestHTMLURL(t *testing.T) {
+	var htmlTests = []struct {
+		html     string
+		expected string
+	}{
+		{`<a href=http://example.com/>link</a>`, `<a href=http://example.com/>link</a>`},
+		{`<a href=https://example.com/>link</a>`, `<a href=//example.com/>link</a>`},
+	}
+
+	m := minify.New()
+	m.AddFunc("text/html", Minify)
+	for _, tt := range htmlTests {
+		r := bytes.NewBufferString(tt.html)
+		w := &bytes.Buffer{}
+		u, _ := url.Parse("https://example.com/")
+		assert.Nil(t, Minify(m, w, r, Params{URL: u}), "Minify must not return error in "+tt.html)
+		assert.Equal(t, tt.expected, w.String(), "Minify must give expected result in "+tt.html)
+	}
+}
+
 func TestSpecialTagClosing(t *testing.T) {
 	m := minify.New()
 	m.AddFunc("text/html", Minify)
-	m.AddFunc("text/css", func(_ *minify.M, w io.Writer, r io.Reader, _ map[int]string) error {
+	m.AddFunc("text/css", func(_ *minify.M, w io.Writer, r io.Reader, _ interface{}) error {
 		b, err := ioutil.ReadAll(r)
 		assert.Nil(t, err, "ioutil.ReadAll must not return error")
 		assert.Equal(t, "</script>", string(b))
@@ -184,8 +205,8 @@ func ExampleMinify() {
 	m.AddFuncPattern(regexp.MustCompile("[/+]json$"), json.Minify)
 	m.AddFuncPattern(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
-	params := map[int]string{URL: "https://www.example.com/"}
-	if err := m.Minify(os.Stdout, os.Stdin, "text/html", params); err != nil {
+	u, _ := url.Parse("https://www.example.com/")
+	if err := m.Minify(os.Stdout, os.Stdin, "text/html", Params{URL: u}); err != nil {
 		panic(err)
 	}
 }

@@ -42,32 +42,32 @@ var m *M
 
 func init() {
 	m = New()
-	m.AddFunc("dummy/copy", func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
+	m.AddFunc("dummy/copy", func(m *M, w io.Writer, r io.Reader, params interface{}) error {
 		io.Copy(w, r)
 		return nil
 	})
-	m.AddFunc("dummy/nil", func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
+	m.AddFunc("dummy/nil", func(m *M, w io.Writer, r io.Reader, params interface{}) error {
 		return nil
 	})
-	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
+	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, params interface{}) error {
 		return errDummy
 	})
-	// m.AddFunc("dummy/charset", func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
+	// m.AddFunc("dummy/charset", func(m *M, w io.Writer, r io.Reader, params interface{}) error {
 	// 	w.Write([]byte(params["charset"]))
 	// 	return nil
 	// })
-	// m.AddFunc("dummy/params", func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
+	// m.AddFunc("dummy/params", func(m *M, w io.Writer, r io.Reader, params interface{}) error {
 	// 	return m.Minify(w, r, params["type"]+"/"+params["sub"], nil)
 	// })
-	m.AddFunc("type/sub", func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
+	m.AddFunc("type/sub", func(m *M, w io.Writer, r io.Reader, params interface{}) error {
 		w.Write([]byte("type/sub"))
 		return nil
 	})
-	m.AddFuncPattern(regexp.MustCompile("^type/.+$"), func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
+	m.AddFuncPattern(regexp.MustCompile("^type/.+$"), func(m *M, w io.Writer, r io.Reader, params interface{}) error {
 		w.Write([]byte("type/*"))
 		return nil
 	})
-	m.AddFuncPattern(regexp.MustCompile("^.+/.+$"), func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
+	m.AddFuncPattern(regexp.MustCompile("^.+/.+$"), func(m *M, w io.Writer, r io.Reader, params interface{}) error {
 		w.Write([]byte("*/*"))
 		return nil
 	})
@@ -99,7 +99,7 @@ func TestAdd(t *testing.T) {
 	m := New()
 	w := &bytes.Buffer{}
 	r := bytes.NewBufferString("test")
-	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
+	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, params interface{}) error {
 		return errDummy
 	})
 	assert.Equal(t, errDummy, m.Minify(nil, nil, "dummy/err", nil), "must return errDummy for dummy/err")
@@ -157,7 +157,7 @@ func TestHelperProcess(*testing.T) {
 
 func ExampleMinify_Custom() {
 	m := New()
-	m.AddFunc("text/plain", func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
+	m.AddFunc("text/plain", func(m *M, w io.Writer, r io.Reader, params interface{}) error {
 		// remove all newlines and spaces
 		rb := bufio.NewReader(r)
 		for {

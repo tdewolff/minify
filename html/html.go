@@ -25,27 +25,23 @@ const maxAttrLookup = 4
 
 ////////////////////////////////////////////////////////////////
 
-const (
-	URL int = iota
-)
+type Params struct {
+	URL *url.URL
+}
 
 type Minifier struct {
 	DefaultAttrVals bool
 }
 
-func Minify(m *minify.M, w io.Writer, r io.Reader, params map[int]string) error {
+func Minify(m *minify.M, w io.Writer, r io.Reader, params interface{}) error {
 	return (&Minifier{}).Minify(m, w, r, params)
 }
 
 // Minify minifies HTML data, it reads from r and writes to w.
-func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[int]string) error {
-	var scheme string
-	if params != nil {
-		u, err := url.Parse(params[URL])
-		if err != nil {
-			return err
-		}
-		scheme = u.Scheme
+func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params interface{}) error {
+	p, ok := params.(Params)
+	if params != nil && !ok {
+		return minify.ErrBadParams
 	}
 
 	var rawTagHash html.Hash
@@ -241,13 +237,13 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[int]
 					if href := attrTokenBuffer[3]; href != nil {
 						if len(href.AttrVal) > 5 && parse.EqualFold(href.AttrVal[:4], []byte{'h', 't', 't', 'p'}) {
 							if href.AttrVal[4] == ':' {
-								if scheme == "http" {
+								if p.URL.Scheme == "http" {
 									href.AttrVal = href.AttrVal[5:]
 								} else {
 									parse.ToLower(href.AttrVal[:4])
 								}
 							} else if (href.AttrVal[4] == 's' || href.AttrVal[4] == 'S') && href.AttrVal[5] == ':' {
-								if scheme == "https" {
+								if p.URL.Scheme == "https" {
 									href.AttrVal = href.AttrVal[6:]
 								} else {
 									parse.ToLower(href.AttrVal[:5])
@@ -344,7 +340,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[int]
 					// CSS and JS minifiers for attribute inline code
 					if attr.Hash == html.Style {
 						attrMinifyBuffer.Reset()
-						if m.Minify(attrMinifyBuffer, buffer.NewReader(val), defaultStyleType, map[int]string{css.Inline: "1"}) == nil {
+						if m.Minify(attrMinifyBuffer, buffer.NewReader(val), defaultStyleType, css.Params{Inline: true}) == nil {
 							val = attrMinifyBuffer.Bytes()
 						}
 						if len(val) == 0 {
@@ -365,13 +361,13 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[int]
 						if t.Hash != html.A {
 							if parse.EqualFold(val[:4], []byte{'h', 't', 't', 'p'}) {
 								if val[4] == ':' {
-									if scheme == "http" {
+									if p.URL.Scheme == "http" {
 										val = val[5:]
 									} else {
 										parse.ToLower(val[:4])
 									}
 								} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
-									if scheme == "https" {
+									if p.URL.Scheme == "https" {
 										val = val[6:]
 									} else {
 										parse.ToLower(val[:5])

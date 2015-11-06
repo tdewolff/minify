@@ -11,21 +11,24 @@ import (
 )
 
 // ErrNotExist is returned when no minifier exists for a given mimetype.
-var ErrNotExist = errors.New("minify function does not exist for mimetype")
+var ErrNotExist = errors.New("minifier does not exist for mimetype")
+
+// ErrBadParams is returned when the minifier receives a wrong type for the params argument.
+var ErrBadParams = errors.New("bad parameters for minifier")
 
 ////////////////////////////////////////////////////////////////
 
-type minifierFunc func(*M, io.Writer, io.Reader, map[int]string) error
+type minifierFunc func(*M, io.Writer, io.Reader, interface{}) error
 
-func (f minifierFunc) Minify(m *M, w io.Writer, r io.Reader, params map[int]string) error {
+func (f minifierFunc) Minify(m *M, w io.Writer, r io.Reader, params interface{}) error {
 	return f(m, w, r, params)
 }
 
 // Minifier is the interface for minifiers.
 // The *M parameter is used for minifying embedded resources, such as JS within HTML.
-// The map[int]string is for parameter passing (charset=UTF-8 for example).
+// The interface{} is for parameter passing (charset=UTF-8 for example).
 type Minifier interface {
-	Minify(*M, io.Writer, io.Reader, map[int]string) error
+	Minify(*M, io.Writer, io.Reader, interface{}) error
 }
 
 ////////////////////////////////////////////////////////////////
@@ -39,7 +42,7 @@ type cmdMinifier struct {
 	cmd *exec.Cmd
 }
 
-func (c *cmdMinifier) Minify(_ *M, w io.Writer, r io.Reader, _ map[int]string) error {
+func (c *cmdMinifier) Minify(_ *M, w io.Writer, r io.Reader, _ interface{}) error {
 	cmd := &exec.Cmd{}
 	*cmd = *c.cmd // concurrency safety
 	cmd.Stdout = w
@@ -98,7 +101,7 @@ func (m *M) AddCmdPattern(pattern *regexp.Regexp, cmd *exec.Cmd) {
 // Minify minifies the content of a Reader and writes it to a Writer (safe for concurrent use).
 // An error is returned when no such mimetype exists (ErrNotExist) or when an error occurred in the minifier function.
 // Mimetype may take the form of 'text/plain', 'text/*' or '*/*'.
-func (m *M) Minify(w io.Writer, r io.Reader, mimetype string, params map[int]string) error {
+func (m *M) Minify(w io.Writer, r io.Reader, mimetype string, params interface{}) error {
 	if minifier, ok := m.literal[mimetype]; ok {
 		if err := minifier.Minify(m, w, r, params); err != nil {
 			return err
@@ -118,7 +121,7 @@ func (m *M) Minify(w io.Writer, r io.Reader, mimetype string, params map[int]str
 
 // Bytes minifies an array of bytes (safe for concurrent use). When an error occurs it return the original array and the error.
 // It returns an error when no such mimetype exists (ErrNotExist) or any error occurred in the minifier function.
-func (m *M) Bytes(v []byte, mimetype string, params map[int]string) ([]byte, error) {
+func (m *M) Bytes(v []byte, mimetype string, params interface{}) ([]byte, error) {
 	out := buffer.NewWriter(make([]byte, 0, len(v)))
 	if err := m.Minify(out, buffer.NewReader(v), mimetype, params); err != nil {
 		return v, err
@@ -128,7 +131,7 @@ func (m *M) Bytes(v []byte, mimetype string, params map[int]string) ([]byte, err
 
 // String minifies a string (safe for concurrent use). When an error occurs it return the original string and the error.
 // It returns an error when no such mimetype exists (ErrNotExist) or any error occurred in the minifier function.
-func (m *M) String(v string, mimetype string, params map[int]string) (string, error) {
+func (m *M) String(v string, mimetype string, params interface{}) (string, error) {
 	out := buffer.NewWriter(make([]byte, 0, len(v)))
 	if err := m.Minify(out, buffer.NewReader([]byte(v)), mimetype, params); err != nil {
 		return v, err
@@ -138,7 +141,7 @@ func (m *M) String(v string, mimetype string, params map[int]string) (string, er
 
 // Reader wraps a Reader interface and minifies the stream.
 // Errors from the minifier are returned by the reader.
-func (m *M) Reader(r io.Reader, mimetype string, params map[int]string) io.Reader {
+func (m *M) Reader(r io.Reader, mimetype string, params interface{}) io.Reader {
 	pr, pw := io.Pipe()
 	go func() {
 		if err := m.Minify(pw, r, mimetype, params); err != nil {
@@ -152,7 +155,7 @@ func (m *M) Reader(r io.Reader, mimetype string, params map[int]string) io.Reade
 // Writers wraps a Writer interface and minifies the stream.
 // Errors from the minifier are returned by the writer.
 // The writer must be closed explicitly.
-func (m *M) Writer(w io.Writer, mimetype string, params map[int]string) io.WriteCloser {
+func (m *M) Writer(w io.Writer, mimetype string, params interface{}) io.WriteCloser {
 	pr, pw := io.Pipe()
 	go func() {
 		if err := m.Minify(w, pr, mimetype, params); err != nil {
