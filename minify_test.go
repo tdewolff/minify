@@ -158,7 +158,7 @@ func TestHelperProcess(*testing.T) {
 func ExampleMinify_Custom() {
 	m := New()
 	m.AddFunc("text/plain", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
-		// remove all spaces
+		// remove all newlines and spaces
 		rb := bufio.NewReader(r)
 		for {
 			line, err := rb.ReadString('\n')
@@ -175,10 +175,13 @@ func ExampleMinify_Custom() {
 		return nil
 	})
 
-	// minify from Stdin to Stdout
-	if err := m.Minify(os.Stdout, os.Stdin, "text/plain", nil); err != nil {
-		fmt.Println("minify.Minify:", err)
+	in := "Because my coffee was too cold, I heated it in the microwave."
+	out, err := m.String(in, "text/plain", nil)
+	if err != nil {
+		panic(err)
 	}
+	fmt.Println(out)
+	// Output: Becausemycoffeewastoocold,Iheateditinthemicrowave.
 }
 
 func ExampleMinify_Reader() {
