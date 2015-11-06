@@ -190,3 +190,26 @@ func ExampleMinify() {
 		fmt.Println("minify.Minify:", err)
 	}
 }
+
+func ExampleReader() {
+	b := bytes.NewReader([]byte("<html><body><h1>Example</h1></body></html>"))
+
+	m := minify.New()
+	m.Add("text/html", &Minifier{})
+
+	r := m.Reader(b, "text/html", nil)
+	if _, err := io.Copy(os.Stdout, r); err != nil {
+		panic(err)
+	}
+	// Output: <h1>Example</h1>
+}
+
+func ExampleWriter() {
+	m := minify.New()
+	m.Add("text/html", &Minifier{})
+
+	w := m.Writer(os.Stdout, "text/html", nil)
+	w.Write([]byte("<html><body><h1>Example</h1></body></html>"))
+	w.Close()
+	// Output: <h1>Example</h1>
+}

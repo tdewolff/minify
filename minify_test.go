@@ -181,6 +181,33 @@ func ExampleMinify_Custom() {
 	}
 }
 
+func ExampleMinify_Reader() {
+	b := bytes.NewReader([]byte("input"))
+
+	m := New()
+	// add minfiers
+
+	r := m.Reader(b, "mime/type", nil)
+	if _, err := io.Copy(os.Stdout, r); err != nil {
+		if _, err := io.Copy(os.Stdout, b); err != nil {
+			panic(err)
+		}
+	}
+}
+
+func ExampleMinify_Writer() {
+	m := New()
+	// add minfiers
+
+	w := m.Writer(os.Stdout, "mime/type", nil)
+	if _, err := w.Write([]byte("input")); err != nil {
+		panic(err)
+	}
+	if err := w.Close(); err != nil {
+		panic(err)
+	}
+}
+
 type MinifierResponseWriter struct {
 	http.ResponseWriter
 	io.Writer
@@ -192,7 +219,7 @@ func (m MinifierResponseWriter) Write(b []byte) (int, error) {
 
 func ExampleMinify_ResponseWriter(res http.ResponseWriter) http.ResponseWriter {
 	m := New()
-	// add other minfiers
+	// add minfiers
 
 	pr, pw := io.Pipe()
 	go func(w io.Writer) {
@@ -201,11 +228,4 @@ func ExampleMinify_ResponseWriter(res http.ResponseWriter) http.ResponseWriter {
 		}
 	}(res)
 	return MinifierResponseWriter{res, pw}
-}
-
-func ExampleMinify_ResponseWriter2(res http.ResponseWriter) io.WriteCloser {
-	m := New()
-	// add other minfiers
-
-	return m.MinifyWriter(res, "mime/type", nil)
 }

@@ -136,9 +136,23 @@ func (m *M) String(v string, mimetype string, params map[string]string) (string,
 	return string(out.Bytes()), nil
 }
 
-////////////////////////////////////////////////////////////////
+// Reader wraps a Reader interface and minifies the stream.
+// Errors from the minifier are returned by the reader.
+func (m *M) Reader(r io.Reader, mimetype string, params map[string]string) io.Reader {
+	pr, pw := io.Pipe()
+	go func() {
+		if err := m.Minify(pw, r, mimetype, params); err != nil {
+			pw.CloseWithError(err)
+		}
+		pw.Close()
+	}()
+	return pr
+}
 
-func (m *M) MinifyWriter(w io.Writer, mimetype string, params map[string]string) io.WriteCloser {
+// Writers wraps a Writer interface and minifies the stream.
+// Errors from the minifier are returned by the writer.
+// The writer must be closed explicitly.
+func (m *M) Writer(w io.Writer, mimetype string, params map[string]string) io.WriteCloser {
 	pr, pw := io.Pipe()
 	go func() {
 		if err := m.Minify(w, pr, mimetype, params); err != nil {
