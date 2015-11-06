@@ -46,7 +46,7 @@ func TestCSS(t *testing.T) {
 	m := minify.New()
 	for _, tt := range cssTests {
 		b := &bytes.Buffer{}
-		assert.Nil(t, Minify(b, bytes.NewBufferString(tt.css), m, nil), "Minify must not return error in "+tt.css)
+		assert.Nil(t, Minify(m, b, bytes.NewBufferString(tt.css), nil), "Minify must not return error in "+tt.css)
 		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.css)
 	}
 }
@@ -144,7 +144,7 @@ func TestCSSInline(t *testing.T) {
 	for _, tt := range cssTests {
 		r := bytes.NewBufferString(tt.css)
 		w := &bytes.Buffer{}
-		assert.Nil(t, Minify(w, r, m, map[string]string{"inline": "1"}), "Minify must not return error in "+tt.css)
+		assert.Nil(t, Minify(m, w, r, map[string]string{"inline": "1"}), "Minify must not return error in "+tt.css)
 		assert.Equal(t, tt.expected, w.String(), "Minify must give expected result in "+tt.css)
 	}
 }
@@ -153,7 +153,7 @@ func TestReaderErrors(t *testing.T) {
 	m := minify.New()
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}
-	assert.Equal(t, test.ErrPlain, Minify(w, r, m, nil), "Minify must return error at first read")
+	assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
@@ -177,7 +177,7 @@ func TestWriterErrors(t *testing.T) {
 		for _, n := range tt.n {
 			r := bytes.NewBufferString(tt.css)
 			w := test.NewErrorWriter(n)
-			assert.Equal(t, test.ErrPlain, Minify(w, r, m, nil), "Minify must return error in "+tt.css+" at write "+strconv.FormatInt(int64(n), 10))
+			assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error in "+tt.css+" at write "+strconv.FormatInt(int64(n), 10))
 		}
 	}
 }
