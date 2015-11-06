@@ -4,13 +4,15 @@
 
 **WARNING: the API has changed, be aware or continue using the old API in tag v1.1.0**
 
+To use v1.1.0, import the package from `gopkg.in/tdewolff/minify.v1`
+
 **HOW TO FIX YOUR CODE**
 
 If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then:
  - `m.Minify("text/html", w, r)` &#8594; `m.Minify(w, r, "text/html", nil)` or any mimetype
+ - `m.AddFuncRegexp(...)` &#8594; `m.AddFuncPattern(...)`
+ - `m.AddCmdRegexp(...)` &#8594; `m.AddCmdPattern(...)`
  - `html.Minify(m, "text/html", w, r)` &#8594; `html.Minify(m, w, r, nil)` also for `css`, `js`, ...
- - `AddFuncRegexp(...)` &#8594; `AddFuncPattern(...)`
- - `AddCmdRegexp(...)` &#8594; `AddCmdPattern(...)`
 
 ---
 
