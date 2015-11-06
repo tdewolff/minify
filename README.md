@@ -4,9 +4,7 @@
 
 **WARNING: the API has changed, be aware or continue using the old API in tag v1.1.0**
 
-To use v1.1.0, import the package from `gopkg.in/tdewolff/minify.v1`
-
-**HOW TO FIX YOUR CODE**
+To use the old API, import the package from `gopkg.in/tdewolff/minify.v1` instead
 
 If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then:
  - `m.Minify("text/html", w, r)` &#8594; `m.Minify(w, r, "text/html", nil)` or any mimetype
