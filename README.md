@@ -8,7 +8,7 @@
 
 If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then:
  - `m.Minify("text/html", w, r)` &#8594; `m.Minify(w, r, "text/html", nil)` or any mimetype
- - `html.Minify(m, "text/html", w, r)` &#8594; `html.Minify(w, r, m, nil)` also for `css`, `js`, ...
+ - `html.Minify(m, "text/html", w, r)` &#8594; `html.Minify(m, w, r, nil)` also for `css`, `js`, ...
  - `AddFuncRegexp(...)` &#8594; `AddFuncPattern(...)`
  - `AddCmdRegexp(...)` &#8594; `AddCmdPattern(...)`
 
@@ -282,27 +282,27 @@ if err := m.Minify(w, r, mimetype, map[string]string{"charset": "UTF-8"}); err !
 
 Minify HTML, CSS or JS directly from an `io.Reader` to an `io.Writer`. The passed mimetype is not required for these functions, but are filled out for clarity.
 ``` go
-if err := css.Minify(w, r, m, params); err != nil {
+if err := css.Minify(m, w, r, params); err != nil {
 	panic(err)
 }
 
-if err := html.Minify(w, r, m, params); err != nil {
+if err := html.Minify(m, w, r, params); err != nil {
 	panic(err)
 }
 
-if err := js.Minify(w, r, m, params); err != nil {
+if err := js.Minify(m, w, r, params); err != nil {
 	panic(err)
 }
 
-if err := json.Minify(w, r, m, params); err != nil {
+if err := json.Minify(m, w, r, params); err != nil {
 	panic(err)
 }
 
-if err := svg.Minify(w, r, m, params); err != nil {
+if err := svg.Minify(m, w, r, params); err != nil {
 	panic(err)
 }
 
-if err := xml.Minify(r, m, params); err != nil {
+if err := xml.Minify(m, w, r, params); err != nil {
 	panic(err)
 }
 ```
@@ -325,6 +325,25 @@ if err != nil {
 }
 ```
 
+### From reader
+Get a minifying reader for a specific mimetype.
+``` go
+mr := m.Reader(r, mimetype, params)
+if _, err := mr.Read(b); err != nil {
+	panic(err)
+}
+```
+
+### From writer
+Get a minifying writer for a specific mimetype. Must be explicitly closed because it uses an `io.Pipe` underneath.
+``` go
+mw := m.Writer(w, mimetype, params)
+mw.Write([]byte("input"))
+if err := mw.Close(); err != nil {
+	panic(err)
+}
+```
+
 ### Custom minifier
 Add a minifier for a specific mimetype.
 ``` go
@@ -332,7 +351,7 @@ type CustomMinifier struct {
 	KeepLineBreaks bool
 }
 
-func (c *CustomMinifier) Minify(w io.Writer, r io.Reader, m *minify.M, params map[string]string) error {
+func (c *CustomMinifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	// ...
 	return nil
 }
@@ -343,11 +362,11 @@ m.AddPattern(regexp.MustCompile("/x-custom$"), &CustomMinifier{KeepLineBreaks: t
 
 Add a minify function for a specific mimetype.
 ``` go
-m.AddFunc(mimetype, func(w io.Writer, r io.Reader, m *minify.M, params map[string]string) error {
+m.AddFunc(mimetype, func(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	// ...
 	return nil
 })
-m.AddFuncPattern(regexp.MustCompile("/x-custom$"), func(w io.Writer, r io.Reader, m *minify.M, params map[string]string) error {
+m.AddFuncPattern(regexp.MustCompile("/x-custom$"), func(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	// ...
 	return nil
 })
@@ -419,9 +438,8 @@ import (
 
 func main() {
 	m := minify.New()
-
-	// remove newline and space bytes
-	m.AddFunc("text/plain", func(w io.Writer, r io.Reader, m *minify.M, params map[string]string) error {
+	m.AddFunc("text/plain", func(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+		// remove newlines and spaces
 		rb := bufio.NewReader(r)
 		for {
 			line, err := rb.ReadString('\n')
@@ -438,7 +456,8 @@ func main() {
 		return nil
 	})
 
-	out, err := m.String("text/plain", nil, "Because my coffee was too cold, I heated it in the microwave.")
+	in := "Because my coffee was too cold, I heated it in the microwave."
+	out, err := m.String(in, "text/plain", nil)
 	if err != nil {
 		panic(err)
 	}
@@ -452,24 +471,20 @@ ResponseWriter example which returns a ResponseWriter that minifies the content 
 ``` go
 type MinifyResponseWriter struct {
 	http.ResponseWriter
-	io.Writer
+	io.WriteCloser
 }
 
 func (m MinifyResponseWriter) Write(b []byte) (int, error) {
-	return m.Writer.Write(b)
+	return m.WriteCloser.Write(b)
 }
 
-func MinifyFilter(res http.ResponseWriter, mimetype string) http.ResponseWriter {
+// MinifyResponseWriter must be closed explicitly by calling site.
+func MinifyFilter(res http.ResponseWriter, mimetype string) MinifyResponseWriter {
 	m := minify.New()
-	// add other minfiers
+	// add minfiers
 
-	pr, pw := io.Pipe()
-	go func(w io.Writer) {
-		if err := m.Minify(w, pr, mimetype, nil); err != nil {
-			panic(err)
-		}
-	}(res)
-	return MinifyResponseWriter{res, pw}
+	mw := m.Writer(res, mimetype, nil)
+	return MinifyResponseWriter{res, mw}
 }
 ```
 
