@@ -2,7 +2,6 @@ package xml // import "github.com/tdewolff/minify/xml"
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"regexp"
 	"strconv"
@@ -76,6 +75,6 @@ func ExampleMinify() {
 	m.AddFuncPattern(regexp.MustCompile("[/+]xml$"), Minify)
 
 	if err := m.Minify(os.Stdout, os.Stdin, "text/xml", nil); err != nil {
-		fmt.Println("minify.Minify:", err)
+		panic(err)
 	}
 }

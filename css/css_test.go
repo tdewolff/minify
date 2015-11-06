@@ -2,7 +2,6 @@ package css // import "github.com/tdewolff/minify/css"
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"strconv"
 	"testing"
@@ -144,7 +143,7 @@ func TestCSSInline(t *testing.T) {
 	for _, tt := range cssTests {
 		r := bytes.NewBufferString(tt.css)
 		w := &bytes.Buffer{}
-		assert.Nil(t, Minify(m, w, r, map[string]string{"inline": "1"}), "Minify must not return error in "+tt.css)
+		assert.Nil(t, Minify(m, w, r, map[int]string{Inline: "1"}), "Minify must not return error in "+tt.css)
 		assert.Equal(t, tt.expected, w.String(), "Minify must give expected result in "+tt.css)
 	}
 }
@@ -189,6 +188,6 @@ func ExampleMinify() {
 	m.AddFunc("text/css", Minify)
 
 	if err := m.Minify(os.Stdout, os.Stdin, "text/css", nil); err != nil {
-		fmt.Println("minify.Minify:", err)
+		panic(err)
 	}
 }

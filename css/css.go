@@ -31,16 +31,20 @@ type cssMinifier struct {
 
 ////////////////////////////////////////////////////////////////
 
+const (
+	Inline int = iota
+)
+
 type Minifier struct{}
 
-func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+func Minify(m *minify.M, w io.Writer, r io.Reader, params map[int]string) error {
 	return (&Minifier{}).Minify(m, w, r, params)
 }
 
 // Minify minifies CSS data, it reads from r and writes to w.
-func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[int]string) error {
 	isStylesheet := true
-	if params != nil && params["inline"] == "1" {
+	if params != nil && params[Inline] == "1" {
 		isStylesheet = false
 	}
 

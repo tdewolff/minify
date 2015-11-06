@@ -4,9 +4,11 @@ package html // import "github.com/tdewolff/minify/html"
 import (
 	"bytes"
 	"io"
+	"net/url"
 
 	"github.com/tdewolff/buffer"
 	"github.com/tdewolff/minify"
+	"github.com/tdewolff/minify/css"
 	"github.com/tdewolff/parse"
 	"github.com/tdewolff/parse/html"
 )
@@ -23,19 +25,27 @@ const maxAttrLookup = 4
 
 ////////////////////////////////////////////////////////////////
 
+const (
+	URL int = iota
+)
+
 type Minifier struct {
 	DefaultAttrVals bool
 }
 
-func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+func Minify(m *minify.M, w io.Writer, r io.Reader, params map[int]string) error {
 	return (&Minifier{}).Minify(m, w, r, params)
 }
 
 // Minify minifies HTML data, it reads from r and writes to w.
-func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[int]string) error {
 	var scheme string
 	if params != nil {
-		scheme, _ = params["scheme"]
+		u, err := url.Parse(params[URL])
+		if err != nil {
+			return err
+		}
+		scheme = u.Scheme
 	}
 
 	var rawTagHash html.Hash
@@ -334,7 +344,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 					// CSS and JS minifiers for attribute inline code
 					if attr.Hash == html.Style {
 						attrMinifyBuffer.Reset()
-						if m.Minify(attrMinifyBuffer, buffer.NewReader(val), defaultStyleType, map[string]string{"inline": "1"}) == nil {
+						if m.Minify(attrMinifyBuffer, buffer.NewReader(val), defaultStyleType, map[int]string{css.Inline: "1"}) == nil {
 							val = attrMinifyBuffer.Bytes()
 						}
 						if len(val) == 0 {

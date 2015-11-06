@@ -27,12 +27,12 @@ var (
 
 type Minifier struct{}
 
-func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+func Minify(m *minify.M, w io.Writer, r io.Reader, params map[int]string) error {
 	return (&Minifier{}).Minify(m, w, r, params)
 }
 
 // Minify minifies XML data, it reads from r and writes to w.
-func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
+func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[int]string) error {
 	precededBySpace := true // on true the next text token must not start with a space
 
 	attrByteBuffer := make([]byte, 0, 64)

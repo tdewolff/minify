@@ -2,7 +2,6 @@ package json // import "github.com/tdewolff/minify/json"
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"regexp"
 	"strconv"
@@ -57,6 +56,6 @@ func ExampleMinify() {
 	m.AddFuncPattern(regexp.MustCompile("[/+]json$"), Minify)
 
 	if err := m.Minify(os.Stdout, os.Stdin, "application/json", nil); err != nil {
-		fmt.Println("minify.Minify:", err)
+		panic(err)
 	}
 }

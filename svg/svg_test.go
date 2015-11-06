@@ -2,7 +2,6 @@ package svg // import "github.com/tdewolff/minify/svg"
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"testing"
 
@@ -60,6 +59,6 @@ func ExampleMinify() {
 	m.AddFunc("text/css", css.Minify)
 
 	if err := m.Minify(os.Stdout, os.Stdin, "image/svg+xml", nil); err != nil {
-		fmt.Println("minify.Minify:", err)
+		panic(err)
 	}
 }

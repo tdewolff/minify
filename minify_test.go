@@ -29,9 +29,9 @@ func helperCommand(t *testing.T, s ...string) *exec.Cmd {
 }
 
 func helperMinifyString(t *testing.T, m *M, mediatype string) string {
-	mimetype, params, err := mime.ParseMediaType(mediatype)
+	mimetype, _, err := mime.ParseMediaType(mediatype)
 	assert.Nil(t, err, "mime.ParseMediaType must not return error for '"+mediatype+"'")
-	s, err := m.String("", mimetype, params)
+	s, err := m.String("", mimetype, nil)
 	assert.Nil(t, err, "minifier must not return error for '"+mimetype+"'")
 	return s
 }
@@ -42,32 +42,32 @@ var m *M
 
 func init() {
 	m = New()
-	m.AddFunc("dummy/copy", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
+	m.AddFunc("dummy/copy", func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
 		io.Copy(w, r)
 		return nil
 	})
-	m.AddFunc("dummy/nil", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
+	m.AddFunc("dummy/nil", func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
 		return nil
 	})
-	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
+	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
 		return errDummy
 	})
-	m.AddFunc("dummy/charset", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
-		w.Write([]byte(params["charset"]))
-		return nil
-	})
-	m.AddFunc("dummy/params", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
-		return m.Minify(w, r, params["type"]+"/"+params["sub"], nil)
-	})
-	m.AddFunc("type/sub", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
+	// m.AddFunc("dummy/charset", func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
+	// 	w.Write([]byte(params["charset"]))
+	// 	return nil
+	// })
+	// m.AddFunc("dummy/params", func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
+	// 	return m.Minify(w, r, params["type"]+"/"+params["sub"], nil)
+	// })
+	m.AddFunc("type/sub", func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
 		w.Write([]byte("type/sub"))
 		return nil
 	})
-	m.AddFuncPattern(regexp.MustCompile("^type/.+$"), func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
+	m.AddFuncPattern(regexp.MustCompile("^type/.+$"), func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
 		w.Write([]byte("type/*"))
 		return nil
 	})
-	m.AddFuncPattern(regexp.MustCompile("^.+/.+$"), func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
+	m.AddFuncPattern(regexp.MustCompile("^.+/.+$"), func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
 		w.Write([]byte("*/*"))
 		return nil
 	})
@@ -99,7 +99,7 @@ func TestAdd(t *testing.T) {
 	m := New()
 	w := &bytes.Buffer{}
 	r := bytes.NewBufferString("test")
-	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
+	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
 		return errDummy
 	})
 	assert.Equal(t, errDummy, m.Minify(nil, nil, "dummy/err", nil), "must return errDummy for dummy/err")
@@ -120,9 +120,9 @@ func TestWildcard(t *testing.T) {
 	assert.Equal(t, "*/*", helperMinifyString(t, m, "*/*"), "must return */* for */*")
 	assert.Equal(t, "type/*", helperMinifyString(t, m, "type/sub2"), "must return type/* for type/sub2")
 	assert.Equal(t, "*/*", helperMinifyString(t, m, "type2/sub"), "must return */* for type2/sub")
-	assert.Equal(t, "UTF-8", helperMinifyString(t, m, "dummy/charset;charset=UTF-8"), "must return UTF-8 for dummy/charset;charset=UTF-8")
-	assert.Equal(t, "UTF-8", helperMinifyString(t, m, "dummy/charset; charset = UTF-8 "), "must return UTF-8 for ' dummy/charset; charset = UTF-8 '")
-	assert.Equal(t, "type/sub", helperMinifyString(t, m, "dummy/params;type=type;sub=sub"), "must return type/sub for dummy/params;type=type;sub=sub")
+	// assert.Equal(t, "UTF-8", helperMinifyString(t, m, "dummy/charset;charset=UTF-8"), "must return UTF-8 for dummy/charset;charset=UTF-8")
+	// assert.Equal(t, "UTF-8", helperMinifyString(t, m, "dummy/charset; charset = UTF-8 "), "must return UTF-8 for ' dummy/charset; charset = UTF-8 '")
+	// assert.Equal(t, "type/sub", helperMinifyString(t, m, "dummy/params;type=type;sub=sub"), "must return type/sub for dummy/params;type=type;sub=sub")
 }
 
 func TestHelperProcess(*testing.T) {
@@ -157,7 +157,7 @@ func TestHelperProcess(*testing.T) {
 
 func ExampleMinify_Custom() {
 	m := New()
-	m.AddFunc("text/plain", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
+	m.AddFunc("text/plain", func(m *M, w io.Writer, r io.Reader, params map[int]string) error {
 		// remove all newlines and spaces
 		rb := bufio.NewReader(r)
 		for {

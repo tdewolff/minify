@@ -2,7 +2,6 @@ package js // import "github.com/tdewolff/minify/js"
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"strconv"
 	"testing"
@@ -72,6 +71,6 @@ func ExampleMinify() {
 	m.AddFunc("text/javascript", Minify)
 
 	if err := m.Minify(os.Stdout, os.Stdin, "text/javascript", nil); err != nil {
-		fmt.Println("minify.Minify:", err)
+		panic(err)
 	}
 }
