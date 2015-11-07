@@ -7,6 +7,8 @@
 To use the old API, import the package from `gopkg.in/tdewolff/minify.v1` instead
 
 If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then:
+ - `minify.Bytes(m, ...)` &#8594; `m.Bytes(...)`
+ - `minify.String(m, ...)` &#8594; `m.String(...)`
  - `m.AddFuncRegexp(...)` &#8594; `m.AddFuncPattern(...)`
  - `m.AddCmdRegexp(...)` &#8594; `m.AddCmdPattern(...)`
  - `html.Minify(m, "text/html", w, r)` &#8594; `html.Minify(m, w, r, nil)` also for `css`, `js`, ...
@@ -15,7 +17,7 @@ If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, 
 
 Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3, JS, JSON, SVG and XML minifiers and provides an interface to implement any minifier. Minification is the process of removing bytes from a file (such as whitespace) without changing its output and therefore speeding up transmission over the internet. The implemented minifiers are high performance and streaming (which implies O(n)).
 
-It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...). It is possible to pass parameters through the mediatype to specify the charset for example.
+It associates minification functions with mimetypes, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mimetype using an external command (like the ClosureCompiler, UglifyCSS, ...). It is possible to pass parameters through the mediatype to specify the charset for example.
 
 Bottleneck for minification is mainly io and can be significantly sped up by having the file loaded into memory and providing a `Bytes() []byte` function like `bytes.Buffer` does.
 
