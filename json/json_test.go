@@ -55,7 +55,7 @@ func ExampleMinify() {
 	m := minify.New()
 	m.AddFuncPattern(regexp.MustCompile("[/+]json$"), Minify)
 
-	if err := m.Minify(os.Stdout, os.Stdin, "application/json", nil); err != nil {
+	if err := m.Minify("application/json", os.Stdout, os.Stdin); err != nil {
 		panic(err)
 	}
 }

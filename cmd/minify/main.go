@@ -21,13 +21,14 @@ import (
 )
 
 var extMime = map[string]string{
-	"css":  "text/css",
-	"htm":  "text/html",
-	"html": "text/html",
-	"js":   "application/javascript",
-	"json": "application/json",
-	"svg":  "image/svg+xml",
-	"xml":  "text/xml",
+	"css":        "text/css",
+	"css-inline": "text/css;inline=1",
+	"htm":        "text/html",
+	"html":       "text/html",
+	"js":         "application/javascript",
+	"json":       "application/json",
+	"svg":        "image/svg+xml",
+	"xml":        "text/xml",
 }
 
 func main() {
@@ -42,7 +43,7 @@ func main() {
 		flag.PrintDefaults()
 	}
 	flag.StringVar(&output, "o", "", "Output file (stdout when empty)")
-	flag.StringVar(&filetype, "type", "", "Filetype (css, html, js, json, svg or xml), optional for input files")
+	flag.StringVar(&filetype, "type", "", "Filetype (css, css-inline, html, js, json, svg or xml), optional for input files")
 	flag.StringVar(&directory, "d", "", "Directory to search for files")
 	flag.BoolVar(&recursive, "r", false, "Recursively minify everything")
 	flag.Parse()
@@ -50,7 +51,7 @@ func main() {
 		input = flag.Arg(0)
 	}
 
-	mimetype := ""
+	mediatype := ""
 	r := io.Reader(os.Stdin)
 	w := io.Writer(os.Stdout)
 	m := minify.New()
@@ -96,9 +97,9 @@ func main() {
 			w = out
 		}
 		if filetype != "" {
-			mimetype, _ = extMime[filetype]
+			mediatype, _ = extMime[filetype]
 		}
-		if err := m.Minify(w, r, mimetype, nil); err != nil {
+		if err := m.Minify(mediatype, w, r); err != nil {
 			if err == minify.ErrNotExist {
 				io.Copy(w, r)
 			} else {

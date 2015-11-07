@@ -74,7 +74,7 @@ func ExampleMinify() {
 	m := minify.New()
 	m.AddFuncPattern(regexp.MustCompile("[/+]xml$"), Minify)
 
-	if err := m.Minify(os.Stdout, os.Stdin, "text/xml", nil); err != nil {
+	if err := m.Minify("text/xml", os.Stdout, os.Stdin); err != nil {
 		panic(err)
 	}
 }

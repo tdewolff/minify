@@ -58,7 +58,7 @@ func ExampleMinify() {
 	m.AddFunc("image/svg+xml", Minify)
 	m.AddFunc("text/css", css.Minify)
 
-	if err := m.Minify(os.Stdout, os.Stdin, "image/svg+xml", nil); err != nil {
+	if err := m.Minify("image/svg+xml", os.Stdout, os.Stdin); err != nil {
 		panic(err)
 	}
 }

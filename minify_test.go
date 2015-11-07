@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"mime"
 	"net/http"
 	"os"
 	"os/exec"
@@ -29,10 +28,8 @@ func helperCommand(t *testing.T, s ...string) *exec.Cmd {
 }
 
 func helperMinifyString(t *testing.T, m *M, mediatype string) string {
-	mimetype, _, err := mime.ParseMediaType(mediatype)
-	assert.Nil(t, err, "mime.ParseMediaType must not return error for '"+mediatype+"'")
-	s, err := m.String("", mimetype, nil)
-	assert.Nil(t, err, "minifier must not return error for '"+mimetype+"'")
+	s, err := m.String(mediatype, "")
+	assert.Nil(t, err, "minifier must not return error for '"+mediatype+"'")
 	return s
 }
 
@@ -42,55 +39,55 @@ var m *M
 
 func init() {
 	m = New()
-	m.AddFunc("dummy/copy", func(m *M, w io.Writer, r io.Reader, params interface{}) error {
+	m.AddFunc("dummy/copy", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		io.Copy(w, r)
 		return nil
 	})
-	m.AddFunc("dummy/nil", func(m *M, w io.Writer, r io.Reader, params interface{}) error {
+	m.AddFunc("dummy/nil", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		return nil
 	})
-	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, params interface{}) error {
+	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		return errDummy
 	})
-	// m.AddFunc("dummy/charset", func(m *M, w io.Writer, r io.Reader, params interface{}) error {
-	// 	w.Write([]byte(params["charset"]))
-	// 	return nil
-	// })
-	// m.AddFunc("dummy/params", func(m *M, w io.Writer, r io.Reader, params interface{}) error {
-	// 	return m.Minify(w, r, params["type"]+"/"+params["sub"], nil)
-	// })
-	m.AddFunc("type/sub", func(m *M, w io.Writer, r io.Reader, params interface{}) error {
+	m.AddFunc("dummy/charset", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
+		w.Write([]byte(params["charset"]))
+		return nil
+	})
+	m.AddFunc("dummy/params", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
+		return m.Minify(params["type"]+"/"+params["sub"], w, r)
+	})
+	m.AddFunc("type/sub", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		w.Write([]byte("type/sub"))
 		return nil
 	})
-	m.AddFuncPattern(regexp.MustCompile("^type/.+$"), func(m *M, w io.Writer, r io.Reader, params interface{}) error {
+	m.AddFuncPattern(regexp.MustCompile("^type/.+$"), func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		w.Write([]byte("type/*"))
 		return nil
 	})
-	m.AddFuncPattern(regexp.MustCompile("^.+/.+$"), func(m *M, w io.Writer, r io.Reader, params interface{}) error {
+	m.AddFuncPattern(regexp.MustCompile("^.+/.+$"), func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		w.Write([]byte("*/*"))
 		return nil
 	})
 }
 
 func TestMinify(t *testing.T) {
-	assert.Equal(t, ErrNotExist, m.Minify(nil, nil, "?", nil), "must return ErrNotExist when minifier doesn't exist")
-	assert.Nil(t, m.Minify(nil, nil, "dummy/nil", nil), "must return nil for dummy/nil")
-	assert.Equal(t, errDummy, m.Minify(nil, nil, "dummy/err", nil), "must return errDummy for dummy/err")
+	assert.Equal(t, ErrNotExist, m.Minify("?", nil, nil), "must return ErrNotExist when minifier doesn't exist")
+	assert.Nil(t, m.Minify("dummy/nil", nil, nil), "must return nil for dummy/nil")
+	assert.Equal(t, errDummy, m.Minify("dummy/err", nil, nil), "must return errDummy for dummy/err")
 
 	b := []byte("test")
-	out, err := m.Bytes(b, "dummy/nil", nil)
+	out, err := m.Bytes("dummy/nil", b)
 	assert.Nil(t, err, "must not return error for dummy/nil")
 	assert.Equal(t, []byte{}, out, "must return empty byte array for dummy/nil")
-	out, err = m.Bytes(b, "?", nil)
+	out, err = m.Bytes("?", b)
 	assert.Equal(t, ErrNotExist, err, "must return ErrNotExist when minifier doesn't exist")
 	assert.Equal(t, b, out, "must return input byte array when minifier doesn't exist")
 
 	s := "test"
-	out2, err := m.String(s, "dummy/nil", nil)
+	out2, err := m.String("dummy/nil", s)
 	assert.Nil(t, err, "must not return error for dummy/nil")
 	assert.Equal(t, "", out2, "must return empty string for dummy/nil")
-	out2, err = m.String(s, "?", nil)
+	out2, err = m.String("?", s)
 	assert.Equal(t, ErrNotExist, err, "must return ErrNotExist when minifier doesn't exist")
 	assert.Equal(t, s, out2, "must return input string when minifier doesn't exist")
 }
@@ -99,19 +96,19 @@ func TestAdd(t *testing.T) {
 	m := New()
 	w := &bytes.Buffer{}
 	r := bytes.NewBufferString("test")
-	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, params interface{}) error {
+	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		return errDummy
 	})
-	assert.Equal(t, errDummy, m.Minify(nil, nil, "dummy/err", nil), "must return errDummy for dummy/err")
+	assert.Equal(t, errDummy, m.Minify("dummy/err", nil, nil), "must return errDummy for dummy/err")
 
 	m.AddCmd("dummy/copy", helperCommand(t, "dummy/copy"))
 	m.AddCmd("dummy/err", helperCommand(t, "dummy/err"))
 	m.AddCmdPattern(regexp.MustCompile("err$"), helperCommand(t, "werr"))
-	assert.Nil(t, m.Minify(w, r, "dummy/copy", nil), "must return nil for dummy/copy command")
+	assert.Nil(t, m.Minify("dummy/copy", w, r), "must return nil for dummy/copy command")
 	assert.Equal(t, "test", w.String(), "must return input string for dummy/copy command")
-	assert.Equal(t, "exit status 1", m.Minify(w, r, "dummy/err", nil).Error(), "must return proper exit status when command encounters error")
-	assert.Equal(t, "exit status 2", m.Minify(w, r, "werr", nil).Error(), "must return proper exit status when command encounters error")
-	assert.Equal(t, "exit status 2", m.Minify(w, r, "stderr", nil).Error(), "must return proper exit status when command encounters error")
+	assert.Equal(t, "exit status 1", m.Minify("dummy/err", w, r).Error(), "must return proper exit status when command encounters error")
+	assert.Equal(t, "exit status 2", m.Minify("werr", w, r).Error(), "must return proper exit status when command encounters error")
+	assert.Equal(t, "exit status 2", m.Minify("stderr", w, r).Error(), "must return proper exit status when command encounters error")
 }
 
 func TestWildcard(t *testing.T) {
@@ -120,9 +117,9 @@ func TestWildcard(t *testing.T) {
 	assert.Equal(t, "*/*", helperMinifyString(t, m, "*/*"), "must return */* for */*")
 	assert.Equal(t, "type/*", helperMinifyString(t, m, "type/sub2"), "must return type/* for type/sub2")
 	assert.Equal(t, "*/*", helperMinifyString(t, m, "type2/sub"), "must return */* for type2/sub")
-	// assert.Equal(t, "UTF-8", helperMinifyString(t, m, "dummy/charset;charset=UTF-8"), "must return UTF-8 for dummy/charset;charset=UTF-8")
-	// assert.Equal(t, "UTF-8", helperMinifyString(t, m, "dummy/charset; charset = UTF-8 "), "must return UTF-8 for ' dummy/charset; charset = UTF-8 '")
-	// assert.Equal(t, "type/sub", helperMinifyString(t, m, "dummy/params;type=type;sub=sub"), "must return type/sub for dummy/params;type=type;sub=sub")
+	assert.Equal(t, "UTF-8", helperMinifyString(t, m, "dummy/charset;charset=UTF-8"), "must return UTF-8 for dummy/charset;charset=UTF-8")
+	assert.Equal(t, "UTF-8", helperMinifyString(t, m, "dummy/charset; charset = UTF-8 "), "must return UTF-8 for ' dummy/charset; charset = UTF-8 '")
+	assert.Equal(t, "type/sub", helperMinifyString(t, m, "dummy/params;type=type;sub=sub"), "must return type/sub for dummy/params;type=type;sub=sub")
 }
 
 func TestHelperProcess(*testing.T) {
@@ -157,7 +154,7 @@ func TestHelperProcess(*testing.T) {
 
 func ExampleMinify_Custom() {
 	m := New()
-	m.AddFunc("text/plain", func(m *M, w io.Writer, r io.Reader, params interface{}) error {
+	m.AddFunc("text/plain", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		// remove all newlines and spaces
 		rb := bufio.NewReader(r)
 		for {
@@ -176,7 +173,7 @@ func ExampleMinify_Custom() {
 	})
 
 	in := "Because my coffee was too cold, I heated it in the microwave."
-	out, err := m.String(in, "text/plain", nil)
+	out, err := m.String("text/plain", in)
 	if err != nil {
 		panic(err)
 	}
@@ -190,7 +187,7 @@ func ExampleMinify_Reader() {
 	m := New()
 	// add minfiers
 
-	r := m.Reader(b, "mime/type", nil)
+	r := m.Reader("mime/type", b)
 	if _, err := io.Copy(os.Stdout, r); err != nil {
 		if _, err := io.Copy(os.Stdout, b); err != nil {
 			panic(err)
@@ -202,7 +199,7 @@ func ExampleMinify_Writer() {
 	m := New()
 	// add minfiers
 
-	w := m.Writer(os.Stdout, "mime/type", nil)
+	w := m.Writer("mime/type", os.Stdout)
 	if _, err := w.Write([]byte("input")); err != nil {
 		panic(err)
 	}
@@ -226,7 +223,7 @@ func ExampleMinify_ResponseWriter(res http.ResponseWriter) http.ResponseWriter {
 
 	pr, pw := io.Pipe()
 	go func(w io.Writer) {
-		if err := m.Minify(w, pr, "mime/type", nil); err != nil {
+		if err := m.Minify("mime/type", w, pr); err != nil {
 			panic(err)
 		}
 	}(res)

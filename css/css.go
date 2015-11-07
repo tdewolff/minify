@@ -31,29 +31,20 @@ type cssMinifier struct {
 
 ////////////////////////////////////////////////////////////////
 
-type Params struct {
-	Inline bool
-}
-
 type Minifier struct{}
 
-func Minify(m *minify.M, w io.Writer, r io.Reader, params interface{}) error {
+func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	return (&Minifier{}).Minify(m, w, r, params)
 }
 
 // Minify minifies CSS data, it reads from r and writes to w.
-func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params interface{}) error {
-	p, ok := params.(Params)
-	if params != nil && !ok {
-		return minify.ErrBadParams
-	}
-
+func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+	isInline := params != nil && params["inline"] == "1"
 	c := &cssMinifier{
 		m: m,
 		w: w,
-		p: css.NewParser(r, !p.Inline),
+		p: css.NewParser(r, !isInline),
 	}
-
 	if err := c.minifyGrammar(); err != nil && err != io.EOF {
 		return err
 	}

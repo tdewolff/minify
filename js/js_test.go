@@ -70,7 +70,7 @@ func ExampleMinify() {
 	m := minify.New()
 	m.AddFunc("text/javascript", Minify)
 
-	if err := m.Minify(os.Stdout, os.Stdin, "text/javascript", nil); err != nil {
+	if err := m.Minify("text/javascript", os.Stdout, os.Stdin); err != nil {
 		panic(err)
 	}
 }

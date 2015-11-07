@@ -143,7 +143,7 @@ func TestCSSInline(t *testing.T) {
 	for _, tt := range cssTests {
 		r := bytes.NewBufferString(tt.css)
 		w := &bytes.Buffer{}
-		assert.Nil(t, Minify(m, w, r, Params{Inline: true}), "Minify must not return error in "+tt.css)
+		assert.Nil(t, Minify(m, w, r, map[string]string{"inline": "1"}), "Minify must not return error in "+tt.css)
 		assert.Equal(t, tt.expected, w.String(), "Minify must give expected result in "+tt.css)
 	}
 }
@@ -187,7 +187,7 @@ func ExampleMinify() {
 	m := minify.New()
 	m.AddFunc("text/css", Minify)
 
-	if err := m.Minify(os.Stdout, os.Stdin, "text/css", nil); err != nil {
+	if err := m.Minify("text/css", os.Stdout, os.Stdin); err != nil {
 		panic(err)
 	}
 }

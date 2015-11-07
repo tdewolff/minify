@@ -7,7 +7,6 @@
 To use the old API, import the package from `gopkg.in/tdewolff/minify.v1` instead
 
 If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then:
- - `m.Minify("text/html", w, r)` &#8594; `m.Minify(w, r, "text/html", nil)` or any mimetype
  - `m.AddFuncRegexp(...)` &#8594; `m.AddFuncPattern(...)`
  - `m.AddCmdRegexp(...)` &#8594; `m.AddCmdPattern(...)`
  - `html.Minify(m, "text/html", w, r)` &#8594; `html.Minify(m, w, r, nil)` also for `css`, `js`, ...
@@ -16,7 +15,7 @@ If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, 
 
 Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3, JS, JSON, SVG and XML minifiers and provides an interface to implement any minifier. Minification is the process of removing bytes from a file (such as whitespace) without changing its output and therefore speeding up transmission over the internet. The implemented minifiers are high performance and streaming (which implies O(n)).
 
-It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...). It is possible to pass parameters through the mimetype to specify the charset for example.
+It associates minification functions with mime types, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mime type using an external command (like the ClosureCompiler, UglifyCSS, ...). It is possible to pass parameters through the mediatype to specify the charset for example.
 
 Bottleneck for minification is mainly io and can be significantly sped up by having the file loaded into memory and providing a `Bytes() []byte` function like `bytes.Buffer` does.
 
@@ -249,7 +248,7 @@ import (
 
 ## Usage
 ### New
-Retrieve a minifier struct which holds a map of mimetype &#8594; minifier functions.
+Retrieve a minifier struct which holds a map of mediatype &#8594; minifier functions.
 ``` go
 m := minify.New()
 ```
@@ -266,21 +265,14 @@ m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 ```
 
 ### From reader
-Minify from an `io.Reader` to an `io.Writer` for a specific mimetype.
+Minify from an `io.Reader` to an `io.Writer` for a specific mediatype.
 ``` go
-if err := m.Minify(w, r, mimetype, nil); err != nil {
+if err := m.Minify(mediatype, w, r); err != nil {
 	panic(err)
 }
 ```
 
-Minify from an `io.Reader` to an `io.Writer` for a specific mimetype with mimetype parameters.
-``` go
-if err := m.Minify(w, r, mimetype, map[string]string{"charset": "UTF-8"}); err != nil {
-	panic(err)
-}
-```
-
-Minify HTML, CSS or JS directly from an `io.Reader` to an `io.Writer`. The passed mimetype is not required for these functions, but are filled out for clarity.
+Minify HTML, CSS or JS directly from an `io.Reader` to an `io.Writer`. The passed mediatype is not required for these functions, but are filled out for clarity.
 ``` go
 if err := css.Minify(m, w, r, params); err != nil {
 	panic(err)
@@ -308,36 +300,36 @@ if err := xml.Minify(m, w, r, params); err != nil {
 ```
 
 ### From bytes
-Minify from and to a `[]byte` for a specific mimetype.
+Minify from and to a `[]byte` for a specific mediatype.
 ``` go
-b, err = m.Bytes(b, mimetype, params)
+b, err = m.Bytes(mediatype, b)
 if err != nil {
 	panic(err)
 }
 ```
 
 ### From string
-Minify from and to a `string` for a specific mimetype.
+Minify from and to a `string` for a specific mediatype.
 ``` go
-s, err = m.String(s, mimetype, params)
+s, err = m.String(mediatype, s)
 if err != nil {
 	panic(err)
 }
 ```
 
 ### From reader
-Get a minifying reader for a specific mimetype.
+Get a minifying reader for a specific mediatype.
 ``` go
-mr := m.Reader(r, mimetype, params)
+mr := m.Reader(mediatype, r)
 if _, err := mr.Read(b); err != nil {
 	panic(err)
 }
 ```
 
 ### From writer
-Get a minifying writer for a specific mimetype. Must be explicitly closed because it uses an `io.Pipe` underneath.
+Get a minifying writer for a specific mediatype. Must be explicitly closed because it uses an `io.Pipe` underneath.
 ``` go
-mw := m.Writer(w, mimetype, params)
+mw := m.Writer(mediatype, w)
 mw.Write([]byte("input"))
 if err := mw.Close(); err != nil {
 	panic(err)
@@ -345,7 +337,7 @@ if err := mw.Close(); err != nil {
 ```
 
 ### Custom minifier
-Add a minifier for a specific mimetype.
+Add a minifier for a specific mediatype.
 ``` go
 type CustomMinifier struct {
 	KeepLineBreaks bool
@@ -356,13 +348,13 @@ func (c *CustomMinifier) Minify(m *minify.M, w io.Writer, r io.Reader, params ma
 	return nil
 }
 
-m.Add(mimetype, &CustomMinifier{KeepLineBreaks: true})
+m.Add(mediatype, &CustomMinifier{KeepLineBreaks: true})
 m.AddPattern(regexp.MustCompile("/x-custom$"), &CustomMinifier{KeepLineBreaks: true})
 ```
 
-Add a minify function for a specific mimetype.
+Add a minify function for a specific mediatype.
 ``` go
-m.AddFunc(mimetype, func(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+m.AddFunc(mediatype, func(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	// ...
 	return nil
 })
@@ -372,9 +364,9 @@ m.AddFuncPattern(regexp.MustCompile("/x-custom$"), func(m *minify.M, w io.Writer
 })
 ```
 
-Add a command `cmd` with arguments `args` for a specific mimetype.
+Add a command `cmd` with arguments `args` for a specific mediatype.
 ``` go
-m.AddCmd(mimetype, exec.Command(cmd, args...))
+m.AddCmd(mediatype, exec.Command(cmd, args...))
 m.AddCmdPattern(regexp.MustCompile("/x-custom$"), exec.Command(cmd, args...))
 ```
 
@@ -415,7 +407,7 @@ func main() {
 	// Or use the following for better minification of JS but lower speed:
 	// m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
 
-	if err := m.Minify(os.Stdout, os.Stdin, "text/html", nil); err != nil {
+	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
 		panic(err)
 	}
 }
@@ -438,7 +430,7 @@ import (
 
 func main() {
 	m := minify.New()
-	m.AddFunc("text/plain", func(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+	m.AddFunc("text/plain", func(m *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 		// remove newlines and spaces
 		rb := bufio.NewReader(r)
 		for {
@@ -457,7 +449,7 @@ func main() {
 	})
 
 	in := "Because my coffee was too cold, I heated it in the microwave."
-	out, err := m.String(in, "text/plain", nil)
+	out, err := m.String("text/plain", in)
 	if err != nil {
 		panic(err)
 	}
@@ -479,11 +471,11 @@ func (m MinifyResponseWriter) Write(b []byte) (int, error) {
 }
 
 // MinifyResponseWriter must be closed explicitly by calling site.
-func MinifyFilter(res http.ResponseWriter, mimetype string) MinifyResponseWriter {
+func MinifyFilter(mediatype string, res http.ResponseWriter) MinifyResponseWriter {
 	m := minify.New()
 	// add minfiers
 
-	mw := m.Writer(res, mimetype, nil)
+	mw := m.Writer(mediatype, res)
 	return MinifyResponseWriter{res, mw}
 }
 ```
