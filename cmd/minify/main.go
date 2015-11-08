@@ -21,13 +21,13 @@ import (
 )
 
 var extMime = map[string]string{
-	".css":  "text/css",
-	".htm":  "text/html",
-	".html": "text/html",
-	".js":   "application/javascript",
-	".json": "application/json",
-	".svg":  "image/svg+xml",
-	".xml":  "text/xml",
+	"css":  "text/css",
+	"htm":  "text/html",
+	"html": "text/html",
+	"js":   "application/javascript",
+	"json": "application/json",
+	"svg":  "image/svg+xml",
+	"xml":  "text/xml",
 }
 
 func main() {
@@ -72,7 +72,7 @@ func main() {
 		if input != "" {
 			in, err := os.Open(input)
 			if err != nil {
-				fmt.Println("Error:", err)
+				fmt.Fprintln(os.Stderr, "Error:", err)
 				os.Exit(1)
 			}
 			defer in.Close()
@@ -89,7 +89,7 @@ func main() {
 		if output != "" {
 			out, err := os.Create(output)
 			if err != nil {
-				fmt.Println("Error:", err)
+				fmt.Fprintln(os.Stderr, "Error:", err)
 				os.Exit(1)
 			}
 			defer out.Close()
@@ -102,7 +102,7 @@ func main() {
 			if err == minify.ErrNotExist {
 				io.Copy(w, r)
 			} else {
-				fmt.Println("Error:", err)
+				fmt.Fprintln(os.Stderr, "Error:", err)
 				os.Exit(1)
 			}
 		}
