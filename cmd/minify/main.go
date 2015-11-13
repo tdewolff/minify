@@ -73,7 +73,7 @@ func main() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [input]\n\nOptions:\n", os.Args[0])
 		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\nInput:\n  Files or directories, optional when using piping")
+		fmt.Fprintf(os.Stderr, "\nInput:\n  Files or directories, optional when using piping\n")
 	}
 	flag.StringVarP(&output, "output", "o", "", "Output (concatenated) file (stdout when empty) or directory")
 	flag.StringVar(&mimetype, "mime", "", "Mimetype (text/css, application/javascript, ...), optional for input filenames, has precendence over -type")
