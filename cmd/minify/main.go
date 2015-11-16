@@ -14,7 +14,6 @@ import (
 	"time"
 
 	flag "github.com/ogier/pflag"
-	"github.com/tdewolff/buffer"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/css"
 	"github.com/tdewolff/minify/html"
@@ -204,24 +203,20 @@ func main() {
 				}
 			}
 
+			originalInput := input
+			if input == output {
+				input += ".bak"
+				if err := os.Rename(output, input); err != nil {
+					fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
+					return
+				}
+			}
+
 			fr, ok := openInputFile(input)
 			if !ok {
 				return
 			}
-			var r *CountingReader
-			if fr == os.Stdin {
-				r = &CountingReader{fr, 0}
-			} else if input == output {
-				b, err := ioutil.ReadAll(fr)
-				if err != nil {
-					fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
-					return
-				}
-				fr.Close()
-				r = &CountingReader{buffer.NewReader(b), 0}
-			} else {
-				r = &CountingReader{bufio.NewReader(fr), 0}
-			}
+			r := &CountingReader{fr, 0}
 
 			fw, ok := openOutputFile(output)
 			if !ok {
@@ -236,17 +231,14 @@ func main() {
 			}
 
 			t := time.Now()
-			if err := m.Minify(mimetype, w, r); err != nil {
-				if err == minify.ErrNotExist {
-					io.Copy(w, r)
-				} else {
-					fmt.Fprintln(os.Stderr, "ERROR: cannot minify input "+input+": "+err.Error())
-					success = false
-				}
+			err := m.Minify(mimetype, w, r)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "ERROR: cannot minify input "+originalInput+": "+err.Error())
+				success = false
 			}
 			if verbose {
 				d := time.Since(t)
-				fmt.Fprintf(os.Stderr, "INFO:  %v to %v\n  time:  %v\n  size:  %vB\n  ratio: %.1f%%\n  speed: %.1fMB/s\n", input, output, d, w.N, float64(w.N)/float64(r.N)*100, float64(r.N)/d.Seconds()/1000000)
+				fmt.Fprintf(os.Stderr, "INFO:  %v to %v\n  time:  %v\n  size:  %vB\n  ratio: %.1f%%\n  speed: %.1fMB/s\n", originalInput, output, d, w.N, float64(w.N)/float64(r.N)*100, float64(r.N)/d.Seconds()/1000000)
 			}
 
 			fr.Close()
@@ -254,6 +246,20 @@ func main() {
 				bw.Flush()
 			}
 			fw.Close()
+
+			if input == output+".bak" {
+				if err == nil {
+					if err = os.Remove(input); err != nil {
+						fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
+					}
+				} else {
+					if err = os.Remove(output); err != nil {
+						fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
+					} else if err = os.Rename(input, output); err != nil {
+						fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
+					}
+				}
+			}
 		}(output, input)
 	}
 	wg.Wait()
