@@ -20,6 +20,8 @@ type TokenBuffer struct {
 
 	buf []Token
 	pos int
+
+	prevN int
 }
 
 // NewTokenBuffer returns a new TokenBuffer.
@@ -81,14 +83,15 @@ func (z *TokenBuffer) Peek(pos int) *Token {
 
 // Shift returns the first element and advances position.
 func (z *TokenBuffer) Shift() *Token {
+	z.l.Free(z.prevN)
 	if z.pos >= len(z.buf) {
 		t := &z.buf[:1][0]
 		z.read(t)
-		z.l.Free(t.n)
+		z.prevN = t.n
 		return t
 	}
 	t := &z.buf[z.pos]
-	z.l.Free(t.n)
 	z.pos++
+	z.prevN = t.n
 	return t
 }
