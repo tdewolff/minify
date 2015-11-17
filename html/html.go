@@ -17,6 +17,11 @@ var (
 	isBytes    = []byte("=")
 	spaceBytes = []byte(" ")
 	endBytes   = []byte("</")
+	jsBytes    = []byte("text/javascript")
+	cssBytes   = []byte("text/css")
+	htmlBytes  = []byte("text/html")
+	svgBytes   = []byte("image/svg+xml")
+	mathBytes  = []byte("application/mathml+xml")
 )
 
 const maxAttrLookup = 4
@@ -25,6 +30,7 @@ const maxAttrLookup = 4
 
 type Minifier struct {
 	DefaultAttrVals bool
+	Whitespace      bool
 }
 
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
@@ -37,9 +43,11 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	var rawTagTraits traits
 	var rawTagMediatype []byte
 	omitSpace := true // if true the next leading space is omitted
-	defaultScriptType := "text/javascript"
-	defaultStyleType := "text/css"
-	defaultInlineStyleType := "text/css;inline=1"
+	defaultScriptType := []byte("text/javascript")
+	defaultScriptParams := map[string]string(nil)
+	defaultStyleType := []byte("text/css")
+	defaultStyleParams := map[string]string(nil)
+	defaultInlineStyleParams := map[string]string{"inline": "1"}
 
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
@@ -76,25 +84,28 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			// CSS and JS minifiers for inline code
 			if rawTagHash != 0 {
 				if rawTagHash == html.Style || rawTagHash == html.Script || rawTagHash == html.Iframe || rawTagHash == html.Svg || rawTagHash == html.Math {
-					var mimetype string
+					var mimetype []byte
+					var params map[string]string
 					if rawTagHash == html.Iframe {
-						mimetype = "text/html"
+						mimetype = htmlBytes
 					} else if rawTagHash == html.Svg {
-						mimetype = "image/svg+xml"
+						mimetype = svgBytes
 					} else if rawTagHash == html.Math {
-						mimetype = "application/mathml+xml"
+						mimetype = mathBytes
 					} else if len(rawTagMediatype) > 0 {
-						mimetype = string(rawTagMediatype)
+						mimetype, params = parse.Mediatype(rawTagMediatype)
 					} else if rawTagHash == html.Script {
 						mimetype = defaultScriptType
+						params = defaultScriptParams
 					} else if rawTagHash == html.Style {
 						mimetype = defaultStyleType
+						params = defaultStyleParams
 					}
 					// ignore CDATA
 					if trimmedData := parse.Trim(t.Data, parse.IsWhitespace); len(trimmedData) > 12 && bytes.Equal(trimmedData[:9], []byte("<![CDATA[")) && bytes.Equal(trimmedData[len(trimmedData)-3:], []byte("]]>")) {
 						t.Data = trimmedData[9 : len(trimmedData)-3]
 					}
-					if err := m.Minify(mimetype, w, buffer.NewReader(t.Data)); err != nil {
+					if err := m.MinifyMimetype(mimetype, w, buffer.NewReader(t.Data), params); err != nil {
 						if _, err := w.Write(t.Data); err != nil {
 							return err
 						}
@@ -108,43 +119,45 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			} else {
 				t.Data = parse.ReplaceMultipleWhitespace(t.Data)
 
-				// whitespace removal; trim left
-				if omitSpace && t.Data[0] == ' ' {
-					t.Data = t.Data[1:]
-				}
+				if !o.Whitespace {
+					// whitespace removal; trim left
+					if omitSpace && t.Data[0] == ' ' {
+						t.Data = t.Data[1:]
+					}
 
-				// whitespace removal; trim right
-				omitSpace = false
-				if len(t.Data) == 0 {
-					omitSpace = true
-				} else if t.Data[len(t.Data)-1] == ' ' {
-					omitSpace = true
-					i := 0
-					for {
-						next := tb.Peek(i)
-						// trim if EOF, text token with leading whitespace or block token
-						if next.TokenType == html.ErrorToken {
-							t.Data = t.Data[:len(t.Data)-1]
-							omitSpace = false
-							break
-						} else if next.TokenType == html.TextToken {
-							// remove if the text token starts with a whitespace
-							if len(next.Data) > 0 && parse.IsWhitespace(next.Data[0]) {
-								t.Data = t.Data[:len(t.Data)-1]
-								omitSpace = false
-							}
-							break
-						} else if next.TokenType == html.StartTagToken || next.TokenType == html.EndTagToken {
-							// remove when followed up by a block tag
-							if next.Traits&nonPhrasingTag != 0 {
+					// whitespace removal; trim right
+					omitSpace = false
+					if len(t.Data) == 0 {
+						omitSpace = true
+					} else if t.Data[len(t.Data)-1] == ' ' {
+						omitSpace = true
+						i := 0
+						for {
+							next := tb.Peek(i)
+							// trim if EOF, text token with leading whitespace or block token
+							if next.TokenType == html.ErrorToken {
 								t.Data = t.Data[:len(t.Data)-1]
 								omitSpace = false
 								break
-							} else if next.TokenType == html.StartTagToken {
+							} else if next.TokenType == html.TextToken {
+								// remove if the text token starts with a whitespace
+								if len(next.Data) > 0 && parse.IsWhitespace(next.Data[0]) {
+									t.Data = t.Data[:len(t.Data)-1]
+									omitSpace = false
+								}
 								break
+							} else if next.TokenType == html.StartTagToken || next.TokenType == html.EndTagToken {
+								// remove when followed up by a block tag
+								if next.Traits&nonPhrasingTag != 0 {
+									t.Data = t.Data[:len(t.Data)-1]
+									omitSpace = false
+									break
+								} else if next.TokenType == html.StartTagToken {
+									break
+								}
 							}
+							i++
 						}
-						i++
 					}
 				}
 				if _, err := w.Write(t.Data); err != nil {
@@ -227,13 +240,13 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					if href := attrTokenBuffer[3]; href != nil {
 						if len(href.AttrVal) > 5 && parse.EqualFold(href.AttrVal[:4], []byte{'h', 't', 't', 'p'}) {
 							if href.AttrVal[4] == ':' {
-								if m.URL.Scheme == "http" {
+								if m.URL != nil && m.URL.Scheme == "http" {
 									href.AttrVal = href.AttrVal[5:]
 								} else {
 									parse.ToLower(href.AttrVal[:4])
 								}
 							} else if (href.AttrVal[4] == 's' || href.AttrVal[4] == 'S') && href.AttrVal[5] == ':' {
-								if m.URL.Scheme == "https" {
+								if m.URL != nil && m.URL.Scheme == "https" {
 									href.AttrVal = href.AttrVal[6:]
 								} else {
 									parse.ToLower(href.AttrVal[:5])
@@ -252,10 +265,15 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 								content.Hash = html.Charset
 								content.AttrVal = []byte("utf-8")
 							} else if parse.EqualFold(httpEquiv.AttrVal, []byte("content-style-type")) {
-								defaultStyleType = string(content.AttrVal)
-								defaultInlineStyleType = defaultStyleType + ";inline=1"
+								defaultStyleType, defaultStyleParams = parse.Mediatype(content.AttrVal)
+								if defaultStyleParams != nil {
+									defaultInlineStyleParams = defaultStyleParams
+									defaultInlineStyleParams["inline"] = "1"
+								} else {
+									defaultInlineStyleParams = map[string]string{"inline": "1"}
+								}
 							} else if parse.EqualFold(httpEquiv.AttrVal, []byte("content-script-type")) {
-								defaultScriptType = string(content.AttrVal)
+								defaultScriptType, defaultScriptParams = parse.Mediatype(content.AttrVal)
 							}
 						}
 						if name := attrTokenBuffer[3]; name != nil {
@@ -331,7 +349,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					// CSS and JS minifiers for attribute inline code
 					if attr.Hash == html.Style {
 						attrMinifyBuffer.Reset()
-						if m.Minify(defaultInlineStyleType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
+						if m.MinifyMimetype(defaultStyleType, attrMinifyBuffer, buffer.NewReader(val), defaultInlineStyleParams) == nil {
 							val = attrMinifyBuffer.Bytes()
 						}
 						if len(val) == 0 {
@@ -342,7 +360,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							val = val[11:]
 						}
 						attrMinifyBuffer.Reset()
-						if m.Minify(defaultScriptType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
+						if m.MinifyMimetype(defaultScriptType, attrMinifyBuffer, buffer.NewReader(val), defaultScriptParams) == nil {
 							val = attrMinifyBuffer.Bytes()
 						}
 						if len(val) == 0 {
@@ -352,13 +370,13 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						if t.Hash != html.A {
 							if parse.EqualFold(val[:4], []byte{'h', 't', 't', 'p'}) {
 								if val[4] == ':' {
-									if m.URL.Scheme == "http" {
+									if m.URL != nil && m.URL.Scheme == "http" {
 										val = val[5:]
 									} else {
 										parse.ToLower(val[:4])
 									}
 								} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
-									if m.URL.Scheme == "https" {
+									if m.URL != nil && m.URL.Scheme == "https" {
 										val = val[6:]
 									} else {
 										parse.ToLower(val[:5])

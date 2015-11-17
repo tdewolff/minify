@@ -4,12 +4,12 @@ package minify // import "github.com/tdewolff/minify"
 import (
 	"errors"
 	"io"
-	"mime"
 	"net/url"
 	"os/exec"
 	"regexp"
 
 	"github.com/tdewolff/buffer"
+	"github.com/tdewolff/parse"
 )
 
 // ErrNotExist is returned when no minifier exists for a given mimetype.
@@ -106,24 +106,17 @@ func (m *M) AddCmdRegexp(pattern *regexp.Regexp, cmd *exec.Cmd) {
 // An error is returned when no such mimetype exists (ErrNotExist) or when an error occurred in the minifier function.
 // Mediatype may take the form of 'text/plain', 'text/*', '*/*' or 'text/plain; charset=UTF-8; version=2.0'.
 func (m *M) Minify(mediatype string, w io.Writer, r io.Reader) error {
-	mimetype := mediatype
-	var params map[string]string
-	for i := 3; i < len(mediatype); i++ { // mimetype is at least three characters long
-		if mediatype[i] == ';' {
-			var err error
-			if mimetype, params, err = mime.ParseMediaType(mediatype); err != nil {
-				return err
-			}
-			break
-		}
-	}
+	mimetype, params := parse.Mediatype([]byte(mediatype))
+	return m.MinifyMimetype(mimetype, w, r, params)
+}
 
+func (m *M) MinifyMimetype(mimetype []byte, w io.Writer, r io.Reader, params map[string]string) error {
 	err := ErrNotExist
-	if minifier, ok := m.literal[mimetype]; ok {
+	if minifier, ok := m.literal[string(mimetype)]; ok { // string conversion is optimized away
 		err = minifier.Minify(m, w, r, params)
 	} else {
 		for _, minifier := range m.pattern {
-			if minifier.pattern.MatchString(mimetype) {
+			if minifier.pattern.Match(mimetype) {
 				err = minifier.Minify(m, w, r, params)
 				break
 			}
