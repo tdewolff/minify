@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"regexp"
 	"strconv"
@@ -105,15 +106,6 @@ func TestHTML(t *testing.T) {
 		{`<a id="abc" name="abc">y</a>`, `<a id=abc>y</a>`},
 		{`<a id="" value="">y</a>`, `<a value>y</a>`},
 
-		// protocol
-		// {`<span href="http://test"></span>`, `<span href=//test></span>`},
-		// {`<span href="HtTpS://test"></span>`, `<span href=//test></span>`},
-		// {`<a href="   http://example.com  ">x</a>`, `<a href=//example.com>x</a>`},
-		// {`<link rel="stylesheet" type="text/css" href="http://example.com">`, `<link rel=stylesheet href=//example.com>`},
-		// {`<!doctype html> <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"> <head profile="http://dublincore.org/documents/dcq-html/"> <!-- Barlesque 2.75.0 --> <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`,
-		// 	`<!doctype html><html xmlns=//www.w3.org/1999/xhtml xml:lang=en><head profile=//dublincore.org/documents/dcq-html/><meta charset=utf-8>`},
-		// {`<svg xmlns="http://www.w3.org/2000/svg"><path d="x"/></svg>`, `<svg xmlns=//www.w3.org/2000/svg><path d="x"/></svg>`},
-
 		// go-fuzz
 		{`<meta e t n content=ful><a b`, `<meta e t n content=ful><a b>`},
 		{`<img alt=a'b="">`, `<img alt='a&#39;b=""'>`},
@@ -137,25 +129,30 @@ func TestHTML(t *testing.T) {
 	}
 }
 
-// func TestHTMLURL(t *testing.T) {
-// 	var htmlTests = []struct {
-// 		html     string
-// 		expected string
-// 	}{
-// 		{`<a href=http://example.com/>link</a>`, `<a href=http://example.com/>link</a>`},
-// 		{`<a href=https://example.com/>link</a>`, `<a href=//example.com/>link</a>`},
-// 	}
+func TestHTMLURL(t *testing.T) {
+	var htmlTests = []struct {
+		html     string
+		expected string
+	}{
+		{`<a href=http://example.com/>link</a>`, `<a href=//example.com/>link</a>`},
+		{`<a href=https://example.com/>link</a>`, `<a href=https://example.com/>link</a>`},
+		{`<a href="   http://example.com  ">x</a>`, `<a href=//example.com>x</a>`},
+		{`<link rel="stylesheet" type="text/css" href="http://example.com">`, `<link rel=stylesheet href=//example.com>`},
+		{`<!doctype html> <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"> <head profile="http://dublincore.org/documents/dcq-html/"> <!-- Barlesque 2.75.0 --> <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`,
+			`<!doctype html><html xmlns=//www.w3.org/1999/xhtml xml:lang=en><head profile=//dublincore.org/documents/dcq-html/><meta charset=utf-8>`},
+		{`<svg xmlns="http://www.w3.org/2000/svg"><path d="x"/></svg>`, `<svg xmlns=//www.w3.org/2000/svg><path d="x"/></svg>`},
+	}
 
-// 	m := minify.New()
-// 	m.AddFunc("text/html", Minify)
-// 	for _, tt := range htmlTests {
-// 		r := bytes.NewBufferString(tt.html)
-// 		w := &bytes.Buffer{}
-// 		u, _ := url.Parse("https://example.com/")
-// 		assert.Nil(t, Minify(m, w, r, Params{URL: u}), "Minify must not return error in "+tt.html)
-// 		assert.Equal(t, tt.expected, w.String(), "Minify must give expected result in "+tt.html)
-// 	}
-// }
+	m := minify.New()
+	m.AddFunc("text/html", Minify)
+	for _, tt := range htmlTests {
+		r := bytes.NewBufferString(tt.html)
+		w := &bytes.Buffer{}
+		m.URL, _ = url.Parse("http://example.com/")
+		assert.Nil(t, Minify(m, w, r, nil), "Minify must not return error in "+tt.html)
+		assert.Equal(t, tt.expected, w.String(), "Minify must give expected result in "+tt.html)
+	}
+}
 
 func TestSpecialTagClosing(t *testing.T) {
 	m := minify.New()
