@@ -12,16 +12,18 @@ import (
 )
 
 var (
-	ltBytes    = []byte("<")
-	gtBytes    = []byte(">")
-	isBytes    = []byte("=")
-	spaceBytes = []byte(" ")
-	endBytes   = []byte("</")
-	jsBytes    = []byte("text/javascript")
-	cssBytes   = []byte("text/css")
-	htmlBytes  = []byte("text/html")
-	svgBytes   = []byte("image/svg+xml")
-	mathBytes  = []byte("application/mathml+xml")
+	ltBytes       = []byte("<")
+	gtBytes       = []byte(">")
+	isBytes       = []byte("=")
+	spaceBytes    = []byte(" ")
+	endBytes      = []byte("</")
+	cdataBytes    = []byte("<![CDATA[")
+	cdataEndBytes = []byte("]]>")
+	jsBytes       = []byte("text/javascript")
+	cssBytes      = []byte("text/css")
+	htmlBytes     = []byte("text/html")
+	svgBytes      = []byte("image/svg+xml")
+	mathBytes     = []byte("application/mathml+xml")
 )
 
 const maxAttrLookup = 4
@@ -102,7 +104,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						params = defaultStyleParams
 					}
 					// ignore CDATA
-					if trimmedData := parse.Trim(t.Data, parse.IsWhitespace); len(trimmedData) > 12 && bytes.Equal(trimmedData[:9], []byte("<![CDATA[")) && bytes.Equal(trimmedData[len(trimmedData)-3:], []byte("]]>")) {
+					if trimmedData := parse.Trim(t.Data, parse.IsWhitespace); len(trimmedData) > 12 && bytes.Equal(trimmedData[:9], cdataBytes) && bytes.Equal(trimmedData[len(trimmedData)-3:], cdataEndBytes) {
 						t.Data = trimmedData[9 : len(trimmedData)-3]
 					}
 					if err := m.MinifyMimetype(mimetype, w, buffer.NewReader(t.Data), params); err != nil {
@@ -118,7 +120,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				}
 			} else {
 				t.Data = parse.ReplaceMultipleWhitespace(t.Data)
-
 				if !o.Whitespace {
 					// whitespace removal; trim left
 					if omitSpace && t.Data[0] == ' ' {
