@@ -198,8 +198,8 @@ func ExampleMinify() {
 	m.AddFunc("text/css", css.Minify)
 	m.AddFunc("text/javascript", js.Minify)
 	m.AddFunc("image/svg+xml", svg.Minify)
-	m.AddFuncPattern(regexp.MustCompile("[/+]json$"), json.Minify)
-	m.AddFuncPattern(regexp.MustCompile("[/+]xml$"), xml.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
 	//u, _ := url.Parse("https://www.example.com/")
 	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {

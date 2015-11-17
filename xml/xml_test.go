@@ -72,7 +72,7 @@ func TestWriterErrors(t *testing.T) {
 
 func ExampleMinify() {
 	m := minify.New()
-	m.AddFuncPattern(regexp.MustCompile("[/+]xml$"), Minify)
+	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), Minify)
 
 	if err := m.Minify("text/xml", os.Stdout, os.Stdin); err != nil {
 		panic(err)

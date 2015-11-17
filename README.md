@@ -9,8 +9,6 @@ To use the old API, import the package from `gopkg.in/tdewolff/minify.v1` instea
 If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then:
  - `minify.Bytes(m, ...)` &#8594; `m.Bytes(...)`
  - `minify.String(m, ...)` &#8594; `m.String(...)`
- - `m.AddFuncRegexp(...)` &#8594; `m.AddFuncPattern(...)`
- - `m.AddCmdRegexp(...)` &#8594; `m.AddCmdPattern(...)`
  - `html.Minify(m, "text/html", w, r)` &#8594; `html.Minify(m, w, r, nil)` also for `css`, `js`, ...
 
 ---

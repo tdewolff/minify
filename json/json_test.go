@@ -53,7 +53,7 @@ func TestWriterErrors(t *testing.T) {
 
 func ExampleMinify() {
 	m := minify.New()
-	m.AddFuncPattern(regexp.MustCompile("[/+]json$"), Minify)
+	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), Minify)
 
 	if err := m.Minify("application/json", os.Stdout, os.Stdin); err != nil {
 		panic(err)

@@ -80,13 +80,13 @@ func (m *M) AddFunc(mimetype string, minifier minifierFunc) {
 	m.literal[mimetype] = minifier
 }
 
-// AddPattern adds a minifier to the mimetype => function map (unsafe for concurrent use).
-func (m *M) AddPattern(pattern *regexp.Regexp, minifier Minifier) {
+// AddRegexp adds a minifier to the mimetype => function map (unsafe for concurrent use).
+func (m *M) AddRegexp(pattern *regexp.Regexp, minifier Minifier) {
 	m.pattern = append(m.pattern, patternMinifier{pattern, minifier})
 }
 
-// AddFuncPattern adds a minify function to the mimetype => function map (unsafe for concurrent use).
-func (m *M) AddFuncPattern(pattern *regexp.Regexp, minifier minifierFunc) {
+// AddFuncRegexp adds a minify function to the mimetype => function map (unsafe for concurrent use).
+func (m *M) AddFuncRegexp(pattern *regexp.Regexp, minifier minifierFunc) {
 	m.pattern = append(m.pattern, patternMinifier{pattern, minifier})
 }
 
@@ -98,7 +98,7 @@ func (m *M) AddCmd(mimetype string, cmd *exec.Cmd) {
 
 // AddCmdRegexp adds a minify function to the mimetype => function map (unsafe for concurrent use) that executes a command to process the minification.
 // It allows the use of external tools like ClosureCompiler, UglifyCSS, etc. for a specific mimetype regular expression.
-func (m *M) AddCmdPattern(pattern *regexp.Regexp, cmd *exec.Cmd) {
+func (m *M) AddCmdRegexp(pattern *regexp.Regexp, cmd *exec.Cmd) {
 	m.pattern = append(m.pattern, patternMinifier{pattern, &cmdMinifier{cmd}})
 }
 

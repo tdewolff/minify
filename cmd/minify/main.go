@@ -171,8 +171,8 @@ func main() {
 	m.AddFunc("text/html", html.Minify)
 	m.AddFunc("application/javascript", js.Minify)
 	m.AddFunc("image/svg+xml", svg.Minify)
-	m.AddFuncPattern(regexp.MustCompile("[/+]json$"), json.Minify)
-	m.AddFuncPattern(regexp.MustCompile("[/+]xml$"), xml.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
 	if len(rawInputs) == 0 && len(inputs) == 0 {
 		inputs = append(inputs, "")

@@ -60,11 +60,11 @@ func init() {
 		w.Write([]byte("type/sub"))
 		return nil
 	})
-	m.AddFuncPattern(regexp.MustCompile("^type/.+$"), func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
+	m.AddFuncRegexp(regexp.MustCompile("^type/.+$"), func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		w.Write([]byte("type/*"))
 		return nil
 	})
-	m.AddFuncPattern(regexp.MustCompile("^.+/.+$"), func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
+	m.AddFuncRegexp(regexp.MustCompile("^.+/.+$"), func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		w.Write([]byte("*/*"))
 		return nil
 	})
@@ -103,7 +103,7 @@ func TestAdd(t *testing.T) {
 
 	m.AddCmd("dummy/copy", helperCommand(t, "dummy/copy"))
 	m.AddCmd("dummy/err", helperCommand(t, "dummy/err"))
-	m.AddCmdPattern(regexp.MustCompile("err$"), helperCommand(t, "werr"))
+	m.AddCmdRegexp(regexp.MustCompile("err$"), helperCommand(t, "werr"))
 	assert.Nil(t, m.Minify("dummy/copy", w, r), "must return nil for dummy/copy command")
 	assert.Equal(t, "test", w.String(), "must return input string for dummy/copy command")
 	assert.Equal(t, "exit status 1", m.Minify("dummy/err", w, r).Error(), "must return proper exit status when command encounters error")
