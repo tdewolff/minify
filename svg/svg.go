@@ -59,7 +59,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 			}
 			return l.Err()
 		case xml.TextToken:
-			t.Data = parse.ReplaceMultipleWhitespace(parse.Trim(t.Data, parse.IsWhitespace))
+			t.Data = parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.Data))
 			if tag == svg.Style && len(t.Data) > 0 {
 				if err := m.Minify(defaultStyleType, w, buffer.NewReader(t.Data)); err != nil {
 					if err == minify.ErrNotExist { // no minifier, write the original
@@ -77,7 +77,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 			if _, err := w.Write(cdataStartBytes); err != nil {
 				return err
 			}
-			t.Data = parse.ReplaceMultipleWhitespace(parse.Trim(t.Data, parse.IsWhitespace))
+			t.Data = parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.Data))
 			if tag == svg.Style && len(t.Data) > 0 {
 				if err := m.Minify(defaultStyleType, w, buffer.NewReader(t.Data)); err != nil {
 					if err == minify.ErrNotExist { // no minifier, write the original
@@ -178,7 +178,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 			if len(t.AttrVal) < 2 {
 				continue
 			}
-			val := parse.ReplaceMultipleWhitespace(parse.Trim(t.AttrVal[1:len(t.AttrVal)-1], parse.IsWhitespace))
+			val := parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.AttrVal[1 : len(t.AttrVal)-1]))
 			if tag == svg.Svg && t.Hash == svg.Version {
 				continue
 			}
