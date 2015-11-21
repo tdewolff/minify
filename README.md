@@ -4,12 +4,13 @@
 
 **WARNING: the API has changed, be aware or continue using the old API in tag v1.1.0**
 
-To use the old API, import the package from `gopkg.in/tdewolff/minify.v1` instead
+To use the old API, import the package from `gopkg.in/tdewolff/minify.v1` instead, also make sure to use `gopkg.in/tdewolff/parse.v1`!
 
 If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then:
  - `minify.Bytes(m, ...)` &#8594; `m.Bytes(...)`
  - `minify.String(m, ...)` &#8594; `m.String(...)`
  - `html.Minify(m, "text/html", w, r)` &#8594; `html.Minify(m, w, r, nil)` also for `css`, `js`, ...
+ - `css.Minify(m, "text/css;inline=1", w, r)` &#8594; `css.Minify(m, w, r, map[string]string{"inline":"1"})`
 
 ---
 
@@ -156,7 +157,7 @@ The CSS minifier will only use safe minifications:
 - lowercase all identifiers except classes, IDs and URLs to enhance gzip compression
 - shorten MS alpha function
 - rewrite data URIs with base64 or ASCII whichever is shorter
-- calls minifier for data URI mimetypes, thus you can compress embedded SVG files if you have that minifier attached
+- calls minifier for data URI mediatypes, thus you can compress embedded SVG files if you have that minifier attached
 
 It does purposely not use the following techniques:
 
@@ -272,7 +273,7 @@ if err := m.Minify(mediatype, w, r); err != nil {
 }
 ```
 
-Minify HTML, CSS or JS directly from an `io.Reader` to an `io.Writer`. The passed mediatype is not required for these functions, but are filled out for clarity.
+Minify HTML, CSS or JS directly from an `io.Reader` to an `io.Writer`. The `params map[string]string` would contain the mediatype parameters, pass `nil` if non-existent.
 ``` go
 if err := css.Minify(m, w, r, params); err != nil {
 	panic(err)
@@ -337,7 +338,7 @@ if err := mw.Close(); err != nil {
 ```
 
 ### Custom minifier
-Add a minifier for a specific mediatype.
+Add a minifier for a specific mimetype.
 ``` go
 type CustomMinifier struct {
 	KeepLineBreaks bool
@@ -348,30 +349,31 @@ func (c *CustomMinifier) Minify(m *minify.M, w io.Writer, r io.Reader, params ma
 	return nil
 }
 
-m.Add(mediatype, &CustomMinifier{KeepLineBreaks: true})
-m.AddPattern(regexp.MustCompile("/x-custom$"), &CustomMinifier{KeepLineBreaks: true})
+m.Add(mimetype, &CustomMinifier{KeepLineBreaks: true})
+// or
+m.AddRegexp(regexp.MustCompile("/x-custom$"), &CustomMinifier{KeepLineBreaks: true})
 ```
 
-Add a minify function for a specific mediatype.
+Add a minify function for a specific mimetype.
 ``` go
-m.AddFunc(mediatype, func(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+m.AddFunc(mimetype, func(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	// ...
 	return nil
 })
-m.AddFuncPattern(regexp.MustCompile("/x-custom$"), func(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+m.AddFuncRegexp(regexp.MustCompile("/x-custom$"), func(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	// ...
 	return nil
 })
 ```
 
-Add a command `cmd` with arguments `args` for a specific mediatype.
+Add a command `cmd` with arguments `args` for a specific mimetype.
 ``` go
-m.AddCmd(mediatype, exec.Command(cmd, args...))
-m.AddCmdPattern(regexp.MustCompile("/x-custom$"), exec.Command(cmd, args...))
+m.AddCmd(mimetype, exec.Command(cmd, args...))
+m.AddCmdRegexp(regexp.MustCompile("/x-custom$"), exec.Command(cmd, args...))
 ```
 
 ### Mediatypes
-Using the `params map[string]string` argument one can pass parameters to the minifier, such as seen in mediatypes (`type/subtype; key1=val2; key2=val2`). Examples are the encoding or charset. Parameters must be explicitly split before calling `Minify`, which can be done using the standard library `mime.ParseMediaType`.
+Using the `params map[string]string` argument one can pass parameters to the minifier such as seen in mediatypes (`type/subtype; key1=val2; key2=val2`). Examples are the encoding or charset of the data. Calling `Minify` will split the mimetype and parameters for the minifiers for you, but `MinifyMimetype` can be used if you already have them split up.
 
 Minifiers can also be added using a regular expression. For example a minifier with `image/.*` will match any image mime.
 
@@ -401,8 +403,8 @@ func main() {
 	m.AddFunc("text/html", html.Minify)
 	m.AddFunc("text/javascript", js.Minify)
 	m.AddFunc("image/svg+xml", svg.Minify)
-	m.AddFuncPattern(regexp.MustCompile("[/+]json$"), json.Minify)
-	m.AddFuncPattern(regexp.MustCompile("[/+]xml$"), xml.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
 	// Or use the following for better minification of JS but lower speed:
 	// m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
