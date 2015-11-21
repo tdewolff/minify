@@ -15,9 +15,6 @@ import (
 // ErrNotExist is returned when no minifier exists for a given mimetype.
 var ErrNotExist = errors.New("minifier does not exist for mimetype")
 
-// ErrBadParams is returned when the minifier receives a wrong type for the params argument.
-var ErrBadParams = errors.New("bad parameters for minifier")
-
 ////////////////////////////////////////////////////////////////
 
 type minifierFunc func(*M, io.Writer, io.Reader, map[string]string) error
