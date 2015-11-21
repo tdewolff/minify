@@ -30,6 +30,7 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 	- [Prologue](#prologue)
 	- [Comparison](#comparison)
 		- [Alternatives](#alternatives)
+	- [Testing](#testing)
 	- [HTML](#html--)
 		- [Beware](#beware)
 	- [CSS](#css--)
@@ -105,6 +106,11 @@ Website | Original | Minified | Ratio | Time<sup>&#42;</sup>
 An alternative library written in Go is [https://github.com/dchest/htmlmin](https://github.com/dchest/htmlmin). It is simpler but slower. Also [https://github.com/omeid/jsmin](https://github.com/omeid/jsmin) contains a port of JSMin, just like this JS minifier, but is slower.
 
 Other alternatives are bindings to existing minifiers written in other languages. These are inevitably more robust and tested but will often be slower. For example, Java-based minifiers incur overhead of starting up the JVM.
+
+## Testing
+For all subpackages and the imported `parse` and `buffer` packages, test coverage of 100% is pursued. Besides full coverage, the minifiers are fuzz tested using [github.com/dvyukov/go-fuzz](http://www.github.com/dvyukov/go-fuzz), see [the wiki](https://github.com/tdewolff/minify/wiki) for the most important bugs found by fuzz testing. Furthermore, I am working on adding visual testing to ensure that minification doesn't change anything visually. By using the WebKit browser to render the original and minified pages we can check whether any pixel is different.
+
+These tests ensure that everything works as intended, the code does not crash (whatever the input) and that it doesn't change the final result visually. If you still encounter a bug, please report [here](https://github.com/tdewolff/minify/issues)!
 
 ## HTML [![GoDoc](http://godoc.org/github.com/tdewolff/minify/html?status.svg)](http://godoc.org/github.com/tdewolff/minify/html) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/html)](http://gocover.io/github.com/tdewolff/minify/html)
 
