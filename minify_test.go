@@ -218,6 +218,16 @@ func (m MinifierResponseWriter) Write(b []byte) (int, error) {
 }
 
 func ExampleM_Minify_responseWriter(res http.ResponseWriter) http.ResponseWriter {
+	// Define the accompanying struct:
+	// type MinifierResponseWriter struct {
+	// 	http.ResponseWriter
+	// 	io.Writer
+	// }
+
+	// func (m MinifierResponseWriter) Write(b []byte) (int, error) {
+	// 	return m.Writer.Write(b)
+	// }
+
 	m := New()
 	// add minfiers
 
