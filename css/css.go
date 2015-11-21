@@ -43,7 +43,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 	c := &cssMinifier{
 		m: m,
 		w: w,
-		p: css.NewParser(r, !isInline),
+		p: css.NewParser(r, isInline),
 	}
 	if err := c.minifyGrammar(); err != nil && err != io.EOF {
 		return err
