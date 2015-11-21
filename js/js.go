@@ -13,13 +13,22 @@ var (
 	newlineBytes = []byte("\n")
 )
 
+////////////////////////////////////////////////////////////////
+
+type Minifier struct{}
+
+func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+	return (&Minifier{}).Minify(m, w, r, params)
+}
+
 // Minify minifies JS data, it reads from r and writes to w.
-func Minify(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
-	l := js.NewLexer(r)
+func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 	prev := js.LineTerminatorToken
 	prevLast := byte(' ')
 	lineTerminatorQueued := false
 	whitespaceQueued := false
+
+	l := js.NewLexer(r)
 	for {
 		tt, text, n := l.Next()
 		l.Free(n)

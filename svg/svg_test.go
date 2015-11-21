@@ -2,7 +2,6 @@ package svg // import "github.com/tdewolff/minify/svg"
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"testing"
 
@@ -47,7 +46,7 @@ func TestSVG(t *testing.T) {
 	m := minify.New()
 	for _, tt := range svgTests {
 		b := &bytes.Buffer{}
-		assert.Nil(t, Minify(m, "image/svg+xml", b, bytes.NewBufferString(tt.svg)), "Minify must not return error in "+tt.svg)
+		assert.Nil(t, Minify(m, b, bytes.NewBufferString(tt.svg), nil), "Minify must not return error in "+tt.svg)
 		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.svg)
 	}
 }
@@ -60,6 +59,6 @@ func ExampleMinify() {
 	m.AddFunc("text/css", css.Minify)
 
 	if err := m.Minify("image/svg+xml", os.Stdout, os.Stdin); err != nil {
-		fmt.Println("minify.Minify:", err)
+		panic(err)
 	}
 }

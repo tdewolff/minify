@@ -44,7 +44,7 @@ func TestDataURI(t *testing.T) {
 		{"data:text/x,<?x?>", "data:text/x,%3C%3Fx%3F%3E"},
 	}
 	m := New()
-	m.AddFunc("text/x", func(m Minifier, mediatype string, w io.Writer, r io.Reader) error {
+	m.AddFunc("text/x", func(_ *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		b, _ := ioutil.ReadAll(r)
 		assert.Equal(t, "<?x?>", string(b))
 		w.Write(b)

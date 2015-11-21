@@ -65,4 +65,3 @@ $ minify -r dir # minify files in dir recursively
 
 $ minify -r --match=\.js dir # minify only javascript files in dir
 ```
-

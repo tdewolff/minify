@@ -25,8 +25,14 @@ var (
 
 ////////////////////////////////////////////////////////////////
 
+type Minifier struct{}
+
+func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+	return (&Minifier{}).Minify(m, w, r, params)
+}
+
 // Minify minifies XML data, it reads from r and writes to w.
-func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
+func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 	precededBySpace := true // on true the next text token must not start with a space
 
 	attrByteBuffer := make([]byte, 0, 64)
@@ -36,8 +42,8 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 	for {
 		t := *tb.Shift()
 		if t.TokenType == xml.CDATAToken {
-			var useCDATA bool
-			if t.Data, useCDATA = xml.EscapeCDATAVal(&attrByteBuffer, t.Data); !useCDATA {
+			var useText bool
+			if t.Data, useText = xml.EscapeCDATAVal(&attrByteBuffer, t.Data); useText {
 				t.TokenType = xml.TextToken
 			}
 		}

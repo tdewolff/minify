@@ -37,9 +37,9 @@ func ContentType(b []byte) []byte {
 }
 
 // DataURI minifies a data URI and calls a minifier by the specified mediatype. Specifications: https://www.ietf.org/rfc/rfc2397.txt.
-func DataURI(m Minifier, dataURI []byte) []byte {
+func DataURI(m *M, dataURI []byte) []byte {
 	if mediatype, data, err := parse.DataURI(dataURI); err == nil {
-		dataURI, _ = Bytes(m, string(mediatype), data)
+		dataURI, _ = m.Bytes(string(mediatype), data)
 		base64Len := len(";base64") + base64.StdEncoding.EncodedLen(len(dataURI))
 		asciiLen := len(dataURI)
 		for i := 0; i < len(dataURI); i++ {

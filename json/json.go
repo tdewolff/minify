@@ -14,9 +14,18 @@ var (
 	colonBytes = []byte(":")
 )
 
+////////////////////////////////////////////////////////////////
+
+type Minifier struct{}
+
+func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+	return (&Minifier{}).Minify(m, w, r, params)
+}
+
 // Minify minifies JSON data, it reads from r and writes to w.
-func Minify(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
+func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 	skipComma := true
+
 	p := json.NewParser(r)
 	for {
 		state := p.State()
