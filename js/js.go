@@ -22,12 +22,13 @@ func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) err
 }
 
 // Minify minifies JS data, it reads from r and writes to w.
-func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
-	l := js.NewLexer(r)
+func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 	prev := js.LineTerminatorToken
 	prevLast := byte(' ')
 	lineTerminatorQueued := false
 	whitespaceQueued := false
+
+	l := js.NewLexer(r)
 	for {
 		tt, text, n := l.Next()
 		l.Free(n)
