@@ -201,7 +201,20 @@ func ExampleMinify() {
 	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
-	//u, _ := url.Parse("https://www.example.com/")
+	// set URL to minify link locations too
+	m.URL, _ = url.Parse("https://www.example.com/")
+	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
+		panic(err)
+	}
+}
+
+func ExampleMinify_Options() {
+	m := minify.New()
+	m.Add("text/html", &Minifier{
+		KeepDefaultAttrVals: true,
+		KeepWhitespace:      true,
+	})
+
 	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
 		panic(err)
 	}

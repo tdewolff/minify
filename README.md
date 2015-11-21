@@ -271,6 +271,14 @@ m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
 m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 ```
 
+You can set options to several minifiers.
+``` go
+m.Add("text/html", &html.Minifier{
+	KeepDefaultAttrVals: true,
+	KeepWhitespace: true,
+})
+```
+
 ### From reader
 Minify from an `io.Reader` to an `io.Writer` for a specific mediatype.
 ``` go
@@ -279,7 +287,7 @@ if err := m.Minify(mediatype, w, r); err != nil {
 }
 ```
 
-Minify HTML, CSS or JS directly from an `io.Reader` to an `io.Writer`. The `params map[string]string` would contain the mediatype parameters, pass `nil` if non-existent.
+Minify formats directly from an `io.Reader` to an `io.Writer`. The `params map[string]string` would contain the mediatype parameters, pass `nil` if non-existent.
 ``` go
 if err := css.Minify(m, w, r, params); err != nil {
 	panic(err)
