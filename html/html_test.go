@@ -208,7 +208,7 @@ func ExampleMinify() {
 	}
 }
 
-func ExampleMinify_Options() {
+func ExampleMinify_options() {
 	m := minify.New()
 	m.Add("text/html", &Minifier{
 		KeepDefaultAttrVals: true,
@@ -220,7 +220,7 @@ func ExampleMinify_Options() {
 	}
 }
 
-func ExampleReader() {
+func ExampleMinify_reader() {
 	b := bytes.NewReader([]byte("<html><body><h1>Example</h1></body></html>"))
 
 	m := minify.New()
@@ -233,7 +233,7 @@ func ExampleReader() {
 	// Output: <h1>Example</h1>
 }
 
-func ExampleWriter() {
+func ExampleMinify_writer() {
 	m := minify.New()
 	m.Add("text/html", &Minifier{})
 

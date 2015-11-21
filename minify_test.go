@@ -152,7 +152,7 @@ func TestHelperProcess(*testing.T) {
 
 ////////////////////////////////////////////////////////////////
 
-func ExampleMinify_Custom() {
+func ExampleMinify_custom() {
 	m := New()
 	m.AddFunc("text/plain", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		// remove all newlines and spaces
@@ -181,7 +181,7 @@ func ExampleMinify_Custom() {
 	// Output: Becausemycoffeewastoocold,Iheateditinthemicrowave.
 }
 
-func ExampleMinify_Reader() {
+func ExampleReader() {
 	b := bytes.NewReader([]byte("input"))
 
 	m := New()
@@ -195,7 +195,7 @@ func ExampleMinify_Reader() {
 	}
 }
 
-func ExampleMinify_Writer() {
+func ExampleWriter() {
 	m := New()
 	// add minfiers
 
@@ -217,7 +217,7 @@ func (m MinifierResponseWriter) Write(b []byte) (int, error) {
 	return m.Writer.Write(b)
 }
 
-func ExampleMinify_ResponseWriter(res http.ResponseWriter) http.ResponseWriter {
+func ExampleMinify_responseWriter(res http.ResponseWriter) http.ResponseWriter {
 	m := New()
 	// add minfiers
 
