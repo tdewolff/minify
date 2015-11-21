@@ -34,8 +34,8 @@ const maxAttrLookup = 4
 ////////////////////////////////////////////////////////////////
 
 type Minifier struct {
-	DefaultAttrVals bool
-	Whitespace      bool
+	KeepDefaultAttrVals bool
+	KeepWhitespace      bool
 }
 
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
@@ -106,7 +106,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						mimetype = defaultStyleType
 						params = defaultStyleParams
 					}
-					// ignore CDATA
+					// TODO: really necessary?
+					// ignore CDATA because that only has meaning in XML
 					if trimmedData := parse.TrimWhitespace(t.Data); len(trimmedData) > 12 && bytes.Equal(trimmedData[:9], cdataBytes) && bytes.Equal(trimmedData[len(trimmedData)-3:], cdataEndBytes) {
 						t.Data = trimmedData[9 : len(trimmedData)-3]
 					}
@@ -123,7 +124,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				}
 			} else {
 				t.Data = parse.ReplaceMultipleWhitespace(t.Data)
-				if !o.Whitespace {
+				if !o.KeepWhitespace {
 					// whitespace removal; trim left
 					if omitSpace && t.Data[0] == ' ' {
 						t.Data = t.Data[1:]
@@ -331,7 +332,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 
 					// default attribute values can be ommited
-					if !o.DefaultAttrVals && (attr.Hash == html.Type && (t.Hash == html.Script && parse.Equal(val, []byte("text/javascript")) ||
+					if !o.KeepDefaultAttrVals && (attr.Hash == html.Type && (t.Hash == html.Script && parse.Equal(val, []byte("text/javascript")) ||
 						t.Hash == html.Style && parse.Equal(val, []byte("text/css")) ||
 						t.Hash == html.Link && parse.Equal(val, []byte("text/css")) ||
 						t.Hash == html.Input && parse.Equal(val, []byte("text")) ||
