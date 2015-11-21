@@ -89,7 +89,7 @@ HTML (with JS and CSS) minification typically runs at about 35MB/s ~= 120GB/h, d
 
 Website | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
-[Amazon](http://www.amazon.com/) | 463kB | **414kB** | 89% | 13ms
+[Amazon](http://www.amazon.com/) | 463kB | **414kB** | 90% | 13ms
 [BBC](http://www.bbc.com/) | 113kB | **96kB** | 85% | 4ms
 [StackOverflow](http://stackoverflow.com/) | 201kB | **182kB** | 91% | 6ms
 [Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | **410kB** | 94%<sup>&#42;&#42;</sup> | 12ms
