@@ -26,8 +26,10 @@ var (
 
 ////////////////////////////////////////////////////////////////
 
+// Minifier is an SVG minifier.
 type Minifier struct{}
 
+// Minify minifies SVG data, it reads from r and writes to w.
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	return (&Minifier{}).Minify(m, w, r, params)
 }

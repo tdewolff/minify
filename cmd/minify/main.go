@@ -23,7 +23,7 @@ import (
 	"github.com/tdewolff/minify/xml"
 )
 
-var FiletypeMime = map[string]string{
+var filetypeMime = map[string]string{
 	"css":  "text/css",
 	"htm":  "text/html",
 	"html": "text/html",
@@ -42,23 +42,23 @@ var (
 	pattern   *regexp.Regexp
 )
 
-type CountingReader struct {
+type countingReader struct {
 	io.Reader
 	N int
 }
 
-func (w *CountingReader) Read(p []byte) (int, error) {
+func (w *countingReader) Read(p []byte) (int, error) {
 	n, err := w.Reader.Read(p)
 	w.N += n
 	return n, err
 }
 
-type CountingWriter struct {
+type countingWriter struct {
 	io.Writer
 	N int
 }
 
-func (w *CountingWriter) Write(p []byte) (int, error) {
+func (w *countingWriter) Write(p []byte) (int, error) {
 	n, err := w.Writer.Write(p)
 	w.N += n
 	return n, err
@@ -88,19 +88,19 @@ func main() {
 
 	if list {
 		var keys []string
-		for k := range FiletypeMime {
+		for k := range filetypeMime {
 			keys = append(keys, k)
 		}
 		sort.Strings(keys)
 		for _, k := range keys {
-			fmt.Println(k + "\t" + FiletypeMime[k])
+			fmt.Println(k + "\t" + filetypeMime[k])
 		}
 		return
 	}
 
 	if mimetype == "" && filetype != "" {
 		var ok bool
-		if mimetype, ok = FiletypeMime[filetype]; !ok {
+		if mimetype, ok = filetypeMime[filetype]; !ok {
 			fmt.Fprintln(os.Stderr, "ERROR: cannot find mimetype for filetype "+filetype)
 			os.Exit(1)
 		}
@@ -196,7 +196,7 @@ func main() {
 			mimetype := mimetype // don't shadow global variable
 			if mimetype == "" {
 				if len(path.Ext(input)) > 0 {
-					if mimetype, ok = FiletypeMime[path.Ext(input)[1:]]; !ok {
+					if mimetype, ok = filetypeMime[path.Ext(input)[1:]]; !ok {
 						fmt.Fprintln(os.Stderr, "ERROR: cannot infer mimetype from extension in "+input)
 						return
 					}
@@ -216,18 +216,18 @@ func main() {
 			if !ok {
 				return
 			}
-			r := &CountingReader{fr, 0}
+			r := &countingReader{fr, 0}
 
 			fw, ok := openOutputFile(output)
 			if !ok {
 				fr.Close()
 				return
 			}
-			var w *CountingWriter
+			var w *countingWriter
 			if fw == os.Stdout {
-				w = &CountingWriter{fw, 0}
+				w = &countingWriter{fw, 0}
 			} else {
-				w = &CountingWriter{bufio.NewWriter(fw), 0}
+				w = &countingWriter{bufio.NewWriter(fw), 0}
 			}
 
 			t := time.Now()
@@ -367,7 +367,7 @@ func validFile(info os.FileInfo) bool {
 		if len(ext) > 0 {
 			ext = ext[1:]
 		}
-		if _, ok := FiletypeMime[ext]; !ok {
+		if _, ok := filetypeMime[ext]; !ok {
 			if verbose {
 				fmt.Fprintln(os.Stderr, "WARN:  cannot infer mimetype from extension in "+info.Name())
 			}

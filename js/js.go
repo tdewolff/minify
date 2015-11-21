@@ -15,8 +15,10 @@ var (
 
 ////////////////////////////////////////////////////////////////
 
+// Minifier is a JS minifier.
 type Minifier struct{}
 
+// Minify minifies JS data, it reads from r and writes to w.
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	return (&Minifier{}).Minify(m, w, r, params)
 }

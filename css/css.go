@@ -31,8 +31,10 @@ type cssMinifier struct {
 
 ////////////////////////////////////////////////////////////////
 
+// Minifier is a CSS minifier.
 type Minifier struct{}
 
+// Minify minifies CSS data, it reads from r and writes to w.
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	return (&Minifier{}).Minify(m, w, r, params)
 }

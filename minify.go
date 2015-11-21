@@ -107,6 +107,9 @@ func (m *M) Minify(mediatype string, w io.Writer, r io.Reader) error {
 	return m.MinifyMimetype(mimetype, w, r, params)
 }
 
+// MinifyMimetype minifies the content of a Reader and writes it to a Writer (safe for concurrent use).
+// It is a lower level version of Minify and requires the mediatype to be split up into mimetype and parameters.
+// It is mostly used internally by minifiers because it is faster (no need to convert a byte-slice to string and vice versa).
 func (m *M) MinifyMimetype(mimetype []byte, w io.Writer, r io.Reader, params map[string]string) error {
 	err := ErrNotExist
 	if minifier, ok := m.literal[string(mimetype)]; ok { // string conversion is optimized away
@@ -155,7 +158,7 @@ func (m *M) Reader(mediatype string, r io.Reader) io.Reader {
 	return pr
 }
 
-// Writers wraps a Writer interface and minifies the stream.
+// Writer wraps a Writer interface and minifies the stream.
 // Errors from the minifier are returned by the writer.
 // The writer must be closed explicitly.
 func (m *M) Writer(mediatype string, w io.Writer) io.WriteCloser {

@@ -33,11 +33,13 @@ const maxAttrLookup = 4
 
 ////////////////////////////////////////////////////////////////
 
+// Minifier is an HTML minifier.
 type Minifier struct {
 	KeepDefaultAttrVals bool
 	KeepWhitespace      bool
 }
 
+// Minify minifies HTML data, it reads from r and writes to w.
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	return (&Minifier{}).Minify(m, w, r, params)
 }
