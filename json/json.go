@@ -9,7 +9,6 @@ import (
 )
 
 var (
-	quoteBytes = []byte("\"")
 	commaBytes = []byte(",")
 	colonBytes = []byte(":")
 )
@@ -50,17 +49,7 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		}
 		skipComma = gt == json.StartObjectGrammar || gt == json.StartArrayGrammar
 
-		if gt == json.StringGrammar {
-			if _, err := w.Write(quoteBytes); err != nil {
-				return err
-			}
-			if _, err := w.Write(text); err != nil {
-				return err
-			}
-			if _, err := w.Write(quoteBytes); err != nil {
-				return err
-			}
-		} else if _, err := w.Write(text); err != nil {
+		if _, err := w.Write(text); err != nil {
 			return err
 		}
 	}

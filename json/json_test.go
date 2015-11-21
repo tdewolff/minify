@@ -38,11 +38,11 @@ func TestReaderErrors(t *testing.T) {
 }
 
 func TestWriterErrors(t *testing.T) {
-	var errorTests = []int{0, 1, 2, 3, 4, 5, 6, 7, 9, 10}
+	var errorTests = []int{0, 1, 2, 3, 4, 5, 7, 8}
 
 	m := minify.New()
 	for _, n := range errorTests {
-		// writes:                  012  3456  78  90
+		// writes:                  01    234  56  78
 		r := bytes.NewBufferString(`{"key":[100,200]}`)
 		w := test.NewErrorWriter(n)
 		assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at write "+strconv.FormatInt(int64(n), 10))
