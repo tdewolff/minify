@@ -22,7 +22,8 @@ func TestXML(t *testing.T) {
 		{"<a><b>x</b></a>", "<a><b>x</b></a>"},
 		{"<a><b>x\ny</b></a>", "<a><b>x y</b></a>"},
 		{"<a> <![CDATA[ a ]]> </a>", "<a>a</a>"},
-		{"<?xml version=\"1.0\" ?>", "<?xml version=\"1.0\"?>"},
+		{"<a >a</a >", "<a>a</a>"},
+		{"<?xml  version=\"1.0\" ?>", "<?xml version=\"1.0\"?>"},
 		{"<x></x>", "<x/>"},
 		{"<x> </x>", "<x/>"},
 		{"<x a=\"b\"></x>", "<x a=\"b\"/>"},
@@ -51,11 +52,11 @@ func TestReaderErrors(t *testing.T) {
 }
 
 func TestWriterErrors(t *testing.T) {
-	var errorTests = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 15, 16, 19, 22, 23, 24, 25, 26, 27, 28, 29}
+	var errorTests = []int{0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 19}
 
 	m := minify.New()
 	for _, n := range errorTests {
-		// writes:                  0         1  23 4  5 6789012345    6789 012    3 456        7        8  9
+		// writes:                  0             1    2 3 45678901    23 4 5 6    7   8                    9
 		r := bytes.NewBufferString(`<!DOCTYPE foo><?xml?><a x=y z="val"><b/><c></c></a><![CDATA[data<<<<<]]>text`)
 		w := test.NewErrorWriter(n)
 		assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at write "+strconv.FormatInt(int64(n), 10))

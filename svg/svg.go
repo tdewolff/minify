@@ -76,24 +76,23 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				return err
 			}
 		case xml.CDATAToken:
-			if _, err := w.Write(cdataStartBytes); err != nil {
-				return err
-			}
-			t.Data = parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.Data))
-			if tag == svg.Style && len(t.Data) > 0 {
-				if err := m.Minify(defaultStyleType, w, buffer.NewReader(t.Data)); err != nil {
+			if tag == svg.Style {
+				if _, err := w.Write(cdataStartBytes); err != nil {
+					return err
+				}
+				if err := m.Minify(defaultStyleType, w, buffer.NewReader(t.Text)); err != nil {
 					if err == minify.ErrNotExist { // no minifier, write the original
-						if _, err := w.Write(t.Data); err != nil {
+						if _, err := w.Write(t.Text); err != nil {
 							return err
 						}
 					} else {
 						return err
 					}
 				}
+				if _, err := w.Write(cdataEndBytes); err != nil {
+					return err
+				}
 			} else if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
-			if _, err := w.Write(cdataEndBytes); err != nil {
 				return err
 			}
 		case xml.StartTagPIToken:
@@ -170,9 +169,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				// 	t.Data = pathBytes
 				// }
 			}
-			if _, err := w.Write(ltBytes); err != nil {
-				return err
-			}
 			if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
@@ -188,7 +184,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			if _, err := w.Write(spaceBytes); err != nil {
 				return err
 			}
-			if _, err := w.Write(t.Data); err != nil {
+			if _, err := w.Write(t.Text); err != nil {
 				return err
 			}
 			if _, err := w.Write(isBytes); err != nil {
@@ -268,22 +264,17 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					return err
 				}
 			} else {
-				if _, err := w.Write(gtBytes); err != nil {
+				if _, err := w.Write(t.Data); err != nil {
 					return err
 				}
 			}
 		case xml.StartTagCloseVoidToken:
-			if _, err := w.Write(voidBytes); err != nil {
-				return err
-			}
-		case xml.EndTagToken:
-			if _, err := w.Write(endBytes); err != nil {
-				return err
-			}
 			if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
-			if _, err := w.Write(gtBytes); err != nil {
+		case xml.EndTagToken:
+			t.Data[2+len(t.Text)] = '>'
+			if _, err := w.Write(t.Data[:2+len(t.Text)+1]); err != nil {
 				return err
 			}
 		}

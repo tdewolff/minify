@@ -19,6 +19,8 @@ func TestSVG(t *testing.T) {
 		{`<!DOCTYPE foo SYSTEM "Foo.dtd">`, ``},
 		{`<?xml version="1.0" ?>`, ``},
 		{`<style> <![CDATA[ x ]]> </style>`, `<style>x</style>`},
+		{`<style> <![CDATA[ <<<< ]]> </style>`, `<style>&lt;&lt;&lt;&lt;</style>`},
+		{`<style> <![CDATA[ <<<<< ]]> </style>`, `<style><![CDATA[ <<<<< ]]></style>`},
 		{`<svg version="1.0"></svg>`, ``},
 		{`<path x=" a "/>`, `<path x="a"/>`},
 		{"<path x=\" a \n b \"/>", `<path x="a b"/>`},

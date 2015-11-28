@@ -6,8 +6,8 @@ import "github.com/tdewolff/parse/xml"
 type Token struct {
 	xml.TokenType
 	Data    []byte
+	Text    []byte
 	AttrVal []byte
-	n       int
 }
 
 // TokenBuffer is a buffer that allows for token look-ahead.
@@ -29,7 +29,8 @@ func NewTokenBuffer(l *xml.Lexer) *TokenBuffer {
 }
 
 func (z *TokenBuffer) read(t *Token) {
-	t.TokenType, t.Data, t.n = z.l.Next()
+	t.TokenType, t.Data = z.l.Next()
+	t.Text = z.l.Text()
 	if t.TokenType == xml.AttributeToken {
 		t.AttrVal = z.l.AttrVal()
 	} else {
@@ -78,11 +79,11 @@ func (z *TokenBuffer) Shift() *Token {
 	if z.pos >= len(z.buf) {
 		t := &z.buf[:1][0]
 		z.read(t)
-		z.prevN = t.n
+		z.prevN = len(t.Data)
 		return t
 	}
 	t := &z.buf[z.pos]
 	z.pos++
-	z.prevN = t.n
+	z.prevN = len(t.Data)
 	return t
 }

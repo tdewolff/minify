@@ -14,15 +14,15 @@ func TestBuffer(t *testing.T) {
 	z := NewTokenBuffer(xml.NewLexer(bytes.NewBufferString(s)))
 
 	tok := z.Shift()
-	assert.Equal(t, "p", string(tok.Data), "first token must be <p>")
+	assert.Equal(t, "p", string(tok.Text), "first token must be <p>")
 	assert.Equal(t, 0, z.pos, "must have shifted first token and restored position")
 	assert.Equal(t, 0, len(z.buf), "must have shifted first token and restored length")
 
-	assert.Equal(t, "href", string(z.Peek(2).Data), "third token must be href")
+	assert.Equal(t, "href", string(z.Peek(2).Text), "third token must be href")
 	assert.Equal(t, 0, z.pos, "must not have changed positon after peeking")
 	assert.Equal(t, 3, len(z.buf), "must have two tokens after peeking")
 
-	assert.Equal(t, "p", string(z.Peek(8).Data), "nineth token must be <p>")
+	assert.Equal(t, "p", string(z.Peek(8).Text), "nineth token must be <p>")
 	assert.Equal(t, 0, z.pos, "must not have changed positon after peeking")
 	assert.Equal(t, 9, len(z.buf), "must have nine tokens after peeking")
 
@@ -32,6 +32,6 @@ func TestBuffer(t *testing.T) {
 
 	tok = z.Shift()
 	tok = z.Shift()
-	assert.Equal(t, "a", string(tok.Data), "third token must be <a>")
+	assert.Equal(t, "a", string(tok.Text), "third token must be <a>")
 	assert.Equal(t, 2, z.pos, "must not have changed positon after peeking")
 }

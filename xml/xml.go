@@ -10,17 +10,10 @@ import (
 )
 
 var (
-	ltBytes         = []byte("<")
-	gtBytes         = []byte(">")
-	voidBytes       = []byte("/>")
-	ltPIBytes       = []byte("<?")
-	gtPIBytes       = []byte("?>")
-	endBytes        = []byte("</")
-	doctypeBytes    = []byte("<!DOCTYPE ")
-	cdataStartBytes = []byte("<![CDATA[")
-	cdataEndBytes   = []byte("]]>")
-	isBytes         = []byte("=")
-	spaceBytes      = []byte(" ")
+	gtBytes    = []byte(">")
+	isBytes    = []byte("=")
+	spaceBytes = []byte(" ")
+	voidBytes  = []byte("/>")
 )
 
 ////////////////////////////////////////////////////////////////
@@ -56,29 +49,17 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 			return l.Err()
 		case xml.DOCTYPEToken:
-			if _, err := w.Write(doctypeBytes); err != nil {
-				return err
-			}
 			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
-			if _, err := w.Write(gtBytes); err != nil {
 				return err
 			}
 		case xml.CDATAToken:
-			if _, err := w.Write(cdataStartBytes); err != nil {
-				return err
-			}
 			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
-			if _, err := w.Write(cdataEndBytes); err != nil {
 				return err
 			}
 		case xml.TextToken:
 			if t.Data = parse.ReplaceMultipleWhitespace(t.Data); len(t.Data) > 0 {
 				// whitespace removal; trim left
-				if t.Data[0] == ' ' && precededBySpace {
+				if precededBySpace && t.Data[0] == ' ' {
 					t.Data = t.Data[1:]
 				}
 
@@ -113,16 +94,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				}
 			}
 		case xml.StartTagToken:
-			if _, err := w.Write(ltBytes); err != nil {
-				return err
-			}
 			if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
 		case xml.StartTagPIToken:
-			if _, err := w.Write(ltPIBytes); err != nil {
-				return err
-			}
 			if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
@@ -130,7 +105,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			if _, err := w.Write(spaceBytes); err != nil {
 				return err
 			}
-			if _, err := w.Write(t.Data); err != nil {
+			if _, err := w.Write(t.Text); err != nil {
 				return err
 			}
 			if _, err := w.Write(isBytes); err != nil {
@@ -165,26 +140,21 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					return err
 				}
 			} else {
-				if _, err := w.Write(gtBytes); err != nil {
+				if _, err := w.Write(t.Text); err != nil {
 					return err
 				}
 			}
 		case xml.StartTagCloseVoidToken:
-			if _, err := w.Write(voidBytes); err != nil {
+			if _, err := w.Write(t.Text); err != nil {
 				return err
 			}
 		case xml.StartTagClosePIToken:
-			if _, err := w.Write(gtPIBytes); err != nil {
+			if _, err := w.Write(t.Text); err != nil {
 				return err
 			}
 		case xml.EndTagToken:
-			if _, err := w.Write(endBytes); err != nil {
-				return err
-			}
-			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
-			if _, err := w.Write(gtBytes); err != nil {
+			t.Data[2+len(t.Text)] = '>'
+			if _, err := w.Write(t.Data[:2+len(t.Text)+1]); err != nil {
 				return err
 			}
 		}

@@ -226,7 +226,7 @@ TODO:
 
 ## XML [![GoDoc](http://godoc.org/github.com/tdewolff/minify/xml?status.svg)](http://godoc.org/github.com/tdewolff/minify/xml) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/xml)](http://gocover.io/github.com/tdewolff/minify/xml)
 
-Minification typically runs at about 50MB/s ~= 180GB/h.
+Minification typically runs at about 60MB/s ~= 220GB/h.
 
 The XML minifier uses these minifications:
 
