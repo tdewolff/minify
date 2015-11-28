@@ -233,12 +233,12 @@ func ExampleMinify_reader() {
 	// Output: <h1>Example</h1>
 }
 
-func ExampleMinify_writer() {
-	m := minify.New()
-	m.Add("text/html", &Minifier{})
+// func ExampleMinify_writer() {
+// 	m := minify.New()
+// 	m.Add("text/html", &Minifier{})
 
-	w := m.Writer("text/html", os.Stdout)
-	w.Write([]byte("<html><body><h1>Example</h1></body></html>"))
-	w.Close()
-	// Output: <h1>Example</h1>
-}
+// 	w := m.Writer("text/html", os.Stdout)
+// 	w.Write([]byte("<html><body><h1>Example</h1></body></html>"))
+// 	w.Close()
+// 	// Output: <h1>Example</h1>
+// }
