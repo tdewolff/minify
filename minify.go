@@ -161,13 +161,13 @@ func (m *M) Reader(mediatype string, r io.Reader) io.Reader {
 // Writer wraps a Writer interface and minifies the stream.
 // Errors from the minifier are returned by the writer.
 // The writer must be closed explicitly.
-func (m *M) Writer(mediatype string, w io.Writer) io.WriteCloser {
-	pr, pw := io.Pipe()
-	go func() {
-		if err := m.Minify(mediatype, w, pr); err != nil {
-			pr.CloseWithError(err)
-		}
-		pr.Close()
-	}()
-	return pw
-}
+// func (m *M) Writer(mediatype string, w io.Writer) io.WriteCloser {
+// 	pr, pw := io.Pipe()
+// 	go func() {
+// 		if err := m.Minify(mediatype, w, pr); err != nil {
+// 			pr.CloseWithError(err)
+// 		}
+// 		pr.Close()
+// 	}()
+// 	return pw
+// }
