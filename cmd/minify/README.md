@@ -25,6 +25,10 @@ and the `minify` command will be in your `$GOPATH/bin`.
 		  --type="": Filetype (css, html, js, ...), optional for input filenames
 	  -v, --verbose=false: Verbose
 
+	  --url="": URL of the file to enable URL minification
+	  --html-keep-default-attrvals=false: Preserve default attribute values
+	  --html-keep-whitespace=false: Preserve whitespace characters but still collapse multiple whitespace into one
+
 	Input:
 	  Files or directories, optional when using piping
 
@@ -54,7 +58,7 @@ $ cat file.html | minify --type=html > file.min.html
 It is also possible to overwrite the input file by the output file. Overwriting existing files needs to happen forcefully. However, overwriting won't work with input/output redirection streams. Using the following command the input file will be loaded into memory first before writing to the output file:
 
 ```sh
-$ minify -f -o file.html file.html
+$ minify file.html
 ```
 
 You can also give directories as input, and these directories can be minified recursively:
