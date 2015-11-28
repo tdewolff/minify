@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -154,32 +155,38 @@ func TestReader(t *testing.T) {
 	assert.Equal(t, "test", w.String(), "must equal input after dummy minify reader")
 }
 
-// func TestWriter(t *testing.T) {
-// 	m := New()
-// 	m.AddFunc("dummy/dummy", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
-// 		n, err := io.Copy(w, r)
-// 		return err
-// 	})
-// 	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
-// 		return errDummy
-// 	})
+func TestWriter(t *testing.T) {
+	m := New()
+	m.AddFunc("dummy/dummy", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
+		_, err := io.Copy(w, r)
+		return err
+	})
+	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
+		return errDummy
+	})
+	m.AddFunc("dummy/late-err", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
+		_, _ = ioutil.ReadAll(r)
+		return errDummy
+	})
 
-// 	var err error
-// 	w := &bytes.Buffer{}
-// 	wc := m.Writer("dummy/dummy", w)
-// 	_, err = wc.Write([]byte("test"))
-// 	assert.Nil(t, err)
-// 	err = wc.Close()
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, "test", w.String(), "must equal input after dummy minify writer")
+	var err error
+	w := &bytes.Buffer{}
+	wc := m.Writer("dummy/dummy", w)
+	_, err = wc.Write([]byte("test"))
+	assert.Nil(t, err)
+	assert.Nil(t, wc.Close())
+	assert.Equal(t, "test", w.String(), "must equal input after dummy minify writer")
 
-// 	w = &bytes.Buffer{}
-// 	wc = m.Writer("dummy/err", w)
-// 	_, err = wc.Write([]byte("test"))
-// 	assert.Equal(t, errDummy, err)
-// 	err = wc.Close()
-// 	assert.Nil(t, err)
-// }
+	wc = m.Writer("dummy/err", w)
+	_, err = wc.Write([]byte("test"))
+	assert.Equal(t, errDummy, err)
+	assert.Equal(t, errDummy, wc.Close())
+
+	wc = m.Writer("dummy/late-err", w)
+	_, err = wc.Write([]byte("test"))
+	assert.Nil(t, err)
+	assert.Equal(t, errDummy, wc.Close())
+}
 
 func TestHelperProcess(*testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {

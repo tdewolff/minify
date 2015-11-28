@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os/exec"
 	"regexp"
+	"sync"
 
 	"github.com/tdewolff/buffer"
 	"github.com/tdewolff/parse"
@@ -152,22 +153,46 @@ func (m *M) Reader(mediatype string, r io.Reader) io.Reader {
 	go func() {
 		if err := m.Minify(mediatype, pw, r); err != nil {
 			pw.CloseWithError(err)
+		} else {
+			pw.Close()
 		}
-		pw.Close()
 	}()
 	return pr
+}
+
+// minifyWriter makes sure that errors from the minifier are passed down through Close.
+// It also makes sure that all data has been written on calling Close, it flushes.
+type minifyWriter struct {
+	pw  *io.PipeWriter
+	wg  sync.WaitGroup
+	err error
+}
+
+func (mw *minifyWriter) Write(b []byte) (int, error) {
+	return mw.pw.Write(b)
+}
+
+func (mw *minifyWriter) Close() error {
+	mw.pw.Close()
+	mw.wg.Wait()
+	return mw.err
 }
 
 // Writer wraps a Writer interface and minifies the stream.
 // Errors from the minifier are returned by the writer.
 // The writer must be closed explicitly.
-// func (m *M) Writer(mediatype string, w io.Writer) io.WriteCloser {
-// 	pr, pw := io.Pipe()
-// 	go func() {
-// 		if err := m.Minify(mediatype, w, pr); err != nil {
-// 			pr.CloseWithError(err)
-// 		}
-// 		pr.Close()
-// 	}()
-// 	return pw
-// }
+func (m *M) Writer(mediatype string, w io.Writer) io.WriteCloser {
+	pr, pw := io.Pipe()
+	mw := &minifyWriter{pw, sync.WaitGroup{}, nil}
+	mw.wg.Add(1)
+	go func() {
+		if err := m.Minify(mediatype, w, pr); err != nil {
+			mw.err = err
+			pr.CloseWithError(err)
+		} else {
+			pr.Close()
+		}
+		mw.wg.Done()
+	}()
+	return mw
+}
