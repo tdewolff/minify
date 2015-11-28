@@ -92,23 +92,38 @@ func TestMinify(t *testing.T) {
 	assert.Equal(t, s, out2, "must return input string when minifier doesn't exist")
 }
 
+type DummyMinifier struct{}
+
+func (_ *DummyMinifier) Minify(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
+	return errDummy
+}
+
 func TestAdd(t *testing.T) {
 	m := New()
 	w := &bytes.Buffer{}
 	r := bytes.NewBufferString("test")
+	m.Add("dummy/err", &DummyMinifier{})
+	assert.Equal(t, errDummy, m.Minify("dummy/err", nil, nil), "must return errDummy for dummy/err")
+	m.AddRegexp(regexp.MustCompile("err1$"), &DummyMinifier{})
+	assert.Equal(t, errDummy, m.Minify("dummy/err1", nil, nil), "must return errDummy for dummy/err1")
+
 	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		return errDummy
 	})
 	assert.Equal(t, errDummy, m.Minify("dummy/err", nil, nil), "must return errDummy for dummy/err")
+	m.AddFuncRegexp(regexp.MustCompile("err2$"), func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
+		return errDummy
+	})
+	assert.Equal(t, errDummy, m.Minify("dummy/err2", nil, nil), "must return errDummy for dummy/err2")
 
 	m.AddCmd("dummy/copy", helperCommand(t, "dummy/copy"))
 	m.AddCmd("dummy/err", helperCommand(t, "dummy/err"))
-	m.AddCmdRegexp(regexp.MustCompile("err$"), helperCommand(t, "werr"))
+	m.AddCmdRegexp(regexp.MustCompile("err6$"), helperCommand(t, "werr6"))
 	assert.Nil(t, m.Minify("dummy/copy", w, r), "must return nil for dummy/copy command")
 	assert.Equal(t, "test", w.String(), "must return input string for dummy/copy command")
 	assert.Equal(t, "exit status 1", m.Minify("dummy/err", w, r).Error(), "must return proper exit status when command encounters error")
-	assert.Equal(t, "exit status 2", m.Minify("werr", w, r).Error(), "must return proper exit status when command encounters error")
-	assert.Equal(t, "exit status 2", m.Minify("stderr", w, r).Error(), "must return proper exit status when command encounters error")
+	assert.Equal(t, "exit status 2", m.Minify("werr6", w, r).Error(), "must return proper exit status when command encounters error")
+	assert.Equal(t, "exit status 2", m.Minify("stderr6", w, r).Error(), "must return proper exit status when command encounters error")
 }
 
 func TestWildcard(t *testing.T) {
@@ -120,6 +135,49 @@ func TestWildcard(t *testing.T) {
 	assert.Equal(t, "UTF-8", helperMinifyString(t, m, "dummy/charset;charset=UTF-8"), "must return UTF-8 for dummy/charset;charset=UTF-8")
 	assert.Equal(t, "UTF-8", helperMinifyString(t, m, "dummy/charset; charset = UTF-8 "), "must return UTF-8 for ' dummy/charset; charset = UTF-8 '")
 	assert.Equal(t, "type/sub", helperMinifyString(t, m, "dummy/params;type=type;sub=sub"), "must return type/sub for dummy/params;type=type;sub=sub")
+}
+
+func TestReader(t *testing.T) {
+	m := New()
+	m.AddFunc("dummy/dummy", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
+		_, err := io.Copy(w, r)
+		return err
+	})
+
+	var r io.Reader
+	r = bytes.NewBufferString("test")
+	r = m.Reader("dummy/dummy", r)
+
+	w := &bytes.Buffer{}
+	_, err := io.Copy(w, r)
+	assert.Nil(t, err)
+	assert.Equal(t, "test", w.String(), "must equal input after dummy minify reader")
+}
+
+func TestWriter(t *testing.T) {
+	m := New()
+	m.AddFunc("dummy/dummy", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
+		_, err := io.Copy(w, r)
+		return err
+	})
+	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
+		return errDummy
+	})
+
+	var err error
+	w := &bytes.Buffer{}
+	wc := m.Writer("dummy/dummy", w)
+	_, err = wc.Write([]byte("test"))
+	assert.Nil(t, err)
+	err = wc.Close()
+	assert.Nil(t, err)
+	assert.Equal(t, "test", w.String(), "must equal input after dummy minify writer")
+
+	wc = m.Writer("dummy/err", w)
+	_, err = wc.Write([]byte("test"))
+	assert.Equal(t, errDummy, err)
+	err = wc.Close()
+	assert.Equal(t, errDummy, err)
 }
 
 func TestHelperProcess(*testing.T) {
