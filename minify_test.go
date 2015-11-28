@@ -144,15 +144,20 @@ func TestReader(t *testing.T) {
 		_, err := io.Copy(w, r)
 		return err
 	})
-
-	var r io.Reader
-	r = bytes.NewBufferString("test")
-	r = m.Reader("dummy/dummy", r)
+	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
+		return errDummy
+	})
 
 	w := &bytes.Buffer{}
-	_, err := io.Copy(w, r)
+	r := bytes.NewBufferString("test")
+	mr := m.Reader("dummy/dummy", r)
+	_, err := io.Copy(w, mr)
 	assert.Nil(t, err)
 	assert.Equal(t, "test", w.String(), "must equal input after dummy minify reader")
+
+	mr = m.Reader("dummy/err", r)
+	_, err = io.Copy(w, mr)
+	assert.Equal(t, errDummy, err)
 }
 
 func TestWriter(t *testing.T) {
@@ -171,21 +176,21 @@ func TestWriter(t *testing.T) {
 
 	var err error
 	w := &bytes.Buffer{}
-	wc := m.Writer("dummy/dummy", w)
-	_, err = wc.Write([]byte("test"))
+	mw := m.Writer("dummy/dummy", w)
+	_, err = mw.Write([]byte("test"))
 	assert.Nil(t, err)
-	assert.Nil(t, wc.Close())
+	assert.Nil(t, mw.Close())
 	assert.Equal(t, "test", w.String(), "must equal input after dummy minify writer")
 
-	wc = m.Writer("dummy/err", w)
-	_, err = wc.Write([]byte("test"))
+	mw = m.Writer("dummy/err", w)
+	_, err = mw.Write([]byte("test"))
 	assert.Equal(t, errDummy, err)
-	assert.Equal(t, errDummy, wc.Close())
+	assert.Equal(t, errDummy, mw.Close())
 
-	wc = m.Writer("dummy/late-err", w)
-	_, err = wc.Write([]byte("test"))
+	mw = m.Writer("dummy/late-err", w)
+	_, err = mw.Write([]byte("test"))
 	assert.Nil(t, err)
-	assert.Equal(t, errDummy, wc.Close())
+	assert.Equal(t, errDummy, mw.Close())
 }
 
 func TestHelperProcess(*testing.T) {
@@ -261,18 +266,18 @@ func ExampleM_Reader() {
 	}
 }
 
-// func ExampleM_Writer() {
-// 	m := New()
-// 	// add minfiers
+func ExampleM_Writer() {
+	m := New()
+	// add minfiers
 
-// 	w := m.Writer("mime/type", os.Stdout)
-// 	if _, err := w.Write([]byte("input")); err != nil {
-// 		panic(err)
-// 	}
-// 	if err := w.Close(); err != nil {
-// 		panic(err)
-// 	}
-// }
+	w := m.Writer("mime/type", os.Stdout)
+	if _, err := w.Write([]byte("input")); err != nil {
+		panic(err)
+	}
+	if err := w.Close(); err != nil {
+		panic(err)
+	}
+}
 
 type MinifierResponseWriter struct {
 	http.ResponseWriter
