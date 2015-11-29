@@ -333,6 +333,7 @@ func expandOutputs(output string, dirDst, usePipe bool, tasks *[]task) bool {
 
 	ok := true
 	for i, t := range *tasks {
+		(*tasks)[i].dst = output
 		if len(output) > 0 && output[len(output)-1] == '/' {
 			rel, err := filepath.Rel(t.srcDir, t.src)
 			if err != nil {
@@ -392,10 +393,17 @@ func minify(mimetype string, t task) bool {
 		}
 	}
 
-	origSrc := t.src
-	if t.src == t.dst {
+	srcName := t.src
+	if srcName == "" {
+		srcName = "stdin"
+	}
+	dstName := t.dst
+	if dstName == "" {
+		dstName = "stdin"
+	}
+
+	if t.src == t.dst && t.src != "" {
 		t.src += ".bak"
-		fmt.Fprintln(os.Stderr, t.src, t.dst)
 		if err := os.Rename(t.dst, t.src); err != nil {
 			fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
 			return false
@@ -424,12 +432,12 @@ func minify(mimetype string, t task) bool {
 	startTime := time.Now()
 	err := m.Minify(mimetype, w, r)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "ERROR: cannot minify input "+origSrc+": "+err.Error())
+		fmt.Fprintln(os.Stderr, "ERROR: cannot minify "+srcName+": "+err.Error())
 		success = false
 	}
 	if verbose {
 		dur := time.Since(startTime)
-		fmt.Fprintf(os.Stderr, "INFO:  %v to %v\n  time:  %v\n  size:  %vB\n  ratio: %.1f%%\n  speed: %.1fMB/s\n", origSrc, t.dst, dur, w.N, float64(w.N)/float64(r.N)*100, float64(r.N)/dur.Seconds()/1000000)
+		fmt.Fprintf(os.Stderr, "INFO:  %v to %v\n  time:  %v\n  size:  %vB\n  ratio: %.1f%%\n  speed: %.1fMB/s\n", srcName, dstName, dur, w.N, float64(w.N)/float64(r.N)*100, float64(r.N)/dur.Seconds()/1000000)
 	}
 
 	fr.Close()
@@ -439,7 +447,6 @@ func minify(mimetype string, t task) bool {
 	fw.Close()
 
 	if t.src == t.dst+".bak" {
-		fmt.Fprintln(os.Stderr, t.src, t.dst, err)
 		if err == nil {
 			if err = os.Remove(t.src); err != nil {
 				fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
