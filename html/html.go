@@ -12,13 +12,12 @@ import (
 )
 
 var (
-	ltBytes         = []byte("<")
 	gtBytes         = []byte(">")
 	isBytes         = []byte("=")
 	spaceBytes      = []byte(" ")
-	endBytes        = []byte("</")
 	cdataBytes      = []byte("<![CDATA[")
 	cdataEndBytes   = []byte("]]>")
+	doctypeBytes    = []byte("<!doctype html>")
 	jsMimeBytes     = []byte("text/javascript")
 	cssMimeBytes    = []byte("text/css")
 	htmlMimeBytes   = []byte("text/html")
@@ -72,17 +71,17 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 			return l.Err()
 		case html.DoctypeToken:
-			if _, err := w.Write([]byte("<!doctype html>")); err != nil {
+			if _, err := w.Write(doctypeBytes); err != nil {
 				return err
 			}
 		case html.CommentToken:
 			// TODO: ensure that nested comments are handled properly (lexer doesn't handle this!)
 			var comment []byte
-			if bytes.HasPrefix(t.Data, []byte("[if")) {
-				comment = append(append([]byte("<!--"), t.Data...), []byte("-->")...)
-			} else if bytes.HasSuffix(t.Data, []byte("--")) {
+			if bytes.HasPrefix(t.Text, []byte("[if")) {
+				comment = t.Data
+			} else if bytes.HasSuffix(t.Text, []byte("--")) {
 				// only occurs when mixed up with conditional comments
-				comment = append(append([]byte("<!"), t.Data...), '>')
+				comment = append(append([]byte("<!"), t.Text...), '>')
 			}
 			if _, err := w.Write(comment); err != nil {
 				return err
@@ -221,16 +220,14 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				}
 			}
 
-			// write tag
 			if t.TokenType == html.EndTagToken {
-				if _, err := w.Write(endBytes); err != nil {
+				t.Data[2+len(t.Text)] = '>'
+				if _, err := w.Write(t.Data[:2+len(t.Text)+1]); err != nil {
 					return err
 				}
-			} else {
-				if _, err := w.Write(ltBytes); err != nil {
-					return err
-				}
+				break
 			}
+
 			if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
@@ -241,7 +238,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					getAttributes(&attrTokenBuffer, tb, html.Id, html.Name, html.Rel, html.Href)
 					if id := attrTokenBuffer[0]; id != nil {
 						if name := attrTokenBuffer[1]; name != nil && parse.Equal(id.AttrVal, name.AttrVal) {
-							name.Data = nil
+							name.Text = nil
 						}
 					}
 					if href := attrTokenBuffer[3]; href != nil {
@@ -267,8 +264,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						if httpEquiv := attrTokenBuffer[1]; httpEquiv != nil {
 							content.AttrVal = minify.ContentType(content.AttrVal)
 							if charset := attrTokenBuffer[2]; charset == nil && parse.EqualFold(httpEquiv.AttrVal, []byte("content-type")) && parse.Equal(content.AttrVal, []byte("text/html;charset=utf-8")) {
-								httpEquiv.Data = nil
-								content.Data = []byte("charset")
+								httpEquiv.Text = nil
+								content.Text = []byte("charset")
 								content.Hash = html.Charset
 								content.AttrVal = []byte("utf-8")
 							} else if parse.EqualFold(httpEquiv.AttrVal, []byte("content-style-type")) {
@@ -295,7 +292,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					getAttributes(&attrTokenBuffer, tb, html.Src, html.Charset)
 					if src := attrTokenBuffer[0]; src != nil {
 						if charset := attrTokenBuffer[1]; charset != nil {
-							charset.Data = nil
+							charset.Text = nil
 						}
 					}
 				}
@@ -305,7 +302,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					attr := *tb.Shift()
 					if attr.TokenType != html.AttributeToken {
 						break
-					} else if attr.Data == nil {
+					} else if attr.Text == nil {
 						continue // removed attribute
 					}
 
@@ -362,7 +359,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						if len(val) == 0 {
 							continue
 						}
-					} else if len(attr.Data) > 2 && attr.Data[0] == 'o' && attr.Data[1] == 'n' {
+					} else if len(attr.Text) > 2 && attr.Text[0] == 'o' && attr.Text[1] == 'n' {
 						if len(val) >= 11 && parse.EqualFold(val[:11], jsSchemeBytes) {
 							val = val[11:]
 						}
@@ -399,7 +396,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					if _, err := w.Write(spaceBytes); err != nil {
 						return err
 					}
-					if _, err := w.Write(attr.Data); err != nil {
+					if _, err := w.Write(attr.Text); err != nil {
 						return err
 					}
 					if len(val) > 0 && attr.Traits&booleanAttr == 0 {

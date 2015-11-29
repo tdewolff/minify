@@ -7,9 +7,9 @@ type Token struct {
 	html.TokenType
 	Hash    html.Hash
 	Data    []byte
+	Text    []byte
 	AttrVal []byte
 	Traits  traits
-	n       int
 }
 
 // TokenBuffer is a buffer that allows for token look-ahead.
@@ -31,14 +31,15 @@ func NewTokenBuffer(l *html.Lexer) *TokenBuffer {
 }
 
 func (z *TokenBuffer) read(t *Token) {
-	t.TokenType, t.Data, t.n = z.l.Next()
+	t.TokenType, t.Data = z.l.Next()
+	t.Text = z.l.Text()
 	if t.TokenType == html.AttributeToken {
 		t.AttrVal = z.l.AttrVal()
-		t.Hash = html.ToHash(t.Data)
+		t.Hash = html.ToHash(t.Text)
 		t.Traits = attrMap[t.Hash]
 	} else if t.TokenType == html.StartTagToken || t.TokenType == html.EndTagToken {
 		t.AttrVal = nil
-		t.Hash = html.ToHash(t.Data)
+		t.Hash = html.ToHash(t.Text)
 		t.Traits = tagMap[t.Hash]
 	} else {
 		t.AttrVal = nil
@@ -88,11 +89,11 @@ func (z *TokenBuffer) Shift() *Token {
 	if z.pos >= len(z.buf) {
 		t := &z.buf[:1][0]
 		z.read(t)
-		z.prevN = t.n
+		z.prevN = len(t.Data)
 		return t
 	}
 	t := &z.buf[z.pos]
 	z.pos++
-	z.prevN = t.n
+	z.prevN = len(t.Data)
 	return t
 }

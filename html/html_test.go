@@ -52,6 +52,7 @@ func TestHTML(t *testing.T) {
 		{`<style><![CDATA[x]]></style>`, `<style>x</style>`},
 		{`<link href="data:text/plain, data">`, `<link href=data:,+data>`},
 		{`<svg width="100" height="100"><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>`, `<svg width=100 height=100><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>`},
+		{`</span >`, `</span>`},
 
 		// increase coverage
 		{`<script style="css">js</script>`, `<script style=css>js</script>`},
@@ -179,11 +180,11 @@ func TestReaderErrors(t *testing.T) {
 }
 
 func TestWriterErrors(t *testing.T) {
-	var errorTests = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 16, 20}
+	var errorTests = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 14}
 
 	m := minify.New()
 	for _, n := range errorTests {
-		// writes:                  0         1   23    45   67  89  0 1    234   56   7 8   90
+		// writes:                  0         1   2     34   56  78  9       0    12   3      4
 		r := bytes.NewBufferString(`<!doctype>text<style attr=val>css</style><code>code</code><!--comment-->`)
 		w := test.NewErrorWriter(n)
 		assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at write "+strconv.FormatInt(int64(n), 10))
