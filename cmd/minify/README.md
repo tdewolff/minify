@@ -19,7 +19,7 @@ and the `minify` command will be in your `$GOPATH/bin`.
 	  -f, --force=false: Force overwriting existing files
 	  -l, --list=false: List all accepted filetypes
 		  --match="": Filename pattern matching using regular expressions, see https://github.com/google/re2/wiki/Syntax
-		  --mime="": Mimetype (text/css, application/javascript, ...), optional for input filenames, has precendence over -type
+		  --mime="": Mimetype (text/css, text/javascript, ...), optional for input filenames, has precendence over -type
 	  -o, --output="": Output (concatenated) file (stdout when empty) or directory
 	  -r, --recursive=false: Recursively minify directories
 		  --type="": Filetype (css, html, js, ...), optional for input filenames
@@ -37,7 +37,7 @@ and the `minify` command will be in your `$GOPATH/bin`.
 	css     text/css
 	htm     text/html
 	html    text/html
-	js      application/javascript
+	js      text/javascript
 	json    application/json
 	svg     image/svg+xml
 	xml     text/xml
@@ -50,7 +50,7 @@ $ minify file.html # file.html &#8594; file.min.html
 
 $ minify --type=css -o file_minified.ext file.ext # file.ext &#8594; file_minified.ext
 
-$ minify --mime=application/javascript < file.js > file.min.js
+$ minify --mime=text/javascript < file.js > file.min.js
 
 $ cat file.html | minify --type=html > file.min.html
 ```
