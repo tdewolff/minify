@@ -95,7 +95,7 @@ func TestMinify(t *testing.T) {
 
 type DummyMinifier struct{}
 
-func (_ *DummyMinifier) Minify(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
+func (d *DummyMinifier) Minify(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
 	return errDummy
 }
 

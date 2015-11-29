@@ -10,7 +10,6 @@ import (
 )
 
 var (
-	gtBytes    = []byte(">")
 	isBytes    = []byte("=")
 	spaceBytes = []byte(" ")
 	voidBytes  = []byte("/>")

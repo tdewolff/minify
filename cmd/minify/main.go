@@ -149,7 +149,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	var fails int32 = 0
+	var fails int32
 	if verbose {
 		for _, t := range tasks {
 			if ok := minify(mimetype, t); !ok {

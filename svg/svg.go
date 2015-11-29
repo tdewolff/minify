@@ -14,12 +14,9 @@ import (
 )
 
 var (
-	ltBytes         = []byte("<")
-	gtBytes         = []byte(">")
 	voidBytes       = []byte("/>")
 	isBytes         = []byte("=")
 	spaceBytes      = []byte(" ")
-	endBytes        = []byte("</")
 	cdataStartBytes = []byte("<![CDATA[")
 	cdataEndBytes   = []byte("]]>")
 )
