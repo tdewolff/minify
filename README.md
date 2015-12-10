@@ -114,9 +114,14 @@ These tests ensure that everything works as intended, the code does not crash (w
 
 ## HTML [![GoDoc](http://godoc.org/github.com/tdewolff/minify/html?status.svg)](http://godoc.org/github.com/tdewolff/minify/html) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/html)](http://gocover.io/github.com/tdewolff/minify/html)
 
+Options:
+
+- KeepDefaultAttrVals: do not remove default attribute value such as `<script type="text/javascript">`
+- KeepWhitespace: do not remove whitespace between inline tags but still collapse multiple whitespace characters into one
+
 The HTML5 minifier uses these minifications:
 
-- strip unnecessary whitespace and otherwise collapse it to one space
+- strip unnecessary whitespace and otherwise collapse it to one space (or newline if it originally contained a newline)
 - strip superfluous quotes, or uses single/double quotes whichever requires fewer escapes
 - strip default attribute values and attribute boolean values
 - strip some empty attributes
@@ -132,7 +137,7 @@ After recent benchmarking and profiling it became really fast and minifies pages
 However, be careful when doing on-the-fly minification. Minification typically trims off 10% and does this at worst around about 20MB/s. This means users have to download slower than 2MB/s to make on-the-fly minification worthwhile. This may or may not apply in your situation. Rather use caching!
 
 ### Whitespace removal
-The whitespace removal mechanism collapses all sequences of whitespace (spaces, newlines, tabs) to a single space. It trims all text parts (in between tags) depending on whether it was preceded by a space from a previous piece of text and whether it is followed up by a block element or an inline element. In the former case we can omit spaces while for inline elements whitespace has significance.
+The whitespace removal mechanism collapses all sequences of whitespace (spaces, newlines, tabs) to a single space. If the sequence contained a newline or carriage return it will collapse into a newline character instead. It trims all text parts (in between tags) depending on whether it was preceded by a space from a previous piece of text and whether it is followed up by a block element or an inline element. In the former case we can omit spaces while for inline elements whitespace has significance.
 
 Make sure your HTML doesn't depend on whitespace between `block` elements that have been changed to `inline` or `inline-block` elements using CSS. Your layout *should not* depend on those whitespaces as the minifier will remove them. An example is a menu consisting of multiple `<li>` that have `display:inline-block` applied and have whitespace in between them. It is bad practise to rely on whitespace for element positioning anyways!
 
@@ -228,9 +233,13 @@ TODO:
 
 Minification typically runs at about 60MB/s ~= 220GB/h.
 
+Options:
+
+- KeepWhitespace: do not remove whitespace between inline tags but still collapse multiple whitespace characters into one
+
 The XML minifier uses these minifications:
 
-- strip unnecessary whitespace and otherwise collapse it to one space
+- strip unnecessary whitespace and otherwise collapse it to one space (or newline if it originally contained a newline)
 - strip comments
 - collapse tags with no content to a void tag
 - strip CDATA sections wherever possible
