@@ -20,7 +20,7 @@ func TestXML(t *testing.T) {
 		{"<!-- comment -->", ""},
 		{"<A>x</A>", "<A>x</A>"},
 		{"<a><b>x</b></a>", "<a><b>x</b></a>"},
-		{"<a><b>x\ny</b></a>", "<a><b>x y</b></a>"},
+		{"<a><b>x\ny</b></a>", "<a><b>x\ny</b></a>"},
 		{"<a> <![CDATA[ a ]]> </a>", "<a>a</a>"},
 		{"<a >a</a >", "<a>a</a>"},
 		{"<?xml  version=\"1.0\" ?>", "<?xml version=\"1.0\"?>"},
