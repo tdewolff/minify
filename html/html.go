@@ -121,13 +121,13 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					return err
 				}
 				if rawTagTraits&nonPhrasingTag == 0 && rawTagHash != html.Script {
-					omitSpace = len(t.Data) > 0 && t.Data[len(t.Data)-1] == ' '
+					omitSpace = len(t.Data) > 0 && (t.Data[len(t.Data)-1] == ' ' || t.Data[len(t.Data)-1] == '\n')
 				}
 			} else {
-				t.Data = parse.ReplaceMultipleWhitespace(t.Data)
+				t.Data = parse.ReplaceMultipleWhitespaceKeepNewline(t.Data)
 				if !o.KeepWhitespace {
 					// whitespace removal; trim left
-					if omitSpace && t.Data[0] == ' ' {
+					if omitSpace && (t.Data[0] == ' ' || t.Data[0] == '\n') {
 						t.Data = t.Data[1:]
 					}
 
@@ -135,7 +135,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					omitSpace = false
 					if len(t.Data) == 0 {
 						omitSpace = true
-					} else if t.Data[len(t.Data)-1] == ' ' {
+					} else if t.Data[len(t.Data)-1] == ' ' || t.Data[len(t.Data)-1] == '\n' {
 						omitSpace = true
 						i := 0
 						for {
