@@ -315,13 +315,15 @@ func expandOutputs(output string, dirDst, usePipe bool, tasks *[]task) bool {
 		} else if output[len(output)-1] == '/' {
 			output += "out"
 		}
-	} else if !usePipe {
-		output = "./"
 	}
 
 	if verbose {
 		if output == "" {
-			fmt.Fprintln(os.Stderr, "INFO:  minify to stdout")
+			if usePipe {
+				fmt.Fprintln(os.Stderr, "INFO:  minify to stdout")
+			} else {
+				fmt.Fprintln(os.Stderr, "INFO:  minify to overwrite itself")
+			}
 		} else if output[len(output)-1] != '/' {
 			fmt.Fprintf(os.Stderr, "INFO:  minify to output file %v\n", output)
 		} else if output == "./" {
@@ -333,7 +335,11 @@ func expandOutputs(output string, dirDst, usePipe bool, tasks *[]task) bool {
 
 	ok := true
 	for i, t := range *tasks {
-		(*tasks)[i].dst = output
+		if !usePipe && output == "" {
+			(*tasks)[i].dst = (*tasks)[i].src
+		} else {
+			(*tasks)[i].dst = output
+		}
 		if len(output) > 0 && output[len(output)-1] == '/' {
 			rel, err := filepath.Rel(t.srcDir, t.src)
 			if err != nil {
@@ -367,17 +373,9 @@ func openOutputFile(output string) (*os.File, bool) {
 	var w *os.File
 	if output == "" {
 		w = os.Stdout
-	} else {
-		if !force {
-			if _, err = os.Stat(output); !os.IsNotExist(err) {
-				fmt.Fprintln(os.Stderr, "ERROR: overwriting "+output+" (use -f)")
-				return nil, false
-			}
-		}
-		if w, err = os.OpenFile(output, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666); err != nil {
-			fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
-			return nil, false
-		}
+	} else if w, err = os.OpenFile(output, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666); err != nil {
+		fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
+		return nil, false
 	}
 	return w, true
 }
@@ -400,6 +398,13 @@ func minify(mimetype string, t task) bool {
 	dstName := t.dst
 	if dstName == "" {
 		dstName = "stdin"
+	}
+
+	if !force && t.dst != "" {
+		if _, err := os.Stat(t.dst); !os.IsNotExist(err) {
+			fmt.Fprintln(os.Stderr, "ERROR: overwriting "+t.dst+" (use -f)")
+			return false
+		}
 	}
 
 	if t.src == t.dst && t.src != "" {
