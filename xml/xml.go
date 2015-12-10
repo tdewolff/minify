@@ -18,7 +18,9 @@ var (
 ////////////////////////////////////////////////////////////////
 
 // Minifier is an XML minifier.
-type Minifier struct{}
+type Minifier struct {
+	KeepWhitespace bool
+}
 
 // Minify minifies XML data, it reads from r and writes to w.
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
@@ -27,7 +29,7 @@ func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) err
 
 // Minify minifies XML data, it reads from r and writes to w.
 func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
-	precededBySpace := true // on true the next text token must not start with a space
+	omitSpace := true // on true the next text token must not start with a space
 
 	attrByteBuffer := make([]byte, 0, 64)
 
@@ -56,31 +58,32 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				return err
 			}
 		case xml.TextToken:
-			if t.Data = parse.ReplaceMultipleWhitespace(t.Data); len(t.Data) > 0 {
+			t.Data = parse.ReplaceMultipleWhitespace(t.Data)
+			if !o.KeepWhitespace {
 				// whitespace removal; trim left
-				if precededBySpace && t.Data[0] == ' ' {
+				if omitSpace && t.Data[0] == ' ' {
 					t.Data = t.Data[1:]
 				}
 
 				// whitespace removal; trim right
-				precededBySpace = false
+				omitSpace = false
 				if len(t.Data) == 0 {
-					precededBySpace = true
+					omitSpace = true
 				} else if t.Data[len(t.Data)-1] == ' ' {
-					precededBySpace = true
+					omitSpace = true
 					i := 0
 					for {
 						next := tb.Peek(i)
 						// trim if EOF, text token with whitespace begin or block token
 						if next.TokenType == xml.StartTagToken || next.TokenType == xml.EndTagToken || next.TokenType == xml.ErrorToken {
 							t.Data = t.Data[:len(t.Data)-1]
-							precededBySpace = false
+							omitSpace = false
 							break
 						} else if next.TokenType == xml.TextToken {
 							// remove if the text token starts with a whitespace
 							if len(next.Data) > 0 && parse.IsWhitespace(next.Data[0]) {
 								t.Data = t.Data[:len(t.Data)-1]
-								precededBySpace = false
+								omitSpace = false
 
 							}
 							break
