@@ -71,7 +71,7 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 * [ ] ~~JS lightweight parser~~
 * [x] Use ECMAScript 6 for JS lexer instead of 5.1
 * [ ] JS minifier with local variable renaming and better semicolon and newline omission
-* [ ] Optimize the CSS parser to use the same parsing style as the JS parser
+* [ ] ? Optimize the CSS parser to use the same parsing style as the JS parser
 * [x] Options feature to disable techniques
 * [ ] HTML templates minification, e.g. Go HTML templates or doT.js templates etc.
 
@@ -114,11 +114,6 @@ These tests ensure that everything works as intended, the code does not crash (w
 
 ## HTML [![GoDoc](http://godoc.org/github.com/tdewolff/minify/html?status.svg)](http://godoc.org/github.com/tdewolff/minify/html) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/html)](http://gocover.io/github.com/tdewolff/minify/html)
 
-Options:
-
-- KeepDefaultAttrVals: do not remove default attribute value such as `<script type="text/javascript">`
-- KeepWhitespace: do not remove whitespace between inline tags but still collapse multiple whitespace characters into one
-
 The HTML5 minifier uses these minifications:
 
 - strip unnecessary whitespace and otherwise collapse it to one space (or newline if it originally contained a newline)
@@ -131,6 +126,11 @@ The HTML5 minifier uses these minifications:
 - strip comments (except conditional comments)
 - shorten `doctype` and `meta` charset
 - lowercase tags, attributes and some values to enhance gzip compression
+
+Options:
+
+- `KeepDefaultAttrVals` do not remove default attribute value such as `<script type="text/javascript">`
+- `KeepWhitespace` do not remove whitespace between inline tags but still collapse multiple whitespace characters into one
 
 After recent benchmarking and profiling it became really fast and minifies pages in the 10ms range, making it viable for on-the-fly minification.
 
@@ -233,16 +233,16 @@ TODO:
 
 Minification typically runs at about 60MB/s ~= 220GB/h.
 
-Options:
-
-- KeepWhitespace: do not remove whitespace between inline tags but still collapse multiple whitespace characters into one
-
 The XML minifier uses these minifications:
 
 - strip unnecessary whitespace and otherwise collapse it to one space (or newline if it originally contained a newline)
 - strip comments
 - collapse tags with no content to a void tag
 - strip CDATA sections wherever possible
+
+Options:
+
+- `KeepWhitespace` do not remove whitespace between inline tags but still collapse multiple whitespace characters into one
 
 ## Installation
 Run the following command
