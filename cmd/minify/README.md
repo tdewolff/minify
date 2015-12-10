@@ -16,7 +16,6 @@ and the `minify` command will be in your `$GOPATH/bin`.
 
 	Options:
 	  -a, --all=false: Minify all files, including hidden files and files in hidden directories
-	  -f, --force=false: Force overwriting existing files
 	  -l, --list=false: List all accepted filetypes
 		  --match="": Filename pattern matching using regular expressions, see https://github.com/google/re2/wiki/Syntax
 		  --mime="": Mimetype (text/css, text/javascript, ...), optional for input filenames, has precendence over -type

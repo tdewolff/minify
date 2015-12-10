@@ -41,7 +41,6 @@ var (
 	hidden    bool
 	list      bool
 	verbose   bool
-	force     bool
 	pattern   *regexp.Regexp
 )
 
@@ -95,7 +94,6 @@ func main() {
 	flag.BoolVarP(&hidden, "all", "a", false, "Minify all files, including hidden files and files in hidden directories")
 	flag.BoolVarP(&list, "list", "l", false, "List all accepted filetypes")
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose")
-	flag.BoolVarP(&force, "force", "f", false, "Force overwriting existing files")
 
 	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
 	flag.BoolVar(&htmlMinifier.KeepDefaultAttrVals, "html-keep-default-attrvals", false, "Preserve default attribute values")
@@ -398,13 +396,6 @@ func minify(mimetype string, t task) bool {
 	dstName := t.dst
 	if dstName == "" {
 		dstName = "stdin"
-	}
-
-	if !force && t.dst != "" {
-		if _, err := os.Stat(t.dst); !os.IsNotExist(err) {
-			fmt.Fprintln(os.Stderr, "ERROR: overwriting "+t.dst+" (use -f)")
-			return false
-		}
 	}
 
 	if t.src == t.dst && t.src != "" {
