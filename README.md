@@ -72,7 +72,7 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 * [x] Use ECMAScript 6 for JS lexer instead of 5.1
 * [ ] JS minifier with local variable renaming and better semicolon and newline omission
 * [ ] Optimize the CSS parser to use the same parsing style as the JS parser
-* [ ] Options feature to disable techniques
+* [x] Options feature to disable techniques
 * [ ] HTML templates minification, e.g. Go HTML templates or doT.js templates etc.
 
 ## Prologue
