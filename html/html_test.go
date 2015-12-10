@@ -74,7 +74,7 @@ func TestHTML(t *testing.T) {
 		{` <div> <i> test </i> <b> test </b> </div> `, `<div><i>test</i> <b>test</b></div>`},
 		{`<strong>x </strong>y`, `<strong>x </strong>y`},
 		{`<strong>x </strong> y`, `<strong>x</strong> y`},
-		{"<strong>x </strong>\ny", `<strong>x</strong> y`},
+		{"<strong>x </strong>\ny", "<strong>x</strong>\ny"},
 		{`<p>x </p>y`, `<p>x</p>y`},
 		{`x <p>y</p>`, `x<p>y`},
 		{` <!doctype html> <!--comment--> <html> <body><p></p></body></html>`, `<!doctype html><p>`}, // spaces before html and at the start of html are dropped
