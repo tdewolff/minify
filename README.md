@@ -95,17 +95,17 @@ import (
 
 ## API stability
 
-One major versions of minify exist.
+One major version of minify exists.
 
 **[minify.v1](https://gopkg.in/tdewolff/minify.v1)**. Bugfixes *should* be backported, but I recommend using **master**. Make sure to have **[parse.v1](https://gopkg.in/tdewolff/parse.v1)** and **[buffer.v1](https://gopkg.in/tdewolff/buffer.v1)**!
 
-```go
+``` go
 import "gopkg.in/tdewolff/minify.v1"
 ```
 
 **Master** may have unreleased changes. Use it to test the latest code or when contributing, but don't expect it to remain API-compatible.  Make sure to have **[parse](https://github.com/tdewolff/parse)** and **[buffer](https://github.com/tdewolff/buffer)** from **master**!
 
-```go
+``` go
 import "github.com/tdewolff/minify"
 ```
 
