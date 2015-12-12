@@ -1,4 +1,4 @@
-# Minify [![Build Status](https://travis-ci.org/tdewolff/minify.svg?branch=master)](https://travis-ci.org/tdewolff/minify) [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify)](http://gocover.io/github.com/tdewolff/minify) [![Go Report Card](http://goreportcard.com/badge/tdewolff/minify)](http://goreportcard.com/report/tdewolff/minify)
+# Minify [![Build Status](https://travis-ci.org/tdewolff/minify.svg?branch=master)](https://travis-ci.org/tdewolff/minify) [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify)](http://gocover.io/github.com/tdewolff/minify)
 
 [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -79,19 +79,19 @@ This minifier proves to be that fast and encompassing minifier which stream-mini
 
 One major versions of minify exist.
 
-**[minify.v1](https://gopkg.in/tdewolff/minify.v1)**. Bugfixes *may* be backported, but I recommend upgrading to v1. Make sure to have **[parse.v1](https://gopkg.in/tdewolff/parse.v1)** and **[buffer.v1](https://gopkg.in/tdewolff/buffer.v1)**!
+**[minify.v1](https://gopkg.in/tdewolff/minify.v1)**. Bugfixes *should* be backported, but I recommend using **master**. Make sure to have **[parse.v1](https://gopkg.in/tdewolff/parse.v1)** and **[buffer.v1](https://gopkg.in/tdewolff/buffer.v1)**!
 
 ```go
 import "gopkg.in/tdewolff/minify.v1"
 ```
 
-**Master** may have unreleased changes. Use it to test the very latest code or when [contributing][], but don't expect it to remain API-compatible.  Make sure to have **[parse](https://github.com/tdewolff/parse)** and **[buffer](https://github.com/tdewolff/buffer)** from **master**!
+**Master** may have unreleased changes. Use it to test the latest code or when contributing, but don't expect it to remain API-compatible.  Make sure to have **[parse](https://github.com/tdewolff/parse)** and **[buffer](https://github.com/tdewolff/buffer)** from **master**!
 
 ```go
 import "github.com/tdewolff/minify"
 ```
 
-The API differences of master versus v1 are listed below. If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then:
+The API differences of **master** versus v1 are listed below. If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then in **master**:
  - `minify.Bytes(m, ...)` &#8594; `m.Bytes(...)`
  - `minify.String(m, ...)` &#8594; `m.String(...)`
  - `html.Minify(m, "text/html", w, r)` &#8594; `html.Minify(m, w, r, nil)` also for `css`, `js`, ...
