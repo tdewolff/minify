@@ -2,18 +2,6 @@
 
 [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**WARNING: the API has changed, be aware or continue using the old API in tag v1.1.0**
-
-To use the old API, import the package from `gopkg.in/tdewolff/minify.v1` instead, also make sure to use `gopkg.in/tdewolff/parse.v1`!
-
-If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then:
- - `minify.Bytes(m, ...)` &#8594; `m.Bytes(...)`
- - `minify.String(m, ...)` &#8594; `m.String(...)`
- - `html.Minify(m, "text/html", w, r)` &#8594; `html.Minify(m, w, r, nil)` also for `css`, `js`, ...
- - `css.Minify(m, "text/css;inline=1", w, r)` &#8594; `css.Minify(m, w, r, map[string]string{"inline":"1"})`
-
----
-
 Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3, JS, JSON, SVG and XML minifiers and provides an interface to implement any minifier. Minification is the process of removing bytes from a file (such as whitespace) without changing its output and therefore speeding up transmission over the internet. The implemented minifiers are high performance and streaming (which implies O(n)).
 
 It associates minification functions with mimetypes, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mimetype using an external command (like the ClosureCompiler, UglifyCSS, ...). It is possible to pass parameters through the mediatype to specify the charset for example.
@@ -28,6 +16,7 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 
 - [Minify](#minify--)
 	- [Prologue](#prologue)
+	- [API stability](#api-stability)
 	- [Comparison](#comparison)
 		- [Alternatives](#alternatives)
 	- [Testing](#testing)
@@ -73,7 +62,7 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 * [ ] JS minifier with local variable renaming and better semicolon and newline omission
 * [ ] ? Optimize the CSS parser to use the same parsing style as the JS parser
 * [x] Options feature to disable techniques
-* [ ] HTML templates minification, e.g. Go HTML templates or doT.js templates etc.
+* [ ] ? HTML templates minification, e.g. Go HTML templates or doT.js templates etc.
 
 ## Prologue
 Minifiers or bindings to minifiers exist in almost all programming languages. Some implementations are merely using several regular-expressions to trim whitespace and comments (even though regex for parsing HTML/XML is ill-advised, for a good read see [Regular Expressions: Now You Have Two Problems](http://blog.codinghorror.com/regular-expressions-now-you-have-two-problems/)). Some implementations are much more profound, such as the [YUI Compressor](http://yui.github.io/yuicompressor/), [Google Closure Compiler](https://github.com/google/closure-compiler) for JS and the [HTML Compressor](https://code.google.com/p/htmlcompressor/).
@@ -85,6 +74,30 @@ Additionally, many of these minifier either do not follow the specifications or 
 However, implementing an HTML minifier is the bare minimum. HTML documents can contain embedded resources such as CSS, JS and SVG file formats. Thus for increased minification of HTML, other file format minifiers must be present too. A minifier should really handle a number of mimetypes to be successful.
 
 This minifier proves to be that fast and encompassing minifier which stream-minifies files and can minify them concurrently.
+
+## API stability
+
+One major versions of minify exist.
+
+**[minify.v1](https://gopkg.in/tdewolff/minify.v1)**. Bugfixes *may* be backported, but I recommend upgrading to v1. Make sure to have **[parse.v1](https://gopkg.in/tdewolff/parse.v1)** and **[buffer.v1](https://gopkg.in/tdewolff/buffer.v1)**!
+
+```go
+import "gopkg.in/tdewolff/minify.v1"
+```
+
+**Master** may have unreleased changes. Use it to test the very latest code or when [contributing][], but don't expect it to remain API-compatible.  Make sure to have **[parse](https://github.com/tdewolff/parse)** and **[buffer](https://github.com/tdewolff/buffer)** from **master**!
+
+```go
+import "github.com/tdewolff/minify"
+```
+
+The API differences of master versus v1 are listed below. If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then:
+ - `minify.Bytes(m, ...)` &#8594; `m.Bytes(...)`
+ - `minify.String(m, ...)` &#8594; `m.String(...)`
+ - `html.Minify(m, "text/html", w, r)` &#8594; `html.Minify(m, w, r, nil)` also for `css`, `js`, ...
+ - `css.Minify(m, "text/css;inline=1", w, r)` &#8594; `css.Minify(m, w, r, map[string]string{"inline":"1"})`
+
+Further API changes are not planned, but a new major revision will be tagged, so you can depend on the v1 API and soon the v2 API.
 
 ## Comparison
 HTML (with JS and CSS) minification typically runs at about 35MB/s ~= 120GB/h, depending on the composition of the file.
