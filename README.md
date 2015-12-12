@@ -16,6 +16,7 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 
 - [Minify](#minify--)
 	- [Prologue](#prologue)
+	- [Installation](#installation)
 	- [API stability](#api-stability)
 	- [Comparison](#comparison)
 		- [Alternatives](#alternatives)
@@ -27,7 +28,6 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 	- [JSON](#json--)
 	- [SVG](#svg--)
 	- [XML](#xml--)
-	- [Installation](#installation)
 	- [Usage](#usage)
 		- [New](#new)
 		- [From reader](#from-reader)
@@ -74,6 +74,24 @@ Additionally, many of these minifier either do not follow the specifications or 
 However, implementing an HTML minifier is the bare minimum. HTML documents can contain embedded resources such as CSS, JS and SVG file formats. Thus for increased minification of HTML, other file format minifiers must be present too. A minifier should really handle a number of mimetypes to be successful.
 
 This minifier proves to be that fast and encompassing minifier which stream-minifies files and can minify them concurrently.
+
+## Installation
+Run the following command
+
+	go get github.com/tdewolff/minify
+
+or add the following imports and run the project with `go get`
+``` go
+import (
+	"github.com/tdewolff/minify"
+	"github.com/tdewolff/minify/css"
+	"github.com/tdewolff/minify/html"
+	"github.com/tdewolff/minify/js"
+	"github.com/tdewolff/minify/json"
+	"github.com/tdewolff/minify/svg"
+	"github.com/tdewolff/minify/xml"
+)
+```
 
 ## API stability
 
@@ -256,24 +274,6 @@ The XML minifier uses these minifications:
 Options:
 
 - `KeepWhitespace` do not remove whitespace between inline tags but still collapse multiple whitespace characters into one
-
-## Installation
-Run the following command
-
-	go get github.com/tdewolff/minify
-
-or add the following imports and run the project with `go get`
-``` go
-import (
-	"github.com/tdewolff/minify"
-	"github.com/tdewolff/minify/css"
-	"github.com/tdewolff/minify/html"
-	"github.com/tdewolff/minify/js"
-	"github.com/tdewolff/minify/json"
-	"github.com/tdewolff/minify/svg"
-	"github.com/tdewolff/minify/xml"
-)
-```
 
 ## Usage
 ### New
