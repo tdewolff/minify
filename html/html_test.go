@@ -58,6 +58,7 @@ func TestHTML(t *testing.T) {
 		{`<script style="css">js</script>`, `<script style=css>js</script>`},
 		{`<meta http-equiv="content-type" content="text/plain, text/html">`, `<meta http-equiv=content-type content=text/plain,text/html>`},
 		{`<meta http-equiv="content-style-type" content="text/less">`, `<meta http-equiv=content-style-type content=text/less>`},
+		{`<meta http-equiv="content-style-type" content="text/less; charset=utf-8">`, `<meta http-equiv=content-style-type content="text/less;charset=utf-8">`},
 		{`<meta http-equiv="content-script-type" content="application/js">`, `<meta http-equiv=content-script-type content=application/js>`},
 		{`<span attr=""></span>`, `<span attr></span>`},
 		{`<code>x</code>`, `<code>x</code>`},
@@ -132,16 +133,22 @@ func TestHTML(t *testing.T) {
 
 func TestHTMLURL(t *testing.T) {
 	var htmlTests = []struct {
+		url      string
 		html     string
 		expected string
 	}{
-		{`<a href=http://example.com/>link</a>`, `<a href=//example.com/>link</a>`},
-		{`<a href=https://example.com/>link</a>`, `<a href=https://example.com/>link</a>`},
-		{`<a href="   http://example.com  ">x</a>`, `<a href=//example.com>x</a>`},
-		{`<link rel="stylesheet" type="text/css" href="http://example.com">`, `<link rel=stylesheet href=//example.com>`},
-		{`<!doctype html> <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"> <head profile="http://dublincore.org/documents/dcq-html/"> <!-- Barlesque 2.75.0 --> <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`,
+		{`http://example.com/`, `<a href=http://example.com/>link</a>`, `<a href=//example.com/>link</a>`},
+		{`https://example.com/`, `<a href=http://example.com/>link</a>`, `<a href=http://example.com/>link</a>`},
+		{`http://example.com/`, `<a href=https://example.com/>link</a>`, `<a href=https://example.com/>link</a>`},
+		{`https://example.com/`, `<a href=https://example.com/>link</a>`, `<a href=//example.com/>link</a>`},
+		{`http://example.com/`, `<a href="   http://example.com  ">x</a>`, `<a href=//example.com>x</a>`},
+		{`http://example.com/`, `<link rel="stylesheet" type="text/css" href="http://example.com">`, `<link rel=stylesheet href=//example.com>`},
+		{`http://example.com/`, `<!doctype html> <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"> <head profile="http://dublincore.org/documents/dcq-html/"> <!-- Barlesque 2.75.0 --> <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`,
 			`<!doctype html><html xmlns=//www.w3.org/1999/xhtml xml:lang=en><head profile=//dublincore.org/documents/dcq-html/><meta charset=utf-8>`},
-		{`<svg xmlns="http://www.w3.org/2000/svg"><path d="x"/></svg>`, `<svg xmlns=//www.w3.org/2000/svg><path d="x"/></svg>`},
+		{`http://example.com/`, `<svg xmlns="http://www.w3.org/2000/svg"></svg>`, `<svg xmlns=//www.w3.org/2000/svg></svg>`},
+		{`https://example.com/`, `<svg xmlns="http://www.w3.org/2000/svg"></svg>`, `<svg xmlns=http://www.w3.org/2000/svg></svg>`},
+		{`http://example.com/`, `<svg xmlns="https://www.w3.org/2000/svg"></svg>`, `<svg xmlns=https://www.w3.org/2000/svg></svg>`},
+		{`https://example.com/`, `<svg xmlns="https://www.w3.org/2000/svg"></svg>`, `<svg xmlns=//www.w3.org/2000/svg></svg>`},
 	}
 
 	m := minify.New()
@@ -149,7 +156,7 @@ func TestHTMLURL(t *testing.T) {
 	for _, tt := range htmlTests {
 		r := bytes.NewBufferString(tt.html)
 		w := &bytes.Buffer{}
-		m.URL, _ = url.Parse("http://example.com/")
+		m.URL, _ = url.Parse(tt.url)
 		assert.Nil(t, Minify(m, w, r, nil), "Minify must not return error in "+tt.html)
 		assert.Equal(t, tt.expected, w.String(), "Minify must give expected result in "+tt.html)
 	}
