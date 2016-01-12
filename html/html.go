@@ -327,7 +327,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						}
 					}
 					if rawTagHash != 0 && attr.Hash == html.Type {
-						rawTagMediatype = val
+						rawTagMediatype = parse.Copy(val)
 					}
 
 					// default attribute values can be ommited
