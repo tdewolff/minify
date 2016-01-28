@@ -285,6 +285,21 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 								content.AttrVal = bytes.Replace(content.AttrVal, []byte(", "), []byte(","), -1)
 							} else if parse.EqualFold(name.AttrVal, []byte("viewport")) {
 								content.AttrVal = bytes.Replace(content.AttrVal, []byte(" "), []byte(""), -1)
+								for i := 0; i < len(content.AttrVal); i++ {
+									if content.AttrVal[i] == '=' && i+2 < len(content.AttrVal) {
+										i++
+										if n := parse.Number(content.AttrVal[i:]); n > 0 {
+											minNum := minify.Number(content.AttrVal[i : i+n])
+											if len(minNum) < n {
+												copy(content.AttrVal[i:i+len(minNum)], minNum)
+												copy(content.AttrVal[i+len(minNum):], content.AttrVal[i+n:])
+												content.AttrVal = content.AttrVal[:len(content.AttrVal)+len(minNum)-n]
+											}
+											i += len(minNum)
+										}
+										i-- // mitigate for-loop increase
+									}
+								}
 							}
 						}
 					}
