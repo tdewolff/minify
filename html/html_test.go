@@ -109,9 +109,13 @@ func TestHTML(t *testing.T) {
 		{`<a id="abc" name="abc">y</a>`, `<a id=abc>y</a>`},
 		{`<a id="" value="">y</a>`, `<a value>y</a>`},
 
+		// from Kangax html-minfier
+		{`<span style="font-family:&quot;Helvetica Neue&quot;,&quot;Helvetica&quot;,Helvetica,Arial,sans-serif">text</span>`, `<span style='font-family:"Helvetica Neue","Helvetica",Helvetica,Arial,sans-serif'>text</span>`},
+
 		// go-fuzz
 		{`<meta e t n content=ful><a b`, `<meta e t n content=ful><a b>`},
 		{`<img alt=a'b="">`, `<img alt='a&#39;b=""'>`},
+		{`</b`, `</b`},
 	}
 
 	m := minify.New()
