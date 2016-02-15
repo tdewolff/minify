@@ -270,8 +270,12 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				return err
 			}
 		case xml.EndTagToken:
-			t.Data[2+len(t.Text)] = '>'
-			if _, err := w.Write(t.Data[:2+len(t.Text)+1]); err != nil {
+			if len(t.Data) > 2+len(t.Text) {
+				t.Data[2+len(t.Text)] = '>'
+				if _, err := w.Write(t.Data[:2+len(t.Text)+1]); err != nil {
+					return err
+				}
+			} else if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
 		}
