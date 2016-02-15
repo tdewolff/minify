@@ -34,6 +34,8 @@ func TestXML(t *testing.T) {
 		{"<x a=\"&quot;&quot;'\"></x>", "<x a='\"\"&#39;'/>"},
 		{"<!DOCTYPE foo SYSTEM \"Foo.dtd\">", "<!DOCTYPE foo SYSTEM \"Foo.dtd\">"},
 		{"text <!--comment--> text", "text text"},
+
+		{`</0`, `</0`}, // go fuzz
 	}
 
 	m := minify.New()
