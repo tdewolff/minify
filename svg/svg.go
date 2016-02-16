@@ -304,7 +304,7 @@ func shortenPathData(b []byte) []byte {
 				j += i
 			}
 			num := minify.Number(b[i : i+n])
-			if prevDigit && (num[0] >= '0' && num[0] <= '9' || num[0] == '.' && prevDigitRequiresSpace) {
+			if prevDigit && (num[0] >= '0' && num[0] <= '9' || num[0] == '.' && prevDigitRequiresSpace) && j < len(b) {
 				b[j] = ' '
 				j++
 			}

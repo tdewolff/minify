@@ -43,6 +43,9 @@ func TestSVG(t *testing.T) {
 		{`<!DOCTYPE bla><?xml?><!-- comment --><metadata/>`, ``},
 
 		{`<polygon fill="none" stroke="#000" points="-0.1,"/>`, `<polygon fill="none" stroke="#000" points="-0.1,"/>`}, // #45
+
+		// go fuzz
+		{`<0 d=09e9.6e-9e0`, `<0 d=09e9.6e-9e0`},
 	}
 
 	m := minify.New()
