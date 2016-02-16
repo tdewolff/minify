@@ -2,9 +2,9 @@ package html // import "github.com/tdewolff/minify/html"
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"regexp"
 	"strconv"
@@ -52,11 +52,14 @@ func TestHTML(t *testing.T) {
 		{`<style><![CDATA[x]]></style>`, `<style>x</style>`},
 		{`<link href="data:text/plain, data">`, `<link href=data:,+data>`},
 		{`<svg width="100" height="100"><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>`, `<svg width=100 height=100><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>`},
+		{`</span >`, `</span>`},
+		{`<meta name=viewport content="width=0.1, initial-scale=1.0 , maximum-scale=1000">`, `<meta name=viewport content="width=.1,initial-scale=1,maximum-scale=1e3">`},
 
 		// increase coverage
 		{`<script style="css">js</script>`, `<script style=css>js</script>`},
 		{`<meta http-equiv="content-type" content="text/plain, text/html">`, `<meta http-equiv=content-type content=text/plain,text/html>`},
 		{`<meta http-equiv="content-style-type" content="text/less">`, `<meta http-equiv=content-style-type content=text/less>`},
+		{`<meta http-equiv="content-style-type" content="text/less; charset=utf-8">`, `<meta http-equiv=content-style-type content="text/less;charset=utf-8">`},
 		{`<meta http-equiv="content-script-type" content="application/js">`, `<meta http-equiv=content-script-type content=application/js>`},
 		{`<span attr=""></span>`, `<span attr></span>`},
 		{`<code>x</code>`, `<code>x</code>`},
@@ -73,7 +76,7 @@ func TestHTML(t *testing.T) {
 		{` <div> <i> test </i> <b> test </b> </div> `, `<div><i>test</i> <b>test</b></div>`},
 		{`<strong>x </strong>y`, `<strong>x </strong>y`},
 		{`<strong>x </strong> y`, `<strong>x</strong> y`},
-		{"<strong>x </strong>\ny", `<strong>x</strong> y`},
+		{"<strong>x </strong>\ny", "<strong>x</strong>\ny"},
 		{`<p>x </p>y`, `<p>x</p>y`},
 		{`x <p>y</p>`, `x<p>y`},
 		{` <!doctype html> <!--comment--> <html> <body><p></p></body></html>`, `<!doctype html><p>`}, // spaces before html and at the start of html are dropped
@@ -106,34 +109,60 @@ func TestHTML(t *testing.T) {
 		{`<a id="abc" name="abc">y</a>`, `<a id=abc>y</a>`},
 		{`<a id="" value="">y</a>`, `<a value>y</a>`},
 
-		// protocol
-		// {`<span href="http://test"></span>`, `<span href=//test></span>`},
-		// {`<span href="HtTpS://test"></span>`, `<span href=//test></span>`},
-		// {`<a href="   http://example.com  ">x</a>`, `<a href=//example.com>x</a>`},
-		// {`<link rel="stylesheet" type="text/css" href="http://example.com">`, `<link rel=stylesheet href=//example.com>`},
-		// {`<!doctype html> <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"> <head profile="http://dublincore.org/documents/dcq-html/"> <!-- Barlesque 2.75.0 --> <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`,
-		// 	`<!doctype html><html xmlns=//www.w3.org/1999/xhtml xml:lang=en><head profile=//dublincore.org/documents/dcq-html/><meta charset=utf-8>`},
-		// {`<svg xmlns="http://www.w3.org/2000/svg"><path d="x"/></svg>`, `<svg xmlns=//www.w3.org/2000/svg><path d="x"/></svg>`},
+		// from Kangax html-minfier
+		{`<span style="font-family:&quot;Helvetica Neue&quot;,&quot;Helvetica&quot;,Helvetica,Arial,sans-serif">text</span>`, `<span style='font-family:"Helvetica Neue","Helvetica",Helvetica,Arial,sans-serif'>text</span>`},
 
 		// go-fuzz
 		{`<meta e t n content=ful><a b`, `<meta e t n content=ful><a b>`},
 		{`<img alt=a'b="">`, `<img alt='a&#39;b=""'>`},
+		{`</b`, `</b`},
 	}
 
 	m := minify.New()
 	m.AddFunc("text/html", Minify)
-	m.AddFunc("text/css", func(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
+	m.AddFunc("text/css", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 		_, err := io.Copy(w, r)
 		return err
 	})
-	m.AddFunc("text/javascript", func(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
+	m.AddFunc("text/javascript", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 		_, err := io.Copy(w, r)
 		return err
 	})
 	for _, tt := range htmlTests {
 		r := bytes.NewBufferString(tt.html)
 		w := &bytes.Buffer{}
-		assert.Nil(t, Minify(m, "text/html", w, r), "Minify must not return error in "+tt.html)
+		assert.Nil(t, Minify(m, w, r, nil), "Minify must not return error in "+tt.html)
+		assert.Equal(t, tt.expected, w.String(), "Minify must give expected result in "+tt.html)
+	}
+}
+
+func TestHTMLURL(t *testing.T) {
+	var htmlTests = []struct {
+		url      string
+		html     string
+		expected string
+	}{
+		{`http://example.com/`, `<a href=http://example.com/>link</a>`, `<a href=//example.com/>link</a>`},
+		{`https://example.com/`, `<a href=http://example.com/>link</a>`, `<a href=http://example.com/>link</a>`},
+		{`http://example.com/`, `<a href=https://example.com/>link</a>`, `<a href=https://example.com/>link</a>`},
+		{`https://example.com/`, `<a href=https://example.com/>link</a>`, `<a href=//example.com/>link</a>`},
+		{`http://example.com/`, `<a href="   http://example.com  ">x</a>`, `<a href=//example.com>x</a>`},
+		{`http://example.com/`, `<link rel="stylesheet" type="text/css" href="http://example.com">`, `<link rel=stylesheet href=//example.com>`},
+		{`http://example.com/`, `<!doctype html> <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"> <head profile="http://dublincore.org/documents/dcq-html/"> <!-- Barlesque 2.75.0 --> <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`,
+			`<!doctype html><html xmlns=//www.w3.org/1999/xhtml xml:lang=en><head profile=//dublincore.org/documents/dcq-html/><meta charset=utf-8>`},
+		{`http://example.com/`, `<svg xmlns="http://www.w3.org/2000/svg"></svg>`, `<svg xmlns=//www.w3.org/2000/svg></svg>`},
+		{`https://example.com/`, `<svg xmlns="http://www.w3.org/2000/svg"></svg>`, `<svg xmlns=http://www.w3.org/2000/svg></svg>`},
+		{`http://example.com/`, `<svg xmlns="https://www.w3.org/2000/svg"></svg>`, `<svg xmlns=https://www.w3.org/2000/svg></svg>`},
+		{`https://example.com/`, `<svg xmlns="https://www.w3.org/2000/svg"></svg>`, `<svg xmlns=//www.w3.org/2000/svg></svg>`},
+	}
+
+	m := minify.New()
+	m.AddFunc("text/html", Minify)
+	for _, tt := range htmlTests {
+		r := bytes.NewBufferString(tt.html)
+		w := &bytes.Buffer{}
+		m.URL, _ = url.Parse(tt.url)
+		assert.Nil(t, Minify(m, w, r, nil), "Minify must not return error in "+tt.html)
 		assert.Equal(t, tt.expected, w.String(), "Minify must give expected result in "+tt.html)
 	}
 }
@@ -141,7 +170,7 @@ func TestHTML(t *testing.T) {
 func TestSpecialTagClosing(t *testing.T) {
 	m := minify.New()
 	m.AddFunc("text/html", Minify)
-	m.AddFunc("text/css", func(_ minify.Minifier, _ string, w io.Writer, r io.Reader) error {
+	m.AddFunc("text/css", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 		b, err := ioutil.ReadAll(r)
 		assert.Nil(t, err, "ioutil.ReadAll must not return error")
 		assert.Equal(t, "</script>", string(b))
@@ -151,7 +180,7 @@ func TestSpecialTagClosing(t *testing.T) {
 
 	r := bytes.NewBufferString(`<style></script></style>`)
 	w := &bytes.Buffer{}
-	assert.Nil(t, Minify(m, "text/html", w, r), "Minify must not return error in <style></script></style>")
+	assert.Nil(t, Minify(m, w, r, nil), "Minify must not return error in <style></script></style>")
 	assert.Equal(t, `<style></script></style>`, w.String(), "Minify must give expected result in <style></script></style>")
 }
 
@@ -159,18 +188,18 @@ func TestReaderErrors(t *testing.T) {
 	m := minify.New()
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}
-	assert.Equal(t, test.ErrPlain, Minify(m, "text/html", w, r), "Minify must return error at first read")
+	assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
-	var errorTests = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 16, 20}
+	var errorTests = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 14}
 
 	m := minify.New()
 	for _, n := range errorTests {
-		// writes:                  0         1   23    45   67  89  0 1    234   56   7 8   90
+		// writes:                  0         1   2     34   56  78  9       0    12   3      4
 		r := bytes.NewBufferString(`<!doctype>text<style attr=val>css</style><code>code</code><!--comment-->`)
 		w := test.NewErrorWriter(n)
-		assert.Equal(t, test.ErrPlain, Minify(m, "text/html", w, r), "Minify must return error at write "+strconv.FormatInt(int64(n), 10))
+		assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at write "+strconv.FormatInt(int64(n), 10))
 	}
 }
 
@@ -185,7 +214,44 @@ func ExampleMinify() {
 	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
+	// set URL to minify link locations too
+	m.URL, _ = url.Parse("https://www.example.com/")
 	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
-		fmt.Println("minify.Minify:", err)
+		panic(err)
 	}
+}
+
+func ExampleMinify_options() {
+	m := minify.New()
+	m.Add("text/html", &Minifier{
+		KeepDefaultAttrVals: true,
+		KeepWhitespace:      true,
+	})
+
+	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
+		panic(err)
+	}
+}
+
+func ExampleMinify_reader() {
+	b := bytes.NewReader([]byte("<html><body><h1>Example</h1></body></html>"))
+
+	m := minify.New()
+	m.Add("text/html", &Minifier{})
+
+	r := m.Reader("text/html", b)
+	if _, err := io.Copy(os.Stdout, r); err != nil {
+		panic(err)
+	}
+	// Output: <h1>Example</h1>
+}
+
+func ExampleMinify_writer() {
+	m := minify.New()
+	m.Add("text/html", &Minifier{})
+
+	w := m.Writer("text/html", os.Stdout)
+	w.Write([]byte("<html><body><h1>Example</h1></body></html>"))
+	w.Close()
+	// Output: <h1>Example</h1>
 }

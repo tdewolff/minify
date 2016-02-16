@@ -14,13 +14,9 @@ import (
 )
 
 var (
-	ltBytes         = []byte("<")
-	gtBytes         = []byte(">")
 	voidBytes       = []byte("/>")
 	isBytes         = []byte("=")
 	spaceBytes      = []byte(" ")
-	emptyBytes      = []byte("\"\"")
-	endBytes        = []byte("</")
 	cdataStartBytes = []byte("<![CDATA[")
 	cdataEndBytes   = []byte("]]>")
 	pathBytes       = []byte("path")
@@ -32,24 +28,32 @@ const maxAttrLookup = 6
 
 ////////////////////////////////////////////////////////////////
 
+// Minifier is an SVG minifier.
+type Minifier struct{}
+
 // Minify minifies SVG data, it reads from r and writes to w.
-func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
+func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+	return (&Minifier{}).Minify(m, w, r, params)
+}
+
+// Minify minifies SVG data, it reads from r and writes to w.
+func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 	var tag svg.Hash
 	defaultStyleType := "text/css"
 	defaultInlineStyleType := "text/css;inline=1"
 
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
-	attrTokenBuffer := make([]*svg.Token, 0, maxAttrLookup)
+	attrTokenBuffer := make([]*Token, 0, maxAttrLookup)
 	pathDataBuffer := &PathData{}
 
 	l := xml.NewLexer(r)
-	tb := svg.NewTokenBuffer(l)
+	tb := NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()
 		if t.TokenType == xml.CDATAToken {
-			var useCDATA bool
-			if t.Data, useCDATA = xml.EscapeCDATAVal(&attrByteBuffer, t.Data); !useCDATA {
+			var useText bool
+			if t.Data, useText = xml.EscapeCDATAVal(&attrByteBuffer, t.Data); useText {
 				t.TokenType = xml.TextToken
 			}
 		}
@@ -61,7 +65,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 			return l.Err()
 		case xml.TextToken:
-			t.Data = parse.ReplaceMultiple(parse.Trim(t.Data, parse.IsWhitespace), parse.IsWhitespace, ' ')
+			t.Data = parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.Data))
 			if tag == svg.Style && len(t.Data) > 0 {
 				if err := m.Minify(defaultStyleType, w, buffer.NewReader(t.Data)); err != nil {
 					if err == minify.ErrNotExist { // no minifier, write the original
@@ -76,24 +80,23 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				return err
 			}
 		case xml.CDATAToken:
-			if _, err := w.Write(cdataStartBytes); err != nil {
-				return err
-			}
-			t.Data = parse.ReplaceMultiple(parse.Trim(t.Data, parse.IsWhitespace), parse.IsWhitespace, ' ')
-			if tag == svg.Style && len(t.Data) > 0 {
-				if err := m.Minify(defaultStyleType, w, buffer.NewReader(t.Data)); err != nil {
+			if tag == svg.Style {
+				if _, err := w.Write(cdataStartBytes); err != nil {
+					return err
+				}
+				if err := m.Minify(defaultStyleType, w, buffer.NewReader(t.Text)); err != nil {
 					if err == minify.ErrNotExist { // no minifier, write the original
-						if _, err := w.Write(t.Data); err != nil {
+						if _, err := w.Write(t.Text); err != nil {
 							return err
 						}
 					} else {
 						return err
 					}
 				}
+				if _, err := w.Write(cdataEndBytes); err != nil {
+					return err
+				}
 			} else if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
-			if _, err := w.Write(cdataEndBytes); err != nil {
 				return err
 			}
 		case xml.StartTagPIToken:
@@ -253,9 +256,6 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					attrTokenBuffer[0].AttrVal = d
 				}
 			}
-			if _, err := w.Write(ltBytes); err != nil {
-				return err
-			}
 			if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
@@ -264,7 +264,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				continue
 			}
 			attr := t.Hash
-			val := parse.ReplaceMultiple(parse.Trim(t.AttrVal[1:len(t.AttrVal)-1], parse.IsWhitespace), parse.IsWhitespace, ' ')
+			val := parse.ReplaceMultipleWhitespace(t.AttrVal[1 : len(t.AttrVal)-1])
 			if tag == svg.Svg && attr == svg.Version {
 				continue
 			}
@@ -272,7 +272,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			if _, err := w.Write(spaceBytes); err != nil {
 				return err
 			}
-			if _, err := w.Write(t.Data); err != nil {
+			if _, err := w.Write(t.Text); err != nil {
 				return err
 			}
 			if _, err := w.Write(isBytes); err != nil {
@@ -352,22 +352,21 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					return err
 				}
 			} else {
-				if _, err := w.Write(gtBytes); err != nil {
+				if _, err := w.Write(t.Data); err != nil {
 					return err
 				}
 			}
 		case xml.StartTagCloseVoidToken:
-			if _, err := w.Write(voidBytes); err != nil {
-				return err
-			}
-		case xml.EndTagToken:
-			if _, err := w.Write(endBytes); err != nil {
-				return err
-			}
 			if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
-			if _, err := w.Write(gtBytes); err != nil {
+		case xml.EndTagToken:
+			if len(t.Data) > 2+len(t.Text) {
+				t.Data[2+len(t.Text)] = '>'
+				if _, err := w.Write(t.Data[:2+len(t.Text)+1]); err != nil {
+					return err
+				}
+			} else if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
 		}
@@ -666,7 +665,7 @@ func shortenDimension(b []byte) ([]byte, int) {
 
 ////////////////////////////////////////////////////////////////
 
-func getAttributes(attrTokenBuffer *[]*svg.Token, tb *svg.TokenBuffer, hashes ...svg.Hash) {
+func getAttributes(attrTokenBuffer *[]*Token, tb *TokenBuffer, hashes ...svg.Hash) {
 	*attrTokenBuffer = (*attrTokenBuffer)[:len(hashes)]
 	for j, _ := range *attrTokenBuffer {
 		(*attrTokenBuffer)[j] = nil
@@ -679,7 +678,7 @@ func getAttributes(attrTokenBuffer *[]*svg.Token, tb *svg.TokenBuffer, hashes ..
 		for j, hash := range hashes {
 			if t.Hash == hash {
 				if len(t.AttrVal) > 1 && t.AttrVal[0] == '"' {
-					t.AttrVal = parse.Trim(t.AttrVal[1:len(t.AttrVal)-1], parse.IsWhitespace) // quotes will be readded in attribute loop if necessary
+					t.AttrVal = parse.TrimWhitespace(t.AttrVal[1 : len(t.AttrVal)-1]) // quotes will be readded in attribute loop if necessary
 				}
 				(*attrTokenBuffer)[j] = t
 				break
@@ -688,7 +687,7 @@ func getAttributes(attrTokenBuffer *[]*svg.Token, tb *svg.TokenBuffer, hashes ..
 	}
 }
 
-func skipTag(tb *svg.TokenBuffer, tag svg.Hash) {
+func skipTag(tb *TokenBuffer, tag svg.Hash) {
 	for {
 		if t := *tb.Shift(); (t.TokenType == xml.EndTagToken || t.TokenType == xml.StartTagCloseVoidToken) && t.Hash == tag || t.TokenType == xml.ErrorToken {
 			break

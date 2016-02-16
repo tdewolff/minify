@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"io"
-	"mime"
 	"strconv"
 
 	"github.com/tdewolff/minify"
@@ -25,27 +24,29 @@ var (
 )
 
 type cssMinifier struct {
-	m minify.Minifier
+	m *minify.M
 	w io.Writer
 	p *css.Parser
 }
 
 ////////////////////////////////////////////////////////////////
 
+// Minifier is a CSS minifier.
+type Minifier struct{}
+
 // Minify minifies CSS data, it reads from r and writes to w.
-func Minify(m minify.Minifier, mediatype string, w io.Writer, r io.Reader) error {
-	isStylesheet := true
-	if len(mediatype) >= len(";inline=0") && mediatype[len(mediatype)-len(";inline=0"):] == ";inline=1" {
-		isStylesheet = false
-	} else if _, params, err := mime.ParseMediaType(mediatype); err == nil && params["inline"] == "1" {
-		isStylesheet = false
-	}
+func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+	return (&Minifier{}).Minify(m, w, r, params)
+}
+
+// Minify minifies CSS data, it reads from r and writes to w.
+func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+	isInline := params != nil && params["inline"] == "1"
 	c := &cssMinifier{
 		m: m,
 		w: w,
-		p: css.NewParser(r, isStylesheet),
+		p: css.NewParser(r, isInline),
 	}
-
 	if err := c.minifyGrammar(); err != nil && err != io.EOF {
 		return err
 	}
@@ -386,7 +387,7 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 				s, err2 := strconv.ParseFloat(string(values[3].Data[:len(values[3].Data)-1]), 32)
 				l, err3 := strconv.ParseFloat(string(values[5].Data[:len(values[5].Data)-1]), 32)
 				if err1 == nil && err2 == nil && err3 == nil {
-					r, g, b := css.Hsl2Rgb(h/360.0, s/100.0, l/100.0)
+					r, g, b := css.HSL2RGB(h/360.0, s/100.0, l/100.0)
 					rgb := []byte{byte((r * 255.0) + 0.5), byte((g * 255.0) + 0.5), byte((b * 255.0) + 0.5)}
 					val := make([]byte, 7)
 					val[0] = '#'
@@ -491,7 +492,7 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 				uri = uri[1 : len(uri)-1]
 			}
 			uri = minify.DataURI(c.m, uri)
-			if css.IsUrlUnquoted(uri) {
+			if css.IsURLUnquoted(uri) {
 				data = append(append([]byte("url("), uri...), ')')
 			} else {
 				data = append(append(append([]byte("url("), delim), uri...), delim, ')')

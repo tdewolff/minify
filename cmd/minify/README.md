@@ -8,39 +8,63 @@ Run the following command
 
 	go get github.com/tdewolff/minify/cmd/minify
 
-and the `minify` command should be in your `$GOPATH/bin`.
+and the `minify` command will be in your `$GOPATH/bin`.
 
 ## Usage
 
-	Usage: minify [options] [file]
+	Usage: minify [options] [inputs]
+
 	Options:
-	  -o: Output file (stdout when empty)
-	  -x: File extension (css, html, js, json, svg or xml), optional for input files
-	  -d: Directory to search for files
-	  -r: Recursively minify everything
+	  -a, --all=false: Minify all files, including hidden files and files in hidden directories
+	  -l, --list=false: List all accepted filetypes
+		  --match="": Filename pattern matching using regular expressions, see https://github.com/google/re2/wiki/Syntax
+		  --mime="": Mimetype (text/css, text/javascript, ...), optional for input filenames, has precendence over -type
+	  -o, --output="": Output (concatenated) file (stdout when empty) or directory
+	  -r, --recursive=false: Recursively minify directories
+		  --type="": Filetype (css, html, js, ...), optional for input filenames
+	  -v, --verbose=false: Verbose
+
+	  --url="": URL of the file to enable URL minification
+	  --html-keep-default-attrvals=false: Preserve default attribute values
+	  --html-keep-whitespace=false: Preserve whitespace characters but still collapse multiple whitespace into one
+
+	Input:
+	  Files or directories, optional when using piping
+
+### Types
+
+	css     text/css
+	htm     text/html
+	html    text/html
+	js      text/javascript
+	json    application/json
+	svg     image/svg+xml
+	xml     text/xml
 
 ## Examples
-The following commands are variations one can use to minify a file:
+The following commands are variations one can use to minify files:
 
 ```sh
-$ minify -o file.min.html file.html
+$ minify file.html # file.html &#8594; file.min.html
 
-$ minify -x css -o file.min.less file.less
+$ minify --type=css -o file_minified.ext file.ext # file.ext &#8594; file_minified.ext
 
-$ minify -x js < file.js > file.min.js
+$ minify --mime=text/javascript < file.js > file.min.js
 
-$ cat file.html | minify -x html > file.min.html
+$ cat file.html | minify --type=html > file.min.html
 ```
 
-It is also possible to overwrite the input file by the output file. However, this won't work with input/output redirection streams. Using the following command the input file will be loaded into memory first before writing to the output file:
+It is also possible to overwrite the input file by the output file. Overwriting existing files needs to happen forcefully. However, overwriting won't work with input/output redirection streams. Using the following command the input file will be loaded into memory first before writing to the output file:
 
 ```sh
-$ minify -o file.html file.html
+$ minify file.html
 ```
 
-The following commands minify the files in a directory:
+You can also give directories as input, and these directories can be minified recursively:
 ```sh
-$ minify -d path/to/dir
+$ minify . # minify files in current working directory (no subdirectories)
 
-$ minify -d path/to/dir -r
+$ minify -r dir # minify files in dir recursively
+
+$ minify -r --match=\.js dir # minify only javascript files in dir
 ```

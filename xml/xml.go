@@ -10,34 +10,36 @@ import (
 )
 
 var (
-	ltBytes         = []byte("<")
-	gtBytes         = []byte(">")
-	voidBytes       = []byte("/>")
-	ltPIBytes       = []byte("<?")
-	gtPIBytes       = []byte("?>")
-	endBytes        = []byte("</")
-	doctypeBytes    = []byte("<!DOCTYPE ")
-	cdataStartBytes = []byte("<![CDATA[")
-	cdataEndBytes   = []byte("]]>")
-	isBytes         = []byte("=")
-	spaceBytes      = []byte(" ")
+	isBytes    = []byte("=")
+	spaceBytes = []byte(" ")
+	voidBytes  = []byte("/>")
 )
 
 ////////////////////////////////////////////////////////////////
 
+// Minifier is an XML minifier.
+type Minifier struct {
+	KeepWhitespace bool
+}
+
 // Minify minifies XML data, it reads from r and writes to w.
-func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
-	precededBySpace := true // on true the next text token must not start with a space
+func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+	return (&Minifier{}).Minify(m, w, r, params)
+}
+
+// Minify minifies XML data, it reads from r and writes to w.
+func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
+	omitSpace := true // on true the next text token must not start with a space
 
 	attrByteBuffer := make([]byte, 0, 64)
 
 	l := xml.NewLexer(r)
-	tb := xml.NewTokenBuffer(l)
+	tb := NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()
 		if t.TokenType == xml.CDATAToken {
-			var useCDATA bool
-			if t.Data, useCDATA = xml.EscapeCDATAVal(&attrByteBuffer, t.Data); !useCDATA {
+			var useText bool
+			if t.Data, useText = xml.EscapeCDATAVal(&attrByteBuffer, t.Data); useText {
 				t.TokenType = xml.TextToken
 			}
 		}
@@ -48,51 +50,40 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			}
 			return l.Err()
 		case xml.DOCTYPEToken:
-			if _, err := w.Write(doctypeBytes); err != nil {
-				return err
-			}
 			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
-			if _, err := w.Write(gtBytes); err != nil {
 				return err
 			}
 		case xml.CDATAToken:
-			if _, err := w.Write(cdataStartBytes); err != nil {
-				return err
-			}
 			if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
-			if _, err := w.Write(cdataEndBytes); err != nil {
-				return err
-			}
 		case xml.TextToken:
-			if t.Data = parse.ReplaceMultiple(t.Data, parse.IsWhitespace, ' '); len(t.Data) > 0 {
+			t.Data = parse.ReplaceMultipleWhitespace(t.Data)
+			if !o.KeepWhitespace {
 				// whitespace removal; trim left
-				if t.Data[0] == ' ' && precededBySpace {
+				if omitSpace && t.Data[0] == ' ' {
 					t.Data = t.Data[1:]
 				}
 
 				// whitespace removal; trim right
-				precededBySpace = false
+				omitSpace = false
 				if len(t.Data) == 0 {
-					precededBySpace = true
+					omitSpace = true
 				} else if t.Data[len(t.Data)-1] == ' ' {
-					precededBySpace = true
+					omitSpace = true
 					i := 0
 					for {
 						next := tb.Peek(i)
 						// trim if EOF, text token with whitespace begin or block token
 						if next.TokenType == xml.StartTagToken || next.TokenType == xml.EndTagToken || next.TokenType == xml.ErrorToken {
 							t.Data = t.Data[:len(t.Data)-1]
-							precededBySpace = false
+							omitSpace = false
 							break
 						} else if next.TokenType == xml.TextToken {
 							// remove if the text token starts with a whitespace
 							if len(next.Data) > 0 && parse.IsWhitespace(next.Data[0]) {
 								t.Data = t.Data[:len(t.Data)-1]
-								precededBySpace = false
+								omitSpace = false
 
 							}
 							break
@@ -105,16 +96,10 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 				}
 			}
 		case xml.StartTagToken:
-			if _, err := w.Write(ltBytes); err != nil {
-				return err
-			}
 			if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
 		case xml.StartTagPIToken:
-			if _, err := w.Write(ltPIBytes); err != nil {
-				return err
-			}
 			if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
@@ -122,7 +107,7 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 			if _, err := w.Write(spaceBytes); err != nil {
 				return err
 			}
-			if _, err := w.Write(t.Data); err != nil {
+			if _, err := w.Write(t.Text); err != nil {
 				return err
 			}
 			if _, err := w.Write(isBytes); err != nil {
@@ -157,26 +142,25 @@ func Minify(m minify.Minifier, _ string, w io.Writer, r io.Reader) error {
 					return err
 				}
 			} else {
-				if _, err := w.Write(gtBytes); err != nil {
+				if _, err := w.Write(t.Text); err != nil {
 					return err
 				}
 			}
 		case xml.StartTagCloseVoidToken:
-			if _, err := w.Write(voidBytes); err != nil {
+			if _, err := w.Write(t.Text); err != nil {
 				return err
 			}
 		case xml.StartTagClosePIToken:
-			if _, err := w.Write(gtPIBytes); err != nil {
+			if _, err := w.Write(t.Text); err != nil {
 				return err
 			}
 		case xml.EndTagToken:
-			if _, err := w.Write(endBytes); err != nil {
-				return err
-			}
-			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
-			if _, err := w.Write(gtBytes); err != nil {
+			if len(t.Data) > 2+len(t.Text) {
+				t.Data[2+len(t.Text)] = '>'
+				if _, err := w.Write(t.Data[:2+len(t.Text)+1]); err != nil {
+					return err
+				}
+			} else if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
 		}

@@ -2,7 +2,6 @@ package svg // import "github.com/tdewolff/minify/svg"
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"strconv"
 	"testing"
@@ -23,6 +22,8 @@ func TestSVG(t *testing.T) {
 		{`<!DOCTYPE foo SYSTEM "Foo.dtd">`, ``},
 		{`<?xml version="1.0" ?>`, ``},
 		{`<style> <![CDATA[ x ]]> </style>`, `<style>x</style>`},
+		{`<style> <![CDATA[ <<<< ]]> </style>`, `<style>&lt;&lt;&lt;&lt;</style>`},
+		{`<style> <![CDATA[ <<<<< ]]> </style>`, `<style><![CDATA[ <<<<< ]]></style>`},
 		{`<svg version="1.0"></svg>`, ``},
 		{`<path x=" a "/>`, `<path x="a"/>`},
 		{"<path x=\" a \n b \"/>", `<path x="a b"/>`},
@@ -46,21 +47,26 @@ func TestSVG(t *testing.T) {
 
 		// from SVGO
 		{`<!DOCTYPE bla><?xml?><!-- comment --><metadata/>`, ``},
+
+		{`<polygon fill="none" stroke="#000" points="-0.1,"/>`, `<polygon fill="none" stroke="#000" points="-0.1,"/>`}, // #45
+
+		// go fuzz
+		{`<0 d=09e9.6e-9e0`, `<0 d="9e9  e-10"`}, // TODO: fix this with the new ShortenPathdata functions
 	}
 
 	m := minify.New()
 	for _, tt := range svgTests {
 		b := &bytes.Buffer{}
-		assert.Nil(t, Minify(m, "image/svg+xml", b, bytes.NewBufferString(tt.svg)), "Minify must not return error in "+tt.svg)
+		assert.Nil(t, Minify(m, b, bytes.NewBufferString(tt.svg), nil), "Minify must not return error in "+tt.svg)
 		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.svg)
 	}
 }
 
 func TestGetAttribute(t *testing.T) {
 	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
-	attrTokenBuffer := make([]*svg.Token, 0, maxAttrLookup)
+	attrTokenBuffer := make([]*Token, 0, maxAttrLookup)
 	l := xml.NewLexer(r)
-	tb := svg.NewTokenBuffer(l)
+	tb := NewTokenBuffer(l)
 	tb.Shift()
 	getAttributes(&attrTokenBuffer, tb, svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
 	for i := 0; i < 6; i++ {
@@ -78,7 +84,7 @@ func ExampleMinify() {
 	m.AddFunc("text/css", css.Minify)
 
 	if err := m.Minify("image/svg+xml", os.Stdout, os.Stdin); err != nil {
-		fmt.Println("minify.Minify:", err)
+		panic(err)
 	}
 }
 
@@ -86,9 +92,9 @@ func ExampleMinify() {
 
 func BenchmarkGetAttributes(b *testing.B) {
 	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
-	attrTokenBuffer := make([]*svg.Token, 0, maxAttrLookup)
+	attrTokenBuffer := make([]*Token, 0, maxAttrLookup)
 	l := xml.NewLexer(r)
-	tb := svg.NewTokenBuffer(l)
+	tb := NewTokenBuffer(l)
 	tb.Shift()
 	tb.Peek(6)
 	for i := 0; i < b.N; i++ {
