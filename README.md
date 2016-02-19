@@ -93,21 +93,21 @@ import (
 
 ## API stability
 
-One major version of minify exists.
+One major version of minify exists and the current version in the **master** branch.
 
-**[minify.v1](https://gopkg.in/tdewolff/minify.v1)**. Bugfixes *should* be backported, but I recommend using **master**. Make sure to have **[parse.v1](https://gopkg.in/tdewolff/parse.v1)** and **[buffer.v1](https://gopkg.in/tdewolff/buffer.v1)**!
+**[minify.v1](https://gopkg.in/tdewolff/minify.v1)**. Also make sure to have **[parse.v1](https://gopkg.in/tdewolff/parse.v1)** and **[buffer.v1](https://gopkg.in/tdewolff/buffer.v1)**!
 
 ``` go
 import "gopkg.in/tdewolff/minify.v1"
 ```
 
-**Master** may have unreleased changes. Use it to test the latest code or when contributing, but don't expect it to remain API-compatible.  Make sure to have **[parse](https://github.com/tdewolff/parse)** and **[buffer](https://github.com/tdewolff/buffer)** from **master**!
+**Master** will be the new v2. Use it to test the latest code or to contribute, but it does not remain API-compatible with v1. Make sure to have **[parse](https://github.com/tdewolff/parse)** and **[buffer](https://github.com/tdewolff/buffer)** from **master** (and not their v1)!
 
 ``` go
 import "github.com/tdewolff/minify"
 ```
 
-The API differences of **master** versus v1 are listed below. If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then in **master**:
+The API differences of **master** versus v1 are listed below. If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then **minify.v1** &#8594; **master**:
  - `minify.Bytes(m, ...)` &#8594; `m.Bytes(...)`
  - `minify.String(m, ...)` &#8594; `m.String(...)`
  - `html.Minify(m, "text/html", w, r)` &#8594; `html.Minify(m, w, r, nil)` also for `css`, `js`, ...
@@ -116,7 +116,7 @@ The API differences of **master** versus v1 are listed below. If `m := minify.Ne
 Further API changes are not planned, but a new major revision will be tagged, so you can depend on the v1 API and soon the v2 API.
 
 ## Testing
-For all subpackages and the imported `parse` and `buffer` packages, test coverage of 100% is pursued. Besides full coverage, the minifiers are fuzz tested using [github.com/dvyukov/go-fuzz](http://www.github.com/dvyukov/go-fuzz), see [the wiki](https://github.com/tdewolff/minify/wiki) for the most important bugs found by fuzz testing. Furthermore, I am working on adding visual testing to ensure that minification doesn't change anything visually. By using the WebKit browser to render the original and minified pages we can check whether any pixel is different.
+For all subpackages and the imported `parse` and `buffer` packages, test coverage of 100% is pursued. Besides full coverage, the minifiers are [fuzz tested](https://github.com/tdewolff/fuzz) using [github.com/dvyukov/go-fuzz](http://www.github.com/dvyukov/go-fuzz), see [the wiki](https://github.com/tdewolff/minify/wiki) for the most important bugs found by fuzz testing. Furthermore am I working on adding visual testing to ensure that minification doesn't change anything visually. By using the WebKit browser to render the original and minified pages we can check whether any pixel is different.
 
 These tests ensure that everything works as intended, the code does not crash (whatever the input) and that it doesn't change the final result visually. If you still encounter a bug, please report [here](https://github.com/tdewolff/minify/issues)!
 
