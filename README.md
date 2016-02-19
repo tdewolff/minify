@@ -41,12 +41,12 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 
 **Status**
 
-* HTML: fully implemented
-* CSS: fully implemented
+* CSS: **fully implemented**
+* HTML: **fully implemented**
 * JS: basic JSmin-like implementation
-* JSON: fully implemented
+* JSON: **fully implemented**
 * SVG: partially implemented; in development
-* XML: fully implemented
+* XML: **fully implemented**
 
 ## Prologue
 Minifiers or bindings to minifiers exist in almost all programming languages. Some implementations are merely using several regular-expressions to trim whitespace and comments (even though regex for parsing HTML/XML is ill-advised, for a good read see [Regular Expressions: Now You Have Two Problems](http://blog.codinghorror.com/regular-expressions-now-you-have-two-problems/)). Some implementations are much more profound, such as the [YUI Compressor](http://yui.github.io/yuicompressor/), [Google Closure Compiler](https://github.com/google/closure-compiler) for JS and the [HTML Compressor](https://code.google.com/p/htmlcompressor/).
