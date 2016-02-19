@@ -51,7 +51,7 @@ func TestSVG(t *testing.T) {
 		{`<polygon fill="none" stroke="#000" points="-0.1,"/>`, `<polygon fill="none" stroke="#000" points="-0.1,"/>`}, // #45
 
 		// go fuzz
-		{`<0 d=09e9.6e-9e0`, `<0 d="9e9  e-10"`}, // TODO: fix this with the new ShortenPathdata functions
+		{`<0 d=09e9.6e-9e0`, `<0 d=""`}, // TODO: fix this with the new ShortenPathdata functions
 	}
 
 	m := minify.New()
@@ -64,14 +64,14 @@ func TestSVG(t *testing.T) {
 
 func TestGetAttribute(t *testing.T) {
 	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
-	attrTokenBuffer := make([]*Token, 0, maxAttrLookup)
+	attrIndexBuffer := make([]int, 0, maxAttrLookup)
 	l := xml.NewLexer(r)
 	tb := NewTokenBuffer(l)
 	tb.Shift()
-	getAttributes(&attrTokenBuffer, tb, svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
+	getAttributes(&attrIndexBuffer, tb, svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
 	for i := 0; i < 6; i++ {
-		assert.NotNil(t, attrTokenBuffer[i], "Attr is nil")
-		j, _ := strconv.ParseInt(string(attrTokenBuffer[i].AttrVal), 10, 32)
+		assert.NotEqual(t, -1, attrIndexBuffer[i], "Attr is nil")
+		j, _ := strconv.ParseInt(string(tb.Peek(attrIndexBuffer[i]).AttrVal), 10, 32)
 		assert.Equal(t, i, int(j), "Attr data is bad")
 	}
 }
@@ -92,12 +92,12 @@ func ExampleMinify() {
 
 func BenchmarkGetAttributes(b *testing.B) {
 	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
-	attrTokenBuffer := make([]*Token, 0, maxAttrLookup)
+	attrIndexBuffer := make([]int, 0, maxAttrLookup)
 	l := xml.NewLexer(r)
 	tb := NewTokenBuffer(l)
 	tb.Shift()
 	tb.Peek(6)
 	for i := 0; i < b.N; i++ {
-		getAttributes(&attrTokenBuffer, tb, svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
+		getAttributes(&attrIndexBuffer, tb, svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
 	}
 }
