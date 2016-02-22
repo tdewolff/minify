@@ -125,141 +125,12 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				skipTag(tb, tag)
 				break
 			} else if tag == svg.Line {
-				getAttributes(&attrIndexBuffer, tb, svg.X1, svg.Y1, svg.X2, svg.Y2)
-				i := 0
-				x1, y1, x2, y2 := zeroBytes, zeroBytes, zeroBytes, zeroBytes
-				if attrIndexBuffer[0] != -1 {
-					x1 = minify.Number(tb.Peek(attrIndexBuffer[0]).AttrVal)
-					tb.Peek(attrIndexBuffer[0]).Text = nil
-				}
-				if attrIndexBuffer[1] != -1 {
-					y1 = minify.Number(tb.Peek(attrIndexBuffer[1]).AttrVal)
-					tb.Peek(attrIndexBuffer[1]).Text = nil
-					i = 1
-				}
-				if attrIndexBuffer[2] != -1 {
-					x2 = minify.Number(tb.Peek(attrIndexBuffer[2]).AttrVal)
-					tb.Peek(attrIndexBuffer[2]).Text = nil
-					i = 2
-				}
-				if attrIndexBuffer[3] != -1 {
-					y2 = minify.Number(tb.Peek(attrIndexBuffer[3]).AttrVal)
-					tb.Peek(attrIndexBuffer[3]).Text = nil
-					i = 3
-				}
-
-				d := make([]byte, 0, 7+len(x1)+len(y1)+len(x2)+len(y2))
-				d = append(d, '"', 'M')
-				d = append(d, x1...)
-				d = append(d, ' ')
-				d = append(d, y1...)
-				d = append(d, 'L')
-				d = append(d, x2...)
-				d = append(d, ' ')
-				d = append(d, y2...)
-				d = append(d, 'z', '"')
-				ShortenPathData(d[1:len(d)-1], pathDataBuffer)
-
-				t.Data = pathBytes
-				tb.Peek(attrIndexBuffer[i]).Text = dBytes
-				tb.Peek(attrIndexBuffer[i]).AttrVal = d
+				shortenLine(&attrIndexBuffer, tb)
 			} else if tag == svg.Rect {
-				getAttributes(&attrIndexBuffer, tb, svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
-				if attrIndexBuffer[4] == -1 && attrIndexBuffer[5] == -1 {
-					i := 0
-					x, y, w, h := zeroBytes, zeroBytes, zeroBytes, zeroBytes
-					if attrIndexBuffer[0] != -1 {
-						x = minify.Number(tb.Peek(attrIndexBuffer[0]).AttrVal)
-						tb.Peek(attrIndexBuffer[0]).Text = nil
-					}
-					if attrIndexBuffer[1] != -1 {
-						y = minify.Number(tb.Peek(attrIndexBuffer[1]).AttrVal)
-						tb.Peek(attrIndexBuffer[1]).Text = nil
-						i = 1
-					}
-					if attrIndexBuffer[2] != -1 {
-						w = minify.Number(tb.Peek(attrIndexBuffer[2]).AttrVal)
-						tb.Peek(attrIndexBuffer[2]).Text = nil
-						i = 2
-					}
-					if attrIndexBuffer[3] != -1 {
-						h = minify.Number(tb.Peek(attrIndexBuffer[3]).AttrVal)
-						tb.Peek(attrIndexBuffer[3]).Text = nil
-						i = 3
-					}
-					if len(w) == 0 || len(w) == 1 && w[0] == '0' || len(h) == 0 || len(h) == 1 && h[0] == '0' {
-						skipTag(tb, tag)
-						break
-					}
-
-					d := make([]byte, 0, 9+2*len(x)+2*len(y)+len(w)+len(h))
-					d = append(d, '"', 'M')
-					d = append(d, x...)
-					d = append(d, ' ')
-					d = append(d, y...)
-					d = append(d, 'h')
-					d = append(d, w...)
-					d = append(d, 'v')
-					d = append(d, h...)
-					d = append(d, 'H')
-					d = append(d, x...)
-					d = append(d, 'z', '"')
-					ShortenPathData(d[1:len(d)-1], pathDataBuffer)
-
-					t.Data = pathBytes
-					tb.Peek(attrIndexBuffer[i]).Text = dBytes
-					tb.Peek(attrIndexBuffer[i]).AttrVal = d
-				}
+				shortenRect(&attrIndexBuffer, tb)
 			} else if tag == svg.Polygon || tag == svg.Polyline {
-				getAttributes(&attrIndexBuffer, tb, svg.Points)
-				if attrIndexBuffer[0] != -1 {
-					points := tb.Peek(attrIndexBuffer[0]).AttrVal
-					//fmt.Println("points:", string(points))
-
-					i := 0
-					for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
-						i++
-					}
-					if i == len(points) {
-						goto WriteStartTag
-					}
-					for i < len(points) && !(points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
-						i++
-					}
-					for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
-						i++
-					}
-					if i == len(points) {
-						goto WriteStartTag
-					}
-					for i < len(points) && !(points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
-						i++
-					}
-					endMoveTo := i
-					for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
-						i++
-					}
-					startLineTo := i
-
-					d := make([]byte, 0, 2+len(points))
-					d = append(d, '"', 'M')
-					d = append(d, points[:endMoveTo]...)
-					d = append(d, 'L')
-					d = append(d, points[startLineTo:]...)
-					if tag == svg.Polygon {
-						d = append(d, 'z')
-					}
-					d = append(d, '"')
-					ShortenPathData(d[1:len(d)-1], pathDataBuffer)
-
-					//fmt.Println(tag, string(tb.Peek(attrIndexBuffer[0]).Text), string(d))
-
-					t.Data = pathBytes
-					tb.Peek(attrIndexBuffer[0]).Text = dBytes
-					tb.Peek(attrIndexBuffer[0]).AttrVal = d
-				}
+				shortenPoly(&attrIndexBuffer, tb)
 			}
-		WriteStartTag:
 			if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
@@ -395,6 +266,143 @@ func shortenDimension(b []byte) ([]byte, int) {
 		return b, n + m
 	}
 	return b, 0
+}
+
+func shortenLine(attrIndexBuffer *[]int, tb *TokenBuffer) {
+	getAttributes(&attrIndexBuffer, tb, svg.X1, svg.Y1, svg.X2, svg.Y2)
+	i := 0
+	x1, y1, x2, y2 := zeroBytes, zeroBytes, zeroBytes, zeroBytes
+	if attrIndexBuffer[0] != -1 {
+		x1 = minify.Number(tb.Peek(attrIndexBuffer[0]).AttrVal)
+		tb.Peek(attrIndexBuffer[0]).Text = nil
+	}
+	if attrIndexBuffer[1] != -1 {
+		y1 = minify.Number(tb.Peek(attrIndexBuffer[1]).AttrVal)
+		tb.Peek(attrIndexBuffer[1]).Text = nil
+		i = 1
+	}
+	if attrIndexBuffer[2] != -1 {
+		x2 = minify.Number(tb.Peek(attrIndexBuffer[2]).AttrVal)
+		tb.Peek(attrIndexBuffer[2]).Text = nil
+		i = 2
+	}
+	if attrIndexBuffer[3] != -1 {
+		y2 = minify.Number(tb.Peek(attrIndexBuffer[3]).AttrVal)
+		tb.Peek(attrIndexBuffer[3]).Text = nil
+		i = 3
+	}
+
+	d := make([]byte, 0, 7+len(x1)+len(y1)+len(x2)+len(y2))
+	d = append(d, '"', 'M')
+	d = append(d, x1...)
+	d = append(d, ' ')
+	d = append(d, y1...)
+	d = append(d, 'L')
+	d = append(d, x2...)
+	d = append(d, ' ')
+	d = append(d, y2...)
+	d = append(d, 'z', '"')
+	ShortenPathData(d[1:len(d)-1], pathDataBuffer)
+
+	t.Data = pathBytes
+	tb.Peek(attrIndexBuffer[i]).Text = dBytes
+	tb.Peek(attrIndexBuffer[i]).AttrVal = d
+}
+
+func shortenRect(attrIndexBuffer *[]int, tb *TokenBuffer) {
+	getAttributes(&attrIndexBuffer, tb, svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
+	if attrIndexBuffer[4] == -1 && attrIndexBuffer[5] == -1 {
+		i := 0
+		x, y, w, h := zeroBytes, zeroBytes, zeroBytes, zeroBytes
+		if attrIndexBuffer[0] != -1 {
+			x = minify.Number(tb.Peek(attrIndexBuffer[0]).AttrVal)
+			tb.Peek(attrIndexBuffer[0]).Text = nil
+		}
+		if attrIndexBuffer[1] != -1 {
+			y = minify.Number(tb.Peek(attrIndexBuffer[1]).AttrVal)
+			tb.Peek(attrIndexBuffer[1]).Text = nil
+			i = 1
+		}
+		if attrIndexBuffer[2] != -1 {
+			w = minify.Number(tb.Peek(attrIndexBuffer[2]).AttrVal)
+			tb.Peek(attrIndexBuffer[2]).Text = nil
+			i = 2
+		}
+		if attrIndexBuffer[3] != -1 {
+			h = minify.Number(tb.Peek(attrIndexBuffer[3]).AttrVal)
+			tb.Peek(attrIndexBuffer[3]).Text = nil
+			i = 3
+		}
+		// if len(w) == 0 || len(w) == 1 && w[0] == '0' || len(h) == 0 || len(h) == 1 && h[0] == '0' {
+		// 	skipTag(tb, tag)
+		// 	break
+		// }
+
+		d := make([]byte, 0, 9+2*len(x)+2*len(y)+len(w)+len(h))
+		d = append(d, '"', 'M')
+		d = append(d, x...)
+		d = append(d, ' ')
+		d = append(d, y...)
+		d = append(d, 'h')
+		d = append(d, w...)
+		d = append(d, 'v')
+		d = append(d, h...)
+		d = append(d, 'H')
+		d = append(d, x...)
+		d = append(d, 'z', '"')
+		ShortenPathData(d[1:len(d)-1], pathDataBuffer)
+
+		t.Data = pathBytes
+		tb.Peek(attrIndexBuffer[i]).Text = dBytes
+		tb.Peek(attrIndexBuffer[i]).AttrVal = d
+	}
+}
+
+func shortenPoly(attrIndexBuffer *[]int, tb *TokenBuffer) {
+	getAttributes(&attrIndexBuffer, tb, svg.Points)
+	if attrIndexBuffer[0] != -1 {
+		points := tb.Peek(attrIndexBuffer[0]).AttrVal
+
+		i := 0
+		for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
+			i++
+		}
+		if i == len(points) {
+			return
+		}
+		for i < len(points) && !(points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
+			i++
+		}
+		for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
+			i++
+		}
+		if i == len(points) {
+			return
+		}
+		for i < len(points) && !(points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
+			i++
+		}
+		endMoveTo := i
+		for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
+			i++
+		}
+		startLineTo := i
+
+		d := make([]byte, 0, 2+len(points))
+		d = append(d, '"', 'M')
+		d = append(d, points[:endMoveTo]...)
+		d = append(d, 'L')
+		d = append(d, points[startLineTo:]...)
+		if tag == svg.Polygon {
+			d = append(d, 'z')
+		}
+		d = append(d, '"')
+		ShortenPathData(d[1:len(d)-1], pathDataBuffer)
+
+		t.Data = pathBytes
+		tb.Peek(attrIndexBuffer[0]).Text = dBytes
+		tb.Peek(attrIndexBuffer[0]).AttrVal = d
+	}
 }
 
 ////////////////////////////////////////////////////////////////
