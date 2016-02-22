@@ -44,8 +44,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
-	attrIndexBuffer := make([]int, 0, maxAttrLookup)
-	pathDataBuffer := &PathData{}
+	pathDataBuffer := PathData{}
 
 	l := xml.NewLexer(r)
 	tb := NewTokenBuffer(l)
@@ -125,14 +124,18 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				skipTag(tb, tag)
 				break
 			} else if tag == svg.Line {
-				shortenLine(&attrIndexBuffer, tb)
+				shortenLine(tb, &t, &pathDataBuffer)
 			} else if tag == svg.Rect {
-				shortenRect(&attrIndexBuffer, tb)
+				shortenRect(tb, &t, &pathDataBuffer)
 			} else if tag == svg.Polygon || tag == svg.Polyline {
-				shortenPoly(&attrIndexBuffer, tb)
+				shortenPoly(tb, &t, &pathDataBuffer)
 			}
-			if _, err := w.Write(t.Data); err != nil {
-				return err
+			if t.Data != nil {
+				if _, err := w.Write(t.Data); err != nil {
+					return err
+				}
+			} else {
+				skipTag(tb, tag)
 			}
 		case xml.AttributeToken:
 			if len(t.AttrVal) < 2 || t.Text == nil { // data is nil when attribute has been removed
@@ -140,7 +143,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 			attr := t.Hash
 			val := parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.AttrVal[1 : len(t.AttrVal)-1]))
-			//fmt.Println(string(t.AttrVal))
 			if tag == svg.Svg && attr == svg.Version {
 				continue
 			}
@@ -165,7 +167,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					val = attrMinifyBuffer.Bytes()
 				}
 			} else if attr == svg.D {
-				val = ShortenPathData(val, pathDataBuffer)
+				val = ShortenPathData(val, &pathDataBuffer)
 			} else if attr == svg.ViewBox {
 				j := 0
 				newVal := val[:0]
@@ -203,9 +205,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					// TODO: handle rgb(x, y, z) and hsl(x, y, z)
 				}
 			} else if n, m := parse.Dimension(val); n+m == len(val) { // TODO: inefficient, temporary measure
-				//fmt.Println(string(val))
 				val, _ = shortenDimension(val)
-				//fmt.Println("->", string(val))
 			}
 
 			// prefer single or double quotes depending on what occurs more often in value
@@ -268,28 +268,24 @@ func shortenDimension(b []byte) ([]byte, int) {
 	return b, 0
 }
 
-func shortenLine(attrIndexBuffer *[]int, tb *TokenBuffer) {
-	getAttributes(&attrIndexBuffer, tb, svg.X1, svg.Y1, svg.X2, svg.Y2)
-	i := 0
+func shortenLine(tb *TokenBuffer, t *Token, pathDataBuffer *PathData) {
 	x1, y1, x2, y2 := zeroBytes, zeroBytes, zeroBytes, zeroBytes
-	if attrIndexBuffer[0] != -1 {
-		x1 = minify.Number(tb.Peek(attrIndexBuffer[0]).AttrVal)
-		tb.Peek(attrIndexBuffer[0]).Text = nil
+	attrs, replacee := tb.Attributes(svg.X1, svg.Y1, svg.X2, svg.Y2)
+	if attrs[0] != nil {
+		x1 = minify.Number(attrs[0].AttrVal)
+		attrs[0].Text = nil
 	}
-	if attrIndexBuffer[1] != -1 {
-		y1 = minify.Number(tb.Peek(attrIndexBuffer[1]).AttrVal)
-		tb.Peek(attrIndexBuffer[1]).Text = nil
-		i = 1
+	if attrs[1] != nil {
+		y1 = minify.Number(attrs[1].AttrVal)
+		attrs[1].Text = nil
 	}
-	if attrIndexBuffer[2] != -1 {
-		x2 = minify.Number(tb.Peek(attrIndexBuffer[2]).AttrVal)
-		tb.Peek(attrIndexBuffer[2]).Text = nil
-		i = 2
+	if attrs[2] != nil {
+		x2 = minify.Number(attrs[2].AttrVal)
+		attrs[2].Text = nil
 	}
-	if attrIndexBuffer[3] != -1 {
-		y2 = minify.Number(tb.Peek(attrIndexBuffer[3]).AttrVal)
-		tb.Peek(attrIndexBuffer[3]).Text = nil
-		i = 3
+	if attrs[3] != nil {
+		y2 = minify.Number(attrs[3].AttrVal)
+		attrs[3].Text = nil
 	}
 
 	d := make([]byte, 0, 7+len(x1)+len(y1)+len(x2)+len(y2))
@@ -305,38 +301,34 @@ func shortenLine(attrIndexBuffer *[]int, tb *TokenBuffer) {
 	ShortenPathData(d[1:len(d)-1], pathDataBuffer)
 
 	t.Data = pathBytes
-	tb.Peek(attrIndexBuffer[i]).Text = dBytes
-	tb.Peek(attrIndexBuffer[i]).AttrVal = d
+	replacee.Text = dBytes
+	replacee.AttrVal = d
 }
 
-func shortenRect(attrIndexBuffer *[]int, tb *TokenBuffer) {
-	getAttributes(&attrIndexBuffer, tb, svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
-	if attrIndexBuffer[4] == -1 && attrIndexBuffer[5] == -1 {
-		i := 0
+func shortenRect(tb *TokenBuffer, t *Token, pathDataBuffer *PathData) {
+	attrs, replacee := tb.Attributes(svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
+	if attrs[4] == nil && attrs[5] == nil {
 		x, y, w, h := zeroBytes, zeroBytes, zeroBytes, zeroBytes
-		if attrIndexBuffer[0] != -1 {
-			x = minify.Number(tb.Peek(attrIndexBuffer[0]).AttrVal)
-			tb.Peek(attrIndexBuffer[0]).Text = nil
+		if attrs[0] != nil {
+			x = minify.Number(attrs[0].AttrVal)
+			attrs[0].Text = nil
 		}
-		if attrIndexBuffer[1] != -1 {
-			y = minify.Number(tb.Peek(attrIndexBuffer[1]).AttrVal)
-			tb.Peek(attrIndexBuffer[1]).Text = nil
-			i = 1
+		if attrs[1] != nil {
+			y = minify.Number(attrs[1].AttrVal)
+			attrs[1].Text = nil
 		}
-		if attrIndexBuffer[2] != -1 {
-			w = minify.Number(tb.Peek(attrIndexBuffer[2]).AttrVal)
-			tb.Peek(attrIndexBuffer[2]).Text = nil
-			i = 2
+		if attrs[2] != nil {
+			w = minify.Number(attrs[2].AttrVal)
+			attrs[2].Text = nil
 		}
-		if attrIndexBuffer[3] != -1 {
-			h = minify.Number(tb.Peek(attrIndexBuffer[3]).AttrVal)
-			tb.Peek(attrIndexBuffer[3]).Text = nil
-			i = 3
+		if attrs[3] != nil {
+			h = minify.Number(attrs[3].AttrVal)
+			attrs[3].Text = nil
 		}
-		// if len(w) == 0 || len(w) == 1 && w[0] == '0' || len(h) == 0 || len(h) == 1 && h[0] == '0' {
-		// 	skipTag(tb, tag)
-		// 	break
-		// }
+		if len(w) == 0 || len(w) == 1 && w[0] == '0' || len(h) == 0 || len(h) == 1 && h[0] == '0' {
+			t.Data = nil
+			return
+		}
 
 		d := make([]byte, 0, 9+2*len(x)+2*len(y)+len(w)+len(h))
 		d = append(d, '"', 'M')
@@ -353,15 +345,15 @@ func shortenRect(attrIndexBuffer *[]int, tb *TokenBuffer) {
 		ShortenPathData(d[1:len(d)-1], pathDataBuffer)
 
 		t.Data = pathBytes
-		tb.Peek(attrIndexBuffer[i]).Text = dBytes
-		tb.Peek(attrIndexBuffer[i]).AttrVal = d
+		replacee.Text = dBytes
+		replacee.AttrVal = d
 	}
 }
 
-func shortenPoly(attrIndexBuffer *[]int, tb *TokenBuffer) {
-	getAttributes(&attrIndexBuffer, tb, svg.Points)
-	if attrIndexBuffer[0] != -1 {
-		points := tb.Peek(attrIndexBuffer[0]).AttrVal
+func shortenPoly(tb *TokenBuffer, t *Token, pathDataBuffer *PathData) {
+	attrs, replacee := tb.Attributes(svg.Points)
+	if attrs[0] != nil {
+		points := attrs[0].AttrVal
 
 		i := 0
 		for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
@@ -393,41 +385,19 @@ func shortenPoly(attrIndexBuffer *[]int, tb *TokenBuffer) {
 		d = append(d, points[:endMoveTo]...)
 		d = append(d, 'L')
 		d = append(d, points[startLineTo:]...)
-		if tag == svg.Polygon {
+		if t.Hash == svg.Polygon {
 			d = append(d, 'z')
 		}
 		d = append(d, '"')
 		ShortenPathData(d[1:len(d)-1], pathDataBuffer)
 
 		t.Data = pathBytes
-		tb.Peek(attrIndexBuffer[0]).Text = dBytes
-		tb.Peek(attrIndexBuffer[0]).AttrVal = d
+		replacee.Text = dBytes
+		replacee.AttrVal = d
 	}
 }
 
 ////////////////////////////////////////////////////////////////
-
-func getAttributes(attrIndexBuffer *[]int, tb *TokenBuffer, hashes ...svg.Hash) {
-	*attrIndexBuffer = (*attrIndexBuffer)[:len(hashes)]
-	for j, _ := range *attrIndexBuffer {
-		(*attrIndexBuffer)[j] = -1
-	}
-	for i := 0; ; i++ {
-		t := tb.Peek(i)
-		if t.TokenType != xml.AttributeToken {
-			break
-		}
-		for j, hash := range hashes {
-			if t.Hash == hash {
-				// if len(t.AttrVal) > 1 && t.AttrVal[0] == '"' {
-				// 	t.AttrVal = parse.TrimWhitespace(t.AttrVal[1 : len(t.AttrVal)-1]) // quotes will be readded in attribute loop if necessary
-				// }
-				(*attrIndexBuffer)[j] = i
-				break
-			}
-		}
-	}
-}
 
 func skipTag(tb *TokenBuffer, tag svg.Hash) {
 	for {

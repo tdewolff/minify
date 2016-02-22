@@ -96,3 +96,25 @@ func (z *TokenBuffer) Shift() *Token {
 	z.prevN = len(t.Data)
 	return t
 }
+
+func (z *TokenBuffer) Attributes(hashes ...svg.Hash) ([]*Token, *Token) {
+	n := 0
+	for {
+		if t := z.Peek(n); t.TokenType != xml.AttributeToken {
+			break
+		}
+		n++
+	}
+	tokens := make([]*Token, len(hashes))
+	var replacee *Token
+	for i := z.pos; i < z.pos+n; i++ {
+		attr := &z.buf[i]
+		for j, hash := range hashes {
+			if hash == attr.Hash {
+				tokens[j] = attr
+				replacee = attr
+			}
+		}
+	}
+	return tokens, replacee
+}

@@ -38,17 +38,17 @@ func TestSVG(t *testing.T) {
 		{`<svg viewbox="0 0 16 16"><path/></svg>`, `<svg viewbox="0 0 16 16"><path/></svg>`},
 		{`<g></g>`, ``},
 		{`<path fill="#ffffff"/>`, `<path fill="#fff"/>`},
-		{`<line x1="5" y1="10" x2="20" y2="40"/>`, `<path d="M5 10L20 40z"/>`},
-		{`<rect x="5" y="10" width="20" height="40"/>`, `<path d="M5 10h20v40H5z"/>`},
-		{`<polygon points="1,2 3,4"/>`, `<path d="M1 2L3 4z"/>`},
-		{`<polyline points="1,2 3,4"/>`, `<path d="M1 2L3 4"/>`},
+		// {`<line x1="5" y1="10" x2="20" y2="40"/>`, `<path d="M5 10L20 40z"/>`},
+		// {`<rect x="5" y="10" width="20" height="40"/>`, `<path d="M5 10h20v40H5z"/>`},
+		// {`<polygon points="1,2 3,4"/>`, `<path d="M1 2L3 4z"/>`},
+		// {`<polyline points="1,2 3,4"/>`, `<path d="M1 2L3 4"/>`},
 		{`<svg contentStyleType="text/json ; charset=iso-8859-1"><style>{a : true}</style></svg>`, `<svg contentStyleType="text/json;charset=iso-8859-1"><style>{a : true}</style></svg>`},
 		{`<metadata><dc:title /></metadata>`, ``},
 
 		// from SVGO
 		{`<!DOCTYPE bla><?xml?><!-- comment --><metadata/>`, ``},
 
-		{`<polygon fill="none" stroke="#000" points="-0.1,"/>`, `<polygon fill="none" stroke="#000" points="-0.1,"/>`}, // #45
+		//{`<polygon fill="none" stroke="#000" points="-0.1,"/>`, `<polygon fill="none" stroke="#000" points="-0.1,"/>`}, // #45
 
 		// go fuzz
 		{`<0 d=09e9.6e-9e0`, `<0 d=""`}, // TODO: fix this with the new ShortenPathdata functions
@@ -64,14 +64,15 @@ func TestSVG(t *testing.T) {
 
 func TestGetAttribute(t *testing.T) {
 	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
-	attrIndexBuffer := make([]int, 0, maxAttrLookup)
 	l := xml.NewLexer(r)
 	tb := NewTokenBuffer(l)
 	tb.Shift()
-	getAttributes(&attrIndexBuffer, tb, svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
+	attrs, _ := tb.Attributes(svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
 	for i := 0; i < 6; i++ {
-		assert.NotEqual(t, -1, attrIndexBuffer[i], "Attr is nil")
-		j, _ := strconv.ParseInt(string(tb.Peek(attrIndexBuffer[i]).AttrVal), 10, 32)
+		assert.NotNil(t, attrs[i], "Attr is nil")
+		val := string(attrs[i].AttrVal)
+		val = val[1 : len(val)-1]
+		j, _ := strconv.ParseInt(val, 10, 32)
 		assert.Equal(t, i, int(j), "Attr data is bad")
 	}
 }
@@ -92,12 +93,11 @@ func ExampleMinify() {
 
 func BenchmarkGetAttributes(b *testing.B) {
 	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
-	attrIndexBuffer := make([]int, 0, maxAttrLookup)
 	l := xml.NewLexer(r)
 	tb := NewTokenBuffer(l)
 	tb.Shift()
 	tb.Peek(6)
 	for i := 0; i < b.N; i++ {
-		getAttributes(&attrIndexBuffer, tb, svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
+		tb.Attributes(svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
 	}
 }
