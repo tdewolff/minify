@@ -39,28 +39,14 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 		- [ResponseWriter](#responsewriter)
 	- [License](#license)
 
-**Roadmap**
+**Status**
 
-* [x] HTML parser and minifier
-* [x] CSS parser and minifier
-* [x] Command line tool
-* [x] JSON parser and minifier
-* [x] JS lexer and basic minifier
-* [x] Improve CSS parser to implement the same technique as HTML/JSON does (ie. a lightweight parser)
-* [x] XML parser and minifier according to the specs
-* [x] Optimize and test JSON minification
-* [x] Optimize and test XML minification
-* [x] Optimize and test CSS minification
-* [x] SVG minifier using the XML parser
-* [ ] Expand SVG minifier using https://github.com/svg/svgo techniques
-* [x] Test with https://github.com/dvyukov/go-fuzz, *found >10 bugs*
-* [x] Make parsers zero-copy
-* [ ] ~~JS lightweight parser~~
-* [x] Use ECMAScript 6 for JS lexer instead of 5.1
-* [ ] JS minifier with local variable renaming and better semicolon and newline omission
-* [ ] ? Optimize the CSS parser to use the same parsing style as the JS parser
-* [x] Options feature to disable techniques
-* [ ] ? HTML templates minification, e.g. Go HTML templates or doT.js templates etc.
+* CSS: **fully implemented**
+* HTML: **fully implemented**
+* JS: basic JSmin-like implementation
+* JSON: **fully implemented**
+* SVG: partially implemented; in development
+* XML: **fully implemented**
 
 ## Prologue
 Minifiers or bindings to minifiers exist in almost all programming languages. Some implementations are merely using several regular-expressions to trim whitespace and comments (even though regex for parsing HTML/XML is ill-advised, for a good read see [Regular Expressions: Now You Have Two Problems](http://blog.codinghorror.com/regular-expressions-now-you-have-two-problems/)). Some implementations are much more profound, such as the [YUI Compressor](http://yui.github.io/yuicompressor/), [Google Closure Compiler](https://github.com/google/closure-compiler) for JS and the [HTML Compressor](https://code.google.com/p/htmlcompressor/).
