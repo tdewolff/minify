@@ -138,11 +138,12 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				skipTag(tb, tag)
 			}
 		case xml.AttributeToken:
-			if len(t.AttrVal) < 2 || t.Text == nil { // data is nil when attribute has been removed
+			if len(t.AttrVal) == 0 || t.Text == nil { // data is nil when attribute has been removed
 				continue
 			}
 			attr := t.Hash
-			val := parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.AttrVal[1 : len(t.AttrVal)-1]))
+			val := t.AttrVal
+			//val := parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.AttrVal[1 : len(t.AttrVal)-1]))
 			if tag == svg.Svg && attr == svg.Version {
 				continue
 			}
@@ -204,7 +205,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				} else if len(val) > 5 && parse.Equal(val[:4], []byte("rgb(")) && val[len(val)-1] == ')' {
 					// TODO: handle rgb(x, y, z) and hsl(x, y, z)
 				}
-			} else if n, m := parse.Dimension(val); n+m == len(val) { // TODO: inefficient, temporary measure
+			} else if n, m := parse.Dimension(val); attr != svg.Points && n+m == len(val) { // TODO: inefficient, temporary measure
 				val, _ = shortenDimension(val)
 			}
 
@@ -288,8 +289,8 @@ func shortenLine(tb *TokenBuffer, t *Token, pathDataBuffer *PathData) {
 		attrs[3].Text = nil
 	}
 
-	d := make([]byte, 0, 7+len(x1)+len(y1)+len(x2)+len(y2))
-	d = append(d, '"', 'M')
+	d := make([]byte, 0, 5+len(x1)+len(y1)+len(x2)+len(y2))
+	d = append(d, 'M')
 	d = append(d, x1...)
 	d = append(d, ' ')
 	d = append(d, y1...)
@@ -297,8 +298,8 @@ func shortenLine(tb *TokenBuffer, t *Token, pathDataBuffer *PathData) {
 	d = append(d, x2...)
 	d = append(d, ' ')
 	d = append(d, y2...)
-	d = append(d, 'z', '"')
-	ShortenPathData(d[1:len(d)-1], pathDataBuffer)
+	d = append(d, 'z')
+	ShortenPathData(d, pathDataBuffer)
 
 	t.Data = pathBytes
 	replacee.Text = dBytes
@@ -330,8 +331,8 @@ func shortenRect(tb *TokenBuffer, t *Token, pathDataBuffer *PathData) {
 			return
 		}
 
-		d := make([]byte, 0, 9+2*len(x)+2*len(y)+len(w)+len(h))
-		d = append(d, '"', 'M')
+		d := make([]byte, 0, 7+2*len(x)+2*len(y)+len(w)+len(h))
+		d = append(d, 'M')
 		d = append(d, x...)
 		d = append(d, ' ')
 		d = append(d, y...)
@@ -341,8 +342,8 @@ func shortenRect(tb *TokenBuffer, t *Token, pathDataBuffer *PathData) {
 		d = append(d, h...)
 		d = append(d, 'H')
 		d = append(d, x...)
-		d = append(d, 'z', '"')
-		ShortenPathData(d[1:len(d)-1], pathDataBuffer)
+		d = append(d, 'z')
+		ShortenPathData(d, pathDataBuffer)
 
 		t.Data = pathBytes
 		replacee.Text = dBytes
@@ -380,16 +381,15 @@ func shortenPoly(tb *TokenBuffer, t *Token, pathDataBuffer *PathData) {
 		}
 		startLineTo := i
 
-		d := make([]byte, 0, 2+len(points))
-		d = append(d, '"', 'M')
+		d := make([]byte, 0, len(points))
+		d = append(d, 'M')
 		d = append(d, points[:endMoveTo]...)
 		d = append(d, 'L')
 		d = append(d, points[startLineTo:]...)
 		if t.Hash == svg.Polygon {
 			d = append(d, 'z')
 		}
-		d = append(d, '"')
-		ShortenPathData(d[1:len(d)-1], pathDataBuffer)
+		ShortenPathData(d, pathDataBuffer)
 
 		t.Data = pathBytes
 		replacee.Text = dBytes
