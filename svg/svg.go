@@ -2,7 +2,6 @@
 package svg // import "github.com/tdewolff/minify/svg"
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/tdewolff/buffer"
@@ -215,7 +214,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				getAttributes(&attrIndexBuffer, tb, svg.Points)
 				if attrIndexBuffer[0] != -1 {
 					points := tb.Peek(attrIndexBuffer[0]).AttrVal
-					fmt.Println("points:", string(points))
+					//fmt.Println("points:", string(points))
 
 					i := 0
 					for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
@@ -253,7 +252,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					d = append(d, '"')
 					ShortenPathData(d[1:len(d)-1], pathDataBuffer)
 
-					fmt.Println(tag, string(tb.Peek(attrIndexBuffer[0]).Text), string(d))
+					//fmt.Println(tag, string(tb.Peek(attrIndexBuffer[0]).Text), string(d))
 
 					t.Data = pathBytes
 					tb.Peek(attrIndexBuffer[0]).Text = dBytes
@@ -270,7 +269,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 			attr := t.Hash
 			val := parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.AttrVal[1 : len(t.AttrVal)-1]))
-			fmt.Println(string(t.AttrVal))
+			//fmt.Println(string(t.AttrVal))
 			if tag == svg.Svg && attr == svg.Version {
 				continue
 			}
@@ -333,9 +332,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					// TODO: handle rgb(x, y, z) and hsl(x, y, z)
 				}
 			} else if n, m := parse.Dimension(val); n+m == len(val) { // TODO: inefficient, temporary measure
-				fmt.Println(string(val))
+				//fmt.Println(string(val))
 				val, _ = shortenDimension(val)
-				fmt.Println("->", string(val))
+				//fmt.Println("->", string(val))
 			}
 
 			// prefer single or double quotes depending on what occurs more often in value
