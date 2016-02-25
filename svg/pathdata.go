@@ -150,7 +150,7 @@ func (p *PathData) shortenAltPosInstruction(b []byte, cmd byte, dx, dy float64) 
 		} else {
 			continue
 		}
-		p.coordBuffer = strconv.FormatFloat(p.coordBuffer[:0], f)
+		p.coordBuffer = strconv.AppendFloat(p.coordBuffer[:0], f)
 
 		coord := minify.Number(p.coordBuffer)
 		if prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && prevDigitRequiresSpace) {
