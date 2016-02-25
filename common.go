@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/tdewolff/parse"
+	"github.com/tdewolff/strconv"
 )
 
 // Epsilon is the closest number to zero that is not considered to be zero.
@@ -105,7 +106,7 @@ func Number(num []byte) []byte {
 				i++
 			}
 			var ok bool
-			if exp, ok = parse.Int(num[i:]); !ok {
+			if exp, ok = strconv.Int(num[i:]); !ok {
 				return num
 			}
 			break
@@ -164,7 +165,7 @@ func Number(num []byte) []byte {
 
 	// append the exponent or change the mantissa to incorporate the exponent
 	relExp := exp + int64(end-start) // exp when the first non-zero digit is directly after the dot
-	n := lenInt64(exp)               // number of exp digits
+	n := strconv.LenInt(exp)         // number of exp digits
 	if exp == 0 {
 		if neg {
 			start--
@@ -210,49 +211,4 @@ func Number(num []byte) []byte {
 		num[start] = '-'
 	}
 	return num[start:end]
-}
-
-func lenInt64(i int64) int {
-	if i < 0 {
-		i = -i
-	}
-	switch {
-	case i < 10:
-		return 1
-	case i < 100:
-		return 2
-	case i < 1000:
-		return 3
-	case i < 10000:
-		return 4
-	case i < 100000:
-		return 5
-	case i < 1000000:
-		return 6
-	case i < 10000000:
-		return 7
-	case i < 100000000:
-		return 8
-	case i < 1000000000:
-		return 9
-	case i < 10000000000:
-		return 10
-	case i < 100000000000:
-		return 11
-	case i < 1000000000000:
-		return 12
-	case i < 10000000000000:
-		return 13
-	case i < 100000000000000:
-		return 14
-	case i < 1000000000000000:
-		return 15
-	case i < 10000000000000000:
-		return 16
-	case i < 100000000000000000:
-		return 17
-	case i < 1000000000000000000:
-		return 18
-	}
-	return 19
 }

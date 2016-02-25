@@ -1,10 +1,9 @@
 package svg
 
 import (
-	"strconv"
-
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/parse"
+	"github.com/tdewolff/strconv"
 )
 
 type PathData struct {
@@ -44,8 +43,9 @@ func ShortenPathData(b []byte, p *PathData) []byte {
 			p.coords = p.coords[:0]
 			p.coordFloats = p.coordFloats[:0]
 		} else if n := parse.Number(b[i:]); n > 0 {
+			f, _ := strconv.ParseFloat(b[i : i+n])
 			p.coords = append(p.coords, b[i:i+n])
-			p.coordFloats = append(p.coordFloats, toFloat(b[i:i+n]))
+			p.coordFloats = append(p.coordFloats, f)
 			i += n - 1
 		}
 	}
@@ -150,7 +150,7 @@ func (p *PathData) shortenAltPosInstruction(b []byte, cmd byte, dx, dy float64) 
 		} else {
 			continue
 		}
-		p.coordBuffer = strconv.AppendFloat(p.coordBuffer[:0], f, 'f', -1, 32)
+		p.coordBuffer = strconv.FormatFloat(p.coordBuffer[:0], f)
 
 		coord := minify.Number(p.coordBuffer)
 		if prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && prevDigitRequiresSpace) {
@@ -167,13 +167,4 @@ func (p *PathData) shortenAltPosInstruction(b []byte, cmd byte, dx, dy float64) 
 		b = append(b, coord...)
 	}
 	return b
-}
-
-func toFloat(b []byte) float64 {
-	f, err := strconv.ParseFloat(string(b), 64)
-	if err != nil {
-		return 0.0
-		//panic(err)
-	}
-	return f
 }
