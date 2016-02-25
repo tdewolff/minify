@@ -1,6 +1,8 @@
 package svg
 
 import (
+	strconvStdlib "strconv"
+
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/parse"
 	"github.com/tdewolff/strconv"
@@ -150,9 +152,13 @@ func (p *PathData) shortenAltPosInstruction(b []byte, cmd byte, dx, dy float64) 
 		} else {
 			continue
 		}
-		p.coordBuffer = strconv.AppendFloat(p.coordBuffer[:0], f)
 
-		coord := minify.Number(p.coordBuffer)
+		coord, ok := strconv.AppendFloat(p.coordBuffer[:0], f, 6)
+		if !ok {
+			p.coordBuffer = strconvStdlib.AppendFloat(p.coordBuffer[:0], f, 'g', 6, 64)
+			coord = minify.Number(p.coordBuffer)
+		}
+
 		if prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && prevDigitRequiresSpace) {
 			b = append(b, ' ')
 		}
