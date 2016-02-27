@@ -154,6 +154,7 @@ func (p *PathData) shortenAltPosInstruction(b []byte, cmd byte, dx, dy float64) 
 		}
 
 		coord, ok := strconv.AppendFloat(p.coordBuffer[:0], f, 6)
+		p.coordBuffer = coord // keep memory
 		if !ok {
 			p.coordBuffer = strconvStdlib.AppendFloat(p.coordBuffer[:0], f, 'g', 6, 64)
 			coord = minify.Number(p.coordBuffer)
