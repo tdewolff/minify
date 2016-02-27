@@ -313,7 +313,10 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 		fun := css.ToHash(values[0].Data[:len(values[0].Data)-1])
 		nArgs := (n - 1) / 2
 		if (fun == css.Rgba || fun == css.Hsla) && nArgs == 4 {
-			d, _ := strconv.ParseFloat(string(values[7].Data), 32)
+			d, err := strconv.ParseFloat(string(values[7].Data), 32)
+			if err != nil {
+				panic(err)
+			}
 			if d-1.0 > -minify.Epsilon {
 				if fun == css.Rgba {
 					values[0].Data = []byte("rgb(")
@@ -333,13 +336,13 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 			}
 		}
 		if fun == css.Rgb && nArgs == 3 {
-			var err error
+			var err [3]error
 			rgb := [3]byte{}
 			for j := 0; j < 3; j++ {
 				val := values[j*2+1]
 				if val.TokenType == css.NumberToken {
 					var d int64
-					d, err = strconv.ParseInt(string(val.Data), 10, 32)
+					d, err[j] = strconv.ParseInt(string(val.Data), 10, 32)
 					if d < 0 {
 						d = 0
 					} else if d > 255 {
@@ -348,7 +351,7 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 					rgb[j] = byte(d)
 				} else if val.TokenType == css.PercentageToken {
 					var d float64
-					d, err = strconv.ParseFloat(string(val.Data[:len(val.Data)-1]), 32)
+					d, err[j] = strconv.ParseFloat(string(val.Data[:len(val.Data)-1]), 32)
 					if d < 0.0 {
 						d = 0.0
 					} else if d > 100.0 {
@@ -357,7 +360,7 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 					rgb[j] = byte((d / 100.0 * 255.0) + 0.5)
 				}
 			}
-			if err == nil {
+			if err[0] == nil && err[1] == nil && err[2] == nil {
 				val := make([]byte, 7)
 				val[0] = '#'
 				hex.Encode(val[1:], rgb[:])
@@ -380,10 +383,10 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 			}
 		} else if fun == css.Hsl && nArgs == 3 {
 			if values[1].TokenType == css.NumberToken && values[3].TokenType == css.PercentageToken && values[5].TokenType == css.PercentageToken {
-				h, err := strconv.ParseFloat(string(values[1].Data), 32)
-				s, err := strconv.ParseFloat(string(values[3].Data[:len(values[3].Data)-1]), 32)
-				l, err := strconv.ParseFloat(string(values[5].Data[:len(values[5].Data)-1]), 32)
-				if err == nil {
+				h, err1 := strconv.ParseFloat(string(values[1].Data), 32)
+				s, err2 := strconv.ParseFloat(string(values[3].Data[:len(values[3].Data)-1]), 32)
+				l, err3 := strconv.ParseFloat(string(values[5].Data[:len(values[5].Data)-1]), 32)
+				if err1 == nil && err2 == nil && err3 == nil {
 					r, g, b := css.HSL2RGB(h/360.0, s/100.0, l/100.0)
 					rgb := []byte{byte((r * 255.0) + 0.5), byte((g * 255.0) + 0.5), byte((b * 255.0) + 0.5)}
 					val := make([]byte, 7)
