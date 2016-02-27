@@ -262,18 +262,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							}
 						}
 					}
-					// TODO: omit http or https according to URL, specified through options
-					// if rel := attrTokenBuffer[2]; rel == nil || !parse.EqualFold(rel.AttrVal, externalBytes) {
-					// 	if href := attrTokenBuffer[3]; href != nil {
-					// 		if len(href.AttrVal) > 5 && parse.EqualFold(href.AttrVal[:4], []byte{'h', 't', 't', 'p'}) {
-					// 			if href.AttrVal[4] == ':' {
-					// 				href.AttrVal = href.AttrVal[5:]
-					// 			} else if (href.AttrVal[4] == 's' || href.AttrVal[4] == 'S') && href.AttrVal[5] == ':' {
-					// 				href.AttrVal = href.AttrVal[6:]
-					// 			}
-					// 		}
-					// 	}
-					// }
 				} else if t.Hash == html.Meta {
 					getAttributes(&attrTokenBuffer, tb, html.Content, html.Http_Equiv, html.Charset, html.Name)
 					if content := attrTokenBuffer[0]; content != nil {
