@@ -24,8 +24,6 @@ var (
 	zeroBytes       = []byte("0")
 )
 
-const maxAttrLookup = 6
-
 ////////////////////////////////////////////////////////////////
 
 // Minifier is an SVG minifier.
@@ -143,7 +141,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 			attr := t.Hash
 			val := t.AttrVal
-			//val := parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.AttrVal[1 : len(t.AttrVal)-1]))
 			if tag == svg.Svg && attr == svg.Version {
 				continue
 			}
