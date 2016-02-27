@@ -106,7 +106,7 @@ func Number(num []byte) []byte {
 				i++
 			}
 			var ok bool
-			if exp, ok = strconv.Int(num[i:]); !ok {
+			if exp, ok = strconv.ParseInt(num[i:]); !ok {
 				return num
 			}
 			break
