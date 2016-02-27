@@ -121,50 +121,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 				}
 				break
-			} else if t.Hash == svg.Line || t.Hash == svg.Rect {
-				// TODO: shape2path also for polygon and polyline
-				// x1, y1, x2, y2 float64 := 0, 0, 0, 0
-				// valid := true
-				// i := 0
-				// for {
-				// 	next := tb.Peek(i)
-				// 	i++
-				// 	if next.TokenType != xml.AttributeToken {
-				// 		break
-				// 	}
-				// 	v *int
-				// 	attr := svg.ToHash(next.Data)
-				// 	if tag == svg.Line {
-				// 		if attr == svg.X1 {
-				// 			v = &x1
-				// 		} else if attr == svg.Y1 {
-				// 			v = &y1
-				// 		} else if attr == svg.X2 {
-				// 			v = &x2
-				// 		} else if attr == svg.Y2 {
-				// 			v = &Y2
-				// 		} else {
-				// 			continue
-				// 		}
-				// 	} else if attr == svg.X { // rect
-				// 		v = &x1
-				// 	} else if attr == svg.Y {
-				// 		v = &y1
-				// 	} else if attr == svg.Width {
-				// 		v = &x2
-				// 	} else if attr == svg.Height {
-				// 		v = &Y2
-				// 	} else if attr == svg.Rx || attr == svg.Ry {
-				// 		valid = false
-				// 		break
-				// 	} else {
-				// 		continue
-				// 	}
-
-				// }
-				// if valid {
-				// 	t.Data = pathBytes
-				// }
 			}
 			if _, err := w.Write(t.Data); err != nil {
 				return err
