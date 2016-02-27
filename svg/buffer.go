@@ -1,6 +1,7 @@
 package svg // import "github.com/tdewolff/minify/svg"
 
 import (
+	"github.com/tdewolff/parse"
 	"github.com/tdewolff/parse/svg"
 	"github.com/tdewolff/parse/xml"
 )
@@ -21,7 +22,8 @@ type TokenBuffer struct {
 	buf []Token
 	pos int
 
-	prevN int
+	attrBuffer []*Token
+	prevN      int
 }
 
 // NewTokenBuffer returns a new TokenBuffer.
@@ -37,6 +39,9 @@ func (z *TokenBuffer) read(t *Token) {
 	t.Text = z.l.Text()
 	if t.TokenType == xml.AttributeToken {
 		t.AttrVal = z.l.AttrVal()
+		if len(t.AttrVal) > 1 && t.AttrVal[0] == '"' {
+			t.AttrVal = parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.AttrVal[1 : len(t.AttrVal)-1])) // quotes will be readded in attribute loop if necessary
+		}
 		t.Hash = svg.ToHash(t.Text)
 	} else if t.TokenType == xml.StartTagToken || t.TokenType == xml.EndTagToken {
 		t.AttrVal = nil
@@ -95,4 +100,33 @@ func (z *TokenBuffer) Shift() *Token {
 	z.pos++
 	z.prevN = len(t.Data)
 	return t
+}
+
+func (z *TokenBuffer) Attributes(hashes ...svg.Hash) ([]*Token, *Token) {
+	n := 0
+	for {
+		if t := z.Peek(n); t.TokenType != xml.AttributeToken {
+			break
+		}
+		n++
+	}
+	if len(hashes) > cap(z.attrBuffer) {
+		z.attrBuffer = make([]*Token, len(hashes))
+	} else {
+		z.attrBuffer = z.attrBuffer[:len(hashes)]
+		for i := 0; i < len(z.attrBuffer); i++ {
+			z.attrBuffer[i] = nil
+		}
+	}
+	var replacee *Token
+	for i := z.pos; i < z.pos+n; i++ {
+		attr := &z.buf[i]
+		for j, hash := range hashes {
+			if hash == attr.Hash {
+				z.attrBuffer[j] = attr
+				replacee = attr
+			}
+		}
+	}
+	return z.attrBuffer, replacee
 }
