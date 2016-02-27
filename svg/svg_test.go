@@ -45,7 +45,7 @@ func TestSVG(t *testing.T) {
 		{`<polygon fill="none" stroke="#000" points="-0.1,"/>`, `<polygon fill="none" stroke="#000" points="-0.1,"/>`}, // #45
 
 		// go fuzz
-		{`<0 d=09e9.6e-9e0`, `<0 d="9e9  e-10"`}, // TODO: fix this with the new ShortenPathdata functions
+		{`<0 d=09e9.6e-9e0`, `<0 d="9e9 6e-10e0"`}, // TODO: fix this with the new ShortenPathdata functions
 	}
 
 	m := minify.New()

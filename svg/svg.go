@@ -126,11 +126,12 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				return err
 			}
 		case xml.AttributeToken:
-			if len(t.AttrVal) < 2 {
+			if len(t.AttrVal) == 0 {
 				continue
 			}
-			val := parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.AttrVal[1 : len(t.AttrVal)-1]))
-			if tag == svg.Svg && t.Hash == svg.Version {
+			attr := t.Hash
+			val := t.AttrVal
+			if tag == svg.Svg && attr == svg.Version {
 				continue
 			}
 
@@ -144,18 +145,18 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				return err
 			}
 
-			if tag == svg.Svg && t.Hash == svg.ContentStyleType {
+			if tag == svg.Svg && attr == svg.ContentStyleType {
 				val = minify.ContentType(val)
 				defaultStyleType = string(val)
 				defaultInlineStyleType = defaultStyleType + ";inline=1"
-			} else if t.Hash == svg.Style {
+			} else if attr == svg.Style {
 				attrMinifyBuffer.Reset()
 				if m.Minify(defaultInlineStyleType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
 					val = attrMinifyBuffer.Bytes()
 				}
-			} else if t.Hash == svg.D {
+			} else if attr == svg.D {
 				val = shortenPathData(val)
-			} else if t.Hash == svg.ViewBox {
+			} else if attr == svg.ViewBox {
 				j := 0
 				newVal := val[:0]
 				for i := 0; i < 4; i++ {
@@ -176,7 +177,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 				}
 				val = newVal
-			} else if colorAttrMap[t.Hash] && len(val) > 0 {
+			} else if colorAttrMap[attr] && len(val) > 0 {
 				parse.ToLower(val)
 				if val[0] == '#' {
 					if name, ok := minifyCSS.ShortenColorHex[string(val)]; ok {
