@@ -28,8 +28,6 @@ var (
 	httpBytes       = []byte("http")
 )
 
-const maxAttrLookup = 4
-
 ////////////////////////////////////////////////////////////////
 
 // Minifier is an HTML minifier.
@@ -57,7 +55,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
-	attrTokenBuffer := make([]*Token, 0, maxAttrLookup)
 
 	l := html.NewLexer(r)
 	tb := NewTokenBuffer(l)
@@ -239,13 +236,11 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			if hasAttributes {
 				// rewrite attributes with interdependent conditions
 				if t.Hash == html.A {
-					getAttributes(&attrTokenBuffer, tb, html.Id, html.Name, html.Rel, html.Href)
-					if id := attrTokenBuffer[0]; id != nil {
-						if name := attrTokenBuffer[1]; name != nil && parse.Equal(id.AttrVal, name.AttrVal) {
-							name.Text = nil
-						}
+					attrs := tb.Attributes(html.Id, html.Name, html.Href)
+					if id, name := attrs[0], attrs[1]; id != nil && name != nil && parse.Equal(id.AttrVal, name.AttrVal) {
+						name.Text = nil
 					}
-					if href := attrTokenBuffer[3]; href != nil {
+					if href := attrs[2]; href != nil {
 						if len(href.AttrVal) > 5 && parse.EqualFold(href.AttrVal[:4], httpBytes) {
 							if href.AttrVal[4] == ':' {
 								if m.URL != nil && m.URL.Scheme == "http" {
@@ -263,11 +258,11 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						}
 					}
 				} else if t.Hash == html.Meta {
-					getAttributes(&attrTokenBuffer, tb, html.Content, html.Http_Equiv, html.Charset, html.Name)
-					if content := attrTokenBuffer[0]; content != nil {
-						if httpEquiv := attrTokenBuffer[1]; httpEquiv != nil {
+					attrs := tb.Attributes(html.Content, html.Http_Equiv, html.Charset, html.Name)
+					if content := attrs[0]; content != nil {
+						if httpEquiv := attrs[1]; httpEquiv != nil {
 							content.AttrVal = minify.ContentType(content.AttrVal)
-							if charset := attrTokenBuffer[2]; charset == nil && parse.EqualFold(httpEquiv.AttrVal, []byte("content-type")) && parse.Equal(content.AttrVal, []byte("text/html;charset=utf-8")) {
+							if charset := attrs[2]; charset == nil && parse.EqualFold(httpEquiv.AttrVal, []byte("content-type")) && parse.Equal(content.AttrVal, []byte("text/html;charset=utf-8")) {
 								httpEquiv.Text = nil
 								content.Text = []byte("charset")
 								content.Hash = html.Charset
@@ -284,7 +279,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 								defaultScriptType, defaultScriptParams = parse.Mediatype(content.AttrVal)
 							}
 						}
-						if name := attrTokenBuffer[3]; name != nil {
+						if name := attrs[3]; name != nil {
 							if parse.EqualFold(name.AttrVal, []byte("keywords")) {
 								content.AttrVal = bytes.Replace(content.AttrVal, []byte(", "), []byte(","), -1)
 							} else if parse.EqualFold(name.AttrVal, []byte("viewport")) {
@@ -308,11 +303,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						}
 					}
 				} else if t.Hash == html.Script {
-					getAttributes(&attrTokenBuffer, tb, html.Src, html.Charset)
-					if src := attrTokenBuffer[0]; src != nil {
-						if charset := attrTokenBuffer[1]; charset != nil {
-							charset.Text = nil
-						}
+					attrs := tb.Attributes(html.Src, html.Charset)
+					if attrs[0] != nil && attrs[1] != nil {
+						attrs[1].Text = nil
 					}
 				}
 
@@ -326,9 +319,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 
 					val := attr.AttrVal
-					if len(val) > 1 && (val[0] == '"' || val[0] == '\'') {
-						val = parse.TrimWhitespace(val[1 : len(val)-1])
-					}
 					if len(val) == 0 && (attr.Hash == html.Class ||
 						attr.Hash == html.Dir ||
 						attr.Hash == html.Id ||
@@ -432,30 +422,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 			if _, err := w.Write(gtBytes); err != nil {
 				return err
-			}
-		}
-	}
-}
-
-////////////////////////////////////////////////////////////////
-
-func getAttributes(attrTokenBuffer *[]*Token, tb *TokenBuffer, hashes ...html.Hash) {
-	*attrTokenBuffer = (*attrTokenBuffer)[:len(hashes)]
-	for j := range *attrTokenBuffer {
-		(*attrTokenBuffer)[j] = nil
-	}
-	for i := 0; ; i++ {
-		t := tb.Peek(i)
-		if t.TokenType != html.AttributeToken {
-			break
-		}
-		for j, hash := range hashes {
-			if t.Hash == hash {
-				if len(t.AttrVal) > 1 && (t.AttrVal[0] == '"' || t.AttrVal[0] == '\'') {
-					t.AttrVal = parse.TrimWhitespace(t.AttrVal[1 : len(t.AttrVal)-1]) // quotes will be readded in attribute loop if necessary
-				}
-				(*attrTokenBuffer)[j] = t
-				break
 			}
 		}
 	}
