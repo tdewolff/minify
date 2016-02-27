@@ -6,6 +6,7 @@ import (
 	"net/url"
 
 	"github.com/tdewolff/parse"
+	"github.com/tdewolff/strconv"
 )
 
 // Epsilon is the closest number to zero that is not considered to be zero.
@@ -105,7 +106,7 @@ func Number(num []byte) []byte {
 				i++
 			}
 			var ok bool
-			if exp, ok = parse.Int(num[i:]); !ok {
+			if exp, ok = strconv.ParseInt(num[i:]); !ok {
 				return num
 			}
 			break
@@ -164,7 +165,7 @@ func Number(num []byte) []byte {
 
 	// append the exponent or change the mantissa to incorporate the exponent
 	relExp := exp + int64(end-start) // exp when the first non-zero digit is directly after the dot
-	n := lenInt64(exp)               // number of exp digits
+	n := strconv.LenInt(exp)         // number of exp digits
 	if exp == 0 {
 		if neg {
 			start--
