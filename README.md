@@ -49,15 +49,9 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 * XML: **fully implemented**
 
 ## Prologue
-Minifiers or bindings to minifiers exist in almost all programming languages. Some implementations are merely using several regular-expressions to trim whitespace and comments (even though regex for parsing HTML/XML is ill-advised, for a good read see [Regular Expressions: Now You Have Two Problems](http://blog.codinghorror.com/regular-expressions-now-you-have-two-problems/)). Some implementations are much more profound, such as the [YUI Compressor](http://yui.github.io/yuicompressor/), [Google Closure Compiler](https://github.com/google/closure-compiler) for JS and the [HTML Compressor](https://code.google.com/p/htmlcompressor/).
+Minifiers or bindings to minifiers exist in almost all programming languages. Some implementations are merely using several regular-expressions to trim whitespace and comments (even though regex for parsing HTML/XML is ill-advised, for a good read see [Regular Expressions: Now You Have Two Problems](http://blog.codinghorror.com/regular-expressions-now-you-have-two-problems/)). Some implementations are much more profound, such as the [YUI Compressor](http://yui.github.io/yuicompressor/), [Google Closure Compiler](https://github.com/google/closure-compiler) for JS and the [HTML Compressor](https://code.google.com/p/htmlcompressor/). As most existing implementations either use Java or JavaScript and don't focus on performance, they are pretty slow. And loading the whole file into memory is bad for really large files (or impossible for infinite streams).
 
-These industry-grade minifiers are written in Java and are generally relatively slow. Futhermore, these tools provide a large number of configurations which is often confusing or not required. Regular-expression based minifiers are slow anyways because they use multiple regular-expressions, each of which parses the complete document. While regular-expressions are overkill (or ill-advised) for parsing HTML/CSS/JS documents, parsing it a number of times is certainly not speeding things up. Other implementations are mostly written in uncompiled languages such as JS, which is great for bindings with [Grunt](http://gruntjs.com/) for example, but catastrophic for the minification speed of large files or projects with many files.
-
-Additionally, many of these minifier either do not follow the specifications or drag a lot of legacy code around. When you are still trying to support IE6 I don't suppose you are squeezing out every bit of performance from your web applications. Supporting old mistakes or work-arounds is not a fairly long-term vision and seldomly justified.
-
-However, implementing an HTML minifier is the bare minimum. HTML documents can contain embedded resources such as CSS, JS and SVG file formats. Thus for increased minification of HTML, other file format minifiers must be present too. A minifier should really handle a number of mimetypes to be successful.
-
-This minifier proves to be that fast and encompassing minifier which stream-minifies files and can minify them concurrently.
+This minifier proves to be that fast and extensive minifier that can handle HTML and any other filetype it may contain (CSS, JS, ...). It streams the input and output and can minify files concurrently.
 
 ## Installation
 Run the following command
@@ -493,6 +487,15 @@ func MinifyFilter(mediatype string, res http.ResponseWriter) MinifyResponseWrite
 	return MinifyResponseWriter{res, mw}
 }
 ```
+
+``` go
+// Usage
+func(w http.ResponseWriter, req *http.Request) {
+	w = MinifyFilter("text/html", w)
+
+	io.WriteString(w, "<p class="message"> This HTTP response will be minified. </p>")
+	// ...
+}
 
 ## License
 Released under the [MIT license](LICENSE.md).
