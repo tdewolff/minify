@@ -93,7 +93,8 @@ func Number(num []byte) []byte {
 			end--
 		}
 	}
-	for i, c := range num {
+	for i := 0; i < len(num); i++ {
+		c := num[i]
 		if c == '.' {
 			dot = i
 		} else if c == 'e' || c == 'E' {
