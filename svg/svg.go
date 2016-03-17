@@ -245,8 +245,7 @@ func shortenPathData(b []byte) []byte {
 	prevDigitRequiresSpace := true
 	j := 0
 	start := 0
-	for i := 0; i < len(b); i++ {
-		c := b[i]
+	for i, c := range b {
 		if c == ' ' || c == ',' || c == '\t' || c == '\n' || c == '\r' {
 			if start != 0 {
 				j += copy(b[j:], b[start:i])

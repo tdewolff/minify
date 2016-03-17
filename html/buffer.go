@@ -117,7 +117,7 @@ func (z *TokenBuffer) Attributes(hashes ...html.Hash) []*Token {
 		z.attrBuffer = make([]*Token, len(hashes))
 	} else {
 		z.attrBuffer = z.attrBuffer[:len(hashes)]
-		for i := 0; i < len(z.attrBuffer); i++ {
+		for i := range z.attrBuffer {
 			z.attrBuffer[i] = nil
 		}
 	}
