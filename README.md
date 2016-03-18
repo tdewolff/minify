@@ -492,10 +492,10 @@ func MinifyFilter(mediatype string, res http.ResponseWriter) MinifyResponseWrite
 // Usage
 func(w http.ResponseWriter, req *http.Request) {
 	w = MinifyFilter("text/html", w)
-
 	io.WriteString(w, "<p class="message"> This HTTP response will be minified. </p>")
-	// ...
+	// Output: <p class=message>This HTTP response will be minified.
 }
+```
 
 ## License
 Released under the [MIT license](LICENSE.md).
