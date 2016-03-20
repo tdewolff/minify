@@ -3,11 +3,14 @@ package svg // import "github.com/tdewolff/minify/svg"
 import (
 	"bytes"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/css"
+	"github.com/tdewolff/parse/svg"
+	"github.com/tdewolff/parse/xml"
 )
 
 func TestSVG(t *testing.T) {
@@ -53,6 +56,39 @@ func TestSVG(t *testing.T) {
 		b := &bytes.Buffer{}
 		assert.Nil(t, Minify(m, b, bytes.NewBufferString(tt.svg), nil), "Minify must not return error in "+tt.svg)
 		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.svg)
+	}
+}
+
+func TestSVGStyle(t *testing.T) {
+	var svgTests = []struct {
+		svg      string
+		expected string
+	}{
+		{`<style> <![CDATA[ @media x < y {} ]]> </style>`, `<style>@media x &lt; y{}</style>`},
+		{`<style> <![CDATA[ * { content: '<<<<<'; } ]]> </style>`, `<style><![CDATA[*{content:'<<<<<'}]]></style>`},
+		{`<style/><![CDATA[ * { content: '<<<<<'; ]]>`, `<style/><![CDATA[ * { content: '<<<<<'; ]]>`},
+	}
+
+	m := minify.New()
+	m.AddFunc("text/css", css.Minify)
+	for _, tt := range svgTests {
+		b := &bytes.Buffer{}
+		assert.Nil(t, Minify(m, b, bytes.NewBufferString(tt.svg), nil), "Minify must not return error in "+tt.svg)
+		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.svg)
+	}
+}
+
+func TestGetAttribute(t *testing.T) {
+	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
+	l := xml.NewLexer(r)
+	tb := NewTokenBuffer(l)
+	tb.Shift()
+	attrs, _ := tb.Attributes(svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
+	for i := 0; i < 6; i++ {
+		assert.NotNil(t, attrs[i], "Attr is nil")
+		val := string(attrs[i].AttrVal)
+		j, _ := strconv.ParseInt(val, 10, 32)
+		assert.Equal(t, i, int(j), "Attr data is bad")
 	}
 }
 

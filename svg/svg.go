@@ -37,19 +37,13 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	defaultStyleType := "text/css"
 	defaultInlineStyleType := "text/css;inline=1"
 
-	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
+	minifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
 
 	l := xml.NewLexer(r)
 	tb := NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()
-		if t.TokenType == xml.CDATAToken {
-			var useText bool
-			if t.Data, useText = xml.EscapeCDATAVal(&attrByteBuffer, t.Data); useText {
-				t.TokenType = xml.TextToken
-			}
-		}
 	SWITCH:
 		switch t.TokenType {
 		case xml.ErrorToken:
@@ -74,19 +68,19 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 		case xml.CDATAToken:
 			if tag == svg.Style {
-				if _, err := w.Write(cdataStartBytes); err != nil {
+				minifyBuffer.Reset()
+				if err := m.Minify(defaultStyleType, minifyBuffer, buffer.NewReader(t.Text)); err != nil && err != minify.ErrNotExist {
 					return err
+				} else if err != minify.ErrNotExist {
+					t.Data = append(t.Data[:9], minifyBuffer.Bytes()...)
+					t.Text = t.Data[9:]
+					t.Data = append(t.Data, cdataEndBytes...)
 				}
-				if err := m.Minify(defaultStyleType, w, buffer.NewReader(t.Text)); err != nil {
-					if err == minify.ErrNotExist { // no minifier, write the original
-						if _, err := w.Write(t.Text); err != nil {
-							return err
-						}
-					} else {
-						return err
-					}
-				}
-				if _, err := w.Write(cdataEndBytes); err != nil {
+			}
+			var useText bool
+			if t.Text, useText = xml.EscapeCDATAVal(&attrByteBuffer, t.Text); useText {
+				t.Text = parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.Text))
+				if _, err := w.Write(t.Text); err != nil {
 					return err
 				}
 			} else if _, err := w.Write(t.Data); err != nil {
@@ -150,9 +144,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				defaultStyleType = string(val)
 				defaultInlineStyleType = defaultStyleType + ";inline=1"
 			} else if attr == svg.Style {
-				attrMinifyBuffer.Reset()
-				if m.Minify(defaultInlineStyleType, attrMinifyBuffer, buffer.NewReader(val)) == nil {
-					val = attrMinifyBuffer.Bytes()
+				minifyBuffer.Reset()
+				if m.Minify(defaultInlineStyleType, minifyBuffer, buffer.NewReader(val)) == nil {
+					val = minifyBuffer.Bytes()
 				}
 			} else if attr == svg.D {
 				val = shortenPathData(val)
@@ -223,10 +217,12 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				}
 			}
 		case xml.StartTagCloseVoidToken:
+			tag = 0
 			if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
 		case xml.EndTagToken:
+			tag = 0
 			if len(t.Data) > 2+len(t.Text) {
 				t.Data[2+len(t.Text)] = '>'
 				if _, err := w.Write(t.Data[:2+len(t.Text)+1]); err != nil {
