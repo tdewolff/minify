@@ -26,7 +26,7 @@ func TestSVG(t *testing.T) {
 		{`<style> <![CDATA[ <<<<< ]]> </style>`, `<style><![CDATA[ <<<<< ]]></style>`},
 		{`<style/><![CDATA[ <<<<< ]]>`, `<style/><![CDATA[ <<<<< ]]>`},
 		{`<svg version="1.0"></svg>`, ``},
-		{`<svg version="1.1" x="0" y="0" width="100%" height="100%"><path/></svg>`, `<svg><path/></svg>`},
+		{`<svg version="1.1" x="0" y="0px" width="100%" height="100%"><path/></svg>`, `<svg><path/></svg>`},
 		{`<path x=" a "/>`, `<path x="a"/>`},
 		{"<path x=\" a \n b \"/>", `<path x="a b"/>`},
 		{`<path x="5.0px" y="0%"/>`, `<path x="5" y="0"/>`},
@@ -55,7 +55,7 @@ func TestSVG(t *testing.T) {
 		{`<polygon fill="none" stroke="#000" points="-0.1,"/>`, `<polygon fill="none" stroke="#000" points="-0.1,"/>`}, // #45
 
 		// go fuzz
-		{`<0 d=09e9.6e-9e0`, `<0 d=""`}, // TODO: fix this with the new ShortenPathdata functions
+		{`<0 d=09e9.6e-9e0`, `<0 d=""`},
 	}
 
 	m := minify.New()
