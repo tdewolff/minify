@@ -65,6 +65,25 @@ func TestSVG(t *testing.T) {
 	}
 }
 
+func TestSVGStyle(t *testing.T) {
+	var svgTests = []struct {
+		svg      string
+		expected string
+	}{
+		{`<style> <![CDATA[ @media x < y {} ]]> </style>`, `<style>@media x &lt; y{}</style>`},
+		{`<style> <![CDATA[ * { content: '<<<<<'; } ]]> </style>`, `<style><![CDATA[*{content:'<<<<<'}]]></style>`},
+		{`<style/><![CDATA[ * { content: '<<<<<'; ]]>`, `<style/><![CDATA[ * { content: '<<<<<'; ]]>`},
+	}
+
+	m := minify.New()
+	m.AddFunc("text/css", css.Minify)
+	for _, tt := range svgTests {
+		b := &bytes.Buffer{}
+		assert.Nil(t, Minify(m, b, bytes.NewBufferString(tt.svg), nil), "Minify must not return error in "+tt.svg)
+		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.svg)
+	}
+}
+
 func TestGetAttribute(t *testing.T) {
 	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
 	l := xml.NewLexer(r)
