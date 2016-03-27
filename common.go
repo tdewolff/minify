@@ -3,6 +3,7 @@ package minify // import "github.com/tdewolff/minify"
 import (
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"net/url"
 
 	"github.com/tdewolff/parse"
@@ -77,7 +78,7 @@ func DataURI(m *M, dataURI []byte) []byte {
 }
 
 // Number minifies a given byte slice containing a number (see parse.Number) and removes superfluous characters.
-func Number(num []byte) []byte {
+func Number(num []byte, prec int) []byte {
 	// omit first + and register mantissa start and end, whether it's negative and the exponent
 	neg := false
 	start := 0
@@ -161,16 +162,14 @@ func Number(num []byte) []byte {
 		}
 	}
 
+	if prec > -1 {
+		fmt.Println(exp, string(num))
+	}
+
 	// append the exponent or change the mantissa to incorporate the exponent
-	relExp := exp + int64(end-start) // exp when the first non-zero digit is directly after the dot
-	n := strconv.LenInt(exp)         // number of exp digits
-	if exp == 0 {
-		if neg {
-			start--
-			num[start] = '-'
-		}
-		return num[start:end]
-	} else if int(relExp)+n+1 < 0 || 2 < exp { // add exponent for exp 3 and higher and where a lower exp really makes it shorter
+	relExp := exp + int64(end-start)    // exp when the first non-zero digit is directly after the dot
+	n := strconv.LenInt(exp)            // number of exp digits
+	if int(relExp)+n+1 < 0 || 2 < exp { // add exponent for exp 3 and higher and where a lower exp really makes it shorter
 		num[end] = 'e'
 		end++
 		if exp < 0 {
@@ -196,7 +195,7 @@ func Number(num []byte) []byte {
 			}
 			end -= int(relExp) - 1
 		}
-	} else { // for exponent 1 and 2
+	} else if exp != 0 { // for exponent 1 and 2
 		num[end] = '0'
 		if exp == 2 {
 			num[end+1] = '0'
