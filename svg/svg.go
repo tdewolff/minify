@@ -186,7 +186,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					val = minifyBuffer.Bytes()
 				}
 			} else if attr == svg.D {
-				val = p.shortenPathData(val)
+				val = p.ShortenPathData(val)
 			} else if attr == svg.ViewBox {
 				j := 0
 				newVal := val[:0]
@@ -324,7 +324,7 @@ func (o *Minifier) shortenLine(tb *TokenBuffer, t *Token, p *PathData) {
 	d = append(d, ' ')
 	d = append(d, y2...)
 	d = append(d, 'z')
-	d = p.shortenPathData(d)
+	d = p.ShortenPathData(d)
 
 	t.Data = pathBytes
 	replacee.Text = dBytes
@@ -367,7 +367,7 @@ func (o *Minifier) shortenRect(tb *TokenBuffer, t *Token, p *PathData) bool {
 		d = append(d, 'H')
 		d = append(d, x...)
 		d = append(d, 'z')
-		d = p.shortenPathData(d)
+		d = p.ShortenPathData(d)
 
 		t.Data = pathBytes
 		replacee.Text = dBytes
@@ -414,7 +414,7 @@ func (o *Minifier) shortenPoly(tb *TokenBuffer, t *Token, p *PathData) {
 		if t.Hash == svg.Polygon {
 			d = append(d, 'z')
 		}
-		d = p.shortenPathData(d)
+		d = p.ShortenPathData(d)
 
 		t.Data = pathBytes
 		replacee.Text = dBytes

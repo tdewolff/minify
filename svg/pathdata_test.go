@@ -24,7 +24,7 @@ func TestPathData(t *testing.T) {
 
 	p := NewPathData(&Minifier{})
 	for _, tt := range pathDataTests {
-		out := p.shortenPathData([]byte(tt.pathData))
+		out := p.ShortenPathData([]byte(tt.pathData))
 		assert.Equal(t, tt.expected, string(out), "Path data must match in "+tt.pathData)
 	}
 }
@@ -35,6 +35,6 @@ func BenchmarkShortenPathData(b *testing.B) {
 	p := NewPathData(&Minifier{})
 	r := []byte("M8.64,223.948c0,0,143.468,3.431,185.777-181.808c2.673-11.702-1.23-20.154,1.316-33.146h16.287c0,0-3.14,17.248,1.095,30.848c21.392,68.692-4.179,242.343-204.227,196.59L8.64,223.948z")
 	for i := 0; i < b.N; i++ {
-		p.shortenPathData(r)
+		p.ShortenPathData(r)
 	}
 }

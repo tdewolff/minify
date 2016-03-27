@@ -1,7 +1,6 @@
 package svg
 
 import (
-	"fmt"
 	strconvStdlib "strconv"
 
 	"github.com/tdewolff/minify"
@@ -32,7 +31,7 @@ func NewPathData(o *Minifier) *PathData {
 	return &PathData{o: o}
 }
 
-func (p *PathData) shortenPathData(b []byte) []byte {
+func (p *PathData) ShortenPathData(b []byte) []byte {
 	var x0, y0 float64
 	var cmd byte
 
@@ -239,9 +238,9 @@ func (p *PathData) shortenAltPosInstruction(cmd byte, coordFloats []float64, x, 
 		}
 
 		coord, ok := strconv.AppendFloat(p.coordBuffer[:0], f, 6)
-		if string(coord) != strconvStdlib.FormatFloat(f, 'g', 6, 64) {
-			fmt.Println(string(coord), "!=", strconvStdlib.FormatFloat(f, 'g', 6, 64))
-		}
+		// if string(coord) != strconvStdlib.FormatFloat(f, 'g', 6, 64) {
+		// 	fmt.Println(string(coord), "!=", strconvStdlib.FormatFloat(f, 'g', 6, 64))
+		// }
 		p.coordBuffer = coord // keep memory
 		if !ok {
 			p.coordBuffer = strconvStdlib.AppendFloat(p.coordBuffer[:0], f, 'g', 6, 64)
