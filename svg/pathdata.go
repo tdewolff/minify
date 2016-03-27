@@ -45,7 +45,7 @@ func (p *PathData) ShortenPathData(b []byte) []byte {
 		c := b[i]
 		if c == ' ' || c == ',' || c == '\n' || c == '\r' || c == '\t' {
 			continue
-		} else if c >= 'A' && (cmd == 0 || cmd != c) { // any command
+		} else if c >= 'A' && (cmd == 0 || cmd != c || c == 'M' || c == 'm') { // any command
 			if cmd != 0 {
 				j += p.copyInstruction(b[j:], cmd)
 				if cmd == 'M' || cmd == 'm' {
@@ -87,6 +87,10 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 	di := 0
 	if (cmd == 'M' || cmd == 'm' || cmd == 'L' || cmd == 'l' || cmd == 'T' || cmd == 't') && n%2 == 0 {
 		di = 2
+		// reprint M always, as the first pair is a move but subsequent pairs are L
+		if cmd == 'M' || cmd == 'm' {
+			p.state.cmd = byte(0)
+		}
 	} else if cmd == 'H' || cmd == 'h' || cmd == 'V' || cmd == 'v' {
 		di = 1
 	} else if (cmd == 'S' || cmd == 's' || cmd == 'Q' || cmd == 'q') && n%4 == 0 {
@@ -103,6 +107,11 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 	origCmd := cmd
 	ax, ay := 0.0, 0.0
 	for i := 0; i < n; i += di {
+		// subsequent coordinate pairs for M are really L
+		if i > 0 && (origCmd == 'M' || origCmd == 'm') {
+			origCmd = 'L' + (origCmd - 'M')
+		}
+
 		cmd = origCmd
 		coords := p.coords[i : i+di]
 		coordFloats := p.coordFloats[i : i+di]
@@ -183,7 +192,7 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 func (p *PathData) shortenCurPosInstruction(cmd byte, coords [][]byte) PathDataState {
 	state := p.state
 	p.curBuffer = p.curBuffer[:0]
-	if cmd != state.cmd {
+	if cmd != state.cmd && !(state.cmd == 'M' && cmd == 'L' || state.cmd == 'm' && cmd == 'l') {
 		p.curBuffer = append(p.curBuffer, cmd)
 		state.cmd = cmd
 		state.prevDigit = false
@@ -210,7 +219,7 @@ func (p *PathData) shortenCurPosInstruction(cmd byte, coords [][]byte) PathDataS
 func (p *PathData) shortenAltPosInstruction(cmd byte, coordFloats []float64, x, y float64) PathDataState {
 	state := p.state
 	p.altBuffer = p.altBuffer[:0]
-	if cmd != state.cmd {
+	if cmd != state.cmd && !(state.cmd == 'M' && cmd == 'L' || state.cmd == 'm' && cmd == 'l') {
 		p.altBuffer = append(p.altBuffer, cmd)
 		state.cmd = cmd
 		state.prevDigit = false
