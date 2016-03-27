@@ -31,7 +31,7 @@ func TestSVG(t *testing.T) {
 		{"<path x=\" a \n b \"/>", `<path x="a b"/>`},
 		{`<path x="5.0px" y="0%"/>`, `<path x="5" y="0"/>`},
 		{`<svg viewBox="5.0px 5px 240 0.10"><path/></svg>`, `<svg viewBox="5 5 240 .1"><path/></svg>`},
-		{`<path d="M 100 100 L 300 100 L 200 100 z"/>`, `<path d="M100 100l200 0 100 0z"/>`},
+		{`<path d="M 100 100 L 300 100 L 200 100 z"/>`, `<path d="M100 100H300 200z"/>`},
 		{`<path d="M100 -100M200 300z"/>`, `<path d="M100-100 200 300z"/>`},
 		{`<path d="M0.5 0.6 M -100 0.5z"/>`, `<path d="M.5.6-100 .5z"/>`},
 		{`<path d="M01.0 0.6 z"/>`, `<path d="M1 .6z"/>`},
@@ -40,6 +40,7 @@ func TestSVG(t *testing.T) {
 		{`<svg viewbox="0 0 16 16"><path/></svg>`, `<svg viewbox="0 0 16 16"><path/></svg>`},
 		{`<g></g>`, ``},
 		{`<g><path/></g>`, `<path/>`},
+		{`<g id="a"><g><path/></g></g>`, `<g id="a"><path/></g>`},
 		{`<path fill="#ffffff"/>`, `<path fill="#fff"/>`},
 		{`<line x1="5" y1="10" x2="20" y2="40"/>`, `<path d="M5 10L20 40z"/>`},
 		{`<rect x="5" y="10" width="20" height="40"/>`, `<path d="M5 10h20v40H5z"/>`},
@@ -84,6 +85,23 @@ func TestSVGStyle(t *testing.T) {
 		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.svg)
 	}
 }
+
+// func TestSVGDecimals(t *testing.T) {
+// 	var svgTests = []struct {
+// 		svg      string
+// 		expected string
+// 	}{
+// 		{`<svg x="1.234" y="0.001" width="1.001"><path/></svg>`, `<svg x="1.2" width="1"><path/></svg>`},
+// 	}
+
+// 	m := minify.New()
+// 	o := &Minifier{Decimals: 1}
+// 	for _, tt := range svgTests {
+// 		b := &bytes.Buffer{}
+// 		assert.Nil(t, o.Minify(m, b, bytes.NewBufferString(tt.svg), nil), "Minify must not return error in "+tt.svg)
+// 		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.svg)
+// 	}
+// }
 
 func TestGetAttribute(t *testing.T) {
 	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
