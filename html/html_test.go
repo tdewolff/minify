@@ -192,12 +192,12 @@ func TestReaderErrors(t *testing.T) {
 }
 
 func TestWriterErrors(t *testing.T) {
-	var errorTests = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 14}
+	var errorTests = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 14, 15}
 
 	m := minify.New()
 	for _, n := range errorTests {
-		// writes:                  0         1   2     34   56  78  9       0    12   3      4
-		r := bytes.NewBufferString(`<!doctype>text<style attr=val>css</style><code>code</code><!--comment-->`)
+		// writes:                  0         1   2     34   56  78  9       0    12   3      4             5
+		r := bytes.NewBufferString(`<!doctype>text<style attr=val>css</style><code>code</code><!--comment--></x`)
 		w := test.NewErrorWriter(n)
 		assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at write "+strconv.FormatInt(int64(n), 10))
 	}

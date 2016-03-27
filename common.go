@@ -17,8 +17,7 @@ func ContentType(b []byte) []byte {
 	j := 0
 	start := 0
 	inString := false
-	for i := 0; i < len(b); i++ {
-		c := b[i]
+	for i, c := range b {
 		if !inString && parse.IsWhitespace(c) {
 			if start != 0 {
 				j += copy(b[j:], b[start:i])
@@ -43,8 +42,7 @@ func DataURI(m *M, dataURI []byte) []byte {
 		dataURI, _ = m.Bytes(string(mediatype), data)
 		base64Len := len(";base64") + base64.StdEncoding.EncodedLen(len(dataURI))
 		asciiLen := len(dataURI)
-		for i := 0; i < len(dataURI); i++ {
-			c := dataURI[i]
+		for _, c := range dataURI {
 			if 'A' <= c && c <= 'Z' || 'a' <= c && c <= 'z' || '0' <= c && c <= '9' || c == '-' || c == '_' || c == '.' || c == '~' || c == ' ' {
 				asciiLen++
 			} else {
