@@ -42,6 +42,7 @@ func TestSVG(t *testing.T) {
 		{`<g><path/></g>`, `<path/>`},
 		{`<g id="a"><g><path/></g></g>`, `<g id="a"><path/></g>`},
 		{`<path fill="#ffffff"/>`, `<path fill="#fff"/>`},
+		{`<path fill='#fff'/>`, `<path fill="#fff"/>`},
 		{`<line x1="5" y1="10" x2="20" y2="40"/>`, `<path d="M5 10L20 40z"/>`},
 		{`<rect x="5" y="10" width="20" height="40"/>`, `<path d="M5 10h20v40H5z"/>`},
 		{`<rect x="-5.669" y="147.402" fill="#843733" width="252.279" height="14.177"/>`, `<path fill="#843733" d="M-5.669 147.402H246.61v14.177H-5.669z"/>`},
