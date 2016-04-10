@@ -280,7 +280,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 func (o *Minifier) shortenDimension(b []byte) ([]byte, int) {
 	if n, m := parse.Dimension(b); n > 0 {
 		unit := b[n : n+m]
-		b = minify.Number(b[:n])
+		b = minify.Number(b[:n], -1)
 		if len(b) != 1 || b[0] != '0' {
 			if m == 2 && unit[0] == 'p' && unit[1] == 'x' {
 				unit = nil
@@ -298,19 +298,19 @@ func (o *Minifier) shortenLine(tb *TokenBuffer, t *Token, p *PathData) {
 	x1, y1, x2, y2 := zeroBytes, zeroBytes, zeroBytes, zeroBytes
 	attrs, replacee := tb.Attributes(svg.X1, svg.Y1, svg.X2, svg.Y2)
 	if attrs[0] != nil {
-		x1 = minify.Number(attrs[0].AttrVal)
+		x1 = minify.Number(attrs[0].AttrVal, -1)
 		attrs[0].Text = nil
 	}
 	if attrs[1] != nil {
-		y1 = minify.Number(attrs[1].AttrVal)
+		y1 = minify.Number(attrs[1].AttrVal, -1)
 		attrs[1].Text = nil
 	}
 	if attrs[2] != nil {
-		x2 = minify.Number(attrs[2].AttrVal)
+		x2 = minify.Number(attrs[2].AttrVal, -1)
 		attrs[2].Text = nil
 	}
 	if attrs[3] != nil {
-		y2 = minify.Number(attrs[3].AttrVal)
+		y2 = minify.Number(attrs[3].AttrVal, -1)
 		attrs[3].Text = nil
 	}
 
@@ -336,19 +336,19 @@ func (o *Minifier) shortenRect(tb *TokenBuffer, t *Token, p *PathData) bool {
 	if attrs[4] == nil && attrs[5] == nil {
 		x, y, w, h := zeroBytes, zeroBytes, zeroBytes, zeroBytes
 		if attrs[0] != nil {
-			x = minify.Number(attrs[0].AttrVal)
+			x = minify.Number(attrs[0].AttrVal, -1)
 			attrs[0].Text = nil
 		}
 		if attrs[1] != nil {
-			y = minify.Number(attrs[1].AttrVal)
+			y = minify.Number(attrs[1].AttrVal, -1)
 			attrs[1].Text = nil
 		}
 		if attrs[2] != nil {
-			w = minify.Number(attrs[2].AttrVal)
+			w = minify.Number(attrs[2].AttrVal, -1)
 			attrs[2].Text = nil
 		}
 		if attrs[3] != nil {
-			h = minify.Number(attrs[3].AttrVal)
+			h = minify.Number(attrs[3].AttrVal, -1)
 			attrs[3].Text = nil
 		}
 		if len(w) == 0 || len(w) == 1 && w[0] == '0' || len(h) == 0 || len(h) == 1 && h[0] == '0' {

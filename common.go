@@ -3,7 +3,6 @@ package minify // import "github.com/tdewolff/minify"
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"net/url"
 
 	"github.com/tdewolff/parse"
@@ -160,10 +159,6 @@ func Number(num []byte, prec int) []byte {
 			copy(num[dot:], num[dot+1:end])
 			end--
 		}
-	}
-
-	if prec > -1 {
-		fmt.Println(exp, string(num))
 	}
 
 	// append the exponent or change the mantissa to incorporate the exponent
