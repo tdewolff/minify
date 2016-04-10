@@ -61,7 +61,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			t.Data = parse.ReplaceMultipleWhitespace(t.Data)
 			if !o.KeepWhitespace {
 				// whitespace removal; trim left
-				if omitSpace && t.Data[0] == ' ' {
+				if omitSpace && (t.Data[0] == ' ' || t.Data[0] == '\n') {
 					t.Data = t.Data[1:]
 				}
 
@@ -69,7 +69,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				omitSpace = false
 				if len(t.Data) == 0 {
 					omitSpace = true
-				} else if t.Data[len(t.Data)-1] == ' ' {
+				} else if t.Data[len(t.Data)-1] == ' ' || t.Data[len(t.Data)-1] == '\n' {
 					omitSpace = true
 					i := 0
 					for {
@@ -84,7 +84,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							if len(next.Data) > 0 && parse.IsWhitespace(next.Data[0]) {
 								t.Data = t.Data[:len(t.Data)-1]
 								omitSpace = false
-
 							}
 							break
 						}
