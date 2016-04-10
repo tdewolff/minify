@@ -251,9 +251,6 @@ func expandInputs(inputs []string) ([]task, bool, bool) {
 			fmt.Fprintf(os.Stderr, "INFO:  minify input file %v\n", tasks[0].src)
 		} else {
 			fmt.Fprintf(os.Stderr, "INFO:  minify %v input files\n", len(tasks))
-			for _, t := range tasks {
-				fmt.Fprintf(os.Stderr, "  %v\n", t.src)
-			}
 		}
 	}
 	return tasks, dirDst, ok
@@ -371,9 +368,15 @@ func openOutputFile(output string) (*os.File, bool) {
 	var w *os.File
 	if output == "" {
 		w = os.Stdout
-	} else if w, err = os.OpenFile(output, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666); err != nil {
-		fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
-		return nil, false
+	} else {
+		if err := os.MkdirAll(path.Dir(output), 0777); err != nil {
+			fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
+			return nil, false
+		}
+		if w, err = os.OpenFile(output, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666); err != nil {
+			fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
+			return nil, false
+		}
 	}
 	return w, true
 }
@@ -433,11 +436,15 @@ func minify(mimetype string, t task) bool {
 	}
 	if verbose {
 		dur := time.Since(startTime)
-		speed := uint64(float64(r.N) / dur.Seconds())
-		if dur == 0 {
-			speed = 0
+		speed := "Inf MB"
+		if dur > 0 {
+			speed = humanize.Bytes(uint64(float64(r.N) / dur.Seconds()))
 		}
-		fmt.Fprintf(os.Stderr, "INFO:  (%9v, %6v, %5.1f%%, %6v/s) - %v to %v\n", dur, humanize.Bytes(uint64(w.N)), float64(w.N)/float64(r.N)*100, humanize.Bytes(speed), srcName, dstName)
+		fmt.Fprintf(os.Stderr, "INFO:  (%9v, %6v, %5.1f%%, %6v/s) - %v", dur, humanize.Bytes(uint64(w.N)), float64(w.N)/float64(r.N)*100, speed, srcName)
+		if srcName != dstName {
+			fmt.Fprintf(os.Stderr, " to %v", dstName)
+		}
+		fmt.Fprintf(os.Stderr, "\n")
 	}
 
 	fr.Close()
