@@ -15,6 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	flag "github.com/ogier/pflag"
 	min "github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/css"
@@ -149,11 +150,13 @@ func main() {
 
 	var fails int32
 	if verbose {
+		start := time.Now()
 		for _, t := range tasks {
 			if ok := minify(mimetype, t); !ok {
 				fails++
 			}
 		}
+		fmt.Fprintf(os.Stderr, "INFO:  %v\n", time.Since(start))
 	} else {
 		var wg sync.WaitGroup
 		for _, t := range tasks {
@@ -204,9 +207,6 @@ func validFile(info os.FileInfo) bool {
 			ext = ext[1:]
 		}
 		if _, ok := filetypeMime[ext]; !ok {
-			if verbose {
-				fmt.Fprintln(os.Stderr, "WARN:  cannot infer mimetype from extension in "+info.Name())
-			}
 			return false
 		}
 		return true
@@ -320,7 +320,7 @@ func expandOutputs(output string, dirDst, usePipe bool, tasks *[]task) bool {
 			if usePipe {
 				fmt.Fprintln(os.Stderr, "INFO:  minify to stdout")
 			} else {
-				fmt.Fprintln(os.Stderr, "INFO:  minify to overwrite itself")
+				fmt.Fprintln(os.Stderr, "INFO:  minify and overwrite original")
 			}
 		} else if output[len(output)-1] != '/' {
 			fmt.Fprintf(os.Stderr, "INFO:  minify to output file %v\n", output)
@@ -433,7 +433,11 @@ func minify(mimetype string, t task) bool {
 	}
 	if verbose {
 		dur := time.Since(startTime)
-		fmt.Fprintf(os.Stderr, "INFO:  %v to %v\n  time:  %v\n  size:  %vB\n  ratio: %.1f%%\n  speed: %.1fMB/s\n", srcName, dstName, dur, w.N, float64(w.N)/float64(r.N)*100, float64(r.N)/dur.Seconds()/1000000)
+		speed := uint64(float64(r.N) / dur.Seconds())
+		if dur == 0 {
+			speed = 0
+		}
+		fmt.Fprintf(os.Stderr, "INFO:  (%9v, %6v, %5.1f%%, %6v/s) - %v to %v\n", dur, humanize.Bytes(uint64(w.N)), float64(w.N)/float64(r.N)*100, humanize.Bytes(speed), srcName, dstName)
 	}
 
 	fr.Close()
