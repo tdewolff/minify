@@ -18,6 +18,7 @@ func TestJS(t *testing.T) {
 	}{
 		{"/*comment*/", ""},
 		{"// comment\na", "a"},
+		{"/*! bang  comment */", "/*!bang comment*/"},
 		{"function x(){}", "function x(){}"},
 		{"function x(a, b){}", "function x(a,b){}"},
 		{"a  b", "a b"},

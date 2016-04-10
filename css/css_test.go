@@ -16,6 +16,8 @@ func TestCSS(t *testing.T) {
 		css      string
 		expected string
 	}{
+		{"/*comment*/", ""},
+		//{"/*! bang  comment */", "/*!bang comment*/"},
 		{"i { key: value; key2: value; }", "i{key:value;key2:value}"},
 		{".cla .ss > #id { x:y; }", ".cla .ss>#id{x:y}"},
 		{".cla[id ^= L] { x:y; }", ".cla[id^=L]{x:y}"},
