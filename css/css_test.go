@@ -17,7 +17,8 @@ func TestCSS(t *testing.T) {
 		expected string
 	}{
 		{"/*comment*/", ""},
-		//{"/*! bang  comment */", "/*!bang comment*/"},
+		{"/*! bang  comment */", "/*!bang comment*/"},
+		{"i{}/*! bang  comment */", "i{}/*!bang comment*/"},
 		{"i { key: value; key2: value; }", "i{key:value;key2:value}"},
 		{".cla .ss > #id { x:y; }", ".cla .ss>#id{x:y}"},
 		{".cla[id ^= L] { x:y; }", ".cla[id^=L]{x:y}"},
@@ -58,6 +59,7 @@ func TestCSSInline(t *testing.T) {
 		expected string
 	}{
 		{"/*comment*/", ""},
+		{"/*! bang  comment */", ""},
 		{";", ""},
 		{"empty:", "empty:"},
 		{"key: value;", "key:value"},

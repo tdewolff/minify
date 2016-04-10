@@ -114,6 +114,19 @@ func (c *cssMinifier) minifyGrammar() error {
 				return err
 			}
 			semicolonQueued = true
+		} else if gt == css.CommentGrammar {
+			if len(data) > 5 && data[1] == '*' && data[2] == '!' {
+				if _, err := c.w.Write(data[:3]); err != nil {
+					return err
+				}
+				comment := parse.TrimWhitespace(parse.ReplaceMultipleWhitespace(data[3 : len(data)-2]))
+				if _, err := c.w.Write(comment); err != nil {
+					return err
+				}
+				if _, err := c.w.Write(data[len(data)-2:]); err != nil {
+					return err
+				}
+			}
 		} else if _, err := c.w.Write(data); err != nil {
 			return err
 		}
