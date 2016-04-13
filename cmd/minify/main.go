@@ -11,11 +11,13 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/dustin/go-humanize"
+	"github.com/matryer/try"
 	flag "github.com/ogier/pflag"
 	min "github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/css"
@@ -42,6 +44,7 @@ var (
 	hidden    bool
 	list      bool
 	verbose   bool
+	watch     bool
 	pattern   *regexp.Regexp
 )
 
@@ -85,9 +88,9 @@ func main() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [input]\n\nOptions:\n", os.Args[0])
 		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\nInput:\n  Files or directories, optional when using piping\n")
+		fmt.Fprintf(os.Stderr, "\nInput:\n  Files or directories, leave blank to use stdin\n")
 	}
-	flag.StringVarP(&output, "output", "o", "", "Output (concatenated) file (stdout when empty) or directory")
+	flag.StringVarP(&output, "output", "o", "", "Output file or directory, leave blank to use stdout")
 	flag.StringVar(&mimetype, "mime", "", "Mimetype (text/css, application/javascript, ...), optional for input filenames, has precendence over -type")
 	flag.StringVar(&filetype, "type", "", "Filetype (css, html, js, ...), optional for input filenames")
 	flag.StringVar(&match, "match", "", "Filename pattern matching using regular expressions, see https://github.com/google/re2/wiki/Syntax")
@@ -95,6 +98,7 @@ func main() {
 	flag.BoolVarP(&hidden, "all", "a", false, "Minify all files, including hidden files and files in hidden directories")
 	flag.BoolVarP(&list, "list", "l", false, "List all accepted filetypes")
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose")
+	flag.BoolVarP(&watch, "watch", "w", false, "Watch files and minify upon changes")
 
 	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
 	flag.BoolVar(&htmlMinifier.KeepDefaultAttrVals, "html-keep-default-attrvals", false, "Preserve default attribute values")
@@ -117,8 +121,8 @@ func main() {
 	usePipe := len(rawInputs) == 0
 	mimetype = getMimetype(mimetype, filetype, usePipe)
 
+	var err error
 	if match != "" {
-		var err error
 		pattern, err = regexp.Compile(match)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
@@ -130,6 +134,22 @@ func main() {
 	if !ok {
 		os.Exit(1)
 	}
+
+	if output != "" {
+		output = sanitizePath(output)
+		if dirDst {
+			if output[len(output)-1] != '/' {
+				output += "/"
+			}
+			if err := os.MkdirAll(output, 0777); err != nil {
+				fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
+				os.Exit(1)
+			}
+		} else if output[len(output)-1] == '/' {
+			output += "out"
+		}
+	}
+
 	if ok = expandOutputs(output, dirDst, usePipe, &tasks); !ok {
 		os.Exit(1)
 	}
@@ -142,21 +162,41 @@ func main() {
 	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
-	var err error
 	if m.URL, err = url.Parse(siteurl); err != nil {
 		fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
 		os.Exit(1)
 	}
 
+	var watcher *RecursiveWatcher
+	if watch {
+		if usePipe || output == "" {
+			fmt.Fprintln(os.Stderr, "ERROR: watch only works with files that do not overwrite themselves")
+			os.Exit(1)
+		} else if len(rawInputs) > 1 {
+			fmt.Fprintln(os.Stderr, "ERROR: watch only works with one input directory")
+			os.Exit(1)
+		}
+
+		input := sanitizePath(rawInputs[0])
+		info, err := os.Stat(input)
+		if err != nil || !info.Mode().IsDir() {
+			fmt.Fprintln(os.Stderr, "ERROR: watch only works with an input directory")
+			os.Exit(1)
+		}
+
+		watcher, err = NewRecursiveWatcher(input, recursive)
+		defer watcher.Close()
+	}
+
+	start := time.Now()
+
 	var fails int32
 	if verbose {
-		start := time.Now()
 		for _, t := range tasks {
 			if ok := minify(mimetype, t); !ok {
 				fails++
 			}
 		}
-		fmt.Fprintf(os.Stderr, "INFO:  %v\n", time.Since(start))
 	} else {
 		var wg sync.WaitGroup
 		for _, t := range tasks {
@@ -170,6 +210,31 @@ func main() {
 		}
 		wg.Wait()
 	}
+
+	if watch {
+		input := sanitizePath(rawInputs[0])
+		for file := range watcher.Run() {
+			file = sanitizePath(file)
+			if strings.HasPrefix(file, input) {
+				t := task{src: file, srcDir: input}
+				if t.dst, err = getOutputFilename(output, t); err != nil {
+					fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
+					continue
+				}
+				if !verbose {
+					fmt.Fprintln(os.Stderr, file, "changed")
+				}
+				if ok := minify(mimetype, t); !ok {
+					fails++
+				}
+			}
+		}
+	}
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "INFO:  %v\n", time.Since(start))
+	}
+
 	if fails > 0 {
 		os.Exit(1)
 	}
@@ -187,6 +252,7 @@ func getMimetype(mimetype, filetype string, usePipe bool) string {
 		fmt.Fprintln(os.Stderr, "ERROR: must specify mime or type for stdin")
 		os.Exit(1)
 	}
+
 	if verbose {
 		if mimetype == "" {
 			fmt.Fprintln(os.Stderr, "INFO:  infer mimetype from file extensions")
@@ -197,15 +263,27 @@ func getMimetype(mimetype, filetype string, usePipe bool) string {
 	return mimetype
 }
 
+func sanitizePath(p string) string {
+	p = path.Clean(filepath.ToSlash(p))
+	if p[len(p)-1] != '/' {
+		if info, err := os.Stat(p); err == nil && info.Mode().IsDir() {
+			p += "/"
+		}
+	}
+	return p
+}
+
 func validFile(info os.FileInfo) bool {
 	if info.Mode().IsRegular() && len(info.Name()) > 0 && (hidden || info.Name()[0] != '.') {
 		if pattern != nil && !pattern.MatchString(info.Name()) {
 			return false
 		}
+
 		ext := path.Ext(info.Name())
 		if len(ext) > 0 {
 			ext = ext[1:]
 		}
+
 		if _, ok := filetypeMime[ext]; !ok {
 			return false
 		}
@@ -223,13 +301,14 @@ func expandInputs(inputs []string) ([]task, bool, bool) {
 	dirDst := false
 	tasks := []task{}
 	for _, input := range inputs {
-		input = path.Clean(filepath.ToSlash(input))
+		input = sanitizePath(input)
 		info, err := os.Stat(input)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
 			ok = false
 			continue
 		}
+
 		if info.Mode().IsRegular() {
 			tasks = append(tasks, task{filepath.ToSlash(input), "", ""})
 		} else if info.Mode().IsDir() {
@@ -261,6 +340,7 @@ func expandDir(input string, tasks *[]task, ok *bool) {
 		if verbose {
 			fmt.Fprintln(os.Stderr, "INFO:  expanding directory "+input)
 		}
+
 		infos, err := ioutil.ReadDir(input)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
@@ -275,7 +355,11 @@ func expandDir(input string, tasks *[]task, ok *bool) {
 		if verbose {
 			fmt.Fprintln(os.Stderr, "INFO:  expanding directory "+input+" recursively")
 		}
-		err := filepath.Walk(input, func(path string, info os.FileInfo, _ error) error {
+
+		err := filepath.Walk(input, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
 			if validFile(info) {
 				*tasks = append(*tasks, task{filepath.ToSlash(path), input, ""})
 			} else if info.Mode().IsDir() && !validDir(info) && info.Name() != "." && info.Name() != ".." { // check for IsDir, so we don't skip the rest of the directory when we have an invalid file
@@ -291,27 +375,6 @@ func expandDir(input string, tasks *[]task, ok *bool) {
 }
 
 func expandOutputs(output string, dirDst, usePipe bool, tasks *[]task) bool {
-	if output != "" {
-		output = path.Clean(filepath.ToSlash(output))
-		if output[len(output)-1] != '/' {
-			info, err := os.Stat(output)
-			if err == nil && info.Mode().IsDir() {
-				output += "/"
-			}
-		}
-		if dirDst {
-			if output[len(output)-1] != '/' {
-				output += "/"
-			}
-			if err := os.MkdirAll(output, 0777); err != nil {
-				fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
-				os.Exit(1)
-			}
-		} else if output[len(output)-1] == '/' {
-			output += "out"
-		}
-	}
-
 	if verbose {
 		if output == "" {
 			if usePipe {
@@ -333,15 +396,12 @@ func expandOutputs(output string, dirDst, usePipe bool, tasks *[]task) bool {
 		if !usePipe && output == "" {
 			(*tasks)[i].dst = (*tasks)[i].src
 		} else {
-			(*tasks)[i].dst = output
-		}
-		if len(output) > 0 && output[len(output)-1] == '/' {
-			rel, err := filepath.Rel(t.srcDir, t.src)
+			var err error
+			(*tasks)[i].dst, err = getOutputFilename(output, t)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
 				ok = false
 			}
-			(*tasks)[i].dst = path.Clean(filepath.ToSlash(path.Join(output, rel)))
 		}
 	}
 
@@ -351,20 +411,36 @@ func expandOutputs(output string, dirDst, usePipe bool, tasks *[]task) bool {
 	return ok
 }
 
+func getOutputFilename(output string, t task) (string, error) {
+	if len(output) > 0 && output[len(output)-1] == '/' {
+		rel, err := filepath.Rel(t.srcDir, t.src)
+		if err != nil {
+			return "", err
+		}
+		return path.Clean(filepath.ToSlash(path.Join(output, rel))), nil
+	}
+	return output, nil
+}
+
 func openInputFile(input string) (*os.File, bool) {
-	var err error
 	var r *os.File
 	if input == "" {
 		r = os.Stdin
-	} else if r, err = os.Open(input); err != nil {
-		fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
-		return nil, false
+	} else {
+		err := try.Do(func(attempt int) (bool, error) {
+			var err error
+			r, err = os.Open(input)
+			return attempt < 5, err
+		})
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
+			return nil, false
+		}
 	}
 	return r, true
 }
 
 func openOutputFile(output string) (*os.File, bool) {
-	var err error
 	var w *os.File
 	if output == "" {
 		w = os.Stdout
@@ -373,7 +449,12 @@ func openOutputFile(output string) (*os.File, bool) {
 			fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
 			return nil, false
 		}
-		if w, err = os.OpenFile(output, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666); err != nil {
+		err := try.Do(func(attempt int) (bool, error) {
+			var err error
+			w, err = os.OpenFile(output, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
+			return attempt < 5, err
+		})
+		if err != nil {
 			fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
 			return nil, false
 		}
