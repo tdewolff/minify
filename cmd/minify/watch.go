@@ -75,7 +75,9 @@ func (rw *RecursiveWatcher) Run() chan string {
 					}
 				}
 			case err := <-rw.watcher.Errors:
-				fmt.Fprintln(os.Stderr, "ERROR:", err)
+				if err != nil {
+					fmt.Fprintln(os.Stderr, "ERROR:", err)
+				}
 			}
 		}
 	}()

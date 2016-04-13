@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"os/signal"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -212,20 +213,30 @@ func main() {
 	}
 
 	if watch {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+
 		input := sanitizePath(rawInputs[0])
-		for file := range watcher.Run() {
-			file = sanitizePath(file)
-			if strings.HasPrefix(file, input) {
-				t := task{src: file, srcDir: input}
-				if t.dst, err = getOutputFilename(output, t); err != nil {
-					fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
-					continue
-				}
-				if !verbose {
-					fmt.Fprintln(os.Stderr, file, "changed")
-				}
-				if ok := minify(mimetype, t); !ok {
-					fails++
+	WATCHLOOP:
+		for {
+			select {
+			case <-c:
+				watcher.Close()
+				break WATCHLOOP
+			case file := <-watcher.Run():
+				file = sanitizePath(file)
+				if strings.HasPrefix(file, input) {
+					t := task{src: file, srcDir: input}
+					if t.dst, err = getOutputFilename(output, t); err != nil {
+						fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
+						continue
+					}
+					if !verbose {
+						fmt.Fprintln(os.Stderr, file, "changed")
+					}
+					if ok := minify(mimetype, t); !ok {
+						fails++
+					}
 				}
 			}
 		}
