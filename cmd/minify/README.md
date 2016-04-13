@@ -12,24 +12,38 @@ and the `minify` command will be in your `$GOPATH/bin`.
 
 ## Usage
 
-	Usage: minify [options] [inputs]
+	Usage: minify [options] [input]
 
 	Options:
-	  -a, --all=false: Minify all files, including hidden files and files in hidden directories
-	  -l, --list=false: List all accepted filetypes
-		  --match="": Filename pattern matching using regular expressions, see https://github.com/google/re2/wiki/Syntax
-		  --mime="": Mimetype (text/css, text/javascript, ...), optional for input filenames, has precendence over -type
-	  -o, --output="": Output (concatenated) file (stdout when empty) or directory
-	  -r, --recursive=false: Recursively minify directories
-		  --type="": Filetype (css, html, js, ...), optional for input filenames
-	  -v, --verbose=false: Verbose
-
-	  --url="": URL of the file to enable URL minification
-	  --html-keep-default-attrvals=false: Preserve default attribute values
-	  --html-keep-whitespace=false: Preserve whitespace characters but still collapse multiple whitespace into one
+	  -a, --all
+	        Minify all files, including hidden files and files in hidden directories
+	  --html-keep-default-attrvals
+	        Preserve default attribute values
+	  --html-keep-whitespace
+	        Preserve whitespace characters but still collapse multiple whitespace into one
+	  -l, --list
+	        List all accepted filetypes
+	  --match string
+	        Filename pattern matching using regular expressions, see https://github.com/google/re2/wiki/Syntax
+	  --mime string
+	        Mimetype (text/css, application/javascript, ...), optional for input filenames, has precendence over -type
+	  -o, --output string
+	        Output file or directory, leave blank to use stdout
+	  -r, --recursive
+	        Recursively minify directories
+	  --type string
+	        Filetype (css, html, js, ...), optional for input filenames
+	  --url string
+	        URL of file to enable URL minification
+	  -v, --verbose
+	        Verbose
+	  -w, --watch
+	        Watch files and minify upon changes
+	  --xml-keep-whitespace
+	        Preserve whitespace characters but still collapse multiple whitespace into one
 
 	Input:
-	  Files or directories, optional when using piping
+	  Files or directories, leave blank to use stdin
 
 ### Types
 
@@ -67,4 +81,9 @@ $ minify . # minify files in current working directory (no subdirectories)
 $ minify -r dir # minify files in dir recursively
 
 $ minify -r --match=\.js dir # minify only javascript files in dir
+```
+
+Additionally, you can watch for file changes and automatically re-minify:
+```sh
+$ minify -r --watch dir -o dir-min
 ```
