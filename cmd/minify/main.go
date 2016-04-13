@@ -85,6 +85,7 @@ func main() {
 	siteurl := ""
 
 	htmlMinifier := &html.Minifier{}
+	xmlMinifier := &xml.Minifier{}
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [input]\n\nOptions:\n", os.Args[0])
@@ -104,6 +105,7 @@ func main() {
 	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
 	flag.BoolVar(&htmlMinifier.KeepDefaultAttrVals, "html-keep-default-attrvals", false, "Preserve default attribute values")
 	flag.BoolVar(&htmlMinifier.KeepWhitespace, "html-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple whitespace into one")
+	flag.BoolVar(&xmlMinifier.KeepWhitespace, "xml-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple whitespace into one")
 	flag.Parse()
 	rawInputs := flag.Args()
 
@@ -161,7 +163,7 @@ func main() {
 	m.AddFunc("text/javascript", js.Minify)
 	m.AddFunc("image/svg+xml", svg.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
-	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
+	m.AddRegexp(regexp.MustCompile("[/+]xml$"), xmlMinifier)
 
 	if m.URL, err = url.Parse(siteurl); err != nil {
 		fmt.Fprintln(os.Stderr, "ERROR: "+err.Error())
