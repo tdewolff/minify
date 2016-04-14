@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -69,7 +68,7 @@ func (rw *RecursiveWatcher) Run() chan string {
 					if validDir(info) {
 						if event.Op&fsnotify.Create == fsnotify.Create {
 							if err := rw.AddPath(event.Name); err != nil {
-								fmt.Fprintln(os.Stderr, "ERROR:", err)
+								Error.Println(err)
 							}
 						}
 					} else if validFile(info) {
@@ -83,7 +82,7 @@ func (rw *RecursiveWatcher) Run() chan string {
 					rw.watcher.Errors = nil
 					break
 				}
-				fmt.Fprintln(os.Stderr, "ERROR:", err)
+				Error.Println(err)
 			}
 		}
 		close(files)
