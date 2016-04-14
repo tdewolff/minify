@@ -117,6 +117,7 @@ func TestLenInt(t *testing.T) {
 		{10000000000000000, 17},
 		{100000000000000000, 18},
 		{1000000000000000000, 19},
+		{-10, 2},
 	}
 	for _, tt := range lenIntTests {
 		assert.Equal(t, tt.expected, lenInt64(tt.number), "lenInt must give expected result in "+strconv.FormatInt(tt.number, 10))

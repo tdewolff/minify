@@ -173,6 +173,7 @@ func TestWriterErrors(t *testing.T) {
 		{`a{color:hsl(360,100%,100%)}`, []int{4}},
 		{`a{color:f(arg)}`, []int{4}},
 		{`<!--`, []int{0}},
+		{`/*!comment*/`, []int{0, 1, 2}},
 	}
 
 	m := minify.New()

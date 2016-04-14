@@ -328,7 +328,8 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 		if (fun == css.Rgba || fun == css.Hsla) && nArgs == 4 {
 			d, err := strconv.ParseFloat(string(values[7].Data), 32)
 			if err != nil {
-				panic(err)
+				// can never fail because if simple == true than this is a NumberToken or PercentageToken
+				return 0, err
 			}
 			if d-1.0 > -minify.Epsilon {
 				if fun == css.Rgba {
