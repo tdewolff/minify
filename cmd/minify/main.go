@@ -158,12 +158,10 @@ func main() {
 			if err := os.MkdirAll(output, 0777); err != nil {
 				Error.Fatalln(err)
 			}
-		} else if output[len(output)-1] == '/' {
-			output += "out"
 		}
 	}
 
-	if ok = expandOutputs(output, dirDst, usePipe, &tasks); !ok {
+	if ok = expandOutputs(output, usePipe, &tasks); !ok {
 		os.Exit(1)
 	}
 
@@ -397,7 +395,7 @@ func expandDir(input string, tasks *[]task, ok *bool) {
 	}
 }
 
-func expandOutputs(output string, dirDst, usePipe bool, tasks *[]task) bool {
+func expandOutputs(output string, usePipe bool, tasks *[]task) bool {
 	if verbose {
 		if output == "" {
 			if usePipe {
