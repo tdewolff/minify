@@ -116,9 +116,10 @@ func main() {
 	rawInputs := flag.Args()
 
 	Error = log.New(os.Stderr, "ERROR: ", 0)
-	Info = log.New(os.Stderr, "INFO: ", 0)
-	if !verbose {
-		Info.SetOutput(ioutil.Discard)
+	if verbose {
+		Info = log.New(os.Stderr, "INFO: ", 0)
+	} else {
+		Info = log.New(ioutil.Discard, "INFO: ", 0)
 	}
 
 	if list {
