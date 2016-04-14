@@ -543,8 +543,12 @@ func minify(mimetype string, t task) bool {
 		if dur > 0 {
 			speed = humanize.Bytes(uint64(float64(r.N) / dur.Seconds()))
 		}
+		ratio := 1.0
+		if r.N > 0 {
+			ratio = float64(w.N) / float64(r.N)
+		}
 
-		stats := fmt.Sprintf("(%9v, %6v, %5.1f%%, %6v/s)", dur, humanize.Bytes(uint64(w.N)), float64(w.N)/float64(r.N)*100, speed)
+		stats := fmt.Sprintf("(%9v, %6v, %5.1f%%, %6v/s)", dur, humanize.Bytes(uint64(w.N)), ratio*100, speed)
 		if srcName != dstName {
 			Info.Println(stats, "-", srcName, "to", dstName)
 		} else {
