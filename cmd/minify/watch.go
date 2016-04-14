@@ -58,9 +58,13 @@ func (rw *RecursiveWatcher) AddPath(root string) error {
 func (rw *RecursiveWatcher) Run() chan string {
 	files := make(chan string, 10)
 	go func() {
-		for {
+		for rw.watcher.Events != nil && rw.watcher.Errors != nil {
 			select {
-			case event := <-rw.watcher.Events:
+			case event, ok := <-rw.watcher.Events:
+				if !ok {
+					rw.watcher.Events = nil
+					break
+				}
 				if info, err := os.Stat(event.Name); err == nil {
 					if validDir(info) {
 						if event.Op&fsnotify.Create == fsnotify.Create {
@@ -74,12 +78,15 @@ func (rw *RecursiveWatcher) Run() chan string {
 						}
 					}
 				}
-			case err := <-rw.watcher.Errors:
-				if err != nil {
-					fmt.Fprintln(os.Stderr, "ERROR:", err)
+			case err, ok := <-rw.watcher.Errors:
+				if !ok {
+					rw.watcher.Errors = nil
+					break
 				}
+				fmt.Fprintln(os.Stderr, "ERROR:", err)
 			}
 		}
+		close(files)
 	}()
 	return files
 }

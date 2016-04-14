@@ -219,13 +219,16 @@ func main() {
 		signal.Notify(c, os.Interrupt)
 
 		input := sanitizePath(rawInputs[0])
-	WATCHLOOP:
-		for {
+		files := watcher.Run()
+		for files != nil {
 			select {
 			case <-c:
 				watcher.Close()
-				break WATCHLOOP
-			case file := <-watcher.Run():
+			case file, ok := <-files:
+				if !ok {
+					files = nil
+					break
+				}
 				file = sanitizePath(file)
 				if strings.HasPrefix(file, input) {
 					t := task{src: file, srcDir: input}
