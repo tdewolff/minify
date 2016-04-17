@@ -355,7 +355,7 @@ func (o *Minifier) shortenRect(tb *TokenBuffer, t *Token, p *PathData) bool {
 			return false
 		}
 
-		d := make([]byte, 0, 7+2*len(x)+2*len(y)+len(w)+len(h))
+		d := make([]byte, 0, 6+2*len(x)+len(y)+len(w)+len(h))
 		d = append(d, 'M')
 		d = append(d, x...)
 		d = append(d, ' ')
@@ -406,7 +406,7 @@ func (o *Minifier) shortenPoly(tb *TokenBuffer, t *Token, p *PathData) {
 		}
 		startLineTo := i
 
-		d := make([]byte, 0, len(points))
+		d := make([]byte, 0, len(points)+3)
 		d = append(d, 'M')
 		d = append(d, points[:endMoveTo]...)
 		d = append(d, 'L')
