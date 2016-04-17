@@ -35,6 +35,8 @@ func TestXML(t *testing.T) {
 		{"<!DOCTYPE foo SYSTEM \"Foo.dtd\">", "<!DOCTYPE foo SYSTEM \"Foo.dtd\">"},
 		{"text <!--comment--> text", "text text"},
 		{"text\n<!--comment-->\ntext", "text\ntext"},
+		{"<!doctype html>", "<!doctype html=>"}, // bad formatted, doctype must be uppercase and html must have attribute value
+		{"<style>lala{color:red}</style>", "<style>lala{color:red}</style>"},
 
 		{`</0`, `</0`}, // go fuzz
 	}
@@ -43,6 +45,24 @@ func TestXML(t *testing.T) {
 	for _, tt := range xmlTests {
 		b := &bytes.Buffer{}
 		assert.Nil(t, Minify(m, b, bytes.NewBufferString(tt.xml), nil), "Minify must not return error in "+tt.xml)
+		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.xml)
+	}
+}
+
+func TestXMLKeepWhitespace(t *testing.T) {
+	var xmlTests = []struct {
+		xml      string
+		expected string
+	}{
+		{"<style>lala{color:red}</style>", "<style>lala{color:red}</style>"},
+		{`<x>\n<!--y-->\n</x>`, `<x>\n</x>`},
+	}
+
+	m := minify.New()
+	xmlMinifier := &Minifier{KeepWhitespace: true}
+	for _, tt := range xmlTests {
+		b := &bytes.Buffer{}
+		assert.Nil(t, xmlMinifier.Minify(m, b, bytes.NewBufferString(tt.xml), nil), "Minify must not return error in "+tt.xml)
 		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.xml)
 	}
 }

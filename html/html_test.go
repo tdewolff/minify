@@ -137,6 +137,23 @@ func TestHTML(t *testing.T) {
 	}
 }
 
+func TestHTMLKeepWhitespace(t *testing.T) {
+	var htmlTests = []struct {
+		html     string
+		expected string
+	}{
+		{"<style>lala{color:red}</style>", "<style>lala{color:red}</style>"},
+	}
+
+	m := minify.New()
+	htmlMinifier := &Minifier{KeepWhitespace: true}
+	for _, tt := range htmlTests {
+		b := &bytes.Buffer{}
+		assert.Nil(t, htmlMinifier.Minify(m, b, bytes.NewBufferString(tt.html), nil), "Minify must not return error in "+tt.html)
+		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.html)
+	}
+}
+
 func TestHTMLURL(t *testing.T) {
 	var htmlTests = []struct {
 		url      string
