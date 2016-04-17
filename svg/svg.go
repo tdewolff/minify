@@ -351,7 +351,7 @@ func (o *Minifier) shortenRect(tb *TokenBuffer, t *Token, p *PathData) bool {
 			h = minify.Number(attrs[3].AttrVal, -1)
 			attrs[3].Text = nil
 		}
-		if len(w) == 0 || len(w) == 1 && w[0] == '0' || len(h) == 0 || len(h) == 1 && h[0] == '0' {
+		if len(w) == 0 || w[0] == '0' || len(h) == 0 || h[0] == '0' {
 			return false
 		}
 
