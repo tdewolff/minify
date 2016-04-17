@@ -385,17 +385,11 @@ func (o *Minifier) shortenPoly(tb *TokenBuffer, t *Token, p *PathData) {
 		for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
 			i++
 		}
-		if i == len(points) {
-			return
-		}
 		for i < len(points) && !(points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
 			i++
 		}
 		for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
 			i++
-		}
-		if i == len(points) {
-			return
 		}
 		for i < len(points) && !(points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
 			i++
@@ -405,6 +399,10 @@ func (o *Minifier) shortenPoly(tb *TokenBuffer, t *Token, p *PathData) {
 			i++
 		}
 		startLineTo := i
+
+		if i == len(points) {
+			return
+		}
 
 		d := make([]byte, 0, len(points)+3)
 		d = append(d, 'M')
