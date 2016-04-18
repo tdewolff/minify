@@ -36,7 +36,9 @@ func TestXML(t *testing.T) {
 		{"text <!--comment--> text", "text text"},
 		{"text\n<!--comment-->\ntext", "text\ntext"},
 		{"<!doctype html>", "<!doctype html=>"}, // bad formatted, doctype must be uppercase and html must have attribute value
+		{"<x>\n<!--y-->\n</x>", "<x></x>"},
 		{"<style>lala{color:red}</style>", "<style>lala{color:red}</style>"},
+		{`cats  and 	dogs `, `cats and dogs`},
 
 		{`</0`, `</0`}, // go fuzz
 	}
@@ -54,8 +56,15 @@ func TestXMLKeepWhitespace(t *testing.T) {
 		xml      string
 		expected string
 	}{
+		{`cats  and 	dogs `, `cats and dogs`},
+		{` <div> <i> test </i> <b> test </b> </div> `, `<div> <i> test </i> <b> test </b> </div>`},
+		{"text\n<!--comment-->\ntext", "text\ntext"},
+		{"text\n<!--comment-->text<!--comment--> text", "text\ntext text"},
+		{"<x>\n<!--y-->\n</x>", "<x>\n</x>"},
 		{"<style>lala{color:red}</style>", "<style>lala{color:red}</style>"},
-		{`<x>\n<!--y-->\n</x>`, `<x>\n</x>`},
+		{"<x> <?xml?> </x>", "<x><?xml?> </x>"},
+		{"<x> <![CDATA[ x ]]> </x>", "<x> x </x>"},
+		{"<x> <![CDATA[ <<<<< ]]> </x>", "<x><![CDATA[ <<<<< ]]></x>"},
 	}
 
 	m := minify.New()
