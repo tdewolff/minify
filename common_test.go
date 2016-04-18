@@ -90,42 +90,7 @@ func TestNumber(t *testing.T) {
 		{"0.0001", 1, "1e-4"},
 	}
 	for _, tt := range numberTests {
-		test.Minify(t, tt.number, nil, string(Number([]byte(tt.number))), tt.expected)
-	}
-}
-
-func TestLenInt(t *testing.T) {
-	lenIntTests := []struct {
-		number   int64
-		expected int
-	}{
-		{0, 1},
-		{1, 1},
-		{10, 2},
-		{99, 2},
-
-		// coverage
-		{100, 3},
-		{1000, 4},
-		{10000, 5},
-		{100000, 6},
-		{1000000, 7},
-		{10000000, 8},
-		{100000000, 9},
-		{1000000000, 10},
-		{10000000000, 11},
-		{100000000000, 12},
-		{1000000000000, 13},
-		{10000000000000, 14},
-		{100000000000000, 15},
-		{1000000000000000, 16},
-		{10000000000000000, 17},
-		{100000000000000000, 18},
-		{1000000000000000000, 19},
-		{-10, 2},
-	}
-	for _, tt := range lenIntTests {
-		test.That(t, lenInt64(tt.number) == tt.expected, "return", tt.expected, "for", tt.number)
+		test.Minify(t, tt.number, nil, string(Number([]byte(tt.number), tt.truncate)), tt.expected)
 	}
 }
 
