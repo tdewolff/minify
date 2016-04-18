@@ -83,17 +83,14 @@ func Number(num []byte, prec int) []byte {
 	start := 0
 	dot := -1
 	end := len(num)
-	exp := int64(0)
+	origExp := int64(0)
 	if 0 < len(num) && (num[0] == '+' || num[0] == '-') {
 		if num[0] == '-' {
 			neg = true
-			start++
-		} else {
-			num = num[1:]
-			end--
 		}
+		start++
 	}
-	for i := 0; i < len(num); i++ {
+	for i := start; i < len(num); i++ {
 		c := num[i]
 		if c == '.' {
 			dot = i
@@ -104,7 +101,7 @@ func Number(num []byte, prec int) []byte {
 				i++
 			}
 			var n int
-			if exp, n = strconv.ParseInt(num[i:]); n == 0 {
+			if origExp, n = strconv.ParseInt(num[i:]); n == 0 {
 				return num
 			}
 			break
@@ -136,66 +133,116 @@ func Number(num []byte, prec int) []byte {
 		return num[start:end]
 	}
 
-	// shorten mantissa by increasing/decreasing the exponent
-	if end == dot {
+	normExp := 0
+	n := 0
+	if dot == start {
+		for i = dot + 1; i < end; i++ {
+			if num[i] != '0' {
+				normExp = dot - i + 1
+				n = end - i
+				break
+			}
+		}
+	} else if dot == end {
+		normExp = end - start
 		for i := end - 1; i >= start; i-- {
 			if num[i] != '0' {
-				exp += int64(end - i - 1)
+				n = i + 1 - start
 				end = i + 1
 				break
 			}
 		}
 	} else {
-		exp -= int64(end - dot - 1)
-		if start == dot {
-			for i = dot + 1; i < end; i++ {
-				if num[i] != '0' {
-					copy(num[dot:], num[i:end])
-					end -= i - dot
-					break
+		normExp = dot - start
+		n = end - start - 1
+	}
+	normExp += int(origExp)
+
+	exp := int64(normExp - n)
+	lenExp := strconv.LenInt(exp)
+
+	//fmt.Println("normExp", normExp, "n", n, "exp", exp)
+
+	if normExp >= n {
+		if dot < end {
+			if dot == start {
+				start = end - n
+			} else {
+				// TODO: copy the other part if shorter?
+				//fmt.Println("COPY", end-dot-1)
+				copy(num[dot:], num[dot+1:end])
+				end--
+			}
+		}
+		if normExp >= n+3 {
+			num[end] = 'e'
+			end++
+			for i := end + lenExp - 1; i >= end; i-- {
+				num[i] = byte(exp%10) + '0'
+				exp /= 10
+			}
+			end += lenExp
+		} else if normExp == n+2 {
+			num[end] = '0'
+			num[end+1] = '0'
+			end += 2
+		} else if normExp == n+1 {
+			num[end] = '0'
+			end++
+		}
+		//fmt.Println("A", string(num[start:end]))
+	} else if normExp >= -lenExp-1 {
+		if normExp >= 0 {
+			newDot := start + normExp
+			if dot != newDot {
+				// TODO: copy the other part if shorter
+				if dot < newDot {
+					//fmt.Println("COPY", newDot-dot)
+					copy(num[dot:], num[dot+1:newDot+1])
+				} else {
+					//fmt.Println("COPY", dot-newDot)
+					copy(num[newDot+1:], num[newDot:dot])
+				}
+				num[newDot] = '.'
+				if dot == end {
+					end++
 				}
 			}
-		} else {
-			copy(num[dot:], num[dot+1:end])
-			end--
+		} else if origExp != 0 {
+			zeroes := -normExp
+			//fmt.Println("COPY", n)
+			copy(num[dot+1+zeroes:], num[end-n:end])
+			//fmt.Println("COPY", dot-start)
+			copy(num[start+1+zeroes:], num[start:dot])
+			num[start] = '.'
+			for i := 0; i < zeroes; i++ {
+				num[start+1+i] = '0'
+			}
+			end += zeroes
 		}
-	}
-
-	// append the exponent or change the mantissa to incorporate the exponent
-	relExp := exp + int64(end-start)    // exp when the first non-zero digit is directly after the dot
-	n := strconv.LenInt(exp)            // number of exp digits
-	if int(relExp)+n+1 < 0 || 2 < exp { // add exponent for exp 3 and higher and where a lower exp really makes it shorter
+		//fmt.Println("B", string(num[start:end]))
+	} else {
+		if dot < end {
+			if dot == start {
+				//fmt.Println("COPY", n)
+				copy(num[start:], num[end-n:end])
+				end = start + n
+			} else {
+				//fmt.Println("COPY", end-dot-1)
+				copy(num[dot:], num[dot+1:end])
+				end--
+			}
+		}
 		num[end] = 'e'
-		end++
-		if exp < 0 {
-			num[end] = '-'
-			end++
-			exp = -exp
-		}
-		for i := end + n - 1; i >= end; i-- {
+		num[end+1] = '-'
+		end += 2
+		exp = -exp
+		for i := end + lenExp - 1; i >= end; i-- {
 			num[i] = byte(exp%10) + '0'
 			exp /= 10
 		}
-		end += n
-	} else if exp < 0 { // omit exponent
-		if relExp > 0 {
-			copy(num[start+int(relExp)+1:], num[start+int(relExp):end])
-			num[start+int(relExp)] = '.'
-			end++
-		} else {
-			copy(num[start-int(relExp)+1:], num[start:end])
-			num[start] = '.'
-			for i := 1; i < -int(relExp)+1; i++ {
-				num[start+i] = '0'
-			}
-			end -= int(relExp) - 1
-		}
-	} else if exp != 0 { // for exponent 1 and 2
-		num[end] = '0'
-		if exp == 2 {
-			num[end+1] = '0'
-		}
-		end += int(exp)
+		end += lenExp
+		//fmt.Println("C", string(num[start:end]))
 	}
 
 	if neg {
