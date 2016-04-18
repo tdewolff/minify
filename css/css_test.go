@@ -10,7 +10,7 @@ import (
 )
 
 func TestCSS(t *testing.T) {
-	var cssTests = []struct {
+	cssTests := []struct {
 		css      string
 		expected string
 	}{
@@ -52,7 +52,7 @@ func TestCSS(t *testing.T) {
 }
 
 func TestCSSInline(t *testing.T) {
-	var cssTests = []struct {
+	cssTests := []struct {
 		css      string
 		expected string
 	}{
