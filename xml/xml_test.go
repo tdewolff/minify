@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/test"
 )
@@ -45,9 +44,9 @@ func TestXML(t *testing.T) {
 
 	m := minify.New()
 	for _, tt := range xmlTests {
-		b := &bytes.Buffer{}
-		assert.Nil(t, Minify(m, b, bytes.NewBufferString(tt.xml), nil), "Minify must not return error in "+tt.xml)
-		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.xml)
+		r := bytes.NewBufferString(tt.xml)
+		w := &bytes.Buffer{}
+		test.Minify(t, tt.xml, Minify(m, w, r, nil), w.String(), tt.expected, "minify must give expected result")
 	}
 }
 
@@ -70,9 +69,9 @@ func TestXMLKeepWhitespace(t *testing.T) {
 	m := minify.New()
 	xmlMinifier := &Minifier{KeepWhitespace: true}
 	for _, tt := range xmlTests {
-		b := &bytes.Buffer{}
-		assert.Nil(t, xmlMinifier.Minify(m, b, bytes.NewBufferString(tt.xml), nil), "Minify must not return error in "+tt.xml)
-		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.xml)
+		r := bytes.NewBufferString(tt.xml)
+		w := &bytes.Buffer{}
+		test.Minify(t, tt.xml, xmlMinifier.Minify(m, w, r, nil), w.String(), tt.expected, "minify must give expected result")
 	}
 }
 
@@ -80,18 +79,19 @@ func TestReaderErrors(t *testing.T) {
 	m := minify.New()
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}
-	assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at first read")
+	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "minify must return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
-	var errorTests = []int{0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
+	//      0             1    2 3 45678901    23 4 5 6    7   8                    9   0
+	xml := `<!DOCTYPE foo><?xml?><a x=y z="val"><b/><c></c></a><![CDATA[data<<<<<]]>text</x`
+	errorTests := []int{0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
 
 	m := minify.New()
 	for _, n := range errorTests {
-		// writes:                  0             1    2 3 45678901    23 4 5 6    7   8                    9   0
-		r := bytes.NewBufferString(`<!DOCTYPE foo><?xml?><a x=y z="val"><b/><c></c></a><![CDATA[data<<<<<]]>text</x`)
+		r := bytes.NewBufferString(xml)
 		w := test.NewErrorWriter(n)
-		assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at write "+strconv.FormatInt(int64(n), 10))
+		test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "minify must return error at write "+strconv.FormatInt(int64(n), 10))
 	}
 }
 

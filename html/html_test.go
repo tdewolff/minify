@@ -10,7 +10,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/css"
 	"github.com/tdewolff/minify/js"
@@ -134,8 +133,7 @@ func TestHTML(t *testing.T) {
 	for _, tt := range htmlTests {
 		r := bytes.NewBufferString(tt.html)
 		w := &bytes.Buffer{}
-		assert.Nil(t, Minify(m, w, r, nil), "Minify must not return error in "+tt.html)
-		assert.Equal(t, tt.expected, w.String(), "Minify must give expected result in "+tt.html)
+		test.Minify(t, tt.html, Minify(m, w, r, nil), w.String(), tt.expected, "minify must give expected result")
 	}
 }
 
@@ -167,9 +165,9 @@ func TestHTMLKeepWhitespace(t *testing.T) {
 	m := minify.New()
 	htmlMinifier := &Minifier{KeepWhitespace: true}
 	for _, tt := range htmlTests {
-		b := &bytes.Buffer{}
-		assert.Nil(t, htmlMinifier.Minify(m, b, bytes.NewBufferString(tt.html), nil), "Minify must not return error in "+tt.html)
-		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.html)
+		r := bytes.NewBufferString(tt.html)
+		w := &bytes.Buffer{}
+		test.Minify(t, tt.html, htmlMinifier.Minify(m, w, r, nil), w.String(), tt.expected, "minify must give expected result")
 	}
 }
 
@@ -199,8 +197,7 @@ func TestHTMLURL(t *testing.T) {
 		r := bytes.NewBufferString(tt.html)
 		w := &bytes.Buffer{}
 		m.URL, _ = url.Parse(tt.url)
-		assert.Nil(t, Minify(m, w, r, nil), "Minify must not return error in "+tt.html)
-		assert.Equal(t, tt.expected, w.String(), "Minify must give expected result in "+tt.html)
+		test.Minify(t, tt.html, Minify(m, w, r, nil), w.String(), tt.expected, "minify must give expected result")
 	}
 }
 
@@ -209,34 +206,35 @@ func TestSpecialTagClosing(t *testing.T) {
 	m.AddFunc("text/html", Minify)
 	m.AddFunc("text/css", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 		b, err := ioutil.ReadAll(r)
-		assert.Nil(t, err, "ioutil.ReadAll must not return error")
-		assert.Equal(t, "</script>", string(b))
+		test.Error(t, err, nil, "ioutil.ReadAll must not return error")
+		test.String(t, string(b), "</script>")
 		_, err = w.Write(b)
 		return err
 	})
 
-	r := bytes.NewBufferString(`<style></script></style>`)
+	html := `<style></script></style>`
+	r := bytes.NewBufferString(html)
 	w := &bytes.Buffer{}
-	assert.Nil(t, Minify(m, w, r, nil), "Minify must not return error in <style></script></style>")
-	assert.Equal(t, `<style></script></style>`, w.String(), "Minify must give expected result in <style></script></style>")
+	test.Minify(t, html, Minify(m, w, r, nil), w.String(), html, "minify must give expected result")
 }
 
 func TestReaderErrors(t *testing.T) {
 	m := minify.New()
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}
-	assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at first read")
+	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "minify must return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
-	var errorTests = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 14, 15}
+	//       0         1   2     34   56  78  9       0    12   3      4                 5
+	html := `<!doctype>text<style attr=val>css</style><code>code</code><!--[if comment--></x`
+	errorTests := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 14, 15}
 
 	m := minify.New()
 	for _, n := range errorTests {
-		// writes:                  0         1   2     34   56  78  9       0    12   3      4                 5
-		r := bytes.NewBufferString(`<!doctype>text<style attr=val>css</style><code>code</code><!--[if comment--></x`)
+		r := bytes.NewBufferString(html)
 		w := test.NewErrorWriter(n)
-		assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at write "+strconv.FormatInt(int64(n), 10))
+		test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "minify must return error at write "+strconv.FormatInt(int64(n), 10))
 	}
 }
 
