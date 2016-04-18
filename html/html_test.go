@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"os"
 	"regexp"
-	"strconv"
 	"testing"
 
 	"github.com/tdewolff/minify"
@@ -234,7 +233,7 @@ func TestWriterErrors(t *testing.T) {
 	for _, n := range errorTests {
 		r := bytes.NewBufferString(html)
 		w := test.NewErrorWriter(n)
-		test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write "+strconv.FormatInt(int64(n), 10))
+		test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write ", n)
 	}
 }
 
