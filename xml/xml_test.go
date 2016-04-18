@@ -11,7 +11,7 @@ import (
 )
 
 func TestXML(t *testing.T) {
-	var xmlTests = []struct {
+	xmlTests := []struct {
 		xml      string
 		expected string
 	}{
@@ -50,7 +50,7 @@ func TestXML(t *testing.T) {
 }
 
 func TestXMLKeepWhitespace(t *testing.T) {
-	var xmlTests = []struct {
+	xmlTests := []struct {
 		xml      string
 		expected string
 	}{

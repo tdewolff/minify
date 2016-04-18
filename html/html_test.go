@@ -19,7 +19,7 @@ import (
 )
 
 func TestHTML(t *testing.T) {
-	var htmlTests = []struct {
+	htmlTests := []struct {
 		html     string
 		expected string
 	}{
@@ -137,7 +137,7 @@ func TestHTML(t *testing.T) {
 }
 
 func TestHTMLKeepWhitespace(t *testing.T) {
-	var htmlTests = []struct {
+	htmlTests := []struct {
 		html     string
 		expected string
 	}{
@@ -171,7 +171,7 @@ func TestHTMLKeepWhitespace(t *testing.T) {
 }
 
 func TestHTMLURL(t *testing.T) {
-	var htmlTests = []struct {
+	htmlTests := []struct {
 		url      string
 		html     string
 		expected string

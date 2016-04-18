@@ -11,7 +11,7 @@ import (
 )
 
 func TestJSON(t *testing.T) {
-	var jsonTests = []struct {
+	jsonTests := []struct {
 		json     string
 		expected string
 	}{
@@ -36,7 +36,7 @@ func TestReaderErrors(t *testing.T) {
 }
 
 func TestWriterErrors(t *testing.T) {
-	var errorTests = []int{0, 1, 2, 3, 4, 5, 7, 8}
+	errorTests := []int{0, 1, 2, 3, 4, 5, 7, 8}
 
 	m := minify.New()
 	for _, n := range errorTests {

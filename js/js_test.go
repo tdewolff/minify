@@ -10,7 +10,7 @@ import (
 )
 
 func TestJS(t *testing.T) {
-	var jsTests = []struct {
+	jsTests := []struct {
 		js       string
 		expected string
 	}{
@@ -53,7 +53,7 @@ func TestReaderErrors(t *testing.T) {
 }
 
 func TestWriterErrors(t *testing.T) {
-	var errorTests = []struct {
+	errorTests := []struct {
 		js string
 		n  []int
 	}{

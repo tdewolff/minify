@@ -11,7 +11,7 @@ import (
 )
 
 func TestContentType(t *testing.T) {
-	var contentTypeTests = []struct {
+	contentTypeTests := []struct {
 		contentType string
 		expected    string
 	}{
@@ -26,7 +26,7 @@ func TestContentType(t *testing.T) {
 }
 
 func TestDataURI(t *testing.T) {
-	var dataURITests = []struct {
+	dataURITests := []struct {
 		dataURI  string
 		expected string
 	}{
@@ -55,7 +55,7 @@ func TestDataURI(t *testing.T) {
 }
 
 func TestNumber(t *testing.T) {
-	var numberTests = []struct {
+	numberTests := []struct {
 		number   string
 		expected string
 	}{
@@ -89,7 +89,7 @@ func TestNumber(t *testing.T) {
 }
 
 func TestLenInt(t *testing.T) {
-	var lenIntTests = []struct {
+	lenIntTests := []struct {
 		number   int64
 		expected int
 	}{

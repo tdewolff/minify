@@ -14,7 +14,7 @@ import (
 )
 
 func TestSVG(t *testing.T) {
-	var svgTests = []struct {
+	svgTests := []struct {
 		svg      string
 		expected string
 	}{
@@ -60,7 +60,7 @@ func TestSVG(t *testing.T) {
 }
 
 func TestSVGStyle(t *testing.T) {
-	var svgTests = []struct {
+	svgTests := []struct {
 		svg      string
 		expected string
 	}{
