@@ -7,10 +7,8 @@ import (
 	"net/url"
 	"os"
 	"regexp"
-	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/css"
 	"github.com/tdewolff/minify/js"
@@ -54,6 +52,7 @@ func TestHTML(t *testing.T) {
 		{`<svg width="100" height="100"><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>`, `<svg width=100 height=100><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>`},
 		{`</span >`, `</span>`},
 		{`<meta name=viewport content="width=0.1, initial-scale=1.0 , maximum-scale=1000">`, `<meta name=viewport content="width=.1,initial-scale=1,maximum-scale=1e3">`},
+		{`<br/>`, `<br>`},
 
 		// increase coverage
 		{`<script style="css">js</script>`, `<script style=css>js</script>`},
@@ -63,7 +62,6 @@ func TestHTML(t *testing.T) {
 		{`<meta http-equiv="content-script-type" content="application/js">`, `<meta http-equiv=content-script-type content=application/js>`},
 		{`<span attr=""></span>`, `<span attr></span>`},
 		{`<code>x</code>`, `<code>x</code>`},
-		{`<br/>`, `<br>`},
 		{`<p></p><p></p>`, `<p><p>`},
 		{`<ul><li></li> <li></li></ul>`, `<ul><li><li></ul>`},
 		{`<p></p><a></a>`, `<p></p><a></a>`},
@@ -79,12 +77,15 @@ func TestHTML(t *testing.T) {
 		{"<strong>x </strong>\ny", "<strong>x</strong>\ny"},
 		{`<p>x </p>y`, `<p>x</p>y`},
 		{`x <p>y</p>`, `x<p>y`},
-		{` <!doctype html> <!--comment--> <html> <body><p></p></body></html>`, `<!doctype html><p>`}, // spaces before html and at the start of html are dropped
+		{` <!doctype html> <!--comment--> <html> <body><p></p></body></html> `, `<!doctype html><p>`}, // spaces before html and at the start of html are dropped
 		{`<p>x<br> y`, `<p>x<br>y`},
 		{`<p>x </b> <b> y`, `<p>x</b> <b>y`},
 		{`a <code>code</code> b`, `a <code>code</code> b`},
 		{`a <code></code> b`, `a <code></code>b`},
 		{`a <script>script</script> b`, `a <script>script</script>b`},
+		{"text\n<!--comment-->\ntext", "text\ntext"},
+		{"abc\n</body>\ndef", "abc\ndef"},
+		{"<x>\n<!--y-->\n</x>", "<x></x>"},
 
 		// from HTML Minifier
 		{`<DIV TITLE="blah">boo</DIV>`, `<div title=blah>boo</div>`},
@@ -131,8 +132,41 @@ func TestHTML(t *testing.T) {
 	for _, tt := range htmlTests {
 		r := bytes.NewBufferString(tt.html)
 		w := &bytes.Buffer{}
-		assert.Nil(t, Minify(m, w, r, nil), "Minify must not return error in "+tt.html)
-		assert.Equal(t, tt.expected, w.String(), "Minify must give expected result in "+tt.html)
+		test.Minify(t, tt.html, Minify(m, w, r, nil), w.String(), tt.expected)
+	}
+}
+
+func TestHTMLKeepWhitespace(t *testing.T) {
+	var htmlTests = []struct {
+		html     string
+		expected string
+	}{
+		{`cats  and 	dogs `, `cats and dogs`},
+		{` <div> <i> test </i> <b> test </b> </div> `, `<div> <i> test </i> <b> test </b> </div>`},
+		{`<strong>x </strong>y`, `<strong>x </strong>y`},
+		{`<strong>x </strong> y`, `<strong>x </strong> y`},
+		{"<strong>x </strong>\ny", "<strong>x </strong>\ny"},
+		{`<p>x </p>y`, `<p>x </p>y`},
+		{`x <p>y</p>`, `x <p>y`},
+		{` <!doctype html> <!--comment--> <html> <body><p></p></body></html> `, `<!doctype html><p>`}, // spaces before html and at the start of html are dropped
+		{`<p>x<br> y`, `<p>x<br> y`},
+		{`<p>x </b> <b> y`, `<p>x </b> <b> y`},
+		{`a <code>code</code> b`, `a <code>code</code> b`},
+		{`a <code></code> b`, `a <code></code> b`},
+		{`a <script>script</script> b`, `a <script>script</script> b`},
+		{"text\n<!--comment-->\ntext", "text\ntext"},
+		{"text\n<!--comment-->text<!--comment--> text", "text\ntext text"},
+		{"abc\n</body>\ndef", "abc\ndef"},
+		{"<x>\n<!--y-->\n</x>", "<x>\n</x>"},
+		{"<style>lala{color:red}</style>", "<style>lala{color:red}</style>"},
+	}
+
+	m := minify.New()
+	htmlMinifier := &Minifier{KeepWhitespace: true}
+	for _, tt := range htmlTests {
+		r := bytes.NewBufferString(tt.html)
+		w := &bytes.Buffer{}
+		test.Minify(t, tt.html, htmlMinifier.Minify(m, w, r, nil), w.String(), tt.expected)
 	}
 }
 
@@ -162,8 +196,7 @@ func TestHTMLURL(t *testing.T) {
 		r := bytes.NewBufferString(tt.html)
 		w := &bytes.Buffer{}
 		m.URL, _ = url.Parse(tt.url)
-		assert.Nil(t, Minify(m, w, r, nil), "Minify must not return error in "+tt.html)
-		assert.Equal(t, tt.expected, w.String(), "Minify must give expected result in "+tt.html)
+		test.Minify(t, tt.html, Minify(m, w, r, nil), w.String(), tt.expected)
 	}
 }
 
@@ -172,34 +205,35 @@ func TestSpecialTagClosing(t *testing.T) {
 	m.AddFunc("text/html", Minify)
 	m.AddFunc("text/css", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 		b, err := ioutil.ReadAll(r)
-		assert.Nil(t, err, "ioutil.ReadAll must not return error")
-		assert.Equal(t, "</script>", string(b))
+		test.Error(t, err, nil)
+		test.String(t, string(b), "</script>")
 		_, err = w.Write(b)
 		return err
 	})
 
-	r := bytes.NewBufferString(`<style></script></style>`)
+	html := `<style></script></style>`
+	r := bytes.NewBufferString(html)
 	w := &bytes.Buffer{}
-	assert.Nil(t, Minify(m, w, r, nil), "Minify must not return error in <style></script></style>")
-	assert.Equal(t, `<style></script></style>`, w.String(), "Minify must give expected result in <style></script></style>")
+	test.Minify(t, html, Minify(m, w, r, nil), w.String(), html)
 }
 
 func TestReaderErrors(t *testing.T) {
 	m := minify.New()
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}
-	assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at first read")
+	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
-	var errorTests = []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 14, 15}
+	//       0         1   2     34   56  78  9       0    12   3      4                 5
+	html := `<!doctype>text<style attr=val>css</style><code>code</code><!--[if comment--></x`
+	errorTests := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 14, 15}
 
 	m := minify.New()
 	for _, n := range errorTests {
-		// writes:                  0         1   2     34   56  78  9       0    12   3      4             5
-		r := bytes.NewBufferString(`<!doctype>text<style attr=val>css</style><code>code</code><!--comment--></x`)
+		r := bytes.NewBufferString(html)
 		w := test.NewErrorWriter(n)
-		assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at write "+strconv.FormatInt(int64(n), 10))
+		test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write ", n)
 	}
 }
 

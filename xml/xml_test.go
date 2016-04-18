@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"os"
 	"regexp"
-	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/test"
 )
@@ -34,15 +32,45 @@ func TestXML(t *testing.T) {
 		{"<x a=\"&quot;&quot;'\"></x>", "<x a='\"\"&#39;'/>"},
 		{"<!DOCTYPE foo SYSTEM \"Foo.dtd\">", "<!DOCTYPE foo SYSTEM \"Foo.dtd\">"},
 		{"text <!--comment--> text", "text text"},
+		{"text\n<!--comment-->\ntext", "text\ntext"},
+		{"<!doctype html>", "<!doctype html=>"}, // bad formatted, doctype must be uppercase and html must have attribute value
+		{"<x>\n<!--y-->\n</x>", "<x></x>"},
+		{"<style>lala{color:red}</style>", "<style>lala{color:red}</style>"},
+		{`cats  and 	dogs `, `cats and dogs`},
 
 		{`</0`, `</0`}, // go fuzz
 	}
 
 	m := minify.New()
 	for _, tt := range xmlTests {
-		b := &bytes.Buffer{}
-		assert.Nil(t, Minify(m, b, bytes.NewBufferString(tt.xml), nil), "Minify must not return error in "+tt.xml)
-		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.xml)
+		r := bytes.NewBufferString(tt.xml)
+		w := &bytes.Buffer{}
+		test.Minify(t, tt.xml, Minify(m, w, r, nil), w.String(), tt.expected)
+	}
+}
+
+func TestXMLKeepWhitespace(t *testing.T) {
+	var xmlTests = []struct {
+		xml      string
+		expected string
+	}{
+		{`cats  and 	dogs `, `cats and dogs`},
+		{` <div> <i> test </i> <b> test </b> </div> `, `<div> <i> test </i> <b> test </b> </div>`},
+		{"text\n<!--comment-->\ntext", "text\ntext"},
+		{"text\n<!--comment-->text<!--comment--> text", "text\ntext text"},
+		{"<x>\n<!--y-->\n</x>", "<x>\n</x>"},
+		{"<style>lala{color:red}</style>", "<style>lala{color:red}</style>"},
+		{"<x> <?xml?> </x>", "<x><?xml?> </x>"},
+		{"<x> <![CDATA[ x ]]> </x>", "<x> x </x>"},
+		{"<x> <![CDATA[ <<<<< ]]> </x>", "<x><![CDATA[ <<<<< ]]></x>"},
+	}
+
+	m := minify.New()
+	xmlMinifier := &Minifier{KeepWhitespace: true}
+	for _, tt := range xmlTests {
+		r := bytes.NewBufferString(tt.xml)
+		w := &bytes.Buffer{}
+		test.Minify(t, tt.xml, xmlMinifier.Minify(m, w, r, nil), w.String(), tt.expected)
 	}
 }
 
@@ -50,18 +78,19 @@ func TestReaderErrors(t *testing.T) {
 	m := minify.New()
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}
-	assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at first read")
+	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
-	var errorTests = []int{0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
+	//      0             1    2 3 45678901    23 4 5 6    7   8                    9   0
+	xml := `<!DOCTYPE foo><?xml?><a x=y z="val"><b/><c></c></a><![CDATA[data<<<<<]]>text</x`
+	errorTests := []int{0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
 
 	m := minify.New()
 	for _, n := range errorTests {
-		// writes:                  0             1    2 3 45678901    23 4 5 6    7   8                    9   0
-		r := bytes.NewBufferString(`<!DOCTYPE foo><?xml?><a x=y z="val"><b/><c></c></a><![CDATA[data<<<<<]]>text</x`)
+		r := bytes.NewBufferString(xml)
 		w := test.NewErrorWriter(n)
-		assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at write "+strconv.FormatInt(int64(n), 10))
+		test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write ", n)
 	}
 }
 

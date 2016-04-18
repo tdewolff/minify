@@ -114,6 +114,19 @@ func (c *cssMinifier) minifyGrammar() error {
 				return err
 			}
 			semicolonQueued = true
+		} else if gt == css.CommentGrammar {
+			if len(data) > 5 && data[1] == '*' && data[2] == '!' {
+				if _, err := c.w.Write(data[:3]); err != nil {
+					return err
+				}
+				comment := parse.TrimWhitespace(parse.ReplaceMultipleWhitespace(data[3 : len(data)-2]))
+				if _, err := c.w.Write(comment); err != nil {
+					return err
+				}
+				if _, err := c.w.Write(data[len(data)-2:]); err != nil {
+					return err
+				}
+			}
 		} else if _, err := c.w.Write(data); err != nil {
 			return err
 		}
@@ -315,7 +328,8 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 		if (fun == css.Rgba || fun == css.Hsla) && nArgs == 4 {
 			d, err := strconv.ParseFloat(string(values[7].Data), 32)
 			if err != nil {
-				panic(err)
+				// can never fail because if simple == true than this is a NumberToken or PercentageToken
+				return 0, err
 			}
 			if d-1.0 > -minify.Epsilon {
 				if fun == css.Rgba {

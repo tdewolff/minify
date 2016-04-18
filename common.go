@@ -103,8 +103,8 @@ func Number(num []byte, prec int) []byte {
 			if i < len(num) && num[i] == '+' {
 				i++
 			}
-			var ok bool
-			if exp, ok = strconv.ParseInt(num[i:]); !ok {
+			var n int
+			if exp, n = strconv.ParseInt(num[i:]); n == 0 {
 				return num
 			}
 			break

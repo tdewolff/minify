@@ -3,10 +3,8 @@ package css // import "github.com/tdewolff/minify/css"
 import (
 	"bytes"
 	"os"
-	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/test"
 )
@@ -16,6 +14,9 @@ func TestCSS(t *testing.T) {
 		css      string
 		expected string
 	}{
+		{"/*comment*/", ""},
+		{"/*! bang  comment */", "/*!bang comment*/"},
+		{"i{}/*! bang  comment */", "i{}/*!bang comment*/"},
 		{"i { key: value; key2: value; }", "i{key:value;key2:value}"},
 		{".cla .ss > #id { x:y; }", ".cla .ss>#id{x:y}"},
 		{".cla[id ^= L] { x:y; }", ".cla[id^=L]{x:y}"},
@@ -44,9 +45,9 @@ func TestCSS(t *testing.T) {
 
 	m := minify.New()
 	for _, tt := range cssTests {
-		b := &bytes.Buffer{}
-		assert.Nil(t, Minify(m, b, bytes.NewBufferString(tt.css), nil), "Minify must not return error in "+tt.css)
-		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.css)
+		r := bytes.NewBufferString(tt.css)
+		w := &bytes.Buffer{}
+		test.Minify(t, tt.css, Minify(m, w, r, nil), w.String(), tt.expected)
 	}
 }
 
@@ -56,6 +57,7 @@ func TestCSSInline(t *testing.T) {
 		expected string
 	}{
 		{"/*comment*/", ""},
+		{"/*! bang  comment */", ""},
 		{";", ""},
 		{"empty:", "empty:"},
 		{"key: value;", "key:value"},
@@ -140,11 +142,11 @@ func TestCSSInline(t *testing.T) {
 	}
 
 	m := minify.New()
+	params := map[string]string{"inline": "1"}
 	for _, tt := range cssTests {
 		r := bytes.NewBufferString(tt.css)
 		w := &bytes.Buffer{}
-		assert.Nil(t, Minify(m, w, r, map[string]string{"inline": "1"}), "Minify must not return error in "+tt.css)
-		assert.Equal(t, tt.expected, w.String(), "Minify must give expected result in "+tt.css)
+		test.Minify(t, tt.css, Minify(m, w, r, params), w.String(), tt.expected)
 	}
 }
 
@@ -152,11 +154,11 @@ func TestReaderErrors(t *testing.T) {
 	m := minify.New()
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}
-	assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error at first read")
+	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
-	var errorTests = []struct {
+	errorTests := []struct {
 		css string
 		n   []int
 	}{
@@ -169,6 +171,7 @@ func TestWriterErrors(t *testing.T) {
 		{`a{color:hsl(360,100%,100%)}`, []int{4}},
 		{`a{color:f(arg)}`, []int{4}},
 		{`<!--`, []int{0}},
+		{`/*!comment*/`, []int{0, 1, 2}},
 	}
 
 	m := minify.New()
@@ -176,7 +179,7 @@ func TestWriterErrors(t *testing.T) {
 		for _, n := range tt.n {
 			r := bytes.NewBufferString(tt.css)
 			w := test.NewErrorWriter(n)
-			assert.Equal(t, test.ErrPlain, Minify(m, w, r, nil), "Minify must return error in "+tt.css+" at write "+strconv.FormatInt(int64(n), 10))
+			test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write ", n)
 		}
 	}
 }

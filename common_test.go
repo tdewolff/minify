@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/tdewolff/test"
 )
 
 func TestContentType(t *testing.T) {
@@ -20,7 +20,7 @@ func TestContentType(t *testing.T) {
 		{"text/html, text/css", "text/html,text/css"},
 	}
 	for _, tt := range contentTypeTests {
-		assert.Equal(t, tt.expected, string(ContentType([]byte(tt.contentType))), "ContentType must give expected result in "+tt.contentType)
+		test.Minify(t, tt.contentType, nil, string(ContentType([]byte(tt.contentType))), tt.expected)
 	}
 }
 
@@ -44,12 +44,12 @@ func TestDataURI(t *testing.T) {
 	m := New()
 	m.AddFunc("text/x", func(_ *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		b, _ := ioutil.ReadAll(r)
-		assert.Equal(t, "<?x?>", string(b))
+		test.String(t, string(b), "<?x?>")
 		w.Write(b)
 		return nil
 	})
 	for _, tt := range dataURITests {
-		assert.Equal(t, tt.expected, string(DataURI(m, []byte(tt.dataURI))), "DataURI must give expected result in "+tt.dataURI)
+		test.Minify(t, tt.dataURI, nil, string(DataURI(m, []byte(tt.dataURI))), tt.expected)
 	}
 }
 
@@ -80,7 +80,7 @@ func TestNumber(t *testing.T) {
 		{".000100009", -1, "100009e-9"},
 		{".0001000009", -1, ".0001000009"},
 		{".0001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009", -1, ".0001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009"},
-		{"E\x1f", -1, ""}, // fuzz
+		{"E\x1f", -1, "E\x1f"}, // fuzz
 		//{"96px", "1in"},
 
 		// truncate
@@ -90,7 +90,42 @@ func TestNumber(t *testing.T) {
 		{"0.0001", 1, "1e-4"},
 	}
 	for _, tt := range numberTests {
-		assert.Equal(t, tt.expected, string(Number([]byte(tt.number), tt.truncate)), "Number must give expected result in "+tt.number)
+		test.Minify(t, tt.number, nil, string(Number([]byte(tt.number))), tt.expected)
+	}
+}
+
+func TestLenInt(t *testing.T) {
+	var lenIntTests = []struct {
+		number   int64
+		expected int
+	}{
+		{0, 1},
+		{1, 1},
+		{10, 2},
+		{99, 2},
+
+		// coverage
+		{100, 3},
+		{1000, 4},
+		{10000, 5},
+		{100000, 6},
+		{1000000, 7},
+		{10000000, 8},
+		{100000000, 9},
+		{1000000000, 10},
+		{10000000000, 11},
+		{100000000000, 12},
+		{1000000000000, 13},
+		{10000000000000, 14},
+		{100000000000000, 15},
+		{1000000000000000, 16},
+		{10000000000000000, 17},
+		{100000000000000000, 18},
+		{1000000000000000000, 19},
+		{-10, 2},
+	}
+	for _, tt := range lenIntTests {
+		test.That(t, lenInt64(tt.number) == tt.expected, "return", tt.expected, "for", tt.number)
 	}
 }
 

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/parse/xml"
+	"github.com/tdewolff/test"
 )
 
 func TestBuffer(t *testing.T) {
@@ -14,24 +14,24 @@ func TestBuffer(t *testing.T) {
 	z := NewTokenBuffer(xml.NewLexer(bytes.NewBufferString(s)))
 
 	tok := z.Shift()
-	assert.Equal(t, "p", string(tok.Text), "first token must be <p>")
-	assert.Equal(t, 0, z.pos, "must have shifted first token and restored position")
-	assert.Equal(t, 0, len(z.buf), "must have shifted first token and restored length")
+	test.That(t, string(tok.Text) == "p", "first token is <p>")
+	test.That(t, z.pos == 0, "shift first token and restore position")
+	test.That(t, len(z.buf) == 0, "shift first token and restore length")
 
-	assert.Equal(t, "href", string(z.Peek(2).Text), "third token must be href")
-	assert.Equal(t, 0, z.pos, "must not have changed positon after peeking")
-	assert.Equal(t, 3, len(z.buf), "must have two tokens after peeking")
+	test.That(t, string(z.Peek(2).Text) == "href", "third token is href")
+	test.That(t, z.pos == 0, "don't change positon after peeking")
+	test.That(t, len(z.buf) == 3, "two tokens after peeking")
 
-	assert.Equal(t, "p", string(z.Peek(8).Text), "nineth token must be <p>")
-	assert.Equal(t, 0, z.pos, "must not have changed positon after peeking")
-	assert.Equal(t, 9, len(z.buf), "must have nine tokens after peeking")
+	test.That(t, string(z.Peek(8).Text) == "p", "nineth token is <p>")
+	test.That(t, z.pos == 0, "don't change positon after peeking")
+	test.That(t, len(z.buf) == 9, "nine tokens after peeking")
 
-	assert.Equal(t, xml.ErrorToken, z.Peek(9).TokenType, "tenth token must be error")
-	assert.Equal(t, z.Peek(9), z.Peek(10), "tenth and eleventh token must both be EOF")
-	assert.Equal(t, 10, len(z.buf), "must have ten tokens after peeking")
+	test.That(t, z.Peek(9).TokenType == xml.ErrorToken, "tenth token is an error")
+	test.That(t, z.Peek(9) == z.Peek(10), "tenth and eleventh token are EOF")
+	test.That(t, len(z.buf) == 10, "ten tokens after peeking")
 
 	tok = z.Shift()
 	tok = z.Shift()
-	assert.Equal(t, "a", string(tok.Text), "third token must be <a>")
-	assert.Equal(t, 2, z.pos, "must not have changed positon after peeking")
+	test.That(t, string(tok.Text) == "a", "third token is <a>")
+	test.That(t, z.pos == 2, "don't change positon after peeking")
 }
