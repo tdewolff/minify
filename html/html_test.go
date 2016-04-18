@@ -144,7 +144,6 @@ func TestHTMLKeepWhitespace(t *testing.T) {
 		html     string
 		expected string
 	}{
-
 		{`cats  and 	dogs `, `cats and dogs`},
 		{` <div> <i> test </i> <b> test </b> </div> `, `<div> <i> test </i> <b> test </b> </div>`},
 		{`<strong>x </strong>y`, `<strong>x </strong>y`},
