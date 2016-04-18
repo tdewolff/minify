@@ -5,10 +5,9 @@ import (
 	"io/ioutil"
 	"math"
 	"math/rand"
-	"strconv"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/tdewolff/test"
 )
 
 func TestContentType(t *testing.T) {
@@ -22,7 +21,7 @@ func TestContentType(t *testing.T) {
 		{"text/html, text/css", "text/html,text/css"},
 	}
 	for _, tt := range contentTypeTests {
-		assert.Equal(t, tt.expected, string(ContentType([]byte(tt.contentType))), "ContentType must give expected result in "+tt.contentType)
+		test.Minify(t, tt.contentType, nil, string(ContentType([]byte(tt.contentType))), tt.expected)
 	}
 }
 
@@ -46,12 +45,12 @@ func TestDataURI(t *testing.T) {
 	m := New()
 	m.AddFunc("text/x", func(_ *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		b, _ := ioutil.ReadAll(r)
-		assert.Equal(t, "<?x?>", string(b))
+		test.String(t, string(b), "<?x?>")
 		w.Write(b)
 		return nil
 	})
 	for _, tt := range dataURITests {
-		assert.Equal(t, tt.expected, string(DataURI(m, []byte(tt.dataURI))), "DataURI must give expected result in "+tt.dataURI)
+		test.Minify(t, tt.dataURI, nil, string(DataURI(m, []byte(tt.dataURI))), tt.expected)
 	}
 }
 
@@ -85,7 +84,7 @@ func TestNumber(t *testing.T) {
 		//{"96px", "1in"},
 	}
 	for _, tt := range numberTests {
-		assert.Equal(t, tt.expected, string(Number([]byte(tt.number))), "Number must give expected result in "+tt.number)
+		test.Minify(t, tt.number, nil, string(Number([]byte(tt.number))), tt.expected)
 	}
 }
 
@@ -120,7 +119,7 @@ func TestLenInt(t *testing.T) {
 		{-10, 2},
 	}
 	for _, tt := range lenIntTests {
-		assert.Equal(t, tt.expected, lenInt64(tt.number), "lenInt must give expected result in "+strconv.FormatInt(tt.number, 10))
+		test.That(t, lenInt64(tt.number) == tt.expected, "return", tt.expected, "for", tt.number)
 	}
 }
 

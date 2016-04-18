@@ -55,7 +55,7 @@ func TestSVG(t *testing.T) {
 	for _, tt := range svgTests {
 		r := bytes.NewBufferString(tt.svg)
 		w := &bytes.Buffer{}
-		test.Minify(t, tt.svg, Minify(m, w, r, nil), w.String(), tt.expected, "minify must give expected result")
+		test.Minify(t, tt.svg, Minify(m, w, r, nil), w.String(), tt.expected)
 	}
 }
 
@@ -74,7 +74,7 @@ func TestSVGStyle(t *testing.T) {
 	for _, tt := range svgTests {
 		r := bytes.NewBufferString(tt.svg)
 		w := &bytes.Buffer{}
-		test.Minify(t, tt.svg, Minify(m, w, r, nil), w.String(), tt.expected, "minify must give expected result")
+		test.Minify(t, tt.svg, Minify(m, w, r, nil), w.String(), tt.expected)
 	}
 }
 
@@ -85,10 +85,10 @@ func TestGetAttribute(t *testing.T) {
 	tb.Shift()
 	attrs, _ := tb.Attributes(svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
 	for i := 0; i < 6; i++ {
-		test.Assert(t, attrs[i] != nil, "attr must not be nil")
+		test.That(t, attrs[i] != nil, "attr must not be nil")
 		val := string(attrs[i].AttrVal)
 		j, _ := strconv.ParseInt(val, 10, 32)
-		test.Assert(t, int(j) == i, "attr data is bad")
+		test.That(t, int(j) == i, "attr data is bad at position", i)
 	}
 }
 

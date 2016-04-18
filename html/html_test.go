@@ -133,7 +133,7 @@ func TestHTML(t *testing.T) {
 	for _, tt := range htmlTests {
 		r := bytes.NewBufferString(tt.html)
 		w := &bytes.Buffer{}
-		test.Minify(t, tt.html, Minify(m, w, r, nil), w.String(), tt.expected, "minify must give expected result")
+		test.Minify(t, tt.html, Minify(m, w, r, nil), w.String(), tt.expected)
 	}
 }
 
@@ -167,7 +167,7 @@ func TestHTMLKeepWhitespace(t *testing.T) {
 	for _, tt := range htmlTests {
 		r := bytes.NewBufferString(tt.html)
 		w := &bytes.Buffer{}
-		test.Minify(t, tt.html, htmlMinifier.Minify(m, w, r, nil), w.String(), tt.expected, "minify must give expected result")
+		test.Minify(t, tt.html, htmlMinifier.Minify(m, w, r, nil), w.String(), tt.expected)
 	}
 }
 
@@ -197,7 +197,7 @@ func TestHTMLURL(t *testing.T) {
 		r := bytes.NewBufferString(tt.html)
 		w := &bytes.Buffer{}
 		m.URL, _ = url.Parse(tt.url)
-		test.Minify(t, tt.html, Minify(m, w, r, nil), w.String(), tt.expected, "minify must give expected result")
+		test.Minify(t, tt.html, Minify(m, w, r, nil), w.String(), tt.expected)
 	}
 }
 
@@ -206,7 +206,7 @@ func TestSpecialTagClosing(t *testing.T) {
 	m.AddFunc("text/html", Minify)
 	m.AddFunc("text/css", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 		b, err := ioutil.ReadAll(r)
-		test.Error(t, err, nil, "ioutil.ReadAll must not return error")
+		test.Error(t, err, nil)
 		test.String(t, string(b), "</script>")
 		_, err = w.Write(b)
 		return err
@@ -215,14 +215,14 @@ func TestSpecialTagClosing(t *testing.T) {
 	html := `<style></script></style>`
 	r := bytes.NewBufferString(html)
 	w := &bytes.Buffer{}
-	test.Minify(t, html, Minify(m, w, r, nil), w.String(), html, "minify must give expected result")
+	test.Minify(t, html, Minify(m, w, r, nil), w.String(), html)
 }
 
 func TestReaderErrors(t *testing.T) {
 	m := minify.New()
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}
-	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "minify must return error at first read")
+	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
@@ -234,7 +234,7 @@ func TestWriterErrors(t *testing.T) {
 	for _, n := range errorTests {
 		r := bytes.NewBufferString(html)
 		w := test.NewErrorWriter(n)
-		test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "minify must return error at write "+strconv.FormatInt(int64(n), 10))
+		test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write "+strconv.FormatInt(int64(n), 10))
 	}
 }
 

@@ -25,7 +25,7 @@ func TestJSON(t *testing.T) {
 	for _, tt := range jsonTests {
 		r := bytes.NewBufferString(tt.json)
 		w := &bytes.Buffer{}
-		test.Minify(t, tt.json, Minify(m, w, r, nil), w.String(), tt.expected, "minify must give expected result")
+		test.Minify(t, tt.json, Minify(m, w, r, nil), w.String(), tt.expected)
 	}
 }
 
@@ -33,7 +33,7 @@ func TestReaderErrors(t *testing.T) {
 	m := minify.New()
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}
-	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "minify must return error at first read")
+	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
@@ -44,7 +44,7 @@ func TestWriterErrors(t *testing.T) {
 		// writes:                  01    234  56  78
 		r := bytes.NewBufferString(`{"key":[100,200]}`)
 		w := test.NewErrorWriter(n)
-		test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "minify must return error at write "+strconv.FormatInt(int64(n), 10))
+		test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write "+strconv.FormatInt(int64(n), 10))
 	}
 }
 
