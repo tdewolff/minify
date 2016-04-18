@@ -3,6 +3,7 @@ package minify // import "github.com/tdewolff/minify"
 import (
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"net/url"
 
 	"github.com/tdewolff/parse"
@@ -161,7 +162,7 @@ func Number(num []byte, prec int) []byte {
 	exp := int64(normExp - n)
 	lenExp := strconv.LenInt(exp)
 
-	//fmt.Println("normExp", normExp, "n", n, "exp", exp)
+	fmt.Println("norm", string(num[start:end]), "normExp", normExp, "n", n, "exp", exp)
 
 	if normExp >= n {
 		if dot < end {
@@ -169,7 +170,7 @@ func Number(num []byte, prec int) []byte {
 				start = end - n
 			} else {
 				// TODO: copy the other part if shorter?
-				//fmt.Println("COPY", end-dot-1)
+				//fmt.Println("COPY1", end-dot-1)
 				copy(num[dot:], num[dot+1:end])
 				end--
 			}
@@ -193,42 +194,48 @@ func Number(num []byte, prec int) []byte {
 		//fmt.Println("A", string(num[start:end]))
 	} else if normExp >= -lenExp-1 {
 		if normExp >= 0 {
-			newDot := start + normExp
+			newDot := normExp + end - n
+			fmt.Println("dot", dot, "->", newDot)
 			if dot != newDot {
 				// TODO: copy the other part if shorter
 				if dot < newDot {
-					//fmt.Println("COPY", newDot-dot)
+					fmt.Println("COPY2", newDot-dot)
 					copy(num[dot:], num[dot+1:newDot+1])
 				} else {
-					//fmt.Println("COPY", dot-newDot)
+					fmt.Println("COPY3", dot-newDot)
 					copy(num[newDot+1:], num[newDot:dot])
 				}
 				num[newDot] = '.'
-				if dot == end {
+				if dot >= end {
 					end++
 				}
 			}
 		} else if origExp != 0 {
 			zeroes := -normExp
-			//fmt.Println("COPY", n)
-			copy(num[dot+1+zeroes:], num[end-n:end])
-			//fmt.Println("COPY", dot-start)
+			if dot < end {
+				fmt.Println("COPY4", end-dot-1)
+				copy(num[dot+1+zeroes:], num[dot+1:end])
+			}
+			fmt.Println("COPY5", dot-start)
 			copy(num[start+1+zeroes:], num[start:dot])
 			num[start] = '.'
 			for i := 0; i < zeroes; i++ {
 				num[start+1+i] = '0'
 			}
+			if dot >= end {
+				end++
+			}
 			end += zeroes
 		}
-		//fmt.Println("B", string(num[start:end]))
+		fmt.Println("B", string(num[start:end]))
 	} else {
 		if dot < end {
 			if dot == start {
-				//fmt.Println("COPY", n)
+				//fmt.Println("COPY6", n)
 				copy(num[start:], num[end-n:end])
 				end = start + n
 			} else {
-				//fmt.Println("COPY", end-dot-1)
+				//fmt.Println("COPY7", end-dot-1)
 				copy(num[dot:], num[dot+1:end])
 				end--
 			}
