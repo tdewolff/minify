@@ -3,7 +3,6 @@ package minify // import "github.com/tdewolff/minify"
 import (
 	"bytes"
 	"encoding/base64"
-	"fmt"
 	"net/url"
 
 	"github.com/tdewolff/parse"
@@ -84,25 +83,25 @@ func Number(num []byte, prec int) []byte {
 	start := 0
 	dot := -1
 	end := len(num)
-	origExp := int64(0)
-	if 0 < len(num) && (num[0] == '+' || num[0] == '-') {
+	origExp := 0
+	if 0 < end && (num[0] == '+' || num[0] == '-') {
 		if num[0] == '-' {
 			neg = true
 		}
 		start++
 	}
-	for i := start; i < len(num); i++ {
-		c := num[i]
+	for i, c := range num[start:] {
 		if c == '.' {
-			dot = i
+			dot = start + i
 		} else if c == 'e' || c == 'E' {
-			end = i
-			i++
+			end = start + i
+			i += start + 1
 			if i < len(num) && num[i] == '+' {
 				i++
 			}
-			var n int
-			if origExp, n = strconv.ParseInt(num[i:]); n == 0 {
+			if tmpOrigExp, n := strconv.ParseInt(num[i:]); n > 0 {
+				origExp = int(tmpOrigExp)
+			} else {
 				return num
 			}
 			break
@@ -134,13 +133,15 @@ func Number(num []byte, prec int) []byte {
 		return num[start:end]
 	}
 
-	normExp := 0
+	// n is the number of significant digits
+	// normExp would be the exponent if it were normalised (0.1 <= f < 1)
 	n := 0
+	normExp := 0
 	if dot == start {
 		for i = dot + 1; i < end; i++ {
 			if num[i] != '0' {
-				normExp = dot - i + 1
 				n = end - i
+				normExp = dot - i + 1
 				break
 			}
 		}
@@ -154,17 +155,24 @@ func Number(num []byte, prec int) []byte {
 			}
 		}
 	} else {
-		normExp = dot - start
 		n = end - start - 1
+		normExp = dot - start
 	}
 	normExp += int(origExp)
 
-	exp := int64(normExp - n)
-	lenExp := strconv.LenInt(exp)
+	// intExp would be the exponent if it were an integer
+	intExp := normExp - n
+	lenIntExp := 1
+	if intExp <= -10 || intExp >= 10 {
+		lenIntExp = strconv.LenInt(int64(intExp))
+	}
 
-	fmt.Println("norm", string(num[start:end]), "normExp", normExp, "n", n, "exp", exp)
-
+	// there are three cases to consider when printing the number
+	// case 1: without decimals and with an exponent (large numbers)
+	// case 2: with decimals and without an exponent (around zero)
+	// case 3: without decimals and with a negative exponent (small numbers)
 	if normExp >= n {
+		// case 1
 		if dot < end {
 			if dot == start {
 				start = end - n
@@ -178,11 +186,11 @@ func Number(num []byte, prec int) []byte {
 		if normExp >= n+3 {
 			num[end] = 'e'
 			end++
-			for i := end + lenExp - 1; i >= end; i-- {
-				num[i] = byte(exp%10) + '0'
-				exp /= 10
+			for i := end + lenIntExp - 1; i >= end; i-- {
+				num[i] = byte(intExp%10) + '0'
+				intExp /= 10
 			}
-			end += lenExp
+			end += lenIntExp
 		} else if normExp == n+2 {
 			num[end] = '0'
 			num[end+1] = '0'
@@ -191,44 +199,66 @@ func Number(num []byte, prec int) []byte {
 			num[end] = '0'
 			end++
 		}
-		//fmt.Println("A", string(num[start:end]))
-	} else if normExp >= -lenExp-1 {
-		if normExp >= 0 {
-			newDot := normExp + end - n
-			fmt.Println("dot", dot, "->", newDot)
-			if dot != newDot {
-				// TODO: copy the other part if shorter
-				if dot < newDot {
-					fmt.Println("COPY2", newDot-dot)
-					copy(num[dot:], num[dot+1:newDot+1])
+	} else if normExp >= -lenIntExp-1 {
+		// case 2
+		zeroes := -normExp
+		if zeroes > 0 {
+			// dot placed at the front and add zeroes
+			newDot := end - n - zeroes - 1
+			if newDot != dot {
+				d := start - newDot
+				if d > 0 {
+					if dot < end {
+						// copy original digits behind the dot backwards
+						//fmt.Println("COPY2", end-dot-1)
+						copy(num[dot+1+d:], num[dot+1:end])
+						if dot > start {
+							// copy original digits before the dot backwards
+							//fmt.Println("COPY3a", dot-start)
+							copy(num[start+d+1:], num[start:dot])
+						}
+					} else if dot > start {
+						// copy original digits before the dot backwards
+						//fmt.Println("COPY3b", dot-start)
+						copy(num[start+d:], num[start:dot])
+					}
+					newDot = start
+					end += d
 				} else {
-					fmt.Println("COPY3", dot-newDot)
-					copy(num[newDot+1:], num[newDot:dot])
+					start += -d
 				}
 				num[newDot] = '.'
-				if dot >= end {
-					end++
+				for i := 0; i < zeroes; i++ {
+					num[newDot+1+i] = '0'
 				}
 			}
-		} else if origExp != 0 {
-			zeroes := -normExp
-			if dot < end {
-				fmt.Println("COPY4", end-dot-1)
-				copy(num[dot+1+zeroes:], num[dot+1:end])
-			}
-			fmt.Println("COPY5", dot-start)
-			copy(num[start+1+zeroes:], num[start:dot])
-			num[start] = '.'
-			for i := 0; i < zeroes; i++ {
-				num[start+1+i] = '0'
-			}
-			if dot >= end {
+		} else {
+			// placed in the middle
+			if dot == start {
+				// TODO: try if placing at the end reduces copying
+				// when there are zeroes after the dot
+				dot = end - n - 1
+				start = dot
+			} else if dot >= end {
+				// TODO: try if placing at the start reduces copying
+				// when input has no dot in it
+				dot = end
 				end++
 			}
-			end += zeroes
+			newDot := start + normExp
+			if newDot > dot {
+				// copy digits forwards
+				//fmt.Println("COPY4", newDot-dot)
+				copy(num[dot:], num[dot+1:newDot+1])
+			} else if newDot < dot {
+				// copy digits backwards
+				//fmt.Println("COPY5", dot-newDot)
+				copy(num[newDot+1:], num[newDot:dot])
+			}
+			num[newDot] = '.'
 		}
-		fmt.Println("B", string(num[start:end]))
 	} else {
+		// case 3
 		if dot < end {
 			if dot == start {
 				//fmt.Println("COPY6", n)
@@ -243,13 +273,12 @@ func Number(num []byte, prec int) []byte {
 		num[end] = 'e'
 		num[end+1] = '-'
 		end += 2
-		exp = -exp
-		for i := end + lenExp - 1; i >= end; i-- {
-			num[i] = byte(exp%10) + '0'
-			exp /= 10
+		intExp = -intExp
+		for i := end + lenIntExp - 1; i >= end; i-- {
+			num[i] = byte(intExp%10) + '0'
+			intExp /= 10
 		}
-		end += lenExp
-		//fmt.Println("C", string(num[start:end]))
+		end += lenIntExp
 	}
 
 	if neg {
