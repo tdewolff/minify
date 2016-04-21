@@ -50,6 +50,12 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				return nil
 			}
 			return l.Err()
+		case xml.DOCTYPEToken:
+			if len(t.Text) > 0 && t.Text[len(t.Text)-1] == ']' {
+				if _, err := w.Write(t.Data); err != nil {
+					return err
+				}
+			}
 		case xml.TextToken:
 			t.Data = parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.Data))
 			if tag == svg.Style && len(t.Data) > 0 {
