@@ -3,7 +3,6 @@ package minify // import "github.com/tdewolff/minify"
 import (
 	"io"
 	"io/ioutil"
-	"math"
 	"math/rand"
 	"testing"
 
@@ -88,41 +87,6 @@ func TestNumber(t *testing.T) {
 	}
 }
 
-func TestLenInt(t *testing.T) {
-	lenIntTests := []struct {
-		number   int64
-		expected int
-	}{
-		{0, 1},
-		{1, 1},
-		{10, 2},
-		{99, 2},
-
-		// coverage
-		{100, 3},
-		{1000, 4},
-		{10000, 5},
-		{100000, 6},
-		{1000000, 7},
-		{10000000, 8},
-		{100000000, 9},
-		{1000000000, 10},
-		{10000000000, 11},
-		{100000000000, 12},
-		{1000000000000, 13},
-		{10000000000000, 14},
-		{100000000000000, 15},
-		{1000000000000000, 16},
-		{10000000000000000, 17},
-		{100000000000000000, 18},
-		{1000000000000000000, 19},
-		{-10, 2},
-	}
-	for _, tt := range lenIntTests {
-		test.That(t, lenInt64(tt.number) == tt.expected, "return", tt.expected, "for", tt.number)
-	}
-}
-
 ////////////////
 
 var num []int64
@@ -156,24 +120,6 @@ func RandNumBytes() []byte {
 func TestMain(t *testing.T) {
 	for j := 0; j < 1000; j++ {
 		num = append(num, rand.Int63n(1000))
-	}
-}
-
-func BenchmarkLenIntLog(b *testing.B) {
-	n := 0
-	for i := 0; i < b.N; i++ {
-		for j := 0; j < 1000; j++ {
-			n += int(math.Log10(math.Abs(float64(num[j])))) + 1
-		}
-	}
-}
-
-func BenchmarkLenIntSwitch(b *testing.B) {
-	n := 0
-	for i := 0; i < b.N; i++ {
-		for j := 0; j < 1000; j++ {
-			n += lenInt64(num[j])
-		}
 	}
 }
 

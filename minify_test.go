@@ -94,33 +94,33 @@ func (d *DummyMinifier) Minify(m *M, w io.Writer, r io.Reader, _ map[string]stri
 }
 
 func TestAdd(t *testing.T) {
-	m := New()
+	mAdd := New()
 	r := bytes.NewBufferString("test")
 	w := &bytes.Buffer{}
-	m.Add("dummy/err", &DummyMinifier{})
-	test.Error(t, m.Minify("dummy/err", nil, nil), errDummy)
+	mAdd.Add("dummy/err", &DummyMinifier{})
+	test.Error(t, mAdd.Minify("dummy/err", nil, nil), errDummy)
 
-	m.AddRegexp(regexp.MustCompile("err1$"), &DummyMinifier{})
-	test.Error(t, m.Minify("dummy/err1", nil, nil), errDummy)
+	mAdd.AddRegexp(regexp.MustCompile("err1$"), &DummyMinifier{})
+	test.Error(t, mAdd.Minify("dummy/err1", nil, nil), errDummy)
 
-	m.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
+	mAdd.AddFunc("dummy/err", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		return errDummy
 	})
-	test.Error(t, m.Minify("dummy/err", nil, nil), errDummy)
+	test.Error(t, mAdd.Minify("dummy/err", nil, nil), errDummy)
 
-	m.AddFuncRegexp(regexp.MustCompile("err2$"), func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
+	mAdd.AddFuncRegexp(regexp.MustCompile("err2$"), func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		return errDummy
 	})
-	test.Error(t, m.Minify("dummy/err2", nil, nil), errDummy)
+	test.Error(t, mAdd.Minify("dummy/err2", nil, nil), errDummy)
 
-	m.AddCmd("dummy/copy", helperCommand(t, "dummy/copy"))
-	m.AddCmd("dummy/err", helperCommand(t, "dummy/err"))
-	m.AddCmdRegexp(regexp.MustCompile("err6$"), helperCommand(t, "werr6"))
-	test.Error(t, m.Minify("dummy/copy", w, r), nil)
+	mAdd.AddCmd("dummy/copy", helperCommand(t, "dummy/copy"))
+	mAdd.AddCmd("dummy/err", helperCommand(t, "dummy/err"))
+	mAdd.AddCmdRegexp(regexp.MustCompile("err6$"), helperCommand(t, "werr6"))
+	test.Error(t, mAdd.Minify("dummy/copy", w, r), nil)
 	test.String(t, w.String(), "test", "dummy/copy command returns input")
-	test.String(t, m.Minify("dummy/err", w, r).Error(), "exit status 1", "command returns status 1 for dummy/err")
-	test.String(t, m.Minify("werr6", w, r).Error(), "exit status 2", "command returns status 2 when minifier doesn't exist")
-	test.String(t, m.Minify("stderr6", w, r).Error(), "exit status 2", "command returns status 2 when minifier doesn't exist")
+	test.String(t, mAdd.Minify("dummy/err", w, r).Error(), "exit status 1", "command returns status 1 for dummy/err")
+	test.String(t, mAdd.Minify("werr6", w, r).Error(), "exit status 2", "command returns status 2 when minifier doesn't exist")
+	test.String(t, mAdd.Minify("stderr6", w, r).Error(), "exit status 2", "command returns status 2 when minifier doesn't exist")
 }
 
 func TestWildcard(t *testing.T) {

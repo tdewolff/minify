@@ -138,7 +138,7 @@ func Number(num []byte) []byte {
 
 	// shorten mantissa by increasing/decreasing the exponent
 	if end == dot {
-		for i := end - 1; i >= start; i-- {
+		for i = end - 1; i >= start; i-- {
 			if num[i] != '0' {
 				exp += int64(end - i - 1)
 				end = i + 1
@@ -209,49 +209,4 @@ func Number(num []byte) []byte {
 		num[start] = '-'
 	}
 	return num[start:end]
-}
-
-func lenInt64(i int64) int {
-	if i < 0 {
-		i = -i
-	}
-	switch {
-	case i < 10:
-		return 1
-	case i < 100:
-		return 2
-	case i < 1000:
-		return 3
-	case i < 10000:
-		return 4
-	case i < 100000:
-		return 5
-	case i < 1000000:
-		return 6
-	case i < 10000000:
-		return 7
-	case i < 100000000:
-		return 8
-	case i < 1000000000:
-		return 9
-	case i < 10000000000:
-		return 10
-	case i < 100000000000:
-		return 11
-	case i < 1000000000000:
-		return 12
-	case i < 10000000000000:
-		return 13
-	case i < 100000000000000:
-		return 14
-	case i < 1000000000000000:
-		return 15
-	case i < 10000000000000000:
-		return 16
-	case i < 100000000000000000:
-		return 17
-	case i < 1000000000000000000:
-		return 18
-	}
-	return 19
 }

@@ -14,11 +14,10 @@ import (
 )
 
 var (
-	voidBytes       = []byte("/>")
-	isBytes         = []byte("=")
-	spaceBytes      = []byte(" ")
-	cdataStartBytes = []byte("<![CDATA[")
-	cdataEndBytes   = []byte("]]>")
+	voidBytes     = []byte("/>")
+	isBytes       = []byte("=")
+	spaceBytes    = []byte(" ")
+	cdataEndBytes = []byte("]]>")
 )
 
 ////////////////////////////////////////////////////////////////

@@ -105,6 +105,8 @@ func (z *TokenBuffer) Shift() *Token {
 	return t
 }
 
+// Attributes extracts the gives attribute hashes from a tag.
+// It returns in the same order pointers to the requested token data or nil.
 func (z *TokenBuffer) Attributes(hashes ...html.Hash) []*Token {
 	n := 0
 	for {
