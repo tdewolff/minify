@@ -6,8 +6,6 @@ Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3, JS
 
 It associates minification functions with mimetypes, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mimetype using an external command (like the ClosureCompiler, UglifyCSS, ...). It is possible to pass parameters through the mediatype to specify the charset for example.
 
-Bottleneck for minification is mainly io and can be significantly sped up by having the file loaded into memory and providing a `Bytes() []byte` function like `bytes.Buffer` does.
-
 **Table of Contents**
 
 [Online live demo](http://go.tacodewolff.nl/).
@@ -45,7 +43,7 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 * HTML: **fully implemented**
 * JS: basic JSmin-like implementation
 * JSON: **fully implemented**
-* SVG: partially implemented; in development
+* SVG: partially implemented; in development (see `svg-paths` branch)
 * XML: **fully implemented**
 
 ## Prologue
@@ -72,13 +70,12 @@ import (
 ```
 
 ## API stability
+There is no guarantee for absolute stability, but I take issues and bugs seriously and don't take API changes lightly. The library will be maintained in a compatible way unless vital bugs prevent me from doing so. There has been one API change after v1 which added options support and I took the opportunity to push through some more API clean up as well. There are no plans whatsoever for future API changes.
 
-There is no guarantee for absolute stability, but I take issues and bugs seriously. The library will be maintained in a compatible way unless vital bugs prevent from doing so. There has been one API change after v1 which added options support, I took the opportunity to push through some due API clean up. There are no plans whatsoever for future API changes.
-
-minify-v1.0.0 depends on parse-v1.0.0
-minify-v1.1.0 depends on parse-v1.1.0
-minify-v2.0.0 depends on parse-v2.0.0
-minify-tip will always compile with my other packages on tip
+- minify-v1.0.0 depends on parse-v1.0.0
+- minify-v1.1.0 depends on parse-v1.1.0
+- minify-v2.0.0 depends on parse-v2.0.0
+- minify-tip will always compile with my other packages on tip
 
 The API differences between v1 and v2 are listed below. If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then **v1** &#8594; **v2**:
  - `minify.Bytes(m, ...)` &#8594; `m.Bytes(...)`
@@ -237,6 +234,8 @@ Options:
 - `KeepWhitespace` do not remove whitespace between inline tags but still collapse multiple whitespace characters into one
 
 ## Usage
+Any input stream is being buffered into the minifier functions. This is how the buffer package inherently works to insure high performance. The output stream however is not buffer. It is wise to preallocate a buffer as big as the input to which the output is written, or otherwise use `bufio` to buffer a streaming writer.
+
 ### New
 Retrieve a minifier struct which holds a map of mediatype &#8594; minifier functions.
 ``` go
