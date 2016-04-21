@@ -141,6 +141,7 @@ func TestNumberTruncate(t *testing.T) {
 		{"8.88", 0, "9"},
 		{"8.00", 0, "8"},
 		{".88", 0, "1"},
+		{"1.234", 1, "1.2"},
 	}
 	for _, tt := range numberTests {
 		test.Minify(t, tt.number, nil, string(Number([]byte(tt.number), tt.truncate)), tt.expected, "truncate to", tt.truncate)

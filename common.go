@@ -272,19 +272,21 @@ func Number(num []byte, prec int) []byte {
 		if prec > -1 && dot+1+prec < end {
 			end = dot + 1 + prec
 			inc := num[end] >= '5'
-			for i := end - 1; i > start; i-- {
-				if i == dot {
-					end--
-				} else if inc {
-					if num[i] == '9' {
+			if inc || num[end-1] == '0' {
+				for i := end - 1; i > start; i-- {
+					if i == dot {
 						end--
-					} else {
-						num[i]++
-						inc = false
-						break
+					} else if inc {
+						if num[i] == '9' {
+							end--
+						} else {
+							num[i]++
+							inc = false
+							break
+						}
+					} else if i > dot && num[i] == '0' {
+						end--
 					}
-				} else if i > dot && num[i] == '0' {
-					end--
 				}
 			}
 			if dot == start && end == start+1 {
