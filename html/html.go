@@ -300,7 +300,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 									if content.AttrVal[i] == '=' && i+2 < len(content.AttrVal) {
 										i++
 										if n := parse.Number(content.AttrVal[i:]); n > 0 {
-											minNum := minify.Number(content.AttrVal[i : i+n])
+											minNum := minify.Number(content.AttrVal[i:i+n], -1)
 											if len(minNum) < n {
 												copy(content.AttrVal[i:i+len(minNum)], minNum)
 												copy(content.AttrVal[i+len(minNum):], content.AttrVal[i+n:])

@@ -27,16 +27,19 @@ type cssMinifier struct {
 	m *minify.M
 	w io.Writer
 	p *css.Parser
+	o *Minifier
 }
 
 ////////////////////////////////////////////////////////////////
 
 // Minifier is a CSS minifier.
-type Minifier struct{}
+type Minifier struct {
+	Decimals int
+}
 
 // Minify minifies CSS data, it reads from r and writes to w.
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
-	return (&Minifier{}).Minify(m, w, r, params)
+	return (&Minifier{Decimals: -1}).Minify(m, w, r, params)
 }
 
 // Minify minifies CSS data, it reads from r and writes to w.
@@ -46,6 +49,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 		m: m,
 		w: w,
 		p: css.NewParser(r, isInline),
+		o: o,
 	}
 	if err := c.minifyGrammar(); err != nil && err != io.EOF {
 		return err
@@ -446,7 +450,7 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 			n = parse.Number(data)
 		}
 		dim := data[n:]
-		data = minify.Number(data[:n])
+		data = minify.Number(data[:n], c.o.Decimals)
 		if len(data) != 1 || data[0] != '0' {
 			if tt == css.PercentageToken {
 				data = append(data, '%')

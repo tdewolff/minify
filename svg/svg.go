@@ -18,16 +18,21 @@ var (
 	isBytes       = []byte("=")
 	spaceBytes    = []byte(" ")
 	cdataEndBytes = []byte("]]>")
+	pathBytes     = []byte("<path")
+	dBytes        = []byte("d")
+	zeroBytes     = []byte("0")
 )
 
 ////////////////////////////////////////////////////////////////
 
 // Minifier is an SVG minifier.
-type Minifier struct{}
+type Minifier struct {
+	Decimals int
+}
 
 // Minify minifies SVG data, it reads from r and writes to w.
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
-	return (&Minifier{}).Minify(m, w, r, params)
+	return (&Minifier{Decimals: -1}).Minify(m, w, r, params)
 }
 
 // Minify minifies SVG data, it reads from r and writes to w.
@@ -36,8 +41,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	defaultStyleType := "text/css"
 	defaultInlineStyleType := "text/css;inline=1"
 
+	p := NewPathData(o)
 	minifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
+	gStack := make([]bool, 0)
 
 	l := xml.NewLexer(r)
 	tb := NewTokenBuffer(l)
@@ -99,12 +106,12 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 		case xml.StartTagToken:
 			tag = t.Hash
-			if containerTagMap[t.Hash] { // skip empty containers
+			if containerTagMap[tag] { // skip empty containers
 				i := 0
 				for {
 					next := tb.Peek(i)
 					i++
-					if next.TokenType == xml.EndTagToken && next.Hash == t.Hash || next.TokenType == xml.StartTagCloseVoidToken || next.TokenType == xml.ErrorToken {
+					if next.TokenType == xml.EndTagToken && next.Hash == tag || next.TokenType == xml.StartTagCloseVoidToken || next.TokenType == xml.ErrorToken {
 						for j := 0; j < i; j++ {
 							tb.Shift()
 						}
@@ -113,23 +120,51 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						break
 					}
 				}
-			} else if t.Hash == svg.Metadata {
-				for {
-					if next := *tb.Shift(); (next.TokenType == xml.EndTagToken || next.TokenType == xml.StartTagCloseVoidToken) && next.Hash == t.Hash || next.TokenType == xml.ErrorToken {
+				if tag == svg.G {
+					if tb.Peek(0).TokenType == xml.StartTagCloseToken {
+						gStack = append(gStack, false)
+						tb.Shift()
 						break
 					}
+					gStack = append(gStack, true)
 				}
+			} else if tag == svg.Metadata {
+				skipTag(tb, tag)
 				break
+			} else if tag == svg.Line {
+				o.shortenLine(tb, &t, p)
+			} else if tag == svg.Rect && !o.shortenRect(tb, &t, p) {
+				skipTag(tb, tag)
+				break
+			} else if tag == svg.Polygon || tag == svg.Polyline {
+				o.shortenPoly(tb, &t, p)
 			}
 			if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
 		case xml.AttributeToken:
-			if len(t.AttrVal) == 0 {
+			if len(t.AttrVal) == 0 || t.Text == nil { // data is nil when attribute has been removed
 				continue
 			}
+
 			attr := t.Hash
 			val := t.AttrVal
+			if n, m := parse.Dimension(val); n+m == len(val) { // TODO: inefficient, temporary measure
+				val, _ = o.shortenDimension(val)
+			}
+			if attr == svg.Xml_Space && parse.Equal(val, []byte("preserve")) ||
+				tag == svg.Svg && (attr == svg.Version && parse.Equal(val, []byte("1.1")) ||
+					attr == svg.X && parse.Equal(val, []byte("0")) ||
+					attr == svg.Y && parse.Equal(val, []byte("0")) ||
+					attr == svg.Width && parse.Equal(val, []byte("100%")) ||
+					attr == svg.Height && parse.Equal(val, []byte("100%")) ||
+					attr == svg.PreserveAspectRatio && parse.Equal(val, []byte("xMidYMid meet")) ||
+					attr == svg.BaseProfile && parse.Equal(val, []byte("none")) ||
+					attr == svg.ContentScriptType && parse.Equal(val, []byte("application/ecmascript")) ||
+					attr == svg.ContentStyleType && parse.Equal(val, []byte("text/css"))) ||
+				tag == svg.Style && attr == svg.Type && parse.Equal(val, []byte("text/css")) {
+				continue
+			}
 
 			if _, err := w.Write(spaceBytes); err != nil {
 				return err
@@ -151,7 +186,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					val = minifyBuffer.Bytes()
 				}
 			} else if attr == svg.D {
-				val = shortenPathData(val)
+				val = p.ShortenPathData(val)
 			} else if attr == svg.ViewBox {
 				j := 0
 				newVal := val[:0]
@@ -164,7 +199,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						newVal = append(newVal, ' ')
 						j++
 					}
-					if dim, n := shortenDimension(val[j:]); n > 0 {
+					if dim, n := o.shortenDimension(val[j:]); n > 0 {
 						newVal = append(newVal, dim...)
 						j += n
 					} else {
@@ -188,8 +223,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				} else if len(val) > 5 && parse.Equal(val[:4], []byte("rgb(")) && val[len(val)-1] == ')' {
 					// TODO: handle rgb(x, y, z) and hsl(x, y, z)
 				}
-			} else if n, m := parse.Dimension(val); n+m == len(val) { // TODO: inefficient, temporary measure
-				val, _ = shortenDimension(val)
 			}
 
 			// prefer single or double quotes depending on what occurs more often in value
@@ -225,6 +258,13 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 		case xml.EndTagToken:
 			tag = 0
+			if t.Hash == svg.G && len(gStack) > 0 {
+				if !gStack[len(gStack)-1] {
+					gStack = gStack[:len(gStack)-1]
+					break
+				}
+				gStack = gStack[:len(gStack)-1]
+			}
 			if len(t.Data) > 2+len(t.Text) {
 				t.Data[2+len(t.Text)] = '>'
 				if _, err := w.Write(t.Data[:2+len(t.Text)+1]); err != nil {
@@ -237,69 +277,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	}
 }
 
-func shortenPathData(b []byte) []byte {
-	cmd := byte(0)
-	prevDigit := false
-	prevDigitRequiresSpace := true
-	j := 0
-	start := 0
-	for i := 0; i < len(b); i++ {
-		c := b[i]
-		if c == ' ' || c == ',' || c == '\t' || c == '\n' || c == '\r' {
-			if start != 0 {
-				j += copy(b[j:], b[start:i])
-			} else {
-				j += i
-			}
-			start = i + 1
-		} else if n := parse.Number(b[i:]); n > 0 {
-			if start != 0 {
-				j += copy(b[j:], b[start:i])
-			} else {
-				j += i
-			}
-			num := minify.Number(b[i : i+n])
-			if prevDigit && (num[0] >= '0' && num[0] <= '9' || num[0] == '.' && prevDigitRequiresSpace) && j < len(b) {
-				b[j] = ' '
-				j++
-			}
-			prevDigit = true
-			prevDigitRequiresSpace = true
-			for i := 0; i < len(num); i++ {
-				c := num[i]
-				if c == '.' || c == 'e' || c == 'E' {
-					prevDigitRequiresSpace = false
-					break
-				}
-			}
-			j += copy(b[j:], num)
-			start = i + n
-			i += n - 1
-		} else {
-			if cmd == c && cmd != 'M' && cmd != 'm' {
-				if start != 0 {
-					j += copy(b[j:], b[start:i])
-				} else {
-					j += i
-				}
-				start = i + 1
-			} else {
-				cmd = c
-				prevDigit = false
-			}
-		}
-	}
-	if start != 0 {
-		j += copy(b[j:], b[start:])
-		return b[:j]
-	}
-	return b
-}
-
-func shortenDimension(b []byte) ([]byte, int) {
+func (o *Minifier) shortenDimension(b []byte) ([]byte, int) {
 	if n, m := parse.Dimension(b); n > 0 {
 		unit := b[n : n+m]
-		b = minify.Number(b[:n])
+		b = minify.Number(b[:n], o.Decimals)
 		if len(b) != 1 || b[0] != '0' {
 			if m == 2 && unit[0] == 'p' && unit[1] == 'x' {
 				unit = nil
@@ -311,4 +292,140 @@ func shortenDimension(b []byte) ([]byte, int) {
 		return b, n + m
 	}
 	return b, 0
+}
+
+func (o *Minifier) shortenLine(tb *TokenBuffer, t *Token, p *PathData) {
+	x1, y1, x2, y2 := zeroBytes, zeroBytes, zeroBytes, zeroBytes
+	attrs, replacee := tb.Attributes(svg.X1, svg.Y1, svg.X2, svg.Y2)
+	if attrs[0] != nil {
+		x1 = minify.Number(attrs[0].AttrVal, o.Decimals)
+		attrs[0].Text = nil
+	}
+	if attrs[1] != nil {
+		y1 = minify.Number(attrs[1].AttrVal, o.Decimals)
+		attrs[1].Text = nil
+	}
+	if attrs[2] != nil {
+		x2 = minify.Number(attrs[2].AttrVal, o.Decimals)
+		attrs[2].Text = nil
+	}
+	if attrs[3] != nil {
+		y2 = minify.Number(attrs[3].AttrVal, o.Decimals)
+		attrs[3].Text = nil
+	}
+
+	d := make([]byte, 0, 5+len(x1)+len(y1)+len(x2)+len(y2))
+	d = append(d, 'M')
+	d = append(d, x1...)
+	d = append(d, ' ')
+	d = append(d, y1...)
+	d = append(d, 'L')
+	d = append(d, x2...)
+	d = append(d, ' ')
+	d = append(d, y2...)
+	d = append(d, 'z')
+	d = p.ShortenPathData(d)
+
+	t.Data = pathBytes
+	replacee.Text = dBytes
+	replacee.AttrVal = d
+}
+
+func (o *Minifier) shortenRect(tb *TokenBuffer, t *Token, p *PathData) bool {
+	attrs, replacee := tb.Attributes(svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
+	if attrs[4] == nil && attrs[5] == nil {
+		x, y, w, h := zeroBytes, zeroBytes, zeroBytes, zeroBytes
+		if attrs[0] != nil {
+			x = minify.Number(attrs[0].AttrVal, o.Decimals)
+			attrs[0].Text = nil
+		}
+		if attrs[1] != nil {
+			y = minify.Number(attrs[1].AttrVal, o.Decimals)
+			attrs[1].Text = nil
+		}
+		if attrs[2] != nil {
+			w = minify.Number(attrs[2].AttrVal, o.Decimals)
+			attrs[2].Text = nil
+		}
+		if attrs[3] != nil {
+			h = minify.Number(attrs[3].AttrVal, o.Decimals)
+			attrs[3].Text = nil
+		}
+		if len(w) == 0 || w[0] == '0' || len(h) == 0 || h[0] == '0' {
+			return false
+		}
+
+		d := make([]byte, 0, 6+2*len(x)+len(y)+len(w)+len(h))
+		d = append(d, 'M')
+		d = append(d, x...)
+		d = append(d, ' ')
+		d = append(d, y...)
+		d = append(d, 'h')
+		d = append(d, w...)
+		d = append(d, 'v')
+		d = append(d, h...)
+		d = append(d, 'H')
+		d = append(d, x...)
+		d = append(d, 'z')
+		d = p.ShortenPathData(d)
+
+		t.Data = pathBytes
+		replacee.Text = dBytes
+		replacee.AttrVal = d
+	}
+	return true
+}
+
+func (o *Minifier) shortenPoly(tb *TokenBuffer, t *Token, p *PathData) {
+	attrs, replacee := tb.Attributes(svg.Points)
+	if attrs[0] != nil {
+		points := attrs[0].AttrVal
+
+		i := 0
+		for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
+			i++
+		}
+		for i < len(points) && !(points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
+			i++
+		}
+		for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
+			i++
+		}
+		for i < len(points) && !(points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
+			i++
+		}
+		endMoveTo := i
+		for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
+			i++
+		}
+		startLineTo := i
+
+		if i == len(points) {
+			return
+		}
+
+		d := make([]byte, 0, len(points)+3)
+		d = append(d, 'M')
+		d = append(d, points[:endMoveTo]...)
+		d = append(d, 'L')
+		d = append(d, points[startLineTo:]...)
+		if t.Hash == svg.Polygon {
+			d = append(d, 'z')
+		}
+		d = p.ShortenPathData(d)
+
+		t.Data = pathBytes
+		replacee.Text = dBytes
+		replacee.AttrVal = d
+	}
+}
+
+////////////////////////////////////////////////////////////////
+
+func skipTag(tb *TokenBuffer, tag svg.Hash) {
+	for {
+		if t := *tb.Shift(); (t.TokenType == xml.EndTagToken || t.TokenType == xml.StartTagCloseVoidToken) && t.Hash == tag || t.TokenType == xml.ErrorToken {
+			break
+		}
+	}
 }

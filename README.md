@@ -199,10 +199,12 @@ The JSON minifier only removes whitespace, which is the only thing that can be l
 
 ## SVG [![GoDoc](http://godoc.org/github.com/tdewolff/minify/svg?status.svg)](http://godoc.org/github.com/tdewolff/minify/svg) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/svg)](http://gocover.io/github.com/tdewolff/minify/svg)
 
+Minification typically runs at about 20MB/s ~= 70GB/h.
+
 The SVG minifier uses these minifications:
 
 - trim and collapse whitespace between all tags
-- strip comments, `doctype`, XML prelude, `metadata`
+- strip comments, empty `doctype`, XML prelude, `metadata`
 - strip SVG version
 - strip CDATA sections wherever possible
 - collapse tags with no content to a void tag
@@ -210,13 +212,14 @@ The SVG minifier uses these minifications:
 - minify style tag and attributes with the CSS minifier
 - minify colors
 - shorten lengths and numbers and remove default `px` unit
-- shorten the `path` data `m` attribute
+- shorten `path` data
+- convert `rect`, `line`, `polygon`, `polyline` to `path`
+- use relative or absolute positions in path data whichever is shorter
 
 TODO:
-- convert `rect`, `line`, `polygon`, `polyline` to `path`
 - convert attributes to style attribute whenever shorter
-- use relative instead of absolute positions for path data (need bytes2float)
 - merge path data? (same style and no intersection -- the latter is difficult)
+- truncate decimals
 
 ## XML [![GoDoc](http://godoc.org/github.com/tdewolff/minify/xml?status.svg)](http://godoc.org/github.com/tdewolff/minify/xml) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/xml)](http://gocover.io/github.com/tdewolff/minify/xml)
 
