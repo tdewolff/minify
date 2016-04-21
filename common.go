@@ -76,6 +76,9 @@ func DataURI(m *M, dataURI []byte) []byte {
 	return dataURI
 }
 
+const MaxInt = int(^uint(0) >> 1)
+const MinInt = -MaxInt - 1
+
 // Number minifies a given byte slice containing a number (see parse.Number) and removes superfluous characters.
 func Number(num []byte, prec int) []byte {
 	// omit first + and register mantissa start and end, whether it's negative and the exponent
@@ -99,7 +102,8 @@ func Number(num []byte, prec int) []byte {
 			if i < len(num) && num[i] == '+' {
 				i++
 			}
-			if tmpOrigExp, n := strconv.ParseInt(num[i:]); n > 0 {
+			if tmpOrigExp, n := strconv.ParseInt(num[i:]); n > 0 && tmpOrigExp >= int64(MinInt) && tmpOrigExp <= int64(MaxInt) {
+				// range checks for when int is 32 bit
 				origExp = int(tmpOrigExp)
 			} else {
 				return num
@@ -158,7 +162,11 @@ func Number(num []byte, prec int) []byte {
 		n = end - start - 1
 		normExp = dot - start
 	}
-	normExp += int(origExp)
+
+	if origExp < 0 && (normExp < MinInt-origExp || normExp-n < MinInt-origExp) || origExp > 0 && (normExp > MaxInt-origExp || normExp-n > MaxInt-origExp) {
+		return num
+	}
+	normExp += origExp
 
 	// intExp would be the exponent if it were an integer
 	intExp := normExp - n
