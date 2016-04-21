@@ -202,9 +202,10 @@ func Number(num []byte, prec int) []byte {
 	} else if normExp >= -lenIntExp-1 {
 		// case 2
 		zeroes := -normExp
+		newDot := 0
 		if zeroes > 0 {
 			// dot placed at the front and add zeroes
-			newDot := end - n - zeroes - 1
+			newDot = end - n - zeroes - 1
 			if newDot != dot {
 				d := start - newDot
 				if d > 0 {
@@ -245,7 +246,7 @@ func Number(num []byte, prec int) []byte {
 				dot = end
 				end++
 			}
-			newDot := start + normExp
+			newDot = start + normExp
 			if newDot > dot {
 				// copy digits forwards
 				//fmt.Println("COPY4", newDot-dot)
@@ -256,6 +257,44 @@ func Number(num []byte, prec int) []byte {
 				copy(num[newDot+1:], num[newDot:dot])
 			}
 			num[newDot] = '.'
+		}
+
+		// apply precision
+		dot = newDot
+		if prec > -1 && dot+1+prec < end {
+			end = dot + 1 + prec
+			inc := num[end] >= '5'
+			for i := end - 1; i > start; i-- {
+				if i == dot {
+					end--
+				} else if inc {
+					if num[i] == '9' {
+						end--
+					} else {
+						num[i]++
+						inc = false
+						break
+					}
+				} else if i > dot && num[i] == '0' {
+					end--
+				}
+			}
+			if dot == start && end == start+1 {
+				if inc {
+					num[start] = '1'
+				} else {
+					num[start] = '0'
+				}
+			} else if inc {
+				if num[start] == '9' {
+					num[start] = '0'
+					copy(num[start+1:], num[start:end])
+					end++
+					num[start] = '1'
+				} else {
+					num[start]++
+				}
+			}
 		}
 	} else {
 		// case 3
