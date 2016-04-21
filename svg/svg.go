@@ -124,9 +124,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 			attr := t.Hash
 			val := t.AttrVal
-			if tag == svg.Svg && attr == svg.Version {
-				continue
-			}
 
 			if _, err := w.Write(spaceBytes); err != nil {
 				return err
@@ -273,7 +270,7 @@ func shortenPathData(b []byte) []byte {
 			start = i + n
 			i += n - 1
 		} else {
-			if cmd == c {
+			if cmd == c && cmd != 'M' && cmd != 'm' {
 				if start != 0 {
 					j += copy(b[j:], b[start:i])
 				} else {
