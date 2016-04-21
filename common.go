@@ -151,7 +151,7 @@ func Number(num []byte, prec int) []byte {
 		}
 	} else if dot == end {
 		normExp = end - start
-		for i := end - 1; i >= start; i-- {
+		for i = end - 1; i >= start; i-- {
 			if num[i] != '0' {
 				n = i + 1 - start
 				end = i + 1

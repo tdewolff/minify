@@ -14,14 +14,13 @@ import (
 )
 
 var (
-	voidBytes       = []byte("/>")
-	isBytes         = []byte("=")
-	spaceBytes      = []byte(" ")
-	cdataStartBytes = []byte("<![CDATA[")
-	cdataEndBytes   = []byte("]]>")
-	pathBytes       = []byte("<path")
-	dBytes          = []byte("d")
-	zeroBytes       = []byte("0")
+	voidBytes     = []byte("/>")
+	isBytes       = []byte("=")
+	spaceBytes    = []byte(" ")
+	cdataEndBytes = []byte("]]>")
+	pathBytes     = []byte("<path")
+	dBytes        = []byte("d")
+	zeroBytes     = []byte("0")
 )
 
 ////////////////////////////////////////////////////////////////
@@ -147,6 +146,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			if len(t.AttrVal) == 0 || t.Text == nil { // data is nil when attribute has been removed
 				continue
 			}
+
 			attr := t.Hash
 			val := t.AttrVal
 			if n, m := parse.Dimension(val); n+m == len(val) { // TODO: inefficient, temporary measure

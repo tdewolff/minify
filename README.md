@@ -6,8 +6,6 @@ Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3, JS
 
 It associates minification functions with mimetypes, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mimetype using an external command (like the ClosureCompiler, UglifyCSS, ...). It is possible to pass parameters through the mediatype to specify the charset for example.
 
-Bottleneck for minification is mainly io and can be significantly sped up by having the file loaded into memory and providing a `Bytes() []byte` function like `bytes.Buffer` does.
-
 **Table of Contents**
 
 [Online live demo](http://go.tacodewolff.nl/).
@@ -45,7 +43,7 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 * HTML: **fully implemented**
 * JS: basic JSmin-like implementation
 * JSON: **fully implemented**
-* SVG: partially implemented; in development
+* SVG: partially implemented; in development (see `svg-paths` branch)
 * XML: **fully implemented**
 
 ## Prologue
@@ -72,28 +70,18 @@ import (
 ```
 
 ## API stability
+There is no guarantee for absolute stability, but I take issues and bugs seriously and don't take API changes lightly. The library will be maintained in a compatible way unless vital bugs prevent me from doing so. There has been one API change after v1 which added options support and I took the opportunity to push through some more API clean up as well. There are no plans whatsoever for future API changes.
 
-One major version of minify exists and the current version in the **master** branch.
+- minify-v1.0.0 depends on parse-v1.0.0
+- minify-v1.1.0 depends on parse-v1.1.0
+- minify-v2.0.0 depends on parse-v2.0.0
+- minify-tip will always compile with my other packages on tip
 
-**[minify.v1](https://gopkg.in/tdewolff/minify.v1)**. Also make sure to have **[parse.v1](https://gopkg.in/tdewolff/parse.v1)** and **[buffer.v1](https://gopkg.in/tdewolff/buffer.v1)**!
-
-``` go
-import "gopkg.in/tdewolff/minify.v1"
-```
-
-**Master** will be the new v2. Use it to test the latest code or to contribute, but it does not remain API-compatible with v1. Make sure to have **[parse](https://github.com/tdewolff/parse)** and **[buffer](https://github.com/tdewolff/buffer)** from **master** (and not their v1)!
-
-``` go
-import "github.com/tdewolff/minify"
-```
-
-The API differences of **master** versus v1 are listed below. If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then **minify.v1** &#8594; **master**:
+The API differences between v1 and v2 are listed below. If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then **v1** &#8594; **v2**:
  - `minify.Bytes(m, ...)` &#8594; `m.Bytes(...)`
  - `minify.String(m, ...)` &#8594; `m.String(...)`
  - `html.Minify(m, "text/html", w, r)` &#8594; `html.Minify(m, w, r, nil)` also for `css`, `js`, ...
  - `css.Minify(m, "text/css;inline=1", w, r)` &#8594; `css.Minify(m, w, r, map[string]string{"inline":"1"})`
-
-Further API changes are not planned, but a new major revision will be tagged, so you can depend on the v1 API and soon the v2 API.
 
 ## Testing
 For all subpackages and the imported `parse` and `buffer` packages, test coverage of 100% is pursued. Besides full coverage, the minifiers are [fuzz tested](https://github.com/tdewolff/fuzz) using [github.com/dvyukov/go-fuzz](http://www.github.com/dvyukov/go-fuzz), see [the wiki](https://github.com/tdewolff/minify/wiki) for the most important bugs found by fuzz testing. Furthermore am I working on adding visual testing to ensure that minification doesn't change anything visually. By using the WebKit browser to render the original and minified pages we can check whether any pixel is different.
@@ -249,6 +237,8 @@ Options:
 - `KeepWhitespace` do not remove whitespace between inline tags but still collapse multiple whitespace characters into one
 
 ## Usage
+Any input stream is being buffered by the minification functions. This is how the underlying buffer package inherently works to ensure high performance. The output stream however is not buffer. It is wise to preallocate a buffer as big as the input to which the output is written, or otherwise use `bufio` to buffer to a streaming writer.
+
 ### New
 Retrieve a minifier struct which holds a map of mediatype &#8594; minifier functions.
 ``` go
