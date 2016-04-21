@@ -75,10 +75,10 @@ import (
 
 There is no guarantee for absolute stability, but I take issues and bugs seriously. The library will be maintained in a compatible way unless vital bugs prevent from doing so. There has been one API change after v1 which added options support, I took the opportunity to push through some due API clean up. There are no plans whatsoever for future API changes.
 
-minify-v1.0 depends on parse-v1.0
-minify-v1.1 depends on parse-v1.1
-minify-v2.0 depends on parse-v2.0
-minify-tip will always compile with my other packages
+minify-v1.0.0 depends on parse-v1.0.0
+minify-v1.1.0 depends on parse-v1.1.0
+minify-v2.0.0 depends on parse-v2.0.0
+minify-tip will always compile with my other packages on tip
 
 The API differences between v1 and v2 are listed below. If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then **v1** &#8594; **v2**:
  - `minify.Bytes(m, ...)` &#8594; `m.Bytes(...)`
