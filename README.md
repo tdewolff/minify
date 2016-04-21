@@ -10,7 +10,7 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 
 **Table of Contents**
 
-[Online live demo](http://pi.tacodewolff.nl:8080/minify) running on a Raspberry Pi 2.
+[Online live demo](http://go.tacodewolff.nl/).
 
 [Command-line-interface](https://github.com/tdewolff/minify/tree/master/cmd/minify) executable `minify` provided for tooling.
 
@@ -49,7 +49,7 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 * XML: **fully implemented**
 
 ## Prologue
-Minifiers or bindings to minifiers exist in almost all programming languages. Some implementations are merely using several regular-expressions to trim whitespace and comments (even though regex for parsing HTML/XML is ill-advised, for a good read see [Regular Expressions: Now You Have Two Problems](http://blog.codinghorror.com/regular-expressions-now-you-have-two-problems/)). Some implementations are much more profound, such as the [YUI Compressor](http://yui.github.io/yuicompressor/), [Google Closure Compiler](https://github.com/google/closure-compiler) for JS and the [HTML Compressor](https://code.google.com/p/htmlcompressor/). As most existing implementations either use Java or JavaScript and don't focus on performance, they are pretty slow. And loading the whole file into memory is bad for really large files (or impossible for infinite streams).
+Minifiers or bindings to minifiers exist in almost all programming languages. Some implementations are merely using several regular-expressions to trim whitespace and comments (even though regex for parsing HTML/XML is ill-advised, for a good read see [Regular Expressions: Now You Have Two Problems](http://blog.codinghorror.com/regular-expressions-now-you-have-two-problems/)). Some implementations are much more profound, such as the [YUI Compressor](http://yui.github.io/yuicompressor/) and [Google Closure Compiler](https://github.com/google/closure-compiler) for JS. As most existing implementations either use Java or JavaScript and don't focus on performance, they are pretty slow. And loading the whole file into memory is bad for really large files (or impossible for infinite streams).
 
 This minifier proves to be that fast and extensive minifier that can handle HTML and any other filetype it may contain (CSS, JS, ...). It streams the input and output and can minify files concurrently.
 
