@@ -199,7 +199,7 @@ func (p *PathData) shortenCurPosInstruction(cmd byte, coords [][]byte) PathDataS
 		state.prevDigitIsInt = false
 	}
 	for _, coord := range coords {
-		coord := minify.Number(coord, -1)
+		coord := minify.Number(coord, p.o.Decimals)
 		if state.prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && state.prevDigitIsInt) {
 			p.curBuffer = append(p.curBuffer, ' ')
 		}
@@ -246,14 +246,14 @@ func (p *PathData) shortenAltPosInstruction(cmd byte, coordFloats []float64, x, 
 			continue
 		}
 
-		coord, ok := strconv.AppendFloat(p.coordBuffer[:0], f, 6)
+		coord, ok := strconv.AppendFloat(p.coordBuffer[:0], f, p.o.Decimals)
 		// if string(coord) != strconvStdlib.FormatFloat(f, 'g', 6, 64) {
 		// 	fmt.Println(string(coord), "!=", strconvStdlib.FormatFloat(f, 'g', 6, 64))
 		// }
 		p.coordBuffer = coord // keep memory
 		if !ok {
-			p.coordBuffer = strconvStdlib.AppendFloat(p.coordBuffer[:0], f, 'g', 6, 64)
-			coord = minify.Number(p.coordBuffer, -1)
+			p.coordBuffer = strconvStdlib.AppendFloat(p.coordBuffer[:0], f, 'g', p.o.Decimals, 64)
+			coord = minify.Number(p.coordBuffer, p.o.Decimals)
 		}
 
 		if state.prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && state.prevDigitIsInt) {
