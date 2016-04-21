@@ -246,15 +246,15 @@ func (p *PathData) shortenAltPosInstruction(cmd byte, coordFloats []float64, x, 
 			continue
 		}
 
-		coord, ok := strconv.AppendFloat(p.coordBuffer[:0], f, p.o.Decimals)
+		//coord, ok := strconv.AppendFloat(p.coordBuffer[:0], f, p.o.Decimals)
 		// if string(coord) != strconvStdlib.FormatFloat(f, 'g', 6, 64) {
 		// 	fmt.Println(string(coord), "!=", strconvStdlib.FormatFloat(f, 'g', 6, 64))
 		// }
-		p.coordBuffer = coord // keep memory
-		if !ok {
-			p.coordBuffer = strconvStdlib.AppendFloat(p.coordBuffer[:0], f, 'g', p.o.Decimals, 64)
-			coord = minify.Number(p.coordBuffer, p.o.Decimals)
-		}
+		//p.coordBuffer = coord // keep memory
+		//if !ok {
+		p.coordBuffer = strconvStdlib.AppendFloat(p.coordBuffer[:0], f, 'g', -1, 64)
+		coord := minify.Number(p.coordBuffer, p.o.Decimals)
+		//}
 
 		if state.prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && state.prevDigitIsInt) {
 			p.altBuffer = append(p.altBuffer, ' ')

@@ -26,7 +26,7 @@ func TestPathData(t *testing.T) {
 		{"m50 50 40 40m50 50", "m50 50 40 40m50 50"},
 	}
 
-	p := NewPathData(&Minifier{})
+	p := NewPathData(&Minifier{Decimals: -1})
 	for _, tt := range pathDataTests {
 		out := p.ShortenPathData([]byte(tt.pathData))
 		assert.Equal(t, tt.expected, string(out), "Path data must match in "+tt.pathData)
