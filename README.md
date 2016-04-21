@@ -10,6 +10,7 @@ Bottleneck for minification is mainly io and can be significantly sped up by hav
 
 **Table of Contents**
 
+[Online live demo](http://go.tacodewolff.nl/).
 
 [Command-line-interface](https://github.com/tdewolff/minify/tree/master/cmd/minify) executable `minify` provided for tooling.
 
