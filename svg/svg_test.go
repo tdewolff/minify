@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/css"
 	"github.com/tdewolff/parse/svg"
@@ -87,22 +88,22 @@ func TestSVGStyle(t *testing.T) {
 	}
 }
 
-// func TestSVGDecimals(t *testing.T) {
-// 	var svgTests = []struct {
-// 		svg      string
-// 		expected string
-// 	}{
-// 		{`<svg x="1.234" y="0.001" width="1.001"><path/></svg>`, `<svg x="1.2" width="1"><path/></svg>`},
-// 	}
+func TestSVGDecimals(t *testing.T) {
+	var svgTests = []struct {
+		svg      string
+		expected string
+	}{
+		{`<svg x="1.234" y="0.001" width="1.001"><path/></svg>`, `<svg x="1.2" width="1"><path/></svg>`},
+	}
 
-// 	m := minify.New()
-// 	o := &Minifier{Decimals: 1}
-// 	for _, tt := range svgTests {
-// 		b := &bytes.Buffer{}
-// 		assert.Nil(t, o.Minify(m, b, bytes.NewBufferString(tt.svg), nil), "Minify must not return error in "+tt.svg)
-// 		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.svg)
-// 	}
-// }
+	m := minify.New()
+	o := &Minifier{Decimals: 1}
+	for _, tt := range svgTests {
+		b := &bytes.Buffer{}
+		assert.Nil(t, o.Minify(m, b, bytes.NewBufferString(tt.svg), nil), "Minify must not return error in "+tt.svg)
+		assert.Equal(t, tt.expected, b.String(), "Minify must give expected result in "+tt.svg)
+	}
+}
 
 func TestGetAttribute(t *testing.T) {
 	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
