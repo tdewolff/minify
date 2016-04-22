@@ -45,7 +45,7 @@ It associates minification functions with mimetypes, allowing embedded resources
 * HTML: **fully implemented**
 * JS: basic JSmin-like implementation
 * JSON: **fully implemented**
-* SVG: partially implemented; in development (see `svg-paths` branch)
+* SVG: partially implemented; in development
 * XML: **fully implemented**
 
 ## Prologue
