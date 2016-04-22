@@ -201,7 +201,7 @@ The JSON minifier only removes whitespace, which is the only thing that can be l
 
 ## SVG [![GoDoc](http://godoc.org/github.com/tdewolff/minify/svg?status.svg)](http://godoc.org/github.com/tdewolff/minify/svg) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/svg)](http://gocover.io/github.com/tdewolff/minify/svg)
 
-Minification typically runs at about 20MB/s ~= 70GB/h.
+Minification typically runs at about 15MB/s ~= 55GB/h. Performance improvement are due.
 
 The SVG minifier uses these minifications:
 
