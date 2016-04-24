@@ -492,6 +492,42 @@ func(w http.ResponseWriter, req *http.Request) {
 }
 ```
 
+### Minifying templates
+
+Here's an example of a replacement for `template.ParseFiles` from `template/html`, which automatically minifies each template before parsing it.
+
+``` go
+func compileTemplates(filenames ...string) (*template.Template, error) {
+	m := minify.New()
+	m.AddFunc("text/html", html.Minify)
+	var tmpl *template.Template
+	for _, filename := range filenames {
+		name := filepath.Base(filename)
+		if tmpl == nil {
+			tmpl = template.New(name)
+		} else {
+			tmpl = tmpl.New(name)
+		}
+		b, err := ioutil.ReadFile(filename)
+		if err != nil {
+			return nil, err
+		}
+		mb, err := m.Bytes("text/html", b)
+		if err != nil {
+			return nil, err
+		}
+		tmpl.Parse(string(mb))
+	}
+	return tmpl, nil
+}
+```
+
+Example usage:
+
+``` go
+templates := template.MustCompile(compileTemplates("view.html", "home.html"))
+```
+
 ## License
 Released under the [MIT license](LICENSE.md).
 
