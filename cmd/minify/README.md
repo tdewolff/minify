@@ -1,6 +1,8 @@
 # Minify
 Minify is a CLI implemention of the minify [library package](https://github.com/tdewolff/minify/blob/master/README.md).
 
+**Download application binaries for Windows, Linux and Mac OS X from [Equinox](https://dl.equinox.io/tdewolff/minify/stable)**
+
 ## Installation
 Make sure you have [Go](http://golang.org/) and [Git](http://git-scm.com/) installed.
 
@@ -33,6 +35,8 @@ and the `minify` command will be in your `$GOPATH/bin`.
 	        Recursively minify directories
 	  --type string
 	        Filetype (css, html, js, ...), optional for input filenames
+	  -u, --update
+	        Update binary
 	  --url string
 	        URL of file to enable URL minification
 	  -v, --verbose
