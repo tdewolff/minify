@@ -229,7 +229,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 				if len(t.Data) > 3+len(t.Text) {
 					t.Data[2+len(t.Text)] = '>'
-					t.Data = t.Data[:2+len(t.Text)+1]
+					t.Data = t.Data[:3+len(t.Text)]
 				}
 				if _, err := w.Write(t.Data); err != nil {
 					return err
