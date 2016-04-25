@@ -112,7 +112,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						t.Data = trimmedData[9 : len(trimmedData)-3]
 					}
 					if err := m.MinifyMimetype(mimetype, w, buffer.NewReader(t.Data), params); err != nil {
-						if _, err := w.Write(t.Data); err != nil {
+						if err != minify.ErrNotExist {
+							return err
+						} else if _, err := w.Write(t.Data); err != nil {
 							return err
 						}
 					}
@@ -225,7 +227,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					omitSpace = true // omit spaces after block elements
 				}
 
-				if len(t.Data) > 2+len(t.Text) {
+				if len(t.Data) > 3+len(t.Text) {
 					t.Data[2+len(t.Text)] = '>'
 					t.Data = t.Data[:2+len(t.Text)+1]
 				}
@@ -374,8 +376,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					// CSS and JS minifiers for attribute inline code
 					if attr.Hash == html.Style {
 						attrMinifyBuffer.Reset()
-						if m.MinifyMimetype(defaultStyleType, attrMinifyBuffer, buffer.NewReader(val), defaultInlineStyleParams) == nil {
+						if err := m.MinifyMimetype(defaultStyleType, attrMinifyBuffer, buffer.NewReader(val), defaultInlineStyleParams); err == nil {
 							val = attrMinifyBuffer.Bytes()
+						} else if err != minify.ErrNotExist {
+							return err
 						}
 						if len(val) == 0 {
 							continue
@@ -385,8 +389,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							val = val[11:]
 						}
 						attrMinifyBuffer.Reset()
-						if m.MinifyMimetype(defaultScriptType, attrMinifyBuffer, buffer.NewReader(val), defaultScriptParams) == nil {
+						if err := m.MinifyMimetype(defaultScriptType, attrMinifyBuffer, buffer.NewReader(val), defaultScriptParams); err == nil {
 							val = attrMinifyBuffer.Bytes()
+						} else if err != minify.ErrNotExist {
+							return err
 						}
 						if len(val) == 0 {
 							continue
