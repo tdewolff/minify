@@ -16,13 +16,13 @@ It associates minification functions with mimetypes, allowing embedded resources
 
 [Command-line-interface](https://github.com/tdewolff/minify/tree/master/cmd/minify) executable `minify` provided for tooling.
 
-- [Minify](#minify--)
+- [Minify](#minify---)
 	- [Prologue](#prologue)
 	- [Installation](#installation)
 	- [API stability](#api-stability)
 	- [Testing](#testing)
 	- [HTML](#html--)
-		- [Beware](#beware)
+		- [Whitespace removal](#whitespace-removal)
 	- [CSS](#css--)
 	- [JS](#js--)
 	- [JSON](#json--)
@@ -39,6 +39,7 @@ It associates minification functions with mimetypes, allowing embedded resources
 		- [Common minifiers](#common-minifiers)
 		- [Custom minifier](#custom-minifier-1)
 		- [ResponseWriter](#responsewriter)
+		- [Templates](#templates)
 	- [License](#license)
 
 **Status**
@@ -494,9 +495,11 @@ func(w http.ResponseWriter, req *http.Request) {
 }
 ```
 
-### Minifying templates
+### Templates
 
 Here's an example of a replacement for `template.ParseFiles` from `template/html`, which automatically minifies each template before parsing it.
+
+Be aware that minifying templates will work in most cases but not all. Because the HTML minifier only works for valid HTML5, you template must be valid HTML5 of itself. Template tags are seen as regular text for the minifier.
 
 ``` go
 func compileTemplates(filenames ...string) (*template.Template, error) {
