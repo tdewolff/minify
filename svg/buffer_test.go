@@ -2,6 +2,7 @@ package svg // import "github.com/tdewolff/minify/svg"
 
 import (
 	"bytes"
+	"strconv"
 	"testing"
 
 	"github.com/tdewolff/parse/svg"
@@ -35,4 +36,33 @@ func TestBuffer(t *testing.T) {
 	tok = z.Shift()
 	test.That(t, tok.Hash == svg.Path, "third token is <path>")
 	test.That(t, z.pos == 2, "don't change positon after peeking")
+}
+
+func TestAttributes(t *testing.T) {
+	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
+	l := xml.NewLexer(r)
+	tb := NewTokenBuffer(l)
+	tb.Shift()
+	for k := 0; k < 2; k++ { // run twice to ensure similar results
+		attrs, _ := tb.Attributes(svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
+		for i := 0; i < 6; i++ {
+			test.That(t, attrs[i] != nil, "attr must not be nil")
+			val := string(attrs[i].AttrVal)
+			j, _ := strconv.ParseInt(val, 10, 32)
+			test.That(t, int(j) == i, "attr data is bad at position", i)
+		}
+	}
+}
+
+////////////////////////////////////////////////////////////////
+
+func BenchmarkAttributes(b *testing.B) {
+	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
+	l := xml.NewLexer(r)
+	tb := NewTokenBuffer(l)
+	tb.Shift()
+	tb.Peek(6)
+	for i := 0; i < b.N; i++ {
+		tb.Attributes(svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
+	}
 }
