@@ -191,7 +191,7 @@ func Number(num []byte, prec int) []byte {
 				end--
 			}
 		}
-		if normExp >= n+3 {
+		if normExp >= n+2 {
 			num[end] = 'e'
 			end++
 			for i := end + lenIntExp - 1; i >= end; i-- {
@@ -199,10 +199,6 @@ func Number(num []byte, prec int) []byte {
 				intExp /= 10
 			}
 			end += lenIntExp
-		} else if normExp == n+2 {
-			num[end] = '0'
-			num[end+1] = '0'
-			end += 2
 		} else if normExp == n+1 {
 			num[end] = '0'
 			end++

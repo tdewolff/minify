@@ -3,7 +3,7 @@ package svg // import "github.com/tdewolff/minify/svg"
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/tdewolff/test"
 )
 
 func TestPathData(t *testing.T) {
@@ -21,23 +21,26 @@ func TestPathData(t *testing.T) {
 		{"M10 10l1 0 0 1", "M10 10h1v1"},
 		{"M10 10L11 11 0 0", "M10 10l1 1L0 0"},
 		{"M246.614 51.028L246.614-5.665 189.922-5.665", "M246.614 51.028V-5.665H189.922"},
-		{"M100,200 C100,100 250,100 250,200 S400,300 400,200", "M100 200c0-100 150-100 150 0s150 100 150 0"},
-		{"M200,300 Q400,50 600,300 T1000,300", "M200 300q200-250 400 0t400 0"},
-		{"M300,200 h-150 a150,150 0 1,0 150,-150 z", "M300 200H150A150 150 0 1 0 300 50z"},
+		{"M100,200 C100,100 250,100 250,200 S400,300 400,200", "M1e2 2e2c0-1e2 150-1e2 150 0s150 1e2 150 0"},
+		{"M200,300 Q400,50 600,300 T1000,300", "M2e2 3e2q2e2-250 4e2.0t4e2.0"},
+		{"M300,200 h-150 a150,150 0 1,0 150,-150 z", "M3e2 2e2H150A150 150 0 1 0 3e2 50z"},
 		{"x5 5L10 10", "L10 10"},
+
+		{"M.0.1", "M0 .1"},
+		{"M200.0.1", "M2e2.1"},
 
 		// fuzz
 		{"", ""},
 		{"ML", ""},
 		{".8.00c0", ""},
 		{".1.04h0e6.0e6.0e0.0", "h0 0 0 0"},
-		{"M.1.0.0.2Z", "M.1.2z"},
+		{"M.1.0.0.2Z", "M.1.0.0.2z"},
+		{"A.0.0.0.0.3.2e3.7.0.0.0.0.0.1.3.0.0.0.0.2.3.2.0.0.0.0.20.2e-10.0.0.0.0.0.0.0.0", "A0 0 0 0 .3 2e2.7.0.0.0.0.0.1.3.0.0.0.0.2.3.2.0.0.0.0.2 2e-11.0.0.0.0.0.0.0.0"},
 	}
 
 	p := NewPathData(&Minifier{Decimals: -1})
 	for _, tt := range pathDataTests {
-		out := p.ShortenPathData([]byte(tt.pathData))
-		assert.Equal(t, tt.expected, string(out), "Path data must match in "+tt.pathData)
+		test.Minify(t, tt.pathData, nil, string(p.ShortenPathData([]byte(tt.pathData))), tt.expected)
 	}
 }
 
