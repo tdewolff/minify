@@ -225,15 +225,50 @@ func TestReaderErrors(t *testing.T) {
 }
 
 func TestWriterErrors(t *testing.T) {
-	//       0         1   2     34   56  78  9       0    12   3      4                 5
-	html := `<!doctype>text<style attr=val>css</style><code>code</code><!--[if comment--></x`
-	errorTests := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 14, 15}
+	errorTests := []struct {
+		html string
+		n    []int
+	}{
+		{`<!doctype>`, []int{0}},
+		{`text`, []int{0}},
+		{`<foo attr=val>`, []int{0, 1, 2, 3, 4, 5}},
+		{`</foo>`, []int{0}},
+		{`<style>css</style>`, []int{2}},
+		{`<code>x</code>`, []int{2}},
+		{`<!--[if comment-->`, []int{0}},
+	}
 
 	m := minify.New()
-	for _, n := range errorTests {
-		r := bytes.NewBufferString(html)
-		w := test.NewErrorWriter(n)
-		test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write ", n)
+	for _, tt := range errorTests {
+		for _, n := range tt.n {
+			r := bytes.NewBufferString(tt.html)
+			w := test.NewErrorWriter(n)
+			test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write", n, "in", tt.html)
+		}
+	}
+}
+
+func TestMinifyErrors(t *testing.T) {
+	errorTests := []struct {
+		html string
+		err  error
+	}{
+		{`<style>abc</style>`, test.ErrPlain},
+		{`<path style="abc"/>`, test.ErrPlain},
+		{`<path onclick="abc"/>`, test.ErrPlain},
+	}
+
+	m := minify.New()
+	m.AddFunc("text/css", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
+		return test.ErrPlain
+	})
+	m.AddFunc("text/javascript", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
+		return test.ErrPlain
+	})
+	for _, tt := range errorTests {
+		r := bytes.NewBufferString(tt.html)
+		w := &bytes.Buffer{}
+		test.Error(t, Minify(m, w, r, nil), tt.err, "return error", tt.err, "in", tt.html)
 	}
 }
 

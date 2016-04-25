@@ -179,7 +179,7 @@ func TestWriterErrors(t *testing.T) {
 		for _, n := range tt.n {
 			r := bytes.NewBufferString(tt.css)
 			w := test.NewErrorWriter(n)
-			test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write ", n)
+			test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write", n, "in", tt.css)
 		}
 	}
 }

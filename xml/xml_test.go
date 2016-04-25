@@ -82,15 +82,27 @@ func TestReaderErrors(t *testing.T) {
 }
 
 func TestWriterErrors(t *testing.T) {
-	//      0             1    2 3 45678901    23 4 5 6    7   8                    9   0
-	xml := `<!DOCTYPE foo><?xml?><a x=y z="val"><b/><c></c></a><![CDATA[data<<<<<]]>text</x`
-	errorTests := []int{0, 1, 2, 3, 4, 5, 6, 7, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
+	errorTests := []struct {
+		xml string
+		n   []int
+	}{
+		{`<!DOCTYPE foo>`, []int{0}},
+		{`<?xml?>`, []int{0, 1}},
+		{`<a x=y z="val">`, []int{0, 1, 2, 3, 4, 8, 9}},
+		{`<foo/>`, []int{1}},
+		{`</foo>`, []int{0}},
+		{`<foo></foo>`, []int{1}},
+		{`<![CDATA[data<<<<<]]>`, []int{0}},
+		{`text`, []int{0}},
+	}
 
 	m := minify.New()
-	for _, n := range errorTests {
-		r := bytes.NewBufferString(xml)
-		w := test.NewErrorWriter(n)
-		test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write ", n)
+	for _, tt := range errorTests {
+		for _, n := range tt.n {
+			r := bytes.NewBufferString(tt.xml)
+			w := test.NewErrorWriter(n)
+			test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write", n, "in", tt.xml)
+		}
 	}
 }
 

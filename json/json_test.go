@@ -36,14 +36,21 @@ func TestReaderErrors(t *testing.T) {
 }
 
 func TestWriterErrors(t *testing.T) {
-	errorTests := []int{0, 1, 2, 3, 4, 5, 7, 8}
+	errorTests := []struct {
+		json string
+		n    []int
+	}{
+		//01    234  56  78
+		{`{"key":[100,200]}`, []int{0, 1, 2, 3, 4, 5, 7, 8}},
+	}
 
 	m := minify.New()
-	for _, n := range errorTests {
-		// writes:                  01    234  56  78
-		r := bytes.NewBufferString(`{"key":[100,200]}`)
-		w := test.NewErrorWriter(n)
-		test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write ", n)
+	for _, tt := range errorTests {
+		for _, n := range tt.n {
+			r := bytes.NewBufferString(tt.json)
+			w := test.NewErrorWriter(n)
+			test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write", n, "in", tt.json)
+		}
 	}
 }
 
