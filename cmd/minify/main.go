@@ -47,6 +47,7 @@ var (
 	list      bool
 	verbose   bool
 	watch     bool
+	update    bool
 	pattern   *regexp.Regexp
 )
 
@@ -107,6 +108,7 @@ func main() {
 	flag.BoolVarP(&list, "list", "l", false, "List all accepted filetypes")
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose")
 	flag.BoolVarP(&watch, "watch", "w", false, "Watch files and minify upon changes")
+	flag.BoolVarP(&update, "update", "u", false, "Update binary")
 
 	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
 	flag.BoolVar(&htmlMinifier.KeepDefaultAttrVals, "html-keep-default-attrvals", false, "Preserve default attribute values")
@@ -120,6 +122,13 @@ func main() {
 		Info = log.New(os.Stderr, "INFO: ", 0)
 	} else {
 		Info = log.New(ioutil.Discard, "INFO: ", 0)
+	}
+
+	if update {
+		if err := equinoxUpdate(); err != nil {
+			Error.Fatalln(err)
+		}
+		return
 	}
 
 	if list {
