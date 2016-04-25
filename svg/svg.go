@@ -156,8 +156,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				tag == svg.Svg && (attr == svg.Version && parse.Equal(val, []byte("1.1")) ||
 					attr == svg.X && parse.Equal(val, []byte("0")) ||
 					attr == svg.Y && parse.Equal(val, []byte("0")) ||
-					attr == svg.Width && parse.Equal(val, []byte("100%")) ||
-					attr == svg.Height && parse.Equal(val, []byte("100%")) ||
+					attr == svg.Width && parse.Equal(val, []byte("1e2%")) ||
+					attr == svg.Height && parse.Equal(val, []byte("1e2%")) ||
 					attr == svg.PreserveAspectRatio && parse.Equal(val, []byte("xMidYMid meet")) ||
 					attr == svg.BaseProfile && parse.Equal(val, []byte("none")) ||
 					attr == svg.ContentScriptType && parse.Equal(val, []byte("application/ecmascript")) ||

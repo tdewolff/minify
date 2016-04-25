@@ -199,26 +199,8 @@ func (p *PathData) shortenCurPosInstruction(cmd byte, coords [][]byte) PathDataS
 		state.prevDigitIsInt = false
 	}
 	for _, coord := range coords {
-		coord := minify.Number(coord, p.o.Decimals)
-		if state.prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && state.prevDigitIsInt) {
-			if coord[0] == '0' && !state.prevDigitIsInt {
-				// if the first digit is zero, it is always just zero
-				p.altBuffer = append(p.altBuffer, '.', '0')
-				// prevDigit and prevDigitIsInt stay true
-				continue
-			} else {
-				p.curBuffer = append(p.curBuffer, ' ')
-			}
-		}
-		state.prevDigit = true
-		state.prevDigitIsInt = true
-		for _, c := range coord {
-			if c == '.' || c == 'e' || c == 'E' {
-				state.prevDigitIsInt = false
-				break
-			}
-		}
-		p.curBuffer = append(p.curBuffer, coord...)
+		coord = minify.Number(coord, p.o.Decimals)
+		state.copyNumber(&p.curBuffer, coord)
 	}
 	return state
 }
@@ -253,26 +235,29 @@ func (p *PathData) shortenAltPosInstruction(cmd byte, coordFloats []float64, x, 
 
 		p.coordBuffer = strconvStdlib.AppendFloat(p.coordBuffer[:0], f, 'g', -1, 64)
 		coord := minify.Number(p.coordBuffer, p.o.Decimals)
-
-		if state.prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && state.prevDigitIsInt) {
-			if coord[0] == '0' && !state.prevDigitIsInt {
-				// if the first digit is zero, it is always just zero
-				p.altBuffer = append(p.altBuffer, '.', '0')
-				// prevDigit and prevDigitIsInt stay true
-				continue
-			} else {
-				p.altBuffer = append(p.altBuffer, ' ')
-			}
-		}
-		state.prevDigit = true
-		state.prevDigitIsInt = true
-		for _, c := range coord {
-			if c == '.' || c == 'e' || c == 'E' {
-				state.prevDigitIsInt = false
-				break
-			}
-		}
-		p.altBuffer = append(p.altBuffer, coord...)
+		state.copyNumber(&p.altBuffer, coord)
 	}
 	return state
+}
+
+func (state *PathDataState) copyNumber(buffer *[]byte, coord []byte) {
+	if state.prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && state.prevDigitIsInt) {
+		if coord[0] == '0' && !state.prevDigitIsInt {
+			// if the first digit is zero, it is always just zero
+			*buffer = append(*buffer, '.', '0')
+			// prevDigit and prevDigitIsInt stay true
+			return
+		} else {
+			*buffer = append(*buffer, ' ')
+		}
+	}
+	state.prevDigit = true
+	state.prevDigitIsInt = true
+	for _, c := range coord {
+		if c == '.' || c == 'e' || c == 'E' {
+			state.prevDigitIsInt = false
+			break
+		}
+	}
+	*buffer = append(*buffer, coord...)
 }
