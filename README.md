@@ -499,7 +499,7 @@ func(w http.ResponseWriter, req *http.Request) {
 
 Here's an example of a replacement for `template.ParseFiles` from `template/html`, which automatically minifies each template before parsing it.
 
-Be aware that minifying templates will work in most cases but not all. Because the HTML minifier only works for valid HTML5, you template must be valid HTML5 of itself. Template tags are seen as regular text for the minifier.
+Be aware that minifying templates will work in most cases but not all. Because the HTML minifier only works for valid HTML5, your template must be valid HTML5 of itself. Template tags are parsed as regular text by the minifier.
 
 ``` go
 func compileTemplates(filenames ...string) (*template.Template, error) {
