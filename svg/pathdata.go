@@ -253,10 +253,16 @@ func (state *PathDataState) copyNumber(buffer *[]byte, coord []byte) {
 	}
 	state.prevDigit = true
 	state.prevDigitIsInt = true
-	for _, c := range coord {
-		if c == '.' || c == 'e' || c == 'E' {
-			state.prevDigitIsInt = false
-			break
+	if len(coord) > 2 && coord[len(coord)-2] == '0' && coord[len(coord)-1] == '0' {
+		coord[len(coord)-2] = 'e'
+		coord[len(coord)-1] = '2'
+		state.prevDigitIsInt = false
+	} else {
+		for _, c := range coord {
+			if c == '.' || c == 'e' || c == 'E' {
+				state.prevDigitIsInt = false
+				break
+			}
 		}
 	}
 	*buffer = append(*buffer, coord...)

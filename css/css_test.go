@@ -107,6 +107,7 @@ func TestCSSInline(t *testing.T) {
 		{"margin:05em", "margin:5em"},
 		{"margin:.50em", "margin:.5em"},
 		{"margin:5.0em", "margin:5em"},
+		{"margin:5000em", "margin:5e3em"},
 		{"color:#c0c0c0", "color:silver"},
 		{"-ms-filter: \"progid:DXImageTransform.Microsoft.Alpha(Opacity=80)\";", "-ms-filter:\"alpha(opacity=80)\""},
 		{"filter: progid:DXImageTransform.Microsoft.Alpha(Opacity = 80);", "filter:alpha(opacity=80)"},
