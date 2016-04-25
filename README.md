@@ -505,6 +505,7 @@ Be aware that minifying templates will work in most cases but not all. Because t
 func compileTemplates(filenames ...string) (*template.Template, error) {
 	m := minify.New()
 	m.AddFunc("text/html", html.Minify)
+
 	var tmpl *template.Template
 	for _, filename := range filenames {
 		name := filepath.Base(filename)
@@ -513,10 +514,12 @@ func compileTemplates(filenames ...string) (*template.Template, error) {
 		} else {
 			tmpl = tmpl.New(name)
 		}
+
 		b, err := ioutil.ReadFile(filename)
 		if err != nil {
 			return nil, err
 		}
+
 		mb, err := m.Bytes("text/html", b)
 		if err != nil {
 			return nil, err
