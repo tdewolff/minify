@@ -201,7 +201,14 @@ func (p *PathData) shortenCurPosInstruction(cmd byte, coords [][]byte) PathDataS
 	for _, coord := range coords {
 		coord := minify.Number(coord, p.o.Decimals)
 		if state.prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && state.prevDigitIsInt) {
-			p.curBuffer = append(p.curBuffer, ' ')
+			if coord[0] == '0' && !state.prevDigitIsInt {
+				// if the first digit is zero, it is always just zero
+				p.altBuffer = append(p.altBuffer, '.', '0')
+				// prevDigit and prevDigitIsInt stay true
+				continue
+			} else {
+				p.curBuffer = append(p.curBuffer, ' ')
+			}
 		}
 		state.prevDigit = true
 		state.prevDigitIsInt = true
@@ -248,7 +255,14 @@ func (p *PathData) shortenAltPosInstruction(cmd byte, coordFloats []float64, x, 
 		coord := minify.Number(p.coordBuffer, p.o.Decimals)
 
 		if state.prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && state.prevDigitIsInt) {
-			p.altBuffer = append(p.altBuffer, ' ')
+			if coord[0] == '0' && !state.prevDigitIsInt {
+				// if the first digit is zero, it is always just zero
+				p.altBuffer = append(p.altBuffer, '.', '0')
+				// prevDigit and prevDigitIsInt stay true
+				continue
+			} else {
+				p.altBuffer = append(p.altBuffer, ' ')
+			}
 		}
 		state.prevDigit = true
 		state.prevDigitIsInt = true

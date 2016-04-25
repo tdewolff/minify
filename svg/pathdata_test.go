@@ -31,6 +31,7 @@ func TestPathData(t *testing.T) {
 		{"ML", ""},
 		{".8.00c0", ""},
 		{".1.04h0e6.0e6.0e0.0", "h0 0 0 0"},
+		{"M.1.0.0.2Z", "M.1.2z"},
 	}
 
 	p := NewPathData(&Minifier{Decimals: -1})
