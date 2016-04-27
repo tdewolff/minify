@@ -330,11 +330,7 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 		fun := css.ToHash(values[0].Data[:len(values[0].Data)-1])
 		nArgs := (n - 1) / 2
 		if (fun == css.Rgba || fun == css.Hsla) && nArgs == 4 {
-			d, err := strconv.ParseFloat(string(values[7].Data), 32)
-			if err != nil {
-				// can never fail because if simple == true than this is a NumberToken or PercentageToken
-				return 0, err
-			}
+			d, _ := strconv.ParseFloat(string(values[7].Data), 32) // can never fail because if simple == true than this is a NumberToken or PercentageToken
 			if d-1.0 > -minify.Epsilon {
 				if fun == css.Rgba {
 					values[0].Data = []byte("rgb(")
