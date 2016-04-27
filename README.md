@@ -1,14 +1,14 @@
 # Minify [![Build Status](https://travis-ci.org/tdewolff/minify.svg?branch=master)](https://travis-ci.org/tdewolff/minify) [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-[Download](https://dl.equinox.io/tdewolff/minify/stable) · [CLI](https://github.com/tdewolff/minify/tree/master/cmd/minify) · [Demo](http://go.tacodewolff.nl/)
-
 **I will be away for 5 months, starting May. v2 should be the preferred stable release to use. Master has some new changes for SVG that haven't yet endured the test of time, bug reports are appreciated.**
 
 Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3, JS, JSON, SVG and XML minifiers and provides an interface to implement any minifier. Minification is the process of removing bytes from a file (such as whitespace) without changing its output and therefore speeding up transmission over the internet. The implemented minifiers are high performance and streaming (which implies O(n)).
 
 It associates minification functions with mimetypes, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mimetype using an external command (like the ClosureCompiler, UglifyCSS, ...). It is possible to pass parameters through the mediatype to specify the charset for example.
 
-**Table of Contents**
+[Demo](http://go.tacodewolff.nl/) · [CLI](https://github.com/tdewolff/minify/tree/master/cmd/minify) · [Download](https://dl.equinox.io/tdewolff/minify/stable)
+
+#### Table of Contents
 
 - [Minify](#minify---)
 	- [Prologue](#prologue)
@@ -36,7 +36,7 @@ It associates minification functions with mimetypes, allowing embedded resources
 		- [Templates](#templates)
 	- [License](#license)
 
-**Status**
+#### Status
 
 * CSS: **fully implemented**
 * HTML: **fully implemented**
