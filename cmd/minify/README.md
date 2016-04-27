@@ -1,7 +1,8 @@
-# Minify
-Minify is a CLI implemention of the minify [library package](https://github.com/tdewolff/minify/blob/master/README.md).
+# Minify [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**Download application binaries for Windows, Linux and Mac OS X from [Equinox](https://dl.equinox.io/tdewolff/minify/stable)**
+**[Download binaries](https://dl.equinox.io/tdewolff/minify/stable) for Windows, Linux and Mac OS X**
+
+Minify is a CLI implemention of the minify [library package](https://github.com/tdewolff/minify/blob/master/README.md).
 
 ## Installation
 Make sure you have [Go](http://golang.org/) and [Git](http://git-scm.com/) installed.
@@ -63,19 +64,13 @@ and the `minify` command will be in your `$GOPATH/bin`.
 The following commands are variations one can use to minify files:
 
 ```sh
-$ minify file.html # file.html &#8594; file.min.html
+$ minify file.html # overwrite file.html
 
-$ minify --type=css -o file_minified.ext file.ext # file.ext &#8594; file_minified.ext
+$ minify --type=css -o file_minified.ext file.ext # file.ext -> file_minified.ext
 
 $ minify --mime=text/javascript < file.js > file.min.js
 
 $ cat file.html | minify --type=html > file.min.html
-```
-
-It is also possible to overwrite the input file by the output file. Overwriting existing files needs to happen forcefully. However, overwriting won't work with input/output redirection streams. Using the following command the input file will be loaded into memory first before writing to the output file:
-
-```sh
-$ minify file.html
 ```
 
 You can also give directories as input, and these directories can be minified recursively:
