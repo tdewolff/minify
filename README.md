@@ -1,20 +1,14 @@
-# Minify [![Build Status](https://travis-ci.org/tdewolff/minify.svg?branch=master)](https://travis-ci.org/tdewolff/minify) [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify)](http://gocover.io/github.com/tdewolff/minify)
+# Minify [![Build Status](https://travis-ci.org/tdewolff/minify.svg?branch=master)](https://travis-ci.org/tdewolff/minify) [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-[![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[Download](https://dl.equinox.io/tdewolff/minify/stable) · [CLI](https://github.com/tdewolff/minify/tree/master/cmd/minify) · [Demo](http://go.tacodewolff.nl/)
 
 **I will be away for 5 months, starting May. v2 should be the preferred stable release to use. Master has some new changes for SVG that haven't yet endured the test of time, bug reports are appreciated.**
-
-**Download application binaries for Windows, Linux and Mac OS X from [Equinox](https://dl.equinox.io/tdewolff/minify/stable)**
 
 Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3, JS, JSON, SVG and XML minifiers and provides an interface to implement any minifier. Minification is the process of removing bytes from a file (such as whitespace) without changing its output and therefore speeding up transmission over the internet. The implemented minifiers are high performance and streaming (which implies O(n)).
 
 It associates minification functions with mimetypes, allowing embedded resources (like CSS or JS in HTML files) to be minified too. The user can add any mime-based implementation. Users can also implement a mimetype using an external command (like the ClosureCompiler, UglifyCSS, ...). It is possible to pass parameters through the mediatype to specify the charset for example.
 
 **Table of Contents**
-
-[Online live demo](http://go.tacodewolff.nl/).
-
-[Command-line-interface](https://github.com/tdewolff/minify/tree/master/cmd/minify) executable `minify` provided for tooling.
 
 - [Minify](#minify---)
 	- [Prologue](#prologue)
@@ -93,7 +87,7 @@ For all subpackages and the imported `parse` and `buffer` packages, test coverag
 
 These tests ensure that everything works as intended, the code does not crash (whatever the input) and that it doesn't change the final result visually. If you still encounter a bug, please report [here](https://github.com/tdewolff/minify/issues)!
 
-## HTML [![GoDoc](http://godoc.org/github.com/tdewolff/minify/html?status.svg)](http://godoc.org/github.com/tdewolff/minify/html) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/html)](http://gocover.io/github.com/tdewolff/minify/html)
+## HTML
 
 HTML (with JS and CSS) minification typically runs at about 40MB/s ~= 140GB/h, depending on the composition of the file.
 
@@ -135,7 +129,7 @@ The whitespace removal mechanism collapses all sequences of whitespace (spaces, 
 
 Make sure your HTML doesn't depend on whitespace between `block` elements that have been changed to `inline` or `inline-block` elements using CSS. Your layout *should not* depend on those whitespaces as the minifier will remove them. An example is a menu consisting of multiple `<li>` that have `display:inline-block` applied and have whitespace in between them. It is bad practise to rely on whitespace for element positioning anyways!
 
-## CSS [![GoDoc](http://godoc.org/github.com/tdewolff/minify/css?status.svg)](http://godoc.org/github.com/tdewolff/minify/css) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/css)](http://gocover.io/github.com/tdewolff/minify/css)
+## CSS
 
 Minification typically runs at about 25MB/s ~= 90GB/h.
 
@@ -177,7 +171,7 @@ It does purposely not use the following techniques:
 
 It's great that so many other tools make comparison tables: [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html), [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). From the last link, this CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented and often unsafe techniques, so that's fine.
 
-## JS [![GoDoc](http://godoc.org/github.com/tdewolff/minify/js?status.svg)](http://godoc.org/github.com/tdewolff/minify/js) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/js)](http://gocover.io/github.com/tdewolff/minify/js)
+## JS
 
 The JS minifier is pretty basic. It removes comments, whitespace and line breaks whenever it can. It employs all the rules that [JSMin](http://www.crockford.com/javascript/jsmin.html) does too, but has additional improvements. For example the prefix-postfix bug is fixed.
 
@@ -196,13 +190,13 @@ TODO:
 - shorten local variables / function parameters names
 - precise semicolon and newline omission
 
-## JSON [![GoDoc](http://godoc.org/github.com/tdewolff/minify/json?status.svg)](http://godoc.org/github.com/tdewolff/minify/json) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/json)](http://gocover.io/github.com/tdewolff/minify/json)
+## JSON
 
 Minification typically runs at about 95MB/s ~= 340GB/h. It shaves off about 15% of filesize for common indented JSON such as generated by [JSON Generator](http://www.json-generator.com/).
 
 The JSON minifier only removes whitespace, which is the only thing that can be left out.
 
-## SVG [![GoDoc](http://godoc.org/github.com/tdewolff/minify/svg?status.svg)](http://godoc.org/github.com/tdewolff/minify/svg) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/svg)](http://gocover.io/github.com/tdewolff/minify/svg)
+## SVG
 
 Minification typically runs at about 15MB/s ~= 55GB/h. Performance improvement are due.
 
@@ -226,7 +220,7 @@ TODO:
 - merge path data? (same style and no intersection -- the latter is difficult)
 - truncate decimals
 
-## XML [![GoDoc](http://godoc.org/github.com/tdewolff/minify/xml?status.svg)](http://godoc.org/github.com/tdewolff/minify/xml) [![GoCover](http://gocover.io/_badge/github.com/tdewolff/minify/xml)](http://gocover.io/github.com/tdewolff/minify/xml)
+## XML
 
 Minification typically runs at about 70MB/s ~= 250GB/h.
 
