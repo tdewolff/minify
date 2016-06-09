@@ -72,6 +72,8 @@ func TestCSSInline(t *testing.T) {
 		{"color: rgba(255,0,0,0.5);", "color:rgba(255,0,0,.5)"},
 		{"color: rgba(255,0,0,-1);", "color:transparent"},
 		{"color: hsl(0,100%,50%);", "color:red"},
+		{"color: hsl(0,0%,10%);", "color:hsl(0,0%,10%)"},
+		{"color: hsla(0,100%,0%,1);", "color:hsl(0,100%,0%)"},
 		{"color: hsla(1,2%,3%,1);", "color:#080807"},
 		{"color: hsla(1,2%,3%,0);", "color:transparent"},
 		{"color: hsl(48,100%,50%);", "color:#fc0"},
