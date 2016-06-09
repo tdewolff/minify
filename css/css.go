@@ -450,7 +450,7 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 		if len(data) != 1 || data[0] != '0' || prop == css.Color {
 			if tt == css.PercentageToken {
 				data = append(data, '%')
-			} else if tt == css.DimensionToken {
+			} else if tt == css.DimensionToken && prop != css.Color {
 				parse.ToLower(dim)
 				data = append(data, dim...)
 			}
