@@ -447,9 +447,9 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 		}
 		dim := data[n:]
 		data = minify.Number(data[:n], c.o.Decimals)
-		if tt == css.PercentageToken && ( len(data) != 1 || data[0] != '0' || prop == css.Color) {
+		if tt == css.PercentageToken && (len(data) != 1 || data[0] != '0' || prop == css.Color) {
 			data = append(data, '%')
-		} else if tt == css.DimensionToken && ( len(data) != 1 || data[0] != '0' ) {
+		} else if tt == css.DimensionToken && (len(data) != 1 || data[0] != '0') {
 			parse.ToLower(dim)
 			data = append(data, dim...)
 		}
