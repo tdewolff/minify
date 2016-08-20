@@ -7,6 +7,7 @@ type traits uint8
 const (
 	rawTag traits = 1 << iota
 	nonPhrasingTag
+	objectTag
 	booleanAttr
 	caselessAttr
 	urlAttr
@@ -19,7 +20,8 @@ var tagMap = map[html.Hash]traits{
 	html.Blockquote: nonPhrasingTag,
 	html.Body:       nonPhrasingTag,
 	html.Br:         nonPhrasingTag,
-	html.Canvas:     nonPhrasingTag,
+	html.Button:     objectTag,
+	html.Canvas:     objectTag,
 	html.Caption:    nonPhrasingTag,
 	html.Code:       rawTag,
 	html.Col:        nonPhrasingTag,
@@ -45,33 +47,39 @@ var tagMap = map[html.Hash]traits{
 	html.Hgroup:     nonPhrasingTag,
 	html.Hr:         nonPhrasingTag,
 	html.Html:       nonPhrasingTag,
-	html.Iframe:     rawTag,
+	html.Iframe:     rawTag | objectTag,
+	html.Img:        objectTag,
+	html.Input:      objectTag,
+	html.Keygen:     objectTag,
 	html.Li:         nonPhrasingTag,
 	html.Main:       nonPhrasingTag,
 	html.Math:       rawTag,
 	html.Meta:       nonPhrasingTag,
+	html.Meter:      objectTag,
 	html.Nav:        nonPhrasingTag,
 	html.Noscript:   nonPhrasingTag,
+	html.Object:     objectTag,
 	html.Ol:         nonPhrasingTag,
 	html.Output:     nonPhrasingTag,
 	html.P:          nonPhrasingTag,
 	html.Pre:        rawTag | nonPhrasingTag,
-	html.Progress:   nonPhrasingTag,
+	html.Progress:   objectTag,
 	html.Script:     rawTag,
 	html.Section:    nonPhrasingTag,
+	html.Select:     objectTag,
 	html.Style:      rawTag | nonPhrasingTag,
-	html.Svg:        rawTag,
+	html.Svg:        rawTag | objectTag,
 	html.Table:      nonPhrasingTag,
 	html.Tbody:      nonPhrasingTag,
 	html.Td:         nonPhrasingTag,
-	html.Textarea:   rawTag,
+	html.Textarea:   rawTag | objectTag,
 	html.Tfoot:      nonPhrasingTag,
 	html.Th:         nonPhrasingTag,
 	html.Thead:      nonPhrasingTag,
 	html.Title:      nonPhrasingTag,
 	html.Tr:         nonPhrasingTag,
 	html.Ul:         nonPhrasingTag,
-	html.Video:      nonPhrasingTag,
+	html.Video:      objectTag,
 }
 
 var attrMap = map[html.Hash]traits{

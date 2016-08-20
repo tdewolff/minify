@@ -117,6 +117,10 @@ func TestHTML(t *testing.T) {
 		{`<meta e t n content=ful><a b`, `<meta e t n content=ful><a b>`},
 		{`<img alt=a'b="">`, `<img alt='a&#39;b=""'>`},
 		{`</b`, `</b`},
+
+		// bugs
+		{`text <img> text`, `text <img> text`},                                 // #89
+		{`text <progress></progress> text`, `text <progress></progress> text`}, // #89
 	}
 
 	m := minify.New()
