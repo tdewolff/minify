@@ -46,7 +46,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	var rawTagHash html.Hash
 	var rawTagTraits traits
 	var rawTagMediatype []byte
+
 	omitSpace := true // if true the next leading space is omitted
+	inPre := false
+
 	defaultScriptType := jsMimeBytes
 	defaultScriptParams := map[string]string(nil)
 	defaultStyleType := cssMimeBytes
@@ -127,47 +130,49 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			} else {
 				t.Data = parse.ReplaceMultipleWhitespace(t.Data)
 
-				// whitespace removal; trim left
-				if omitSpace && (t.Data[0] == ' ' || t.Data[0] == '\n') {
-					t.Data = t.Data[1:]
-				}
+				if !inPre {
+					// whitespace removal; trim left
+					if omitSpace && (t.Data[0] == ' ' || t.Data[0] == '\n') {
+						t.Data = t.Data[1:]
+					}
 
-				// whitespace removal; trim right
-				omitSpace = false
-				if len(t.Data) == 0 {
-					omitSpace = true
-				} else if t.Data[len(t.Data)-1] == ' ' || t.Data[len(t.Data)-1] == '\n' {
-					omitSpace = true
-					i := 0
-					for {
-						next := tb.Peek(i)
-						// trim if EOF, text token with leading whitespace or block token
-						if next.TokenType == html.ErrorToken {
-							t.Data = t.Data[:len(t.Data)-1]
-							omitSpace = false
-							break
-						} else if next.TokenType == html.TextToken {
-							// this only happens when a comment, doctype or phrasing end tag (only for !o.KeepWhitespace) was in between
-							// remove if the text token starts with a whitespace
-							if len(next.Data) > 0 && parse.IsWhitespace(next.Data[0]) {
-								t.Data = t.Data[:len(t.Data)-1]
-								omitSpace = false
-							}
-							break
-						} else if next.TokenType == html.StartTagToken || next.TokenType == html.EndTagToken {
-							if o.KeepWhitespace {
-								break
-							}
-							// remove when followed up by a block tag
-							if next.Traits&nonPhrasingTag != 0 {
+					// whitespace removal; trim right
+					omitSpace = false
+					if len(t.Data) == 0 {
+						omitSpace = true
+					} else if t.Data[len(t.Data)-1] == ' ' || t.Data[len(t.Data)-1] == '\n' {
+						omitSpace = true
+						i := 0
+						for {
+							next := tb.Peek(i)
+							// trim if EOF, text token with leading whitespace or block token
+							if next.TokenType == html.ErrorToken {
 								t.Data = t.Data[:len(t.Data)-1]
 								omitSpace = false
 								break
-							} else if next.TokenType == html.StartTagToken {
+							} else if next.TokenType == html.TextToken {
+								// this only happens when a comment, doctype or phrasing end tag (only for !o.KeepWhitespace) was in between
+								// remove if the text token starts with a whitespace
+								if len(next.Data) > 0 && parse.IsWhitespace(next.Data[0]) {
+									t.Data = t.Data[:len(t.Data)-1]
+									omitSpace = false
+								}
 								break
+							} else if next.TokenType == html.StartTagToken || next.TokenType == html.EndTagToken {
+								if o.KeepWhitespace {
+									break
+								}
+								// remove when followed up by a block tag
+								if next.Traits&nonPhrasingTag != 0 {
+									t.Data = t.Data[:len(t.Data)-1]
+									omitSpace = false
+									break
+								} else if next.TokenType == html.StartTagToken {
+									break
+								}
 							}
+							i++
 						}
-						i++
 					}
 				}
 
@@ -195,6 +200,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					rawTagTraits = t.Traits
 					rawTagMediatype = nil
 				}
+			}
+
+			if t.Hash == html.Pre {
+				inPre = t.TokenType == html.StartTagToken
 			}
 
 			// remove superfluous tags

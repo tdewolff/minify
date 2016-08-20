@@ -121,6 +121,7 @@ func TestHTML(t *testing.T) {
 		// bugs
 		{`text <img> text`, `text <img> text`},                                 // #89
 		{`text <progress></progress> text`, `text <progress></progress> text`}, // #89
+		{`<pre> <x> text </x> </pre>`, `<pre> <x> text </x> </pre>`},           // #82
 	}
 
 	m := minify.New()

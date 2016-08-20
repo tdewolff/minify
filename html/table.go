@@ -62,7 +62,7 @@ var tagMap = map[html.Hash]traits{
 	html.Ol:         nonPhrasingTag,
 	html.Output:     nonPhrasingTag,
 	html.P:          nonPhrasingTag,
-	html.Pre:        rawTag | nonPhrasingTag,
+	html.Pre:        nonPhrasingTag,
 	html.Progress:   objectTag,
 	html.Script:     rawTag,
 	html.Section:    nonPhrasingTag,
