@@ -1,6 +1,6 @@
 # Minify [![Build Status](https://travis-ci.org/tdewolff/minify.svg?branch=master)](https://travis-ci.org/tdewolff/minify) [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**I will be away for 5 months, starting May. v2 should be the preferred stable release to use. Master has some new changes for SVG that haven't yet endured the test of time, bug reports are appreciated.**
+**v2 should be the preferred stable release to use. Master has some new changes for SVG that haven't yet endured the test of time, bug reports are appreciated.**
 
 Minify is a minifier package written in [Go][1]. It has build-in HTML5, CSS3, JS, JSON, SVG and XML minifiers and provides an interface to implement any minifier. Minification is the process of removing bytes from a file (such as whitespace) without changing its output and therefore speeding up transmission over the internet. The implemented minifiers are high performance and streaming (which implies O(n)).
 
@@ -93,7 +93,7 @@ HTML (with JS and CSS) minification typically runs at about 40MB/s ~= 140GB/h, d
 
 Website | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
-[Amazon](http://www.amazon.com/) | 463kB | **414kB** | 90% | 11ms
+[Amazon](http://www.amazon.com/) | 463kB | **414kB** | 90% | 10ms
 [BBC](http://www.bbc.com/) | 113kB | **96kB** | 85% | 3ms
 [StackOverflow](http://stackoverflow.com/) | 201kB | **182kB** | 91% | 5ms
 [Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | **410kB** | 94%<sup>&#42;&#42;</sup> | 10ms
@@ -135,7 +135,7 @@ Minification typically runs at about 25MB/s ~= 90GB/h.
 
 Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
-[Bootstrap](http://getbootstrap.com/) | 134kB | **111kB** | 83% | 5ms
+[Bootstrap](http://getbootstrap.com/) | 134kB | **111kB** | 83% | 4ms
 [Gumby](http://gumbyframework.com/) | 182kB | **167kB** | 90% | 7ms
 
 <sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.
@@ -175,13 +175,13 @@ It's great that so many other tools make comparison tables: [CSS Minifier Compar
 
 The JS minifier is pretty basic. It removes comments, whitespace and line breaks whenever it can. It employs all the rules that [JSMin](http://www.crockford.com/javascript/jsmin.html) does too, but has additional improvements. For example the prefix-postfix bug is fixed.
 
-Minification typically runs at about 45MB/s ~= 160GB/h. Common speeds of PHP and JS implementations are about 100-300kB/s (see [Uglify2](http://lisperator.net/uglifyjs/), [Adventures in PHP web asset minimization](https://www.happyassassin.net/2014/12/29/adventures-in-php-web-asset-minimization/)).
+Minification typically runs at about 50MB/s ~= 180GB/h. Common speeds of PHP and JS implementations are about 100-300kB/s (see [Uglify2](http://lisperator.net/uglifyjs/), [Adventures in PHP web asset minimization](https://www.happyassassin.net/2014/12/29/adventures-in-php-web-asset-minimization/)).
 
 Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
 ------- | -------- | -------- | ----- | -----------------------
-[ACE](https://github.com/ajaxorg/ace-builds) | 630kB | **442kB** | 70% | 14ms
+[ACE](https://github.com/ajaxorg/ace-builds) | 630kB | **442kB** | 70% | 12ms
 [jQuery](http://jquery.com/download/) | 242kB | **130kB** | 54% | 5ms
-[jQuery UI](http://jqueryui.com/download/) | 459kB | **300kB** | 65% | 11ms
+[jQuery UI](http://jqueryui.com/download/) | 459kB | **300kB** | 65% | 10ms
 [Moment](http://momentjs.com/) | 97kB | **51kB** | 52% | 2ms
 
 <sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.
