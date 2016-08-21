@@ -128,9 +128,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					omitSpace = len(t.Data) > 0 && (t.Data[len(t.Data)-1] == ' ' || t.Data[len(t.Data)-1] == '\n')
 				}
 			} else {
-				t.Data = parse.ReplaceMultipleWhitespace(t.Data)
-
 				if !inPre {
+					t.Data = parse.ReplaceMultipleWhitespace(t.Data)
+
 					// whitespace removal; trim left
 					if omitSpace && (t.Data[0] == ' ' || t.Data[0] == '\n') {
 						t.Data = t.Data[1:]
