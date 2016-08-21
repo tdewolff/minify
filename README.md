@@ -8,6 +8,8 @@ The core functionality associates minification functions with mimetypes, allowin
 
 [Demo](http://go.tacodewolff.nl/) · [CLI](https://github.com/tdewolff/minify/tree/master/cmd/minify) · [Download](https://dl.equinox.io/tdewolff/minify/stable)
 
+[Plugin for Caddy](https://github.com/hacdias/caddy-minify)
+
 #### Table of Contents
 
 - [Minify](#minify---)
