@@ -80,12 +80,14 @@ func TestHTML(t *testing.T) {
 		{` <!doctype html> <!--comment--> <html> <body><p></p></body></html> `, `<!doctype html><p>`}, // spaces before html and at the start of html are dropped
 		{`<p>x<br> y`, `<p>x<br>y`},
 		{`<p>x </b> <b> y`, `<p>x</b> <b>y`},
-		{`a <code>code</code> b`, `a <code>code</code> b`},
 		{`a <code></code> b`, `a <code></code>b`},
+		{`a <code>code</code> b`, `a <code>code</code> b`},
+		{`a <code> code </code> b`, `a <code>code</code> b`},
 		{`a <script>script</script> b`, `a <script>script</script>b`},
 		{"text\n<!--comment-->\ntext", "text\ntext"},
 		{"abc\n</body>\ndef", "abc\ndef"},
 		{"<x>\n<!--y-->\n</x>", "<x></x>"},
+		{"a <template> b </template> c", "a <template>b</template>c"},
 
 		// from HTML Minifier
 		{`<DIV TITLE="blah">boo</DIV>`, `<div title=blah>boo</div>`},

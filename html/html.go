@@ -200,6 +200,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					rawTagTraits = t.Traits
 					rawTagMediatype = nil
 				}
+			} else if t.Hash == html.Template {
+				omitSpace = true
 			}
 
 			if t.Hash == html.Pre {
