@@ -44,7 +44,6 @@ func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) err
 // Minify minifies HTML data, it reads from r and writes to w.
 func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 	var rawTagHash html.Hash
-	var rawTagTraits traits
 	var rawTagMediatype []byte
 
 	omitSpace := true // if true the next leading space is omitted
@@ -136,9 +135,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				} else if _, err := w.Write(t.Data); err != nil {
 					return err
 				}
-				if rawTagTraits&nonPhrasingTag == 0 && rawTagHash != html.Script {
-					omitSpace = len(t.Data) > 0 && (t.Data[len(t.Data)-1] == ' ' || t.Data[len(t.Data)-1] == '\n')
-				}
 			} else {
 				if !inPre {
 					t.Data = parse.ReplaceMultipleWhitespace(t.Data)
@@ -209,7 +205,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						}
 					}
 					rawTagHash = t.Hash
-					rawTagTraits = t.Traits
 					rawTagMediatype = nil
 				}
 			} else if t.Hash == html.Template {
