@@ -331,7 +331,9 @@ if _, err := mr.Read(b); err != nil {
 Get a minifying writer for a specific mediatype. Must be explicitly closed because it uses an `io.Pipe` underneath.
 ``` go
 mw := m.Writer(mediatype, w)
-mw.Write([]byte("input"))
+if mw.Write([]byte("input")); err != nil {
+	panic(err)
+}
 if err := mw.Close(); err != nil {
 	panic(err)
 }
