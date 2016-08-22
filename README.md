@@ -98,7 +98,7 @@ Website | Original | Minified | Ratio | Time<sup>&#42;</sup>
 [Amazon](http://www.amazon.com/) | 463kB | **414kB** | 90% | 10ms
 [BBC](http://www.bbc.com/) | 113kB | **96kB** | 85% | 3ms
 [StackOverflow](http://stackoverflow.com/) | 201kB | **182kB** | 91% | 5ms
-[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | **410kB** | 94%<sup>&#42;&#42;</sup> | 10ms
+[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | **410kB** | 94%<sup>&#42;&#42;</sup> | 11ms
 
 <sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies a lot but it's important to see it's in the 10ms range! The benchmark uses all the minifiers and excludes reading from and writing to the file from the measurement.
 
@@ -486,7 +486,12 @@ func MinifyFilter(mediatype string, res http.ResponseWriter) MinifyResponseWrite
 // Usage
 func(w http.ResponseWriter, req *http.Request) {
 	w = MinifyFilter("text/html", w)
-	io.WriteString(w, "<p class="message"> This HTTP response will be minified. </p>")
+	if _, err := io.WriteString(w, "<p class="message"> This HTTP response will be minified. </p>"); err != nil {
+		panic(err)
+	}
+	if err := w.Close(); err != nil {
+		panic(err)
+	}
 	// Output: <p class=message>This HTTP response will be minified.
 }
 ```
