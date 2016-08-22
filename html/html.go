@@ -120,11 +120,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						mimetype = defaultStyleType
 						params = defaultStyleParams
 					}
-					// TODO: really necessary?
-					// ignore CDATA because that only has meaning in XML
-					if trimmedData := parse.TrimWhitespace(t.Data); len(trimmedData) > 12 && bytes.Equal(trimmedData[:9], cdataBytes) && bytes.Equal(trimmedData[len(trimmedData)-3:], cdataEndBytes) {
-						t.Data = trimmedData[9 : len(trimmedData)-3]
-					}
 					if err := m.MinifyMimetype(mimetype, w, buffer.NewReader(t.Data), params); err != nil {
 						if err != minify.ErrNotExist {
 							return err
