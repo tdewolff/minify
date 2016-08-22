@@ -88,18 +88,30 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			if _, err := w.Write(comment); err != nil {
 				return err
 			}
+		case html.SvgToken:
+			if err := m.MinifyMimetype(svgMimeBytes, w, buffer.NewReader(t.Data), nil); err != nil {
+				if err != minify.ErrNotExist {
+					return err
+				} else if _, err := w.Write(t.Data); err != nil {
+					return err
+				}
+			}
+		case html.MathToken:
+			if err := m.MinifyMimetype(mathMimeBytes, w, buffer.NewReader(t.Data), nil); err != nil {
+				if err != minify.ErrNotExist {
+					return err
+				} else if _, err := w.Write(t.Data); err != nil {
+					return err
+				}
+			}
 		case html.TextToken:
 			// CSS and JS minifiers for inline code
 			if rawTagHash != 0 {
-				if rawTagHash == html.Style || rawTagHash == html.Script || rawTagHash == html.Iframe || rawTagHash == html.Svg || rawTagHash == html.Math {
+				if rawTagHash == html.Style || rawTagHash == html.Script || rawTagHash == html.Iframe {
 					var mimetype []byte
 					var params map[string]string
 					if rawTagHash == html.Iframe {
 						mimetype = htmlMimeBytes
-					} else if rawTagHash == html.Svg {
-						mimetype = svgMimeBytes
-					} else if rawTagHash == html.Math {
-						mimetype = mathMimeBytes
 					} else if len(rawTagMediatype) > 0 {
 						mimetype, params = parse.Mediatype(rawTagMediatype)
 					} else if rawTagHash == html.Script {

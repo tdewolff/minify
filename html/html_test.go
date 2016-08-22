@@ -49,7 +49,7 @@ func TestHTML(t *testing.T) {
 		{`<body id="main"></body>`, `<body id=main>`},
 		{`<style><![CDATA[x]]></style>`, `<style>x</style>`},
 		{`<link href="data:text/plain, data">`, `<link href=data:,+data>`},
-		{`<svg width="100" height="100"><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>`, `<svg width=100 height=100><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>`},
+		{`<svg width="100" height="100"><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>`, `<svg width="100" height="100"><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>`},
 		{`</span >`, `</span>`},
 		{`<meta name=viewport content="width=0.1, initial-scale=1.0 , maximum-scale=1000">`, `<meta name=viewport content="width=.1,initial-scale=1,maximum-scale=1e3">`},
 		{`<br/>`, `<br>`},
@@ -124,6 +124,7 @@ func TestHTML(t *testing.T) {
 		{`text <img> text`, `text <img> text`},                                 // #89
 		{`text <progress></progress> text`, `text <progress></progress> text`}, // #89
 		{`<pre> <x> a  b </x> </pre>`, `<pre> <x> a  b </x> </pre>`},           // #82
+		{`<svg id="1"></svg>`, `<svg id="1"></svg>`},                           // #67
 	}
 
 	m := minify.New()
@@ -191,10 +192,10 @@ func TestHTMLURL(t *testing.T) {
 		{`http://example.com/`, `<link rel="stylesheet" type="text/css" href="http://example.com">`, `<link rel=stylesheet href=//example.com>`},
 		{`http://example.com/`, `<!doctype html> <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"> <head profile="http://dublincore.org/documents/dcq-html/"> <!-- Barlesque 2.75.0 --> <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`,
 			`<!doctype html><html xmlns=//www.w3.org/1999/xhtml xml:lang=en><head profile=//dublincore.org/documents/dcq-html/><meta charset=utf-8>`},
-		{`http://example.com/`, `<svg xmlns="http://www.w3.org/2000/svg"></svg>`, `<svg xmlns=//www.w3.org/2000/svg></svg>`},
-		{`https://example.com/`, `<svg xmlns="http://www.w3.org/2000/svg"></svg>`, `<svg xmlns=http://www.w3.org/2000/svg></svg>`},
-		{`http://example.com/`, `<svg xmlns="https://www.w3.org/2000/svg"></svg>`, `<svg xmlns=https://www.w3.org/2000/svg></svg>`},
-		{`https://example.com/`, `<svg xmlns="https://www.w3.org/2000/svg"></svg>`, `<svg xmlns=//www.w3.org/2000/svg></svg>`},
+		{`http://example.com/`, `<html xmlns="http://www.w3.org/1999/xhtml"></html>`, `<html xmlns=//www.w3.org/1999/xhtml>`},
+		{`https://example.com/`, `<html xmlns="http://www.w3.org/1999/xhtml"></html>`, `<html xmlns=http://www.w3.org/1999/xhtml>`},
+		{`http://example.com/`, `<html xmlns="https://www.w3.org/1999/xhtml"></html>`, `<html xmlns=https://www.w3.org/1999/xhtml>`},
+		{`https://example.com/`, `<html xmlns="https://www.w3.org/1999/xhtml"></html>`, `<html xmlns=//www.w3.org/1999/xhtml>`},
 	}
 
 	m := minify.New()
