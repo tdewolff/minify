@@ -18,9 +18,11 @@ var ErrNotExist = errors.New("minifier does not exist for mimetype")
 
 ////////////////////////////////////////////////////////////////
 
-type minifierFunc func(*M, io.Writer, io.Reader, map[string]string) error
+// MinifierFunc is a function that implements Minifer.
+type MinifierFunc func(*M, io.Writer, io.Reader, map[string]string) error
 
-func (f minifierFunc) Minify(m *M, w io.Writer, r io.Reader, params map[string]string) error {
+// Minify calls f(m, w, r, params)
+func (f MinifierFunc) Minify(m *M, w io.Writer, r io.Reader, params map[string]string) error {
 	return f(m, w, r, params)
 }
 
@@ -74,7 +76,7 @@ func (m *M) Add(mimetype string, minifier Minifier) {
 }
 
 // AddFunc adds a minify function to the mimetype => function map (unsafe for concurrent use).
-func (m *M) AddFunc(mimetype string, minifier minifierFunc) {
+func (m *M) AddFunc(mimetype string, minifier MinifierFunc) {
 	m.literal[mimetype] = minifier
 }
 
@@ -84,7 +86,7 @@ func (m *M) AddRegexp(pattern *regexp.Regexp, minifier Minifier) {
 }
 
 // AddFuncRegexp adds a minify function to the mimetype => function map (unsafe for concurrent use).
-func (m *M) AddFuncRegexp(pattern *regexp.Regexp, minifier minifierFunc) {
+func (m *M) AddFuncRegexp(pattern *regexp.Regexp, minifier MinifierFunc) {
 	m.pattern = append(m.pattern, patternMinifier{pattern, minifier})
 }
 
