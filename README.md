@@ -1,4 +1,4 @@
-# Minify [![Build Status](https://travis-ci.org/tdewolff/minify.svg?branch=master)](https://travis-ci.org/tdewolff/minify) [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+#<a name="minify"></a> Minify [![Build Status](https://travis-ci.org/tdewolff/minify.svg?branch=master)](https://travis-ci.org/tdewolff/minify) [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 **The preferred stable release should be v2. Master has some new changes for SVG that haven't yet endured the test of time, bug reports are appreciated.**
 
@@ -12,18 +12,18 @@ The core functionality associates minification functions with mimetypes, allowin
 
 #### Table of Contents
 
-- [Minify](#minify---)
+- [Minify](#minify)
 	- [Prologue](#prologue)
 	- [Installation](#installation)
 	- [API stability](#api-stability)
 	- [Testing](#testing)
-	- [HTML](#html--)
+	- [HTML](#html)
 		- [Whitespace removal](#whitespace-removal)
-	- [CSS](#css--)
-	- [JS](#js--)
-	- [JSON](#json--)
-	- [SVG](#svg--)
-	- [XML](#xml--)
+	- [CSS](#css)
+	- [JS](#js)
+	- [JSON](#json)
+	- [SVG](#svg)
+	- [XML](#xml)
 	- [Usage](#usage)
 		- [New](#new)
 		- [From reader](#from-reader)
@@ -33,7 +33,7 @@ The core functionality associates minification functions with mimetypes, allowin
 		- [Mediatypes](#mediatypes)
 	- [Examples](#examples)
 		- [Common minifiers](#common-minifiers)
-		- [Custom minifier](#custom-minifier-1)
+		- [Custom minifier](#custom-minifier-example)
 		- [ResponseWriter](#responsewriter)
 		- [Templates](#templates)
 	- [License](#license)
@@ -417,7 +417,7 @@ func main() {
 }
 ```
 
-### Custom minifier
+### <a name="custom-minifier-example"></a> Custom minifier
 Custom minifier showing an example that implements the minifier function interface. Within a custom minifier, it is possible to call any minifier function (through `m minify.Minifier`) recursively when dealing with embedded resources.
 ``` go
 package main
