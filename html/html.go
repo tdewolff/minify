@@ -73,20 +73,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			if _, err := w.Write(doctypeBytes); err != nil {
 				return err
 			}
-		case html.CommentToken:
-			// TODO: ensure that nested comments are handled properly (lexer doesn't handle this!)
-			var comment []byte
-			if bytes.HasPrefix(t.Text, []byte("[if")) {
-				comment = t.Data
-			} else if bytes.HasSuffix(t.Text, []byte("--")) {
-				// only occurs when mixed up with conditional comments
-				comment = append(append([]byte("<!"), t.Text...), '>')
-			} else {
-				break
-			}
-			if _, err := w.Write(comment); err != nil {
-				return err
-			}
 		case html.SvgToken:
 			if err := m.MinifyMimetype(svgMimeBytes, w, buffer.NewReader(t.Data), nil); err != nil {
 				if err != minify.ErrNotExist {

@@ -26,9 +26,6 @@ func TestHTML(t *testing.T) {
 		{`html`, `html`},
 		{`<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">`, `<!doctype html>`},
 		{`<!-- comment -->`, ``},
-		{`<!--[if IE 6]>html<![endif]-->`, `<!--[if IE 6]>html<![endif]-->`},
-		{`<!--[if IE 6]><!--html--><![endif]-->`, `<!--[if IE 6]><!--html--><![endif]-->`},
-		{`<!--[if IE 6]><style><!--\ncss\n--></style><![endif]-->`, `<!--[if IE 6]><style><!--\ncss\n--></style><![endif]-->`},
 		{`<style><!--\ncss\n--></style>`, `<style><!--\ncss\n--></style>`},
 		{`<style>&</style>`, `<style>&</style>`},
 		{`<html><head></head><body>x</body></html>`, `x`},
@@ -241,7 +238,6 @@ func TestWriterErrors(t *testing.T) {
 		{`</foo>`, []int{0}},
 		{`<style>css</style>`, []int{2}},
 		{`<code>x</code>`, []int{2}},
-		{`<!--[if comment-->`, []int{0}},
 	}
 
 	m := minify.New()
