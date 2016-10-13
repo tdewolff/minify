@@ -186,7 +186,6 @@ func Number(num []byte, prec int) []byte {
 				start = end - n
 			} else {
 				// TODO: copy the other part if shorter?
-				//fmt.Println("COPY1", end-dot-1)
 				copy(num[dot:], num[dot+1:end])
 				end--
 			}
@@ -219,16 +218,13 @@ func Number(num []byte, prec int) []byte {
 				if d > 0 {
 					if dot < end {
 						// copy original digits behind the dot backwards
-						//fmt.Println("COPY2", end-dot-1)
 						copy(num[dot+1+d:], num[dot+1:end])
 						if dot > start {
 							// copy original digits before the dot backwards
-							//fmt.Println("COPY3a", dot-start)
 							copy(num[start+d+1:], num[start:dot])
 						}
 					} else if dot > start {
 						// copy original digits before the dot backwards
-						//fmt.Println("COPY3b", dot-start)
 						copy(num[start+d:], num[start:dot])
 					}
 					newDot = start
@@ -257,11 +253,9 @@ func Number(num []byte, prec int) []byte {
 			newDot = start + normExp
 			if newDot > dot {
 				// copy digits forwards
-				//fmt.Println("COPY4", newDot-dot)
 				copy(num[dot:], num[dot+1:newDot+1])
 			} else if newDot < dot {
 				// copy digits backwards
-				//fmt.Println("COPY5", dot-newDot)
 				copy(num[newDot+1:], num[newDot:dot])
 			}
 			num[newDot] = '.'
@@ -278,7 +272,11 @@ func Number(num []byte, prec int) []byte {
 						end--
 					} else if inc {
 						if num[i] == '9' {
-							end--
+							if i > dot {
+								end--
+							} else {
+								num[i] = '0'
+							}
 						} else {
 							num[i]++
 							inc = false
@@ -295,14 +293,19 @@ func Number(num []byte, prec int) []byte {
 				} else {
 					num[start] = '0'
 				}
-			} else if inc {
-				if num[start] == '9' {
-					num[start] = '0'
-					copy(num[start+1:], num[start:end])
-					end++
-					num[start] = '1'
-				} else {
-					num[start]++
+			} else {
+				if dot+1 == end {
+					end--
+				}
+				if inc {
+					if num[start] == '9' {
+						num[start] = '0'
+						copy(num[start+1:], num[start:end])
+						end++
+						num[start] = '1'
+					} else {
+						num[start]++
+					}
 				}
 			}
 		}
@@ -310,11 +313,9 @@ func Number(num []byte, prec int) []byte {
 		// case 3
 		if dot < end {
 			if dot == start {
-				//fmt.Println("COPY6", n)
 				copy(num[start:], num[end-n:end])
 				end = start + n
 			} else {
-				//fmt.Println("COPY7", end-dot-1)
 				copy(num[dot:], num[dot+1:end])
 				end--
 			}
