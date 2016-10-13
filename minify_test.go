@@ -123,6 +123,14 @@ func TestAdd(t *testing.T) {
 	test.String(t, mAdd.Minify("stderr6", w, r).Error(), "exit status 2", "command returns status 2 when minifier doesn't exist")
 }
 
+func TestMatch(t *testing.T) {
+	pattern, _, _ := m.Match("dummy/copy; a=b")
+	test.String(t, pattern, "dummy/copy")
+
+	pattern, _, _ = m.Match("type/foobar")
+	test.String(t, pattern, "^type/.+$")
+}
+
 func TestWildcard(t *testing.T) {
 	mimetypeTests := []struct {
 		mimetype string
