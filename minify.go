@@ -104,6 +104,7 @@ func (m *M) AddCmdRegexp(pattern *regexp.Regexp, cmd *exec.Cmd) {
 
 // Match returns the pattern and minifier that gets matched with the mediatype.
 // It returns nil when no matching minifier exists.
+// It has the same matching algorithm as Minify.
 func (m *M) Match(mediatype string) (string, map[string]string, MinifierFunc) {
 	mimetype, params := parse.Mediatype([]byte(mediatype))
 	if minifier, ok := m.literal[string(mimetype)]; ok { // string conversion is optimized away
@@ -179,7 +180,7 @@ func (m *M) Reader(mediatype string, r io.Reader) io.Reader {
 }
 
 // minifyWriter makes sure that errors from the minifier are passed down through Close.
-// It also makes sure that all data has been written on calling Close, it flushes.
+// It also makes sure that all data has been written on calling Close (can be blocking).
 type minifyWriter struct {
 	pw  *io.PipeWriter
 	wg  sync.WaitGroup
