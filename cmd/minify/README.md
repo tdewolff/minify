@@ -90,7 +90,7 @@ $ minify -r --match=\.js dir # minify only javascript files in dir
 $ minify --concat -o style.css head.css main.css foot.css
 ```
 
-### Watch
+### Watching
 To watch file changes and automatically re-minify you can use the `--watch` option. Watching doesn't work (yet) when overwriting files by themselves, it also works only for one input directory and doesn't go together with concatenation.
 ```sh
 $ minify -r --watch dir -o dir-min

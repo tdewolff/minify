@@ -215,7 +215,7 @@ func main() {
 	start := time.Now()
 
 	var fails int32
-	if verbose {
+	if verbose || len(tasks) == 1 {
 		for _, t := range tasks {
 			if ok := minify(mimetype, t); !ok {
 				fails++
