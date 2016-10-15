@@ -238,7 +238,7 @@ Options:
 - `KeepWhitespace` do not remove whitespace between inline tags but still collapse multiple whitespace characters into one
 
 ## Usage
-Any input stream is being buffered by the minification functions. This is how the underlying buffer package inherently works to ensure high performance. The output stream however is not buffer. It is wise to preallocate a buffer as big as the input to which the output is written, or otherwise use `bufio` to buffer to a streaming writer.
+Any input stream is being buffered by the minification functions. This is how the underlying buffer package inherently works to ensure high performance. The output stream however is not buffered. It is wise to preallocate a buffer as big as the input to which the output is written, or otherwise use `bufio` to buffer to a streaming writer.
 
 ### New
 Retrieve a minifier struct which holds a map of mediatype &#8594; minifier functions.
