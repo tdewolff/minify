@@ -454,7 +454,7 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 			data = append(data, dim...)
 		}
 	} else if tt == css.IdentToken {
-		parse.ToLower(data)
+		//parse.ToLower(data) // TODO: not all identifiers are case-insensitive; all <custom-ident> properties are case-sensitive
 		if hex, ok := ShortenColorName[css.ToHash(data)]; ok {
 			tt = css.HashToken
 			data = hex
