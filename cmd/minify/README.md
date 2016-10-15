@@ -87,7 +87,9 @@ $ minify -r --match=\.js dir # minify only javascript files in dir
 
 ### Concatenate
 ```sh
-$ minify --concat -o style.css head.css main.css foot.css
+$ minify --concat -o style.css one.css two.css three.css
+
+$ cat one.css two.css three.css | minify --type=css > style.css
 ```
 
 ### Watching
