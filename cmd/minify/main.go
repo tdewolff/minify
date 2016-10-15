@@ -196,7 +196,7 @@ func main() {
 		} else if len(rawInputs) > 1 {
 			Error.Fatalln("watch only works with one input directory")
 		} else if concat {
-			Error.Fatalln("watch doesn't work together with concatenation (yet)")
+			Error.Fatalln("watch doesn't work together with concatenation")
 		}
 
 		input := sanitizePath(rawInputs[0])
@@ -355,14 +355,14 @@ func expandInputs(inputs []string) ([]task, bool, bool) {
 		}
 	}
 	if len(tasks) > 1 {
-		if !concat {
-			dirDst = true
-		} else {
+		if concat {
 			tasks[0].srcDir = ""
 			for _, task := range tasks[1:] {
 				tasks[0].srcs = append(tasks[0].srcs, task.srcs[0])
 			}
 			tasks = tasks[:1]
+		} else {
+			dirDst = true
 		}
 	}
 
@@ -446,7 +446,7 @@ func expandOutputs(output string, usePipe bool, tasks *[]task) bool {
 	ok := true
 	for i, t := range *tasks {
 		if !usePipe && output == "" {
-			(*tasks)[i].dst = (*tasks)[i].srcs[0]
+			(*tasks)[i].dst = (*tasks)[i].srcs[0] // no concatenation
 		} else {
 			var err error
 			(*tasks)[i].dst, err = getOutputFilename(output, t)
@@ -515,10 +515,6 @@ func openOutputFile(output string) (*os.File, bool) {
 }
 
 func minify(mimetype string, t task) bool {
-	if len(t.srcs) == 0 {
-		panic("no inputs")
-	}
-
 	if mimetype == "" {
 		for _, src := range t.srcs {
 			if len(path.Ext(src)) > 0 {

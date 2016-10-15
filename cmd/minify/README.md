@@ -20,6 +20,8 @@ and the `minify` command will be in your `$GOPATH/bin`.
 	Options:
 	  -a, --all
 	        Minify all files, including hidden files and files in hidden directories
+	  --concat
+	        Concatenate inputs to single output file
 	  --html-keep-default-attrvals
 	        Preserve default attribute values
 	  --html-keep-whitespace
@@ -64,15 +66,16 @@ and the `minify` command will be in your `$GOPATH/bin`.
 The following commands are variations one can use to minify files:
 
 ```sh
-$ minify file.html # overwrite file.html
+$ minify file.html
 
-$ minify --type=css -o file_minified.ext file.ext # file.ext -> file_minified.ext
+$ minify --type=css -o file_minified.ext file.ext
 
 $ minify --mime=text/javascript < file.js > file.min.js
 
 $ cat file.html | minify --type=html > file.min.html
 ```
 
+### Directories
 You can also give directories as input, and these directories can be minified recursively:
 ```sh
 $ minify . # minify files in current working directory (no subdirectories)
@@ -82,7 +85,14 @@ $ minify -r dir # minify files in dir recursively
 $ minify -r --match=\.js dir # minify only javascript files in dir
 ```
 
-Additionally, you can watch for file changes and automatically re-minify:
+### Concatenate
+```sh
+$ minify --concat -o style.css head.css main.css foot.css
+```
+
+### Watch
+To watch file changes and automatically re-minify you can use the `--watch` option. Watching doesn't work (yet) when overwriting files by themselves, it also works only for one input directory and doesn't go together with concatenation.
 ```sh
 $ minify -r --watch dir -o dir-min
 ```
+
