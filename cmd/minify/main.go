@@ -20,7 +20,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/matryer/try"
-	flag "github.com/ogier/pflag"
+	flag "github.com/spf13/pflag"
 	min "github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/css"
 	"github.com/tdewolff/minify/html"
