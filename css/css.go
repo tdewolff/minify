@@ -78,7 +78,8 @@ func (c *cssMinifier) minifyGrammar() error {
 			semicolonQueued = false
 		}
 
-		if gt == css.AtRuleGrammar {
+		switch gt {
+		case css.AtRuleGrammar:
 			if _, err := c.w.Write(data); err != nil {
 				return err
 			}
@@ -88,7 +89,7 @@ func (c *cssMinifier) minifyGrammar() error {
 				}
 			}
 			semicolonQueued = true
-		} else if gt == css.BeginAtRuleGrammar {
+		case css.BeginAtRuleGrammar:
 			if _, err := c.w.Write(data); err != nil {
 				return err
 			}
@@ -100,14 +101,14 @@ func (c *cssMinifier) minifyGrammar() error {
 			if _, err := c.w.Write(leftBracketBytes); err != nil {
 				return err
 			}
-		} else if gt == css.BeginRulesetGrammar {
+		case css.BeginRulesetGrammar:
 			if err := c.minifySelectors(data, c.p.Values()); err != nil {
 				return err
 			}
 			if _, err := c.w.Write(leftBracketBytes); err != nil {
 				return err
 			}
-		} else if gt == css.DeclarationGrammar {
+		case css.DeclarationGrammar:
 			if _, err := c.w.Write(data); err != nil {
 				return err
 			}
@@ -118,7 +119,7 @@ func (c *cssMinifier) minifyGrammar() error {
 				return err
 			}
 			semicolonQueued = true
-		} else if gt == css.CommentGrammar {
+		case css.CommentGrammar:
 			if len(data) > 5 && data[1] == '*' && data[2] == '!' {
 				if _, err := c.w.Write(data[:3]); err != nil {
 					return err
@@ -131,8 +132,10 @@ func (c *cssMinifier) minifyGrammar() error {
 					return err
 				}
 			}
-		} else if _, err := c.w.Write(data); err != nil {
-			return err
+		default:
+			if _, err := c.w.Write(data); err != nil {
+				return err
+			}
 		}
 	}
 }
@@ -435,7 +438,8 @@ func (c *cssMinifier) minifyFunction(values []css.Token) (int, error) {
 }
 
 func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte) (css.TokenType, []byte) {
-	if tt == css.NumberToken || tt == css.PercentageToken || tt == css.DimensionToken {
+	switch tt {
+	case css.NumberToken, css.PercentageToken, css.DimensionToken:
 		if tt == css.NumberToken && (prop == css.Z_Index || prop == css.Counter_Increment || prop == css.Counter_Reset || prop == css.Orphans || prop == css.Widows) {
 			return tt, data // integers
 		}
@@ -453,13 +457,13 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 			parse.ToLower(dim)
 			data = append(data, dim...)
 		}
-	} else if tt == css.IdentToken {
+	case css.IdentToken:
 		//parse.ToLower(data) // TODO: not all identifiers are case-insensitive; all <custom-ident> properties are case-sensitive
 		if hex, ok := ShortenColorName[css.ToHash(data)]; ok {
 			tt = css.HashToken
 			data = hex
 		}
-	} else if tt == css.HashToken {
+	case css.HashToken:
 		parse.ToLower(data)
 		if ident, ok := ShortenColorHex[string(data)]; ok {
 			tt = css.IdentToken
@@ -470,7 +474,7 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 			data[3] = data[5]
 			data = data[:4]
 		}
-	} else if tt == css.StringToken {
+	case css.StringToken:
 		// remove any \\\r\n \\\r \\\n
 		for i := 1; i < len(data)-2; i++ {
 			if data[i] == '\\' && (data[i+1] == '\n' || data[i+1] == '\r') {
@@ -494,7 +498,7 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 				break
 			}
 		}
-	} else if tt == css.URLToken {
+	case css.URLToken:
 		parse.ToLower(data[:3])
 		if len(data) > 10 {
 			uri := data[4 : len(data)-1]

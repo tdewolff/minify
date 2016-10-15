@@ -34,16 +34,17 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	l := js.NewLexer(r)
 	for {
 		tt, data := l.Next()
-		if tt == js.ErrorToken {
+		switch tt {
+		case js.ErrorToken:
 			if l.Err() != io.EOF {
 				return l.Err()
 			}
 			return nil
-		} else if tt == js.LineTerminatorToken {
+		case js.LineTerminatorToken:
 			lineTerminatorQueued = true
-		} else if tt == js.WhitespaceToken {
+		case js.WhitespaceToken:
 			whitespaceQueued = true
-		} else if tt == js.CommentToken {
+		case js.CommentToken:
 			if len(data) > 5 && data[1] == '*' && data[2] == '!' {
 				if _, err := w.Write(data[:3]); err != nil {
 					return err
@@ -56,7 +57,7 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					return err
 				}
 			}
-		} else {
+		default:
 			first := data[0]
 			if (prev == js.IdentifierToken || prev == js.NumericToken || prev == js.PunctuatorToken || prev == js.StringToken || prev == js.RegexpToken) && (tt == js.IdentifierToken || tt == js.NumericToken || tt == js.PunctuatorToken || tt == js.RegexpToken) {
 				if lineTerminatorQueued && (prev != js.PunctuatorToken || prevLast == '}' || prevLast == ']' || prevLast == ')' || prevLast == '+' || prevLast == '-' || prevLast == '"' || prevLast == '\'') && (tt != js.PunctuatorToken || first == '{' || first == '[' || first == '(' || first == '+' || first == '-') {
