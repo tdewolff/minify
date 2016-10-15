@@ -43,6 +43,7 @@ var filetypeMime = map[string]string{
 var (
 	m         *min.M
 	recursive bool
+	concat    bool
 	hidden    bool
 	list      bool
 	verbose   bool
@@ -52,7 +53,7 @@ var (
 )
 
 type task struct {
-	src    string
+	srcs   []string
 	srcDir string
 	dst    string
 }
@@ -104,6 +105,7 @@ func main() {
 	flag.StringVar(&filetype, "type", "", "Filetype (css, html, js, ...), optional for input filenames")
 	flag.StringVar(&match, "match", "", "Filename pattern matching using regular expressions, see https://github.com/google/re2/wiki/Syntax")
 	flag.BoolVarP(&recursive, "recursive", "r", false, "Recursively minify directories")
+	flag.BoolVarP(&concat, "concat", "", false, "Concatenate inputs to single output file")
 	flag.BoolVarP(&hidden, "all", "a", false, "Minify all files, including hidden files and files in hidden directories")
 	flag.BoolVarP(&list, "list", "l", false, "List all accepted filetypes")
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose")
@@ -193,6 +195,8 @@ func main() {
 			Error.Fatalln("watch only works with files that do not overwrite themselves")
 		} else if len(rawInputs) > 1 {
 			Error.Fatalln("watch only works with one input directory")
+		} else if concat {
+			Error.Fatalln("watch doesn't work together with concatenation (yet)")
 		}
 
 		input := sanitizePath(rawInputs[0])
@@ -248,7 +252,7 @@ func main() {
 				}
 				file = sanitizePath(file)
 				if strings.HasPrefix(file, input) {
-					t := task{src: file, srcDir: input}
+					t := task{srcs: []string{file}, srcDir: input}
 					if t.dst, err = getOutputFilename(output, t); err != nil {
 						Error.Println(err)
 						continue
@@ -341,7 +345,7 @@ func expandInputs(inputs []string) ([]task, bool, bool) {
 		}
 
 		if info.Mode().IsRegular() {
-			tasks = append(tasks, task{filepath.ToSlash(input), "", ""})
+			tasks = append(tasks, task{[]string{filepath.ToSlash(input)}, "", ""})
 		} else if info.Mode().IsDir() {
 			expandDir(input, &tasks, &ok)
 			dirDst = true
@@ -351,14 +355,26 @@ func expandInputs(inputs []string) ([]task, bool, bool) {
 		}
 	}
 	if len(tasks) > 1 {
-		dirDst = true
+		if !concat {
+			dirDst = true
+		} else {
+			tasks[0].srcDir = ""
+			for _, task := range tasks[1:] {
+				tasks[0].srcs = append(tasks[0].srcs, task.srcs[0])
+			}
+			tasks = tasks[:1]
+		}
 	}
 
 	if verbose {
 		if len(inputs) == 0 {
 			Info.Println("minify from stdin")
 		} else if len(tasks) == 1 {
-			Info.Println("minify input file", tasks[0].src)
+			if concat {
+				Info.Println("minify and concatenate input files (" + strings.Join(tasks[0].srcs, "+") + ")")
+			} else {
+				Info.Println("minify input file", tasks[0].srcs[0])
+			}
 		} else {
 			Info.Println("minify", len(tasks), "input files")
 		}
@@ -379,7 +395,7 @@ func expandDir(input string, tasks *[]task, ok *bool) {
 		}
 		for _, info := range infos {
 			if validFile(info) {
-				*tasks = append(*tasks, task{path.Join(input, info.Name()), input, ""})
+				*tasks = append(*tasks, task{[]string{path.Join(input, info.Name())}, input, ""})
 			}
 		}
 	} else {
@@ -392,7 +408,7 @@ func expandDir(input string, tasks *[]task, ok *bool) {
 				return err
 			}
 			if validFile(info) {
-				*tasks = append(*tasks, task{filepath.ToSlash(path), input, ""})
+				*tasks = append(*tasks, task{[]string{filepath.ToSlash(path)}, input, ""})
 			} else if info.Mode().IsDir() && !validDir(info) && info.Name() != "." && info.Name() != ".." { // check for IsDir, so we don't skip the rest of the directory when we have an invalid file
 				return filepath.SkipDir
 			}
@@ -406,6 +422,11 @@ func expandDir(input string, tasks *[]task, ok *bool) {
 }
 
 func expandOutputs(output string, usePipe bool, tasks *[]task) bool {
+	if output == "" && concat {
+		Error.Println("no output given for concatenation")
+		return false
+	}
+
 	if verbose {
 		if output == "" {
 			if usePipe {
@@ -425,7 +446,7 @@ func expandOutputs(output string, usePipe bool, tasks *[]task) bool {
 	ok := true
 	for i, t := range *tasks {
 		if !usePipe && output == "" {
-			(*tasks)[i].dst = (*tasks)[i].src
+			(*tasks)[i].dst = (*tasks)[i].srcs[0]
 		} else {
 			var err error
 			(*tasks)[i].dst, err = getOutputFilename(output, t)
@@ -437,14 +458,14 @@ func expandOutputs(output string, usePipe bool, tasks *[]task) bool {
 	}
 
 	if usePipe && len(*tasks) == 0 {
-		*tasks = append(*tasks, task{"", "", output})
+		*tasks = append(*tasks, task{[]string{""}, "", output})
 	}
 	return ok
 }
 
 func getOutputFilename(output string, t task) (string, error) {
-	if len(output) > 0 && output[len(output)-1] == '/' {
-		rel, err := filepath.Rel(t.srcDir, t.src)
+	if len(output) > 0 && output[len(output)-1] == '/' && !concat {
+		rel, err := filepath.Rel(t.srcDir, t.srcs[0])
 		if err != nil {
 			return "", err
 		}
@@ -494,17 +515,32 @@ func openOutputFile(output string) (*os.File, bool) {
 }
 
 func minify(mimetype string, t task) bool {
+	if len(t.srcs) == 0 {
+		panic("no inputs")
+	}
+
 	if mimetype == "" {
-		if len(path.Ext(t.src)) > 0 {
-			var ok bool
-			if mimetype, ok = filetypeMime[path.Ext(t.src)[1:]]; !ok {
-				Error.Println("cannot infer mimetype from extension in", t.src)
-				return false
+		for _, src := range t.srcs {
+			if len(path.Ext(src)) > 0 {
+				srcMimetype, ok := filetypeMime[path.Ext(src)[1:]]
+				if !ok {
+					Error.Println("cannot infer mimetype from extension in", src)
+					return false
+				}
+				if mimetype == "" {
+					mimetype = srcMimetype
+				} else if srcMimetype != mimetype {
+					Error.Println("inferred mimetype", srcMimetype, "of", src, "for concatenation unequal to previous mimetypes", mimetype)
+					return false
+				}
 			}
 		}
 	}
 
-	srcName := t.src
+	srcName := strings.Join(t.srcs, " + ")
+	if len(t.srcs) > 1 {
+		srcName = "(" + srcName + ")"
+	}
 	if srcName == "" {
 		srcName = "stdin"
 	}
@@ -513,23 +549,37 @@ func minify(mimetype string, t task) bool {
 		dstName = "stdin"
 	}
 
-	if t.src == t.dst && t.src != "" {
-		t.src += ".bak"
-		if err := os.Rename(t.dst, t.src); err != nil {
-			Error.Println(err)
-			return false
+	for _, src := range t.srcs {
+		if src == t.dst && src != "" {
+			src += ".bak"
+			if err := os.Rename(t.dst, src); err != nil {
+				Error.Println(err)
+				return false
+			}
+			break
 		}
 	}
 
-	fr, ok := openInputFile(t.src)
-	if !ok {
-		return false
+	frs := make([]io.ReadCloser, 0, len(t.srcs))
+	frsMulti := make([]io.Reader, 0, len(t.srcs))
+	for _, src := range t.srcs {
+		fr, ok := openInputFile(src)
+		if !ok {
+			for _, fr := range frs {
+				fr.Close()
+			}
+			return false
+		}
+		frs = append(frs, fr)
+		frsMulti = append(frsMulti, fr)
 	}
-	r := &countingReader{fr, 0}
+	r := &countingReader{io.MultiReader(frsMulti...), 0}
 
 	fw, ok := openOutputFile(t.dst)
 	if !ok {
-		fr.Close()
+		for _, fr := range frs {
+			fr.Close()
+		}
 		return false
 	}
 	var w *countingWriter
@@ -565,26 +615,31 @@ func minify(mimetype string, t task) bool {
 		}
 	}
 
-	fr.Close()
+	for _, fr := range frs {
+		fr.Close()
+	}
 	if bw, ok := w.Writer.(*bufio.Writer); ok {
 		bw.Flush()
 	}
 	fw.Close()
 
-	if t.src == t.dst+".bak" {
-		if err == nil {
-			if err = os.Remove(t.src); err != nil {
-				Error.Println(err)
-				return false
+	for _, src := range t.srcs {
+		if src == t.dst+".bak" {
+			if err == nil {
+				if err = os.Remove(src); err != nil {
+					Error.Println(err)
+					return false
+				}
+			} else {
+				if err = os.Remove(t.dst); err != nil {
+					Error.Println(err)
+					return false
+				} else if err = os.Rename(src, t.dst); err != nil {
+					Error.Println(err)
+					return false
+				}
 			}
-		} else {
-			if err = os.Remove(t.dst); err != nil {
-				Error.Println(err)
-				return false
-			} else if err = os.Rename(t.src, t.dst); err != nil {
-				Error.Println(err)
-				return false
-			}
+			break
 		}
 	}
 	return success
