@@ -20,8 +20,6 @@ and the `minify` command will be in your `$GOPATH/bin`.
 	Options:
 	  -a, --all
 	        Minify all files, including hidden files and files in hidden directories
-	  --concat
-	        Concatenate inputs to single output file
 	  --html-keep-default-attrvals
 	        Preserve default attribute values
 	  --html-keep-whitespace
@@ -33,7 +31,7 @@ and the `minify` command will be in your `$GOPATH/bin`.
 	  --mime string
 	        Mimetype (text/css, application/javascript, ...), optional for input filenames, has precendence over -type
 	  -o, --output string
-	        Output file or directory, leave blank to use stdout
+	        Output file or directory (must have trailing slash), leave blank to use stdout
 	  -r, --recursive
 	        Recursively minify directories
 	  --type string
@@ -63,33 +61,62 @@ and the `minify` command will be in your `$GOPATH/bin`.
 	xml     text/xml
 
 ## Examples
-The following commands are variations one can use to minify files:
-
+Minify **index.html** to **index-min.html**:
 ```sh
-$ minify file.html
+$ minify -o index-min.html index.html
+```
 
-$ minify --type=css -o file_minified.ext file.ext
+Minify **index.html** to standard output (leave `-o` blank):
+```sh
+$ minify index.html
+```
 
-$ minify --mime=text/javascript < file.js > file.min.js
+Normally the mimetype is inferred from the extension, to set the mimetype explicitly:
+```sh
+$ minify --type=html -o index-min.xhtml index.xhtml
+```
 
-$ cat file.html | minify --type=html > file.min.html
+You need to set the type or the mimetype option when using standard input:
+```sh
+$ minify --mime=text/javascript < script.js > script-min.js
+
+$ cat script.js | minify --type=html > script-min.js
 ```
 
 ### Directories
-You can also give directories as input, and these directories can be minified recursively:
+You can also give directories as input, and these directories can be minified recursively.
+
+Minify files in the current working directory to **out/** (no subdirectories):
 ```sh
-$ minify . # minify files in current working directory (no subdirectories)
+$ minify -o min/ .
+```
 
-$ minify -r dir # minify files in dir recursively
+Minify files recursively in **src**:
+```sh
+$ minify -r -o min/ src
+```
 
-$ minify -r --match=\.js dir # minify only javascript files in dir
+Minify only javascript files in **src**:
+```sh
+$ minify -r -o min/ --match=\.js src
 ```
 
 ### Concatenate
-```sh
-$ minify --concat -o style.css one.css two.css three.css
+When multiple inputs are given and either standard output or a single output file, it will concatenate the files together.
 
-$ cat one.css two.css three.css | minify --type=css > style.css
+Concatenate **one.css** and **two.css** into **style.css**:
+```sh
+$ minify -o style.css one.css two.css
+```
+
+Concatenate all files in **styles** into **style.css**:
+```sh
+$ minify -o style.css styles/
+```
+
+You can also use `cat` as standard input to concatenate files and use gzip for example:
+```sh
+$ cat one.css two.css three.css | minify --type=css | gzip -9 -c > style.css.gz
 ```
 
 ### Watching
