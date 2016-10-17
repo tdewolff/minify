@@ -154,6 +154,12 @@ func main() {
 		}
 	}
 
+	if watch && (useStdin || output == "") {
+		Error.Fatalln("watch doesn't work with stdin or stdout")
+	}
+
+	////////////////
+
 	dirDst := false
 	if output != "" {
 		output = sanitizePath(output)
@@ -190,27 +196,6 @@ func main() {
 		Error.Fatalln(err)
 	}
 
-	var watcher *RecursiveWatcher
-	if watch {
-		if useStdin || output == "" {
-			Error.Fatalln("watch only works with files that do not overwrite themselves")
-		} else if len(rawInputs) > 1 {
-			Error.Fatalln("watch only works with one input directory")
-		}
-
-		input := sanitizePath(rawInputs[0])
-		info, err := os.Stat(input)
-		if err != nil || !info.Mode().IsDir() {
-			Error.Fatalln("watch only works with an input directory")
-		}
-
-		watcher, err = NewRecursiveWatcher(input, recursive)
-		if err != nil {
-			Error.Fatalln(err)
-		}
-		defer watcher.Close()
-	}
-
 	start := time.Now()
 
 	var fails int32
@@ -235,29 +220,52 @@ func main() {
 	}
 
 	if watch {
+		var watcher *RecursiveWatcher
+		watcher, err = NewRecursiveWatcher(recursive)
+		if err != nil {
+			Error.Fatalln(err)
+		}
+		defer watcher.Close()
+
+		var watcherTasks = make(map[string]task, len(rawInputs))
+		for _, task := range tasks {
+			for _, src := range task.srcs {
+				watcherTasks[src] = task
+				watcher.AddPath(src)
+			}
+		}
+
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
 
-		input := sanitizePath(rawInputs[0])
-		files := watcher.Run()
-		for files != nil {
+		skip := make(map[string]int)
+		changes := watcher.Run()
+		for changes != nil {
 			select {
 			case <-c:
 				watcher.Close()
-			case file, ok := <-files:
+			case file, ok := <-changes:
 				if !ok {
-					files = nil
+					changes = nil
 					break
 				}
 				file = sanitizePath(file)
-				if strings.HasPrefix(file, input) {
-					t := task{srcs: []string{file}, srcDir: input}
-					if t.dst, err = getOutputFilename(output, t); err != nil {
-						Error.Println(err)
-						continue
-					}
+
+				if skip[file] > 0 {
+					skip[file]--
+					continue
+				}
+
+				var t task
+				if t, ok = watcherTasks[file]; ok {
 					if !verbose {
 						fmt.Fprintln(os.Stderr, file, "changed")
+					}
+					for _, src := range t.srcs {
+						if src == t.dst {
+							skip[file] = 2 // minify creates both a CREATE and WRITE on the file
+							break
+						}
 					}
 					if ok := minify(mimetype, t); !ok {
 						fails++
@@ -527,16 +535,21 @@ func minify(mimetype string, t task) bool {
 	dstName := t.dst
 	if dstName == "" {
 		dstName = "stdin"
-	}
-
-	for i, _ := range t.srcs {
-		if t.srcs[i] == t.dst && t.srcs[i] != "" {
-			t.srcs[i] += ".bak"
-			if err := os.Rename(t.dst, t.srcs[i]); err != nil {
-				Error.Println(err)
-				return false
+	} else {
+		// rename original when overwriting
+		for i, _ := range t.srcs {
+			if t.srcs[i] == t.dst {
+				t.srcs[i] += ".bak"
+				err := try.Do(func(attempt int) (bool, error) {
+					err := os.Rename(t.dst, t.srcs[i])
+					return attempt < 5, err
+				})
+				if err != nil {
+					Error.Println(err)
+					return false
+				}
+				break
 			}
-			break
 		}
 	}
 
@@ -603,10 +616,11 @@ func minify(mimetype string, t task) bool {
 	}
 	fw.Close()
 
-	for _, src := range t.srcs {
-		if src == t.dst+".bak" {
+	// remove original that was renamed, when overwriting files
+	for i, _ := range t.srcs {
+		if t.srcs[i] == t.dst+".bak" {
 			if err == nil {
-				if err = os.Remove(src); err != nil {
+				if err = os.Remove(t.srcs[i]); err != nil {
 					Error.Println(err)
 					return false
 				}
@@ -614,11 +628,12 @@ func minify(mimetype string, t task) bool {
 				if err = os.Remove(t.dst); err != nil {
 					Error.Println(err)
 					return false
-				} else if err = os.Rename(src, t.dst); err != nil {
+				} else if err = os.Rename(t.srcs[i], t.dst); err != nil {
 					Error.Println(err)
 					return false
 				}
 			}
+			t.srcs[i] = t.dst
 			break
 		}
 	}

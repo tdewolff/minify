@@ -120,8 +120,19 @@ $ cat one.css two.css three.css | minify --type=css | gzip -9 -c > style.css.gz
 ```
 
 ### Watching
-To watch file changes and automatically re-minify you can use the `--watch` option. Watching doesn't work (yet) when overwriting files by themselves, it also works only for one input directory and doesn't go together with concatenation.
+To watch file changes and automatically re-minify you can use the `-w` or `--watch` option.
+
+Minify **style.css** to itself and watch changes:
 ```sh
-$ minify -r --watch dir -o dir-min
+$ minify -w -o style.css style.css
 ```
 
+Minify and concatenate **one.css** and **two.css** to **style.css** and watch changes:
+```sh
+$ minify -w -o style.css one.css two.css
+```
+
+Minify files and files in subdirectories in **src** to **min** and watch changes:
+```sh
+$ minify -w -r -o min/ src
+```

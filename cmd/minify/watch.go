@@ -8,28 +8,17 @@ import (
 )
 
 type RecursiveWatcher struct {
-	watcher *fsnotify.Watcher
-	paths   map[string]bool
+	watcher   *fsnotify.Watcher
+	paths     map[string]bool
+	recursive bool
 }
 
-func NewRecursiveWatcher(path string, recursive bool) (*RecursiveWatcher, error) {
+func NewRecursiveWatcher(recursive bool) (*RecursiveWatcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
 	}
-
-	rw := &RecursiveWatcher{watcher, make(map[string]bool)}
-	if recursive {
-		if err = rw.AddPath(path); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := rw.watcher.Add(path); err != nil {
-			return nil, err
-		}
-		rw.paths[path] = true
-	}
-	return rw, nil
+	return &RecursiveWatcher{watcher, make(map[string]bool), recursive}, nil
 }
 
 func (rw *RecursiveWatcher) Close() error {
@@ -37,21 +26,47 @@ func (rw *RecursiveWatcher) Close() error {
 }
 
 func (rw *RecursiveWatcher) AddPath(root string) error {
-	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
+	info, err := os.Stat(root)
+	if err != nil {
+		return err
+	}
+
+	if info.Mode().IsRegular() {
+		root = filepath.Dir(root)
+		if rw.paths[root] {
+			return nil
+		}
+		if err := rw.watcher.Add(root); err != nil {
 			return err
 		}
-		if info.Mode().IsDir() {
-			if !validDir(info) || rw.paths[path] {
-				return filepath.SkipDir
-			}
-			if err := rw.watcher.Add(path); err != nil {
+		rw.paths[root] = true
+		return nil
+	} else if !rw.recursive {
+		if rw.paths[root] {
+			return nil
+		}
+		if err := rw.watcher.Add(root); err != nil {
+			return err
+		}
+		rw.paths[root] = true
+		return nil
+	} else {
+		return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
 				return err
 			}
-			rw.paths[path] = true
-		}
-		return nil
-	})
+			if info.Mode().IsDir() {
+				if !validDir(info) || rw.paths[path] {
+					return filepath.SkipDir
+				}
+				if err := rw.watcher.Add(path); err != nil {
+					return err
+				}
+				rw.paths[path] = true
+			}
+			return nil
+		})
+	}
 }
 
 func (rw *RecursiveWatcher) Run() chan string {
