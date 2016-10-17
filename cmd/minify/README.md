@@ -132,7 +132,7 @@ Minify and concatenate **one.css** and **two.css** to **style.css** and watch ch
 $ minify -w -o style.css one.css two.css
 ```
 
-Minify files and files in subdirectories in **src** to **min** and watch changes:
+Minify files in **src** and subdirectories to **min** and watch changes:
 ```sh
 $ minify -w -r -o min/ src
 ```
