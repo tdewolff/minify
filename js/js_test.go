@@ -35,7 +35,9 @@ func TestJS(t *testing.T) {
 		{"a + ++b", "a+ ++b"},                                          // JSMin caution
 		{"var a=/\\s?auto?\\s?/i\nvar", "var a=/\\s?auto?\\s?/i\nvar"}, // #14
 		{"var a=0\n!function(){}", "var a=0\n!function(){}"},           // #107
-		{"`\n", "`"}, // go fuzz
+		{"function(){}\n\"string\"", "function(){}\n\"string\""},       // #109
+		{"false\n\"string\"", "false\n\"string\""},                     // #109
+		{"`\n", "`"},                                                   // go fuzz
 	}
 
 	m := minify.New()
