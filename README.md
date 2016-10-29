@@ -1,16 +1,16 @@
 #<a name="minify"></a> Minify [![Build Status](https://travis-ci.org/tdewolff/minify.svg?branch=master)](https://travis-ci.org/tdewolff/minify) [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
+[Online demo](http://go.tacodewolff.nl/) · [Command line tool](https://github.com/tdewolff/minify/tree/master/cmd/minify) · [Releases](https://dl.equinox.io/tdewolff/minify/stable)
+
 If this software is useful to you, consider making a [donation](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=27MSRR5UJQQUL)! When a significant amount has been deposited, I will write a much improved JS minifier.
+
+---
 
 **The preferred stable release should be v2. Master has some new changes for SVG that haven't yet endured the test of time, bug reports are appreciated.**
 
 Minify is a minifier package written in [Go][1]. It provides HTML5, CSS3, JS, JSON, SVG and XML minifiers and an interface to implement any other minifier. Minification is the process of removing bytes from a file (such as whitespace) without changing its output and therefore shrinking its size and speeding up transmission over the internet and possibly parsing. The implemented minifiers are high performance and streaming (which implies O(n)).
 
 The core functionality associates minification functions with mimetypes, allowing embedded resources (like CSS or JS within HTML files) to be minified as well. Users can add new implementations that are triggered based on the mimetype (or pattern), or redirect to an external command (like ClosureCompiler, UglifyCSS, ...).
-
-[Demo](http://go.tacodewolff.nl/) · [CLI](https://github.com/tdewolff/minify/tree/master/cmd/minify) · [Download](https://dl.equinox.io/tdewolff/minify/stable)
-
-[Plugin for Caddy](https://github.com/hacdias/caddy-minify)
 
 #### Table of Contents
 
