@@ -22,6 +22,8 @@ and the `minify` command will be in your `$GOPATH/bin`.
 	        Minify all files, including hidden files and files in hidden directories
 	  --html-keep-default-attrvals
 	        Preserve default attribute values
+	  --html-keep-document-tags
+	        Preserve html, head and body tags
 	  --html-keep-whitespace
 	        Preserve whitespace characters but still collapse multiple whitespace into one
 	  -l, --list
