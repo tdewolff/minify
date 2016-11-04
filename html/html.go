@@ -34,6 +34,7 @@ var (
 type Minifier struct {
 	KeepDefaultAttrVals bool
 	KeepWhitespace      bool
+	KeepExtraTags       bool
 }
 
 // Minify minifies HTML data, it reads from r and writes to w.
@@ -198,8 +199,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				inPre = t.TokenType == html.StartTagToken
 			}
 
-			// remove superfluous tags
-			if !hasAttributes && (t.Hash == html.Html || t.Hash == html.Head || t.Hash == html.Body || t.Hash == html.Colgroup) {
+			// remove superfluous tags, except for html, head and body start tags when KeepExtraTags is set
+			if !hasAttributes && ((!o.KeepExtraTags || t.TokenType == html.EndTagToken) && (t.Hash == html.Html || t.Hash == html.Head || t.Hash == html.Body) || t.Hash == html.Colgroup) {
 				break
 			} else if t.TokenType == html.EndTagToken {
 				if t.Hash == html.Thead || t.Hash == html.Tbody || t.Hash == html.Tfoot || t.Hash == html.Tr || t.Hash == html.Th || t.Hash == html.Td ||

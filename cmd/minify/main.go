@@ -113,6 +113,7 @@ func main() {
 	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
 	flag.BoolVar(&htmlMinifier.KeepDefaultAttrVals, "html-keep-default-attrvals", false, "Preserve default attribute values")
 	flag.BoolVar(&htmlMinifier.KeepWhitespace, "html-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple whitespace into one")
+	flag.BoolVar(&htmlMinifier.KeepExtraTags, "html-keep-extra-tags", false, "Preserve html, head and body start tags")
 	flag.BoolVar(&xmlMinifier.KeepWhitespace, "xml-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple whitespace into one")
 	flag.Parse()
 	rawInputs := flag.Args()
