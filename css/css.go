@@ -446,11 +446,11 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 			n = parse.Number(data)
 		}
 		dim := data[n:]
+		parse.ToLower(dim)
 		data = minify.Number(data[:n], c.o.Decimals)
 		if tt == css.PercentageToken && (len(data) != 1 || data[0] != '0' || prop == css.Color) {
 			data = append(data, '%')
-		} else if tt == css.DimensionToken && (len(data) != 1 || data[0] != '0') {
-			parse.ToLower(dim)
+		} else if tt == css.DimensionToken && (len(data) != 1 || data[0] != '0' || requiredDimension[string(dim)]) {
 			data = append(data, dim...)
 		}
 	} else if tt == css.IdentToken {

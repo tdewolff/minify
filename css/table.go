@@ -2,6 +2,16 @@ package css
 
 import "github.com/tdewolff/parse/css"
 
+var requiredDimension = map[string]bool{
+	"s":    true,
+	"ms":   true,
+	"dpi":  true,
+	"dpcm": true,
+	"dppx": true,
+	"hz":   true,
+	"khz":  true,
+}
+
 // Uses http://www.w3.org/TR/2010/PR-css3-color-20101028/ for colors
 
 // ShortenColorHex maps a color hexcode to its shorter name

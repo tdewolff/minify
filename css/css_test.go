@@ -130,6 +130,8 @@ func TestCSSInline(t *testing.T) {
 		{"background:none 1 1", "background:none 1 1"},
 		{"z-index:1000", "z-index:1000"},
 
+		{"any:0ms 0deg 0dpi 0hz", "any:0ms 0 0dpi 0hz"},
+
 		// case sensitivity
 		{"animation:Ident", "animation:Ident"},
 		{"animation-name:Ident", "animation-name:Ident"},
