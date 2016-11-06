@@ -23,7 +23,9 @@ func TestContentType(t *testing.T) {
 		{"text/html, text/css", "text/html,text/css"},
 	}
 	for _, tt := range contentTypeTests {
-		test.Minify(t, tt.contentType, nil, string(ContentType([]byte(tt.contentType))), tt.expected)
+		t.Run(tt.contentType, func(t *testing.T) {
+			test.Minify(t, tt.contentType, nil, string(ContentType([]byte(tt.contentType))), tt.expected)
+		})
 	}
 }
 
@@ -52,7 +54,9 @@ func TestDataURI(t *testing.T) {
 		return nil
 	})
 	for _, tt := range dataURITests {
-		test.Minify(t, tt.dataURI, nil, string(DataURI(m, []byte(tt.dataURI))), tt.expected)
+		t.Run(tt.dataURI, func(t *testing.T) {
+			test.Minify(t, tt.dataURI, nil, string(DataURI(m, []byte(tt.dataURI))), tt.expected)
+		})
 	}
 }
 
@@ -121,7 +125,9 @@ func TestNumber(t *testing.T) {
 		{"39.7e-5", "397e-6"},
 	}
 	for _, tt := range numberTests {
-		test.Minify(t, tt.number, nil, string(Number([]byte(tt.number), -1)), tt.expected)
+		t.Run(tt.number, func(t *testing.T) {
+			test.Minify(t, tt.number, nil, string(Number([]byte(tt.number), -1)), tt.expected)
+		})
 	}
 }
 
@@ -148,7 +154,9 @@ func TestNumberTruncate(t *testing.T) {
 		{"1.51", 1, "1.5"},
 	}
 	for _, tt := range numberTests {
-		test.Minify(t, tt.number, nil, string(Number([]byte(tt.number), tt.truncate)), tt.expected, "truncate to", tt.truncate)
+		t.Run(tt.number, func(t *testing.T) {
+			test.Minify(t, tt.number, nil, string(Number([]byte(tt.number), tt.truncate)), tt.expected, "truncate to", tt.truncate)
+		})
 	}
 }
 
