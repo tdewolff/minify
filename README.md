@@ -1,6 +1,6 @@
 #<a name="minify"></a> Minify [![Build Status](https://travis-ci.org/tdewolff/minify.svg?branch=master)](https://travis-ci.org/tdewolff/minify) [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**The preferred stable release should be v2. Master has some new changes for SVG that haven't yet endured the test of time, bug reports are appreciated.**
+**The preferred stable release is v2. Master has some new changes for SVG that haven't yet endured the test of time, bug reports are appreciated.**
 
 **[Online demo](http://go.tacodewolff.nl/minify) if you need to minify files *now*.**
 
@@ -12,9 +12,9 @@ If this software is useful to you, consider making a [donation](https://www.payp
 
 ---
 
-Minify is a minifier package written in [Go][1]. It provides HTML5, CSS3, JS, JSON, SVG and XML minifiers and an interface to implement any other minifier. Minification is the process of removing bytes from a file (such as whitespace) without changing its output and therefore shrinking its size and speeding up transmission over the internet and possibly parsing. The implemented minifiers are high performance and streaming (which implies O(n)).
+Minify is a minifier package written in [Go][1]. It provides HTML5, CSS3, JS, JSON, SVG and XML minifiers and an interface to implement any other minifier. Minification is the process of removing bytes from a file (such as whitespace) without changing its output and therefore shrinking its size and speeding up transmission over the internet and possibly parsing. The implemented minifiers are high performance and streaming, which implies O(n).
 
-The core functionality associates minification functions with mimetypes, allowing embedded resources (like CSS or JS within HTML files) to be minified as well. Users can add new implementations that are triggered based on the mimetype (or pattern), or redirect to an external command (like ClosureCompiler, UglifyCSS, ...).
+The core functionality associates mimetypes with minification functions, allowing embedded resources (like CSS or JS within HTML files) to be minified as well. Users can add new implementations that are triggered based on a mimetype (or pattern), or redirect to an external command (like ClosureCompiler, UglifyCSS, ...).
 
 #### Table of Contents
 
@@ -276,33 +276,6 @@ m.Add("text/html", &html.Minifier{
 Minify from an `io.Reader` to an `io.Writer` for a specific mediatype.
 ``` go
 if err := m.Minify(mediatype, w, r); err != nil {
-	panic(err)
-}
-```
-
-Minify formats directly from an `io.Reader` to an `io.Writer`. The `params map[string]string` would contain the mediatype parameters, pass `nil` if non-existent.
-``` go
-if err := css.Minify(m, w, r, params); err != nil {
-	panic(err)
-}
-
-if err := html.Minify(m, w, r, params); err != nil {
-	panic(err)
-}
-
-if err := js.Minify(m, w, r, params); err != nil {
-	panic(err)
-}
-
-if err := json.Minify(m, w, r, params); err != nil {
-	panic(err)
-}
-
-if err := svg.Minify(m, w, r, params); err != nil {
-	panic(err)
-}
-
-if err := xml.Minify(m, w, r, params); err != nil {
 	panic(err)
 }
 ```
