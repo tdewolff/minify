@@ -75,14 +75,14 @@ $ minify index.html
 
 Normally the mimetype is inferred from the extension, to set the mimetype explicitly:
 ```sh
-$ minify --type=html -o index-min.xhtml index.xhtml
+$ minify --type=html -o index-min.tpl index.tpl
 ```
 
 You need to set the type or the mimetype option when using standard input:
 ```sh
 $ minify --mime=text/javascript < script.js > script-min.js
 
-$ cat script.js | minify --type=html > script-min.js
+$ cat script.js | minify --type=js > script-min.js
 ```
 
 ### Directories
@@ -90,17 +90,17 @@ You can also give directories as input, and these directories can be minified re
 
 Minify files in the current working directory to **out/** (no subdirectories):
 ```sh
-$ minify -o min/ .
+$ minify -o out/ .
 ```
 
-Minify files recursively in **src**:
+Minify files recursively in **src/**:
 ```sh
-$ minify -r -o min/ src
+$ minify -r -o out/ src
 ```
 
-Minify only javascript files in **src**:
+Minify only javascript files in **src/**:
 ```sh
-$ minify -r -o min/ --match=\.js src
+$ minify -r -o out/ --match=\.js src
 ```
 
 ### Concatenate
@@ -111,9 +111,9 @@ Concatenate **one.css** and **two.css** into **style.css**:
 $ minify -o style.css one.css two.css
 ```
 
-Concatenate all files in **styles** into **style.css**:
+Concatenate all files in **styles/** into **style.css**:
 ```sh
-$ minify -o style.css styles/
+$ minify -o style.css styles
 ```
 
 You can also use `cat` as standard input to concatenate files and use gzip for example:
@@ -134,7 +134,7 @@ Minify and concatenate **one.css** and **two.css** to **style.css** and watch ch
 $ minify -w -o style.css one.css two.css
 ```
 
-Minify files in **src** and subdirectories to **min** and watch changes:
+Minify files in **src/** and subdirectories to **out/** and watch changes:
 ```sh
-$ minify -w -r -o min/ src
+$ minify -w -r -o out/ src
 ```
