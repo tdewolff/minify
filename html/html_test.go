@@ -52,6 +52,7 @@ func TestHTML(t *testing.T) {
 
 		// increase coverage
 		{`<script style="css">js</script>`, `<script style=css>js</script>`},
+		{`<script type="application/javascript">js</script>`, `<script type=application/javascript>js</script>`},
 		{`<meta http-equiv="content-type" content="text/plain, text/html">`, `<meta http-equiv=content-type content=text/plain,text/html>`},
 		{`<meta http-equiv="content-style-type" content="text/less">`, `<meta http-equiv=content-style-type content=text/less>`},
 		{`<meta http-equiv="content-style-type" content="text/less; charset=utf-8">`, `<meta http-equiv=content-style-type content="text/less;charset=utf-8">`},
@@ -236,8 +237,12 @@ func TestWriterErrors(t *testing.T) {
 		{`text`, []int{0}},
 		{`<foo attr=val>`, []int{0, 1, 2, 3, 4, 5}},
 		{`</foo>`, []int{0}},
-		{`<style>css</style>`, []int{2}},
+		{`<style>x</style>`, []int{2}},
+		{`<textarea>x</textarea>`, []int{2}},
 		{`<code>x</code>`, []int{2}},
+		{`<pre>x</pre>`, []int{2}},
+		{`<svg>x</svg>`, []int{0}},
+		{`<math>x</math>`, []int{0}},
 	}
 
 	m := minify.New()
@@ -258,6 +263,8 @@ func TestMinifyErrors(t *testing.T) {
 		{`<style>abc</style>`, test.ErrPlain},
 		{`<path style="abc"/>`, test.ErrPlain},
 		{`<path onclick="abc"/>`, test.ErrPlain},
+		{`<svg></svg>`, test.ErrPlain},
+		{`<math></math>`, test.ErrPlain},
 	}
 
 	m := minify.New()
@@ -265,6 +272,12 @@ func TestMinifyErrors(t *testing.T) {
 		return test.ErrPlain
 	})
 	m.AddFunc("text/javascript", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
+		return test.ErrPlain
+	})
+	m.AddFunc("image/svg+xml", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
+		return test.ErrPlain
+	})
+	m.AddFunc("application/mathml+xml", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 		return test.ErrPlain
 	})
 	for _, tt := range errorTests {

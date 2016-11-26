@@ -221,7 +221,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 				} else if hex, ok := minifyCSS.ShortenColorName[css.ToHash(val)]; ok {
 					val = hex
-				} else if len(val) > 5 && parse.Equal(val[:4], []byte("rgb(")) && val[len(val)-1] == ')' {
+					// } else if len(val) > 5 && parse.Equal(val[:4], []byte("rgb(")) && val[len(val)-1] == ')' {
 					// TODO: handle rgb(x, y, z) and hsl(x, y, z)
 				}
 			}

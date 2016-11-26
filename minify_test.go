@@ -124,11 +124,15 @@ func TestAdd(t *testing.T) {
 }
 
 func TestMatch(t *testing.T) {
-	pattern, _, _ := m.Match("dummy/copy; a=b")
+	pattern, params, _ := m.Match("dummy/copy; a=b")
 	test.String(t, pattern, "dummy/copy")
+	test.String(t, params["a"], "b")
 
 	pattern, _, _ = m.Match("type/foobar")
 	test.String(t, pattern, "^type/.+$")
+
+	_, _, minifier := m.Match("dummy/")
+	test.That(t, minifier == nil)
 }
 
 func TestWildcard(t *testing.T) {

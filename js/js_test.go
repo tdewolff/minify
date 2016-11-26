@@ -63,6 +63,7 @@ func TestWriterErrors(t *testing.T) {
 		//01 2345
 		{"a\n{5 5", []int{0, 1, 4}},
 		{`/*!comment*/`, []int{0, 1, 2}},
+		{"false\n\"string\"", []int{1}}, // #109
 	}
 
 	m := minify.New()
