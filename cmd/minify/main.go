@@ -57,28 +57,6 @@ type task struct {
 	dst    string
 }
 
-type countingReader struct {
-	io.Reader
-	N int
-}
-
-func (w *countingReader) Read(p []byte) (int, error) {
-	n, err := w.Reader.Read(p)
-	w.N += n
-	return n, err
-}
-
-type countingWriter struct {
-	io.Writer
-	N int
-}
-
-func (w *countingWriter) Write(p []byte) (int, error) {
-	n, err := w.Writer.Write(p)
-	w.N += n
-	return n, err
-}
-
 var (
 	Error *log.Logger
 	Info  *log.Logger
@@ -554,25 +532,28 @@ func minify(mimetype string, t task) bool {
 		}
 	}
 
-	frs := make([]io.ReadCloser, 0, len(t.srcs))
-	frsMulti := make([]io.Reader, 0, len(t.srcs))
-	for _, src := range t.srcs {
+	frs := make([]io.Reader, len(t.srcs))
+	for i, src := range t.srcs {
 		fr, ok := openInputFile(src)
 		if !ok {
 			for _, fr := range frs {
-				fr.Close()
+				fr.(io.ReadCloser).Close()
 			}
 			return false
 		}
-		frs = append(frs, fr)
-		frsMulti = append(frsMulti, fr)
+		if i > 0 && mimetype == filetypeMime["js"] {
+			// prepend newline when concatenating JS files
+			frs[i] = NewPrependReader(fr, []byte("\n"))
+		} else {
+			frs[i] = fr
+		}
 	}
-	r := &countingReader{io.MultiReader(frsMulti...), 0}
+	r := &countingReader{io.MultiReader(frs...), 0}
 
 	fw, ok := openOutputFile(t.dst)
 	if !ok {
 		for _, fr := range frs {
-			fr.Close()
+			fr.(io.ReadCloser).Close()
 		}
 		return false
 	}
@@ -610,7 +591,7 @@ func minify(mimetype string, t task) bool {
 	}
 
 	for _, fr := range frs {
-		fr.Close()
+		fr.(io.ReadCloser).Close()
 	}
 	if bw, ok := w.Writer.(*bufio.Writer); ok {
 		bw.Flush()
