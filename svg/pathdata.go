@@ -198,9 +198,14 @@ func (p *PathData) shortenCurPosInstruction(cmd byte, coords [][]byte) PathDataS
 		state.prevDigit = false
 		state.prevDigitIsInt = false
 	}
-	for _, coord := range coords {
+	for i, coord := range coords {
+		isFlag := false
+		if (cmd == 'A' || cmd == 'a') && (i%7 == 3 || i%7 == 4) {
+			isFlag = true
+		}
+
 		coord = minify.Number(coord, p.o.Decimals)
-		state.copyNumber(&p.curBuffer, coord)
+		state.copyNumber(&p.curBuffer, coord, isFlag)
 	}
 	return state
 }
@@ -215,6 +220,7 @@ func (p *PathData) shortenAltPosInstruction(cmd byte, coordFloats []float64, x, 
 		state.prevDigitIsInt = false
 	}
 	for i, f := range coordFloats {
+		isFlag := false
 		if cmd == 'L' || cmd == 'l' || cmd == 'C' || cmd == 'c' || cmd == 'S' || cmd == 's' || cmd == 'Q' || cmd == 'q' || cmd == 'T' || cmd == 't' || cmd == 'M' || cmd == 'm' {
 			if i%2 == 0 {
 				f += x
@@ -230,22 +236,28 @@ func (p *PathData) shortenAltPosInstruction(cmd byte, coordFloats []float64, x, 
 				f += x
 			} else if i%7 == 6 {
 				f += y
+			} else if i%7 == 3 || i%7 == 4 {
+				isFlag = true
 			}
 		}
 
 		p.coordBuffer = strconvStdlib.AppendFloat(p.coordBuffer[:0], f, 'g', -1, 64)
 		coord := minify.Number(p.coordBuffer, p.o.Decimals)
-		state.copyNumber(&p.altBuffer, coord)
+		state.copyNumber(&p.altBuffer, coord, isFlag)
 	}
 	return state
 }
 
-func (state *PathDataState) copyNumber(buffer *[]byte, coord []byte) {
+func (state *PathDataState) copyNumber(buffer *[]byte, coord []byte, isFlag bool) {
 	if state.prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && state.prevDigitIsInt) {
 		if coord[0] == '0' && !state.prevDigitIsInt {
-			// if the first digit is zero, it is always just zero
-			*buffer = append(*buffer, '.', '0')
-			// prevDigit and prevDigitIsInt stay true
+			if isFlag {
+				*buffer = append(*buffer, ' ', '0')
+				state.prevDigitIsInt = true
+			} else {
+				*buffer = append(*buffer, '.', '0') // aggresively add dot so subsequent numbers could drop leading space
+				// prevDigit stays true and prevDigitIsInt stays false
+			}
 			return
 		} else {
 			*buffer = append(*buffer, ' ')
