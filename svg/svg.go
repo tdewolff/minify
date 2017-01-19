@@ -22,6 +22,7 @@ var (
 	dBytes        = []byte("d")
 	zeroBytes     = []byte("0")
 	cssMimeBytes  = []byte("text/css")
+	urlBytes      = []byte("url(")
 )
 
 ////////////////////////////////////////////////////////////////
@@ -209,7 +210,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 				}
 				val = newVal
-			} else if colorAttrMap[attr] && len(val) > 0 {
+			} else if colorAttrMap[attr] && len(val) > 0 && (len(val) < 5 || !parse.EqualFold(val[:4], urlBytes)) {
 				parse.ToLower(val)
 				if val[0] == '#' {
 					if name, ok := minifyCSS.ShortenColorHex[string(val)]; ok {
