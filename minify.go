@@ -4,8 +4,11 @@ package minify // import "github.com/tdewolff/minify"
 import (
 	"errors"
 	"io"
+	"mime"
+	"net/http"
 	"net/url"
 	"os/exec"
+	"path"
 	"regexp"
 	"sync"
 
@@ -187,31 +190,70 @@ type minifyWriter struct {
 	err error
 }
 
-func (mw *minifyWriter) Write(b []byte) (int, error) {
-	return mw.pw.Write(b)
+func (w *minifyWriter) Write(b []byte) (int, error) {
+	return w.pw.Write(b)
 }
 
-func (mw *minifyWriter) Close() error {
-	mw.pw.Close()
-	mw.wg.Wait()
-	return mw.err
+func (w *minifyWriter) Close() error {
+	w.pw.Close()
+	w.wg.Wait()
+	return w.err
 }
 
 // Writer wraps a Writer interface and minifies the stream.
-// Errors from the minifier are returned by the writer.
+// Errors from the minifier are returned by Close on the writer.
 // The writer must be closed explicitly.
-func (m *M) Writer(mediatype string, w io.Writer) io.WriteCloser {
+func (m *M) Writer(mediatype string, w io.Writer) *minifyWriter {
 	pr, pw := io.Pipe()
 	mw := &minifyWriter{pw, sync.WaitGroup{}, nil}
 	mw.wg.Add(1)
 	go func() {
+		defer mw.wg.Done()
+
 		if err := m.Minify(mediatype, w, pr); err != nil {
+			io.Copy(w, pr)
 			mw.err = err
-			pr.CloseWithError(err)
-		} else {
-			pr.Close()
 		}
-		mw.wg.Done()
+		pr.Close()
 	}()
 	return mw
+}
+
+type minifyResponseWriter struct {
+	http.ResponseWriter
+
+	writer    *minifyWriter
+	m         *M
+	mediatype string
+}
+
+func (w *minifyResponseWriter) Write(b []byte) (int, error) {
+	if w.writer == nil {
+		// first write
+		if mediatype := w.ResponseWriter.Header().Get("Content-Type"); mediatype != "" {
+			w.mediatype = mediatype
+		}
+		w.writer = w.m.Writer(w.mediatype, w.ResponseWriter)
+	}
+	return w.writer.Write(b)
+}
+
+func (w *minifyResponseWriter) Close() error {
+	if w.writer != nil {
+		return w.writer.Close()
+	}
+	return nil
+}
+
+func (m *M) ResponseWriter(w http.ResponseWriter, r *http.Request) *minifyResponseWriter {
+	mediatype := mime.TypeByExtension(path.Ext(r.RequestURI))
+	return &minifyResponseWriter{w, nil, m, mediatype}
+}
+
+func (m *M) Middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mw := m.ResponseWriter(w, r)
+		next.ServeHTTP(mw, r)
+		mw.Close()
+	})
 }

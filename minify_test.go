@@ -193,23 +193,23 @@ func TestWriter(t *testing.T) {
 		return errDummy
 	})
 
-	var err error
 	w := &bytes.Buffer{}
 	mw := m.Writer("dummy/dummy", w)
-	_, err = mw.Write([]byte("test"))
-	test.Error(t, err, nil)
+	_, _ = mw.Write([]byte("test"))
 	test.Error(t, mw.Close(), nil)
 	test.String(t, w.String(), "test", "equal input after dummy minify writer")
 
+	w = &bytes.Buffer{}
 	mw = m.Writer("dummy/err", w)
-	_, err = mw.Write([]byte("test"))
-	test.Error(t, err, errDummy)
+	_, _ = mw.Write([]byte("test"))
 	test.Error(t, mw.Close(), errDummy)
+	test.String(t, w.String(), "test", "equal input after dummy minify writer")
 
+	w = &bytes.Buffer{}
 	mw = m.Writer("dummy/late-err", w)
-	_, err = mw.Write([]byte("test"))
-	test.Error(t, err, nil)
+	_, _ = mw.Write([]byte("test"))
 	test.Error(t, mw.Close(), errDummy)
+	test.String(t, w.String(), "")
 }
 
 func TestHelperProcess(*testing.T) {
