@@ -443,6 +443,35 @@ func main() {
 ```
 
 ### ResponseWriter
+#### Middleware
+``` go
+func main() {
+	m := minify.New()
+	m.AddFunc("text/css", css.Minify)
+	m.AddFunc("text/html", html.Minify)
+	m.AddFunc("text/javascript", js.Minify)
+	m.AddFunc("image/svg+xml", svg.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
+
+	http.Handle("/", m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, path.Join("www", r.URL.Path))
+	})))
+}
+```
+
+#### ResponseWriter
+``` go
+func Serve(w http.ResponseWriter, r *http.Request) {
+	mw := m.ResponseWriter(w, r)
+	defer mw.Close()
+	w = mw
+
+	http.ServeFile(w, r, path.Join("www", r.URL.Path))
+}
+```
+
+#### Custom response writer
 ResponseWriter example which returns a ResponseWriter that minifies the content and then writes to the original ResponseWriter. Any write after applying this filter will be minified.
 ``` go
 type MinifyResponseWriter struct {
