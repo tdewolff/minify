@@ -212,6 +212,63 @@ func TestWriter(t *testing.T) {
 	test.String(t, w.String(), "")
 }
 
+type responseWriter struct {
+	writer io.Writer
+	header http.Header
+}
+
+func (w *responseWriter) Header() http.Header {
+	return w.header
+}
+
+func (w *responseWriter) WriteHeader(_ int) {}
+
+func (w *responseWriter) Write(b []byte) (int, error) {
+	return w.writer.Write(b)
+}
+
+func TestResponseWriter(t *testing.T) {
+	m := New()
+	m.AddFunc("text/html", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
+		_, err := io.Copy(w, r)
+		return err
+	})
+
+	b := &bytes.Buffer{}
+	w := &responseWriter{b, http.Header{}}
+	r := &http.Request{RequestURI: "/index.html"}
+	mw := m.ResponseWriter(w, r)
+	test.Error(t, mw.Close(), nil)
+	_, _ = mw.Write([]byte("test"))
+	test.Error(t, mw.Close(), nil)
+	test.String(t, b.String(), "test", "equal input after dummy minify response writer")
+
+	b = &bytes.Buffer{}
+	w = &responseWriter{b, http.Header{}}
+	r = &http.Request{RequestURI: "/index"}
+	mw = m.ResponseWriter(w, r)
+	mw.Header().Add("Content-Type", "text/html")
+	_, _ = mw.Write([]byte("test"))
+	test.Error(t, mw.Close(), nil)
+	test.String(t, b.String(), "test", "equal input after dummy minify response writer")
+}
+
+func TestMiddleware(t *testing.T) {
+	m := New()
+	m.AddFunc("text/html", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
+		_, err := io.Copy(w, r)
+		return err
+	})
+
+	b := &bytes.Buffer{}
+	w := &responseWriter{b, http.Header{}}
+	r := &http.Request{RequestURI: "/index.html"}
+	m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("test"))
+	})).ServeHTTP(w, r)
+	test.String(t, b.String(), "test", "equal input after dummy minify middleware")
+}
+
 func TestHelperProcess(*testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
