@@ -140,6 +140,24 @@ func TestHTML(t *testing.T) {
 	}
 }
 
+func TestHTMLKeepEndTags(t *testing.T) {
+	htmlTests := []struct {
+		html     string
+		expected string
+	}{
+		{`<style>class{color:red}</style>`, `<style>class{color:red}</style>`},
+		{`<li>test</li>`, `<li>test</li>`},
+	}
+
+	m := minify.New()
+	htmlMinifier := &Minifier{KeepEndTags: true}
+	for _, tt := range htmlTests {
+		r := bytes.NewBufferString(tt.html)
+		w := &bytes.Buffer{}
+		test.Minify(t, tt.html, htmlMinifier.Minify(m, w, r, nil), w.String(), tt.expected)
+	}
+}
+
 func TestHTMLKeepWhitespace(t *testing.T) {
 	htmlTests := []struct {
 		html     string
