@@ -146,8 +146,8 @@ func TestHTMLKeepEndTags(t *testing.T) {
 		html     string
 		expected string
 	}{
-		{`<style>class{color:red}</style>`, `<style>class{color:red}</style>`},
-		{`<li>test</li>`, `<li>test</li>`},
+		{`<p></p><p></p>`, `<p></p><p></p>`},
+		{`<ul><li></li><li></li></ul>`, `<ul><li></li><li></li></ul>`},
 	}
 
 	m := minify.New()

@@ -204,23 +204,25 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			if !hasAttributes && (!o.KeepDocumentTags && (t.Hash == html.Html || t.Hash == html.Head || t.Hash == html.Body) || t.Hash == html.Colgroup) {
 				break
 			} else if t.TokenType == html.EndTagToken {
-				if !o.KeepEndTags && (t.Hash == html.Thead || t.Hash == html.Tbody || t.Hash == html.Tfoot || t.Hash == html.Tr || t.Hash == html.Th || t.Hash == html.Td ||
-					t.Hash == html.Optgroup || t.Hash == html.Option || t.Hash == html.Dd || t.Hash == html.Dt ||
-					t.Hash == html.Li || t.Hash == html.Rb || t.Hash == html.Rt || t.Hash == html.Rtc || t.Hash == html.Rp) {
-					break
-				} else if t.Hash == html.P {
-					i := 0
-					for {
-						next := tb.Peek(i)
-						i++
-						// continue if text token is empty or whitespace
-						if next.TokenType == html.TextToken && parse.IsAllWhitespace(next.Data) {
-							continue
-						}
-						if next.TokenType == html.ErrorToken || next.TokenType == html.EndTagToken && next.Traits&keepPTag == 0 || next.TokenType == html.StartTagToken && next.Traits&omitPTag != 0 {
-							break SWITCH // omit p end tag
-						}
+				if !o.KeepEndTags {
+					if t.Hash == html.Thead || t.Hash == html.Tbody || t.Hash == html.Tfoot || t.Hash == html.Tr || t.Hash == html.Th || t.Hash == html.Td ||
+						t.Hash == html.Optgroup || t.Hash == html.Option || t.Hash == html.Dd || t.Hash == html.Dt ||
+						t.Hash == html.Li || t.Hash == html.Rb || t.Hash == html.Rt || t.Hash == html.Rtc || t.Hash == html.Rp {
 						break
+					} else if t.Hash == html.P {
+						i := 0
+						for {
+							next := tb.Peek(i)
+							i++
+							// continue if text token is empty or whitespace
+							if next.TokenType == html.TextToken && parse.IsAllWhitespace(next.Data) {
+								continue
+							}
+							if next.TokenType == html.ErrorToken || next.TokenType == html.EndTagToken && next.Traits&keepPTag == 0 || next.TokenType == html.StartTagToken && next.Traits&omitPTag != 0 {
+								break SWITCH // omit p end tag
+							}
+							break
+						}
 					}
 				}
 
