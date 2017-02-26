@@ -35,6 +35,7 @@ type Minifier struct {
 	KeepDefaultAttrVals bool
 	KeepWhitespace      bool
 	KeepDocumentTags    bool
+	KeepEndTags         bool
 }
 
 // Minify minifies HTML data, it reads from r and writes to w.
@@ -203,9 +204,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			if !hasAttributes && (!o.KeepDocumentTags && (t.Hash == html.Html || t.Hash == html.Head || t.Hash == html.Body) || t.Hash == html.Colgroup) {
 				break
 			} else if t.TokenType == html.EndTagToken {
-				if t.Hash == html.Thead || t.Hash == html.Tbody || t.Hash == html.Tfoot || t.Hash == html.Tr || t.Hash == html.Th || t.Hash == html.Td ||
+				if !o.KeepEndTags && (t.Hash == html.Thead || t.Hash == html.Tbody || t.Hash == html.Tfoot || t.Hash == html.Tr || t.Hash == html.Th || t.Hash == html.Td ||
 					t.Hash == html.Optgroup || t.Hash == html.Option || t.Hash == html.Dd || t.Hash == html.Dt ||
-					t.Hash == html.Li || t.Hash == html.Rb || t.Hash == html.Rt || t.Hash == html.Rtc || t.Hash == html.Rp {
+					t.Hash == html.Li || t.Hash == html.Rb || t.Hash == html.Rt || t.Hash == html.Rtc || t.Hash == html.Rp) {
 					break
 				} else if t.Hash == html.P {
 					i := 0
