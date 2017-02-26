@@ -128,6 +128,7 @@ Options:
 - `KeepDefaultAttrVals` do not remove default attribute value such as `<script type="text/javascript">`
 - `KeepDocumentTags` do not remove `html`, `head` and `body` tags
 - `KeepWhitespace` do not remove whitespace between inline tags but still collapse multiple whitespace characters into one
+- `KeepEndTags` do not remove closing tags for any tag
 
 After recent benchmarking and profiling it became really fast and minifies pages in the 10ms range, making it viable for on-the-fly minification.
 
