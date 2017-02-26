@@ -125,10 +125,10 @@ The HTML5 minifier uses these minifications:
 
 Options:
 
-- `KeepDefaultAttrVals` do not remove default attribute value such as `<script type="text/javascript">`
-- `KeepDocumentTags` do not remove `html`, `head` and `body` tags
-- `KeepWhitespace` do not remove whitespace between inline tags but still collapse multiple whitespace characters into one
-- `KeepEndTags` do not remove closing tags for any tag
+- `KeepDefaultAttrVals` preserve default attribute values such as `<script type="text/javascript">`
+- `KeepDocumentTags` preserve `html`, `head` and `body` tags
+- `KeepEndTags` preserve all end tags
+- `KeepWhitespace` preserve whitespace between inline tags but still collapse multiple whitespace characters into one
 
 After recent benchmarking and profiling it became really fast and minifies pages in the 10ms range, making it viable for on-the-fly minification.
 
@@ -181,6 +181,10 @@ It does purposely not use the following techniques:
 
 It's great that so many other tools make comparison tables: [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html), [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). From the last link, this CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented and often unsafe techniques, so that's fine.
 
+Options:
+
+- `Decimals` number of decimals to preserve for numbers, `-1` means no trimming
+
 ## JS
 
 The JS minifier is pretty basic. It removes comments, whitespace and line breaks whenever it can. It employs all the rules that [JSMin](http://www.crockford.com/javascript/jsmin.html) does too, but has additional improvements. For example the prefix-postfix bug is fixed.
@@ -230,6 +234,10 @@ TODO:
 - merge path data? (same style and no intersection -- the latter is difficult)
 - truncate decimals
 
+Options:
+
+- `Decimals` number of decimals to preserve for numbers, `-1` means no trimming
+
 ## XML
 
 Minification typically runs at about 70MB/s ~= 250GB/h.
@@ -243,7 +251,7 @@ The XML minifier uses these minifications:
 
 Options:
 
-- `KeepWhitespace` do not remove whitespace between inline tags but still collapse multiple whitespace characters into one
+- `KeepWhitespace` preserve whitespace between inline tags but still collapse multiple whitespace characters into one
 
 ## Usage
 Any input stream is being buffered by the minification functions. This is how the underlying buffer package inherently works to ensure high performance. The output stream however is not buffered. It is wise to preallocate a buffer as big as the input to which the output is written, or otherwise use `bufio` to buffer to a streaming writer.

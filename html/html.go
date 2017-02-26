@@ -33,9 +33,9 @@ var (
 // Minifier is an HTML minifier.
 type Minifier struct {
 	KeepDefaultAttrVals bool
-	KeepWhitespace      bool
 	KeepDocumentTags    bool
 	KeepEndTags         bool
+	KeepWhitespace      bool
 }
 
 // Minify minifies HTML data, it reads from r and writes to w.
