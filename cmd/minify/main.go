@@ -69,7 +69,11 @@ func main() {
 	match := ""
 	siteurl := ""
 
+	cssMinifier := &css.Minifier{}
 	htmlMinifier := &html.Minifier{}
+	jsMinifier := &js.Minifier{}
+	jsonMinifier := &json.Minifier{}
+	svgMinifier := &svg.Minifier{}
 	xmlMinifier := &xml.Minifier{}
 
 	flag.Usage = func() {
@@ -167,11 +171,11 @@ func main() {
 	}
 
 	m = min.New()
-	m.AddFunc("text/css", css.Minify)
+	m.Add("text/css", cssMinifier)
 	m.Add("text/html", htmlMinifier)
-	m.AddFunc("text/javascript", js.Minify)
-	m.AddFunc("image/svg+xml", svg.Minify)
-	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
+	m.Add("text/javascript", jsMinifier)
+	m.Add("image/svg+xml", svgMinifier)
+	m.AddRegexp(regexp.MustCompile("[/+]json$"), jsonMinifier)
 	m.AddRegexp(regexp.MustCompile("[/+]xml$"), xmlMinifier)
 
 	if m.URL, err = url.Parse(siteurl); err != nil {
