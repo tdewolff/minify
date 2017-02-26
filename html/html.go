@@ -216,8 +216,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						if next.TokenType == html.TextToken && parse.IsAllWhitespace(next.Data) {
 							continue
 						}
-						if next.TokenType == html.ErrorToken || next.TokenType == html.EndTagToken && next.Hash != html.A || next.TokenType == html.StartTagToken && next.Traits&nonPhrasingTag != 0 {
-							break SWITCH
+						if next.TokenType == html.ErrorToken || next.TokenType == html.EndTagToken && next.Traits&keepPTag == 0 || next.TokenType == html.StartTagToken && next.Traits&omitPTag != 0 {
+							break SWITCH // omit p end tag
 						}
 						break
 					}
