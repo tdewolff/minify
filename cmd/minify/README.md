@@ -20,12 +20,6 @@ and the `minify` command will be in your `$GOPATH/bin`.
 	Options:
 	  -a, --all
 	        Minify all files, including hidden files and files in hidden directories
-	  --html-keep-default-attrvals
-	        Preserve default attribute values
-	  --html-keep-document-tags
-	        Preserve html, head and body tags
-	  --html-keep-whitespace
-	        Preserve whitespace characters but still collapse multiple whitespace into one
 	  -l, --list
 	        List all accepted filetypes
 	  --match string
@@ -46,8 +40,21 @@ and the `minify` command will be in your `$GOPATH/bin`.
 	        Verbose
 	  -w, --watch
 	        Watch files and minify upon changes
+
+	  --css-decimals
+	        Number of decimals to preserve in numbers, -1 is all
+	  --html-keep-default-attrvals
+	        Preserve default attribute values
+	  --html-keep-document-tags
+	        Preserve html, head and body tags
+	  --html-keep-end-tags
+	        Preserve all end tags
+	  --html-keep-whitespace
+	        Preserve whitespace characters but still collapse multiple into one
+	  --svg-decimals
+	        Number of decimals to preserve in numbers, -1 is all
 	  --xml-keep-whitespace
-	        Preserve whitespace characters but still collapse multiple whitespace into one
+	        Preserve whitespace characters but still collapse multiple into one
 
 	Input:
 	  Files or directories, leave blank to use stdin
