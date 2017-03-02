@@ -10,7 +10,6 @@ var containerTagMap = map[svg.Hash]bool{
 	svg.Mask:          true,
 	svg.Missing_Glyph: true,
 	svg.Pattern:       true,
-	svg.Svg:           true,
 	svg.Switch:        true,
 	svg.Symbol:        true,
 }

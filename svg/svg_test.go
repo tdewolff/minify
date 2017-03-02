@@ -25,7 +25,7 @@ func TestSVG(t *testing.T) {
 		{`<style> <![CDATA[ <<<< ]]> </style>`, `<style>&lt;&lt;&lt;&lt;</style>`},
 		{`<style> <![CDATA[ <<<<< ]]> </style>`, `<style><![CDATA[ <<<<< ]]></style>`},
 		{`<style/><![CDATA[ <<<<< ]]>`, `<style/><![CDATA[ <<<<< ]]>`},
-		{`<svg version="1.0"></svg>`, ``},
+		{`<svg version="1.0"></svg>`, `<svg version="1.0"/>`},
 		{`<svg version="1.1" x="0" y="0px" width="100%" height="100%"><path/></svg>`, `<svg><path/></svg>`},
 		{`<path x="a"> </path>`, `<path x="a"/>`},
 		{`<path x=" a "/>`, `<path x="a"/>`},
