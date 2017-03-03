@@ -150,7 +150,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 			attr := t.Hash
 			val := t.AttrVal
-			if n, m := parse.Dimension(val); n+m == len(val) { // TODO: inefficient, temporary measure
+			if n, m := parse.Dimension(val); n+m == len(val) && attr != svg.Version { // TODO: inefficient, temporary measure
 				val, _ = o.shortenDimension(val)
 			}
 			if attr == svg.Xml_Space && parse.Equal(val, []byte("preserve")) ||
