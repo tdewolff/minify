@@ -41,6 +41,8 @@ func TestCSS(t *testing.T) {
 		// coverage
 		{"a, b + c { x:y; }", "a,b+c{x:y}"},
 
+		{"a{--bad-ident:0}", "a{--bad-ident:0}"},
+
 		// go-fuzz
 		{"input[type=\"\x00\"] {  a: b\n}.a{}", "input[type=\"\x00\"]{a:b}.a{}"},
 		{"a{a:)'''", "a{a:)'''}"},
