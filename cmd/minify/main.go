@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -28,8 +29,6 @@ import (
 	"github.com/tdewolff/minify/svg"
 	"github.com/tdewolff/minify/xml"
 )
-
-const Concurrency = 50
 
 var filetypeMime = map[string]string{
 	"css":  "text/css",
@@ -193,19 +192,17 @@ func main() {
 			}
 		}
 	} else {
-		sem := make(chan bool, Concurrency)
+		var wg sync.WaitGroup
 		for _, t := range tasks {
-			sem <- true
+			wg.Add(1)
 			go func(t task) {
-				defer func() { <-sem }()
+				defer wg.Done()
 				if ok := minify(mimetype, t); !ok {
 					atomic.AddInt32(&fails, 1)
 				}
 			}(t)
 		}
-		for i := 0; i < cap(sem); i++ {
-			sem <- true
-		}
+		wg.Wait()
 	}
 
 	if watch {
