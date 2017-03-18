@@ -32,7 +32,6 @@ func TestCSS(t *testing.T) {
 		{"@media (-webkit-min-device-pixel-ratio:1.5),(min-resolution:1.5dppx){}", "@media(-webkit-min-device-pixel-ratio:1.5),(min-resolution:1.5dppx){}"},
 		{"[class^=icon-] i[class^=icon-],i[class*=\" icon-\"]{x:y}", "[class^=icon-] i[class^=icon-],i[class*=\" icon-\"]{x:y}"},
 		{"html{line-height:1;}html{line-height:1;}", "html{line-height:1}html{line-height:1}"},
-		{".clearfix { *zoom: 1; }", ".clearfix{*zoom:1}"},
 		{"a { b: 1", "a{b:1}"},
 
 		// case sensitivity
@@ -40,6 +39,9 @@ func TestCSS(t *testing.T) {
 
 		// coverage
 		{"a, b + c { x:y; }", "a,b+c{x:y}"},
+
+		// bad declaration
+		{".clearfix { *zoom: 1; }", ".clearfix{*zoom:1}"},
 
 		// go-fuzz
 		{"input[type=\"\x00\"] {  a: b\n}.a{}", "input[type=\"\x00\"]{a:b}.a{}"},
@@ -150,6 +152,9 @@ func TestCSSInline(t *testing.T) {
 		{"color: rgb(ident);", "color:rgb(ident)"},
 		{"margin: rgb(ident);", "margin:rgb(ident)"},
 		{"filter: progid:b().c.Alpha(rgba(x));", "filter:progid:b().c.Alpha(rgba(x))"},
+
+		// bad declaration
+		{"--bad-ident:0", "--bad-ident:0"},
 
 		// go-fuzz
 		{"FONT-FAMILY: ru\"", "font-family:ru\""},

@@ -62,7 +62,20 @@ func (c *cssMinifier) minifyGrammar() error {
 	for {
 		gt, _, data := c.p.Next()
 		if gt == css.ErrorGrammar {
-			return c.p.Err()
+			if err := c.p.Err(); err == css.ErrBadDeclaration {
+				// write out the offending declaration
+				if _, err := c.w.Write(data); err != nil {
+					return err
+				}
+				for _, val := range c.p.Values() {
+					if _, err := c.w.Write(val.Data); err != nil {
+						return err
+					}
+				}
+				continue
+			} else {
+				return c.p.Err()
+			}
 		} else if gt == css.EndAtRuleGrammar || gt == css.EndRulesetGrammar {
 			if _, err := c.w.Write(rightBracketBytes); err != nil {
 				return err
