@@ -34,6 +34,8 @@ func TestCSS(t *testing.T) {
 		{"html{line-height:1;}html{line-height:1;}", "html{line-height:1}html{line-height:1}"},
 		{"a { b: 1", "a{b:1}"},
 
+		{":root { --custom-variable:0px; }", ":root{--custom-variable:0px}"},
+
 		// case sensitivity
 		{"@counter-style Ident{}", "@counter-style Ident{}"},
 
@@ -41,7 +43,7 @@ func TestCSS(t *testing.T) {
 		{"a, b + c { x:y; }", "a,b+c{x:y}"},
 
 		// bad declaration
-		{".clearfix { *zoom: 1; }", ".clearfix{*zoom:1}"},
+		{".clearfix { *zoom: 1px; }", ".clearfix{*zoom:1px}"},
 
 		// go-fuzz
 		{"input[type=\"\x00\"] {  a: b\n}.a{}", "input[type=\"\x00\"]{a:b}.a{}"},
@@ -133,6 +135,9 @@ func TestCSSInline(t *testing.T) {
 		{"z-index:1000", "z-index:1000"},
 
 		{"any:0deg 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz", "any:0 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz"},
+		{"--custom-variable:0px;", "--custom-variable:0px"},
+		{"--foo: if(x > 5) this.width = 10", "--foo: if(x > 5) this.width = 10"},
+		{"--foo: ;", "--foo: "},
 
 		// case sensitivity
 		{"animation:Ident", "animation:Ident"},
@@ -152,9 +157,6 @@ func TestCSSInline(t *testing.T) {
 		{"color: rgb(ident);", "color:rgb(ident)"},
 		{"margin: rgb(ident);", "margin:rgb(ident)"},
 		{"filter: progid:b().c.Alpha(rgba(x));", "filter:progid:b().c.Alpha(rgba(x))"},
-
-		// bad declaration
-		{"--bad-ident:0", "--bad-ident:0"},
 
 		// go-fuzz
 		{"FONT-FAMILY: ru\"", "font-family:ru\""},

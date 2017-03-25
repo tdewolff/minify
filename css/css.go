@@ -131,6 +131,17 @@ func (c *cssMinifier) minifyGrammar() error {
 				return err
 			}
 			semicolonQueued = true
+		} else if gt == css.CustomPropertyGrammar {
+			if _, err := c.w.Write(data); err != nil {
+				return err
+			}
+			if _, err := c.w.Write(colonBytes); err != nil {
+				return err
+			}
+			if _, err := c.w.Write(c.p.Values()[0].Data); err != nil {
+				return err
+			}
+			semicolonQueued = true
 		} else if gt == css.CommentGrammar {
 			if len(data) > 5 && data[1] == '*' && data[2] == '!' {
 				if _, err := c.w.Write(data[:3]); err != nil {
