@@ -38,6 +38,7 @@ func TestJS(t *testing.T) {
 		{"function(){}\n\"string\"", "function(){}\n\"string\""},       // #109
 		{"false\n\"string\"", "false\n\"string\""},                     // #109
 		{"`\n", "`"},                                                   // go fuzz
+		{"a\n~b", "a\n~b"},                                             // #132
 	}
 
 	m := minify.New()
