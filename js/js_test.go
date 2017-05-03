@@ -23,7 +23,7 @@ func TestJS(t *testing.T) {
 		{"a\n\nb", "a\nb"},
 		{"a// comment\nb", "a\nb"},
 		{"''\na", "''\na"},
-		{"''\n''", "''''"},
+		{"''\n''", "''\n''"},
 		{"]\n0", "]\n0"},
 		{"a\n{", "a\n{"},
 		{";\na", ";a"},
@@ -31,7 +31,7 @@ func TestJS(t *testing.T) {
 		{"}\na", "}\na"},
 		{"+\na", "+\na"},
 		{"+\n(", "+\n("},
-		{"+\n\"\"", "+\"\""},
+		{"+\n\"\"", "+\n\"\""},
 		{"a + ++b", "a+ ++b"},                                          // JSMin caution
 		{"var a=/\\s?auto?\\s?/i\nvar", "var a=/\\s?auto?\\s?/i\nvar"}, // #14
 		{"var a=0\n!function(){}", "var a=0\n!function(){}"},           // #107
