@@ -119,7 +119,7 @@ The HTML5 minifier uses these minifications:
 - strip unrequired tags (`html`, `head`, `body`, ...)
 - strip unrequired end tags (`tr`, `td`, `li`, ... and often `p`)
 - strip default protocols (`http:`, `https:` and `javascript:`)
-- strip comments (except conditional comments)
+- strip all comments (including conditional comments, old IE versions are not supported anymore by Microsoft)
 - shorten `doctype` and `meta` charset
 - lowercase tags, attributes and some values to enhance gzip compression
 
