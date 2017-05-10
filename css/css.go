@@ -63,6 +63,13 @@ func (c *cssMinifier) minifyGrammar() error {
 		gt, _, data := c.p.Next()
 		if gt == css.ErrorGrammar {
 			if err := c.p.Err(); err == css.ErrBadDeclaration {
+				if semicolonQueued {
+					if _, err := c.w.Write(semicolonBytes); err != nil {
+						return err
+					}
+					semicolonQueued = false
+				}
+
 				// write out the offending declaration
 				if _, err := c.w.Write(data); err != nil {
 					return err
