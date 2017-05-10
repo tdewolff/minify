@@ -281,7 +281,7 @@ func getMimetype(mimetype, filetype string, useStdin bool) string {
 		}
 	}
 	if mimetype == "" && useStdin {
-		Error.Fatalln("must specify mime or type for stdin")
+		Error.Fatalln("must specify mimetype or filetype for stdin")
 	}
 
 	if verbose {
