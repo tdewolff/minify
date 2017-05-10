@@ -67,7 +67,6 @@ func (c *cssMinifier) minifyGrammar() error {
 					if _, err := c.w.Write(semicolonBytes); err != nil {
 						return err
 					}
-					semicolonQueued = false
 				}
 
 				// write out the offending declaration
@@ -79,6 +78,7 @@ func (c *cssMinifier) minifyGrammar() error {
 						return err
 					}
 				}
+				semicolonQueued = true
 				continue
 			} else {
 				return c.p.Err()

@@ -43,7 +43,8 @@ func TestCSS(t *testing.T) {
 		{"a, b + c { x:y; }", "a,b+c{x:y}"},
 
 		// bad declaration
-		{".clearfix { *zoom: 1px; }", ".clearfix{*zoom:1px;}"},
+		{".clearfix { *zoom: 1px; }", ".clearfix{*zoom:1px}"},
+		{".clearfix { *zoom: 1px }", ".clearfix{*zoom:1px}"},
 		{".clearfix { color:green; *zoom: 1px; color:red; }", ".clearfix{color:green;*zoom:1px;color:red}"},
 
 		// go-fuzz
