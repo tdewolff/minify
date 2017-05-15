@@ -82,6 +82,7 @@ There is no guarantee for absolute stability, but I take issues and bugs serious
 - minify-v1.0.0 depends on parse-v1.0.0
 - minify-v1.1.0 depends on parse-v1.1.0
 - minify-v2.0.0 depends on parse-v2.0.0
+- minify-v2.1.0 depends on parse-v2.1.0
 - minify-tip will always compile with my other packages on tip
 
 The API differences between v1 and v2 are listed below. If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then **v1** &#8594; **v2**:
