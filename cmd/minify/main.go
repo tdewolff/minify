@@ -30,6 +30,7 @@ import (
 )
 
 const Concurrency = 50
+const Version = "2.2-dev"
 
 var filetypeMime = map[string]string{
 	"css":  "text/css",
@@ -42,14 +43,15 @@ var filetypeMime = map[string]string{
 }
 
 var (
-	m         *min.M
-	recursive bool
 	hidden    bool
 	list      bool
-	verbose   bool
-	watch     bool
-	update    bool
+	m         *min.M
 	pattern   *regexp.Regexp
+	recursive bool
+	verbose   bool
+	version   bool
+	update    bool
+	watch     bool
 )
 
 type task struct {
@@ -92,6 +94,7 @@ func main() {
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose")
 	flag.BoolVarP(&watch, "watch", "w", false, "Watch files and minify upon changes")
 	flag.BoolVarP(&update, "update", "u", false, "Update binary")
+	flag.BoolVarP(&version, "version", "", false, "Version")
 
 	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
 	flag.IntVar(&cssMinifier.Decimals, "css-decimals", -1, "Number of decimals to preserve in numbers, -1 is all")
@@ -109,6 +112,11 @@ func main() {
 		Info = log.New(os.Stderr, "INFO: ", 0)
 	} else {
 		Info = log.New(ioutil.Discard, "INFO: ", 0)
+	}
+
+	if version {
+		fmt.Println("minify", Version)
+		return
 	}
 
 	if update {
