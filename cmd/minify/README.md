@@ -43,6 +43,8 @@ and the `minify` command will be in your `$GOPATH/bin`.
 
 	  --css-decimals
 	        Number of decimals to preserve in numbers, -1 is all
+	  --html-keep-conditional-comments
+	  		Preserve all IE conditional comments
 	  --html-keep-default-attrvals
 	        Preserve default attribute values
 	  --html-keep-document-tags

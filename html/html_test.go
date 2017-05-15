@@ -159,6 +159,24 @@ func TestHTMLKeepEndTags(t *testing.T) {
 	}
 }
 
+func TestHTMLKeepConditionalComments(t *testing.T) {
+	htmlTests := []struct {
+		html     string
+		expected string
+	}{
+		{`<!--[if IE 6]> <b> </b> <![endif]-->`, `<!--[if IE 6]><b></b><![endif]-->`},
+		{`<![if IE 6]> <b> </b> <![endif]>`, `<![if IE 6]><b></b><![endif]>`},
+	}
+
+	m := minify.New()
+	htmlMinifier := &Minifier{KeepConditionalComments: true}
+	for _, tt := range htmlTests {
+		r := bytes.NewBufferString(tt.html)
+		w := &bytes.Buffer{}
+		test.Minify(t, tt.html, htmlMinifier.Minify(m, w, r, nil), w.String(), tt.expected)
+	}
+}
+
 func TestHTMLKeepWhitespace(t *testing.T) {
 	htmlTests := []struct {
 		html     string
