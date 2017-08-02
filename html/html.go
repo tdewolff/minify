@@ -30,6 +30,9 @@ var (
 
 ////////////////////////////////////////////////////////////////
 
+// DefaultMinifier is the default minifier.
+var DefaultMinifier = &Minifier{}
+
 // Minifier is an HTML minifier.
 type Minifier struct {
 	KeepConditionalComments bool
@@ -41,7 +44,7 @@ type Minifier struct {
 
 // Minify minifies HTML data, it reads from r and writes to w.
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
-	return (&Minifier{}).Minify(m, w, r, params)
+	return DefaultMinifier.Minify(m, w, r, params)
 }
 
 // Minify minifies HTML data, it reads from r and writes to w.

@@ -27,6 +27,9 @@ var (
 
 ////////////////////////////////////////////////////////////////
 
+// DefaultMinifier is the default minifier.
+var DefaultMinifier = &Minifier{Decimals: -1}
+
 // Minifier is an SVG minifier.
 type Minifier struct {
 	Decimals int
@@ -34,7 +37,7 @@ type Minifier struct {
 
 // Minify minifies SVG data, it reads from r and writes to w.
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
-	return (&Minifier{Decimals: -1}).Minify(m, w, r, params)
+	return DefaultMinifier.Minify(m, w, r, params)
 }
 
 // Minify minifies SVG data, it reads from r and writes to w.
