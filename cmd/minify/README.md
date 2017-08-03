@@ -2,7 +2,7 @@
 
 **[Download binaries](https://dl.equinox.io/tdewolff/minify/stable) for Windows, Linux and Mac OS X**
 
-Minify is a CLI implemention of the minify [library package](https://github.com/tdewolff/minify/blob/master/README.md).
+Minify is a CLI implementation of the minify [library package](https://github.com/tdewolff/minify/blob/master/README.md).
 
 ## Installation
 Make sure you have [Go](http://golang.org/) and [Git](http://git-scm.com/) installed.
@@ -25,7 +25,7 @@ and the `minify` command will be in your `$GOPATH/bin`.
 	  --match string
 	        Filename pattern matching using regular expressions, see https://github.com/google/re2/wiki/Syntax
 	  --mime string
-	        Mimetype (text/css, application/javascript, ...), optional for input filenames, has precendence over -type
+	        Mimetype (text/css, application/javascript, ...), optional for input filenames, has precedence over -type
 	  -o, --output string
 	        Output file or directory (must have trailing slash), leave blank to use stdout
 	  -r, --recursive
