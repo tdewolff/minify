@@ -73,10 +73,6 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						return err
 					}
 				}
-			} else if lineTerminatorQueued && (prev == js.IdentifierToken || prev == js.PunctuatorToken && prevLast == '}') && tt == js.StringToken {
-				if _, err := w.Write(newlineBytes); err != nil {
-					return err
-				}
 			}
 			if _, err := w.Write(data); err != nil {
 				return err
