@@ -280,14 +280,20 @@ func TestWriterErrors(t *testing.T) {
 		{`<pre>x</pre>`, []int{2}},
 		{`<svg>x</svg>`, []int{0}},
 		{`<math>x</math>`, []int{0}},
+		{`<!--[if IE 6]> text <![endif]-->`, []int{0, 1, 2}},
+		{`<![if IE 6]> text <![endif]>`, []int{0}},
 	}
 
 	m := minify.New()
+	m.Add("text/html", &Minifier{
+		KeepConditionalComments: true,
+	})
+
 	for _, tt := range errorTests {
 		for _, n := range tt.n {
 			r := bytes.NewBufferString(tt.html)
 			w := test.NewErrorWriter(n)
-			test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write", n, "in", tt.html)
+			test.Error(t, m.Minify("text/html", w, r), test.ErrPlain, "return error at write", n, "in", tt.html)
 		}
 	}
 }
