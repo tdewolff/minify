@@ -231,6 +231,12 @@ type minifyResponseWriter struct {
 	mediatype string
 }
 
+// WriteHeader intercepts any header writes and removes the Content-Length header.
+func (w *minifyResponseWriter) WriteHeader(status int) {
+	w.ResponseWriter.Header().Del("Content-Length")
+	w.ResponseWriter.WriteHeader(status)
+}
+
 // Write intercepts any writes to the response writer.
 // The first write will extract the Content-Type as the mediatype. Otherwise it falls back to the RequestURI extension.
 func (w *minifyResponseWriter) Write(b []byte) (int, error) {
@@ -266,7 +272,8 @@ func (m *M) ResponseWriter(w http.ResponseWriter, r *http.Request) *minifyRespon
 func (m *M) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mw := m.ResponseWriter(w, r)
+		defer mw.Close()
+
 		next.ServeHTTP(mw, r)
-		mw.Close()
 	})
 }
