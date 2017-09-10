@@ -3,3 +3,5 @@ before_install:
   - go get github.com/mattn/goveralls
 script:
   - goveralls -v -service travis-ci -repotoken $COVERALLS_TOKEN -ignore=cmd/minify/* || go test -v ./...
+addons:
+  srcclr: true
