@@ -336,7 +336,8 @@ if err := mw.Close(); err != nil {
 ### Middleware
 Minify resources on the fly using middleware. It passes a wrapped response writer to the handler that removes the Content-Length header. The minifier is chosen based on the Content-Type header or, if the header is empty, by the request URI file extension. This is on-the-fly processing, you should preferably cache the results though!
 ``` go
-http.Handle("/", m.Middleware(http.FileServer(http.Dir("./"))))
+fs := http.FileServer(http.Dir("www/"))
+http.Handle("/", m.Middleware(fs))
 ```
 
 ### Custom minifier
