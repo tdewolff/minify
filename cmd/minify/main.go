@@ -85,7 +85,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "\nInput:\n  Files or directories, leave blank to use stdin\n")
 	}
 	flag.StringVarP(&output, "output", "o", "", "Output file or directory (must have trailing slash), leave blank to use stdout")
-	flag.StringVar(&mimetype, "mime", "", "Mimetype (text/css, application/javascript, ...), optional for input filenames, has precendence over -type")
+	flag.StringVar(&mimetype, "mime", "", "Mimetype (text/css, application/javascript, ...), optional for input filenames, has precedence over -type")
 	flag.StringVar(&filetype, "type", "", "Filetype (css, html, js, ...), optional for input filenames")
 	flag.StringVar(&match, "match", "", "Filename pattern matching using regular expressions, see https://github.com/google/re2/wiki/Syntax")
 	flag.BoolVarP(&recursive, "recursive", "r", false, "Recursively minify directories")
