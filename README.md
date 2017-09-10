@@ -35,6 +35,9 @@ The core functionality associates mimetypes with minification functions, allowin
 		- [From reader](#from-reader)
 		- [From bytes](#from-bytes)
 		- [From string](#from-string)
+		- [To reader](#to-reader)
+		- [To writer](#to-writer)
+		- [Middleware](#middleware)
 		- [Custom minifier](#custom-minifier)
 		- [Mediatypes](#mediatypes)
 	- [Examples](#examples)
@@ -309,7 +312,7 @@ if err != nil {
 }
 ```
 
-### From reader
+### To reader
 Get a minifying reader for a specific mediatype.
 ``` go
 mr := m.Reader(mediatype, r)
@@ -318,7 +321,7 @@ if _, err := mr.Read(b); err != nil {
 }
 ```
 
-### From writer
+### To writer
 Get a minifying writer for a specific mediatype. Must be explicitly closed because it uses an `io.Pipe` underneath.
 ``` go
 mw := m.Writer(mediatype, w)
@@ -328,6 +331,12 @@ if mw.Write([]byte("input")); err != nil {
 if err := mw.Close(); err != nil {
 	panic(err)
 }
+```
+
+### Middleware
+Minify resources on the fly using middleware. It passes a wrapped response writer to the handler that removes the Content-Length header. The minifier is chosen based on the Content-Type header or, if the header is empty, by the request URI file extension. This is on-the-fly processing, you should preferably cache the results though!
+``` go
+http.Handle("/", m.Middleware(http.FileServer(http.Dir("./"))))
 ```
 
 ### Custom minifier
@@ -465,9 +474,8 @@ func main() {
 	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
-	http.Handle("/", m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, path.Join("www", r.URL.Path))
-	})))
+	fs := http.FileServer(http.Dir("www/"))
+	http.Handle("/", m.Middleware(fs))
 }
 ```
 
