@@ -1,14 +1,10 @@
 # Minify <a name="minify"></a> [![Build Status](https://travis-ci.org/tdewolff/minify.svg?branch=master)](https://travis-ci.org/tdewolff/minify) [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![Coverage Status](https://coveralls.io/repos/github/tdewolff/minify/badge.svg?branch=master)](https://coveralls.io/github/tdewolff/minify?branch=master) [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**The preferred stable release is v2. Master has some new changes for SVG that haven't yet endured the test of time, bug reports are appreciated.**
-
 **[Online demo](http://go.tacodewolff.nl/minify) if you need to minify files *now*.**
 
 **[Command line tool](https://github.com/tdewolff/minify/tree/master/cmd/minify) that minifies concurrently and supports watching file changes.**
 
 **[All releases](https://dl.equinox.io/tdewolff/minify/stable) on Equinox for various platforms.**
-
-If this software is useful to you, consider making a [donation](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=27MSRR5UJQQUL)! When a significant amount has been deposited, I will write a much improved JS minifier.
 
 ---
 
@@ -57,7 +53,7 @@ The core functionality associates mimetypes with minification functions, allowin
 * XML: **fully implemented**
 
 ## Prologue
-Minifiers or bindings to minifiers exist in almost all programming languages. Some implementations are merely using several regular-expressions to trim whitespace and comments (even though regex for parsing HTML/XML is ill-advised, for a good read see [Regular Expressions: Now You Have Two Problems](http://blog.codinghorror.com/regular-expressions-now-you-have-two-problems/)). Some implementations are much more profound, such as the [YUI Compressor](http://yui.github.io/yuicompressor/) and [Google Closure Compiler](https://github.com/google/closure-compiler) for JS. As most existing implementations either use Java or JavaScript and don't focus on performance, they are pretty slow. And loading the whole file into memory is bad for really large files (or impossible for infinite streams).
+Minifiers or bindings to minifiers exist in almost all programming languages. Some implementations are merely using several regular-expressions to trim whitespace and comments (even though regex for parsing HTML/XML is ill-advised, for a good read see [Regular Expressions: Now You Have Two Problems](http://blog.codinghorror.com/regular-expressions-now-you-have-two-problems/)). Some implementations are much more profound, such as the [YUI Compressor](http://yui.github.io/yuicompressor/) and [Google Closure Compiler](https://github.com/google/closure-compiler) for JS. As most existing implementations either use Java or JavaScript and don't focus on performance, they are pretty slow. Additionally, loading the whole file into memory at once is bad for really large files (or impossible for streams).
 
 This minifier proves to be that fast and extensive minifier that can handle HTML and any other filetype it may contain (CSS, JS, ...). It streams the input and output and can minify files concurrently.
 
