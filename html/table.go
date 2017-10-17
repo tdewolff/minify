@@ -170,7 +170,6 @@ var attrMap = map[html.Hash]traits{
 	html.Selected:        booleanAttr,
 	html.Shape:           caselessAttr,
 	html.Sortable:        booleanAttr,
-	html.Spellcheck:      booleanAttr,
 	html.Src:             urlAttr,
 	html.Target:          caselessAttr,
 	html.Text:            caselessAttr,
