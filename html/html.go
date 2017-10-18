@@ -382,7 +382,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						rawTagMediatype = parse.Copy(val)
 					}
 
-					// default attribute values can be ommited
+					// default attribute values can be omitted
 					if !o.KeepDefaultAttrVals && (attr.Hash == html.Type && (t.Hash == html.Script && parse.Equal(val, []byte("text/javascript")) ||
 						t.Hash == html.Style && parse.Equal(val, []byte("text/css")) ||
 						t.Hash == html.Link && parse.Equal(val, []byte("text/css")) ||

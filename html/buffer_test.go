@@ -19,11 +19,11 @@ func TestBuffer(t *testing.T) {
 	test.That(t, len(z.buf) == 0, "shift first token and restore length")
 
 	test.That(t, z.Peek(2).Hash == html.Href, "third token is href")
-	test.That(t, z.pos == 0, "don't change positon after peeking")
+	test.That(t, z.pos == 0, "don't change position after peeking")
 	test.That(t, len(z.buf) == 3, "two tokens after peeking")
 
-	test.That(t, z.Peek(8).Hash == html.P, "nineth token is <p>")
-	test.That(t, z.pos == 0, "don't change positon after peeking")
+	test.That(t, z.Peek(8).Hash == html.P, "ninth token is <p>")
+	test.That(t, z.pos == 0, "don't change position after peeking")
 	test.That(t, len(z.buf) == 9, "nine tokens after peeking")
 
 	test.That(t, z.Peek(9).TokenType == html.ErrorToken, "tenth token is an error")
@@ -33,5 +33,5 @@ func TestBuffer(t *testing.T) {
 	tok = z.Shift()
 	tok = z.Shift()
 	test.That(t, tok.Hash == html.A, "third token is <a>")
-	test.That(t, z.pos == 2, "don't change positon after peeking")
+	test.That(t, z.pos == 2, "don't change position after peeking")
 }
