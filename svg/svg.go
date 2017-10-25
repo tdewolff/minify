@@ -2,6 +2,7 @@
 package svg // import "github.com/tdewolff/minify/svg"
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/tdewolff/buffer"
@@ -156,17 +157,17 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			if n, m := parse.Dimension(val); n+m == len(val) && attr != svg.Version { // TODO: inefficient, temporary measure
 				val, _ = o.shortenDimension(val)
 			}
-			if attr == svg.Xml_Space && parse.Equal(val, []byte("preserve")) ||
-				tag == svg.Svg && (attr == svg.Version && parse.Equal(val, []byte("1.1")) ||
-					attr == svg.X && parse.Equal(val, []byte("0")) ||
-					attr == svg.Y && parse.Equal(val, []byte("0")) ||
-					attr == svg.Width && parse.Equal(val, []byte("100%")) ||
-					attr == svg.Height && parse.Equal(val, []byte("100%")) ||
-					attr == svg.PreserveAspectRatio && parse.Equal(val, []byte("xMidYMid meet")) ||
-					attr == svg.BaseProfile && parse.Equal(val, []byte("none")) ||
-					attr == svg.ContentScriptType && parse.Equal(val, []byte("application/ecmascript")) ||
-					attr == svg.ContentStyleType && parse.Equal(val, []byte("text/css"))) ||
-				tag == svg.Style && attr == svg.Type && parse.Equal(val, []byte("text/css")) {
+			if attr == svg.Xml_Space && bytes.Equal(val, []byte("preserve")) ||
+				tag == svg.Svg && (attr == svg.Version && bytes.Equal(val, []byte("1.1")) ||
+					attr == svg.X && bytes.Equal(val, []byte("0")) ||
+					attr == svg.Y && bytes.Equal(val, []byte("0")) ||
+					attr == svg.Width && bytes.Equal(val, []byte("100%")) ||
+					attr == svg.Height && bytes.Equal(val, []byte("100%")) ||
+					attr == svg.PreserveAspectRatio && bytes.Equal(val, []byte("xMidYMid meet")) ||
+					attr == svg.BaseProfile && bytes.Equal(val, []byte("none")) ||
+					attr == svg.ContentScriptType && bytes.Equal(val, []byte("application/ecmascript")) ||
+					attr == svg.ContentStyleType && bytes.Equal(val, []byte("text/css"))) ||
+				tag == svg.Style && attr == svg.Type && bytes.Equal(val, []byte("text/css")) {
 				continue
 			}
 
@@ -225,7 +226,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 				} else if hex, ok := minifyCSS.ShortenColorName[css.ToHash(val)]; ok {
 					val = hex
-					// } else if len(val) > 5 && parse.Equal(val[:4], []byte("rgb(")) && val[len(val)-1] == ')' {
+					// } else if len(val) > 5 && bytes.Equal(val[:4], []byte("rgb(")) && val[len(val)-1] == ')' {
 					// TODO: handle rgb(x, y, z) and hsl(x, y, z)
 				}
 			}

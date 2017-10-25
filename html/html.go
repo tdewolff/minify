@@ -80,7 +80,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				return err
 			}
 		case html.CommentToken:
-			if o.KeepConditionalComments && len(t.Text) > 6 && (bytes.HasPrefix(t.Text, []byte("[if ")) || parse.Equal(t.Text, []byte("[endif]"))) {
+			if o.KeepConditionalComments && len(t.Text) > 6 && (bytes.HasPrefix(t.Text, []byte("[if ")) || bytes.Equal(t.Text, []byte("[endif]"))) {
 				// [if ...] is always 7 or more characters, [endif] is only encountered for downlevel-revealed
 				// see https://msdn.microsoft.com/en-us/library/ms537512(v=vs.85).aspx#syntax
 				if bytes.HasPrefix(t.Data, []byte("<!--[if ")) { // downlevel-hidden
@@ -280,7 +280,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				// rewrite attributes with interdependent conditions
 				if t.Hash == html.A {
 					attrs := tb.Attributes(html.Id, html.Name, html.Href)
-					if id, name := attrs[0], attrs[1]; id != nil && name != nil && parse.Equal(id.AttrVal, name.AttrVal) {
+					if id, name := attrs[0], attrs[1]; id != nil && name != nil && bytes.Equal(id.AttrVal, name.AttrVal) {
 						name.Text = nil
 					}
 					if href := attrs[2]; href != nil {
@@ -305,7 +305,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					if content := attrs[0]; content != nil {
 						if httpEquiv := attrs[1]; httpEquiv != nil {
 							content.AttrVal = minify.ContentType(content.AttrVal)
-							if charset := attrs[2]; charset == nil && parse.EqualFold(httpEquiv.AttrVal, []byte("content-type")) && parse.Equal(content.AttrVal, []byte("text/html;charset=utf-8")) {
+							if charset := attrs[2]; charset == nil && parse.EqualFold(httpEquiv.AttrVal, []byte("content-type")) && bytes.Equal(content.AttrVal, []byte("text/html;charset=utf-8")) {
 								httpEquiv.Text = nil
 								content.Text = []byte("charset")
 								content.Hash = html.Charset
@@ -383,23 +383,23 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 
 					// default attribute values can be ommited
-					if !o.KeepDefaultAttrVals && (attr.Hash == html.Type && (t.Hash == html.Script && parse.Equal(val, []byte("text/javascript")) ||
-						t.Hash == html.Style && parse.Equal(val, []byte("text/css")) ||
-						t.Hash == html.Link && parse.Equal(val, []byte("text/css")) ||
-						t.Hash == html.Input && parse.Equal(val, []byte("text")) ||
-						t.Hash == html.Button && parse.Equal(val, []byte("submit"))) ||
+					if !o.KeepDefaultAttrVals && (attr.Hash == html.Type && (t.Hash == html.Script && bytes.Equal(val, []byte("text/javascript")) ||
+						t.Hash == html.Style && bytes.Equal(val, []byte("text/css")) ||
+						t.Hash == html.Link && bytes.Equal(val, []byte("text/css")) ||
+						t.Hash == html.Input && bytes.Equal(val, []byte("text")) ||
+						t.Hash == html.Button && bytes.Equal(val, []byte("submit"))) ||
 						attr.Hash == html.Language && t.Hash == html.Script ||
-						attr.Hash == html.Method && parse.Equal(val, []byte("get")) ||
-						attr.Hash == html.Enctype && parse.Equal(val, []byte("application/x-www-form-urlencoded")) ||
-						attr.Hash == html.Colspan && parse.Equal(val, []byte("1")) ||
-						attr.Hash == html.Rowspan && parse.Equal(val, []byte("1")) ||
-						attr.Hash == html.Shape && parse.Equal(val, []byte("rect")) ||
-						attr.Hash == html.Span && parse.Equal(val, []byte("1")) ||
-						attr.Hash == html.Clear && parse.Equal(val, []byte("none")) ||
-						attr.Hash == html.Frameborder && parse.Equal(val, []byte("1")) ||
-						attr.Hash == html.Scrolling && parse.Equal(val, []byte("auto")) ||
-						attr.Hash == html.Valuetype && parse.Equal(val, []byte("data")) ||
-						attr.Hash == html.Media && t.Hash == html.Style && parse.Equal(val, []byte("all"))) {
+						attr.Hash == html.Method && bytes.Equal(val, []byte("get")) ||
+						attr.Hash == html.Enctype && bytes.Equal(val, []byte("application/x-www-form-urlencoded")) ||
+						attr.Hash == html.Colspan && bytes.Equal(val, []byte("1")) ||
+						attr.Hash == html.Rowspan && bytes.Equal(val, []byte("1")) ||
+						attr.Hash == html.Shape && bytes.Equal(val, []byte("rect")) ||
+						attr.Hash == html.Span && bytes.Equal(val, []byte("1")) ||
+						attr.Hash == html.Clear && bytes.Equal(val, []byte("none")) ||
+						attr.Hash == html.Frameborder && bytes.Equal(val, []byte("1")) ||
+						attr.Hash == html.Scrolling && bytes.Equal(val, []byte("auto")) ||
+						attr.Hash == html.Valuetype && bytes.Equal(val, []byte("data")) ||
+						attr.Hash == html.Media && t.Hash == html.Style && bytes.Equal(val, []byte("all"))) {
 						continue
 					}
 					// CSS and JS minifiers for attribute inline code
