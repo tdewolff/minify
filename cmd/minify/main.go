@@ -17,7 +17,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dustin/go-humanize"
 	"github.com/matryer/try"
 	flag "github.com/spf13/pflag"
 	min "github.com/tdewolff/minify"
@@ -535,7 +534,7 @@ func minify(mimetype string, t task) bool {
 		dstName = "stdin"
 	} else {
 		// rename original when overwriting
-		for i, _ := range t.srcs {
+		for i := range t.srcs {
 			if t.srcs[i] == t.dst {
 				t.srcs[i] += ".bak"
 				err := try.Do(func(attempt int) (bool, error) {
@@ -618,7 +617,7 @@ func minify(mimetype string, t task) bool {
 	fw.Close()
 
 	// remove original that was renamed, when overwriting files
-	for i, _ := range t.srcs {
+	for i := range t.srcs {
 		if t.srcs[i] == t.dst+".bak" {
 			if err == nil {
 				if err = os.Remove(t.srcs[i]); err != nil {
