@@ -15,8 +15,6 @@ var (
 	gtBytes         = []byte(">")
 	isBytes         = []byte("=")
 	spaceBytes      = []byte(" ")
-	cdataBytes      = []byte("<![CDATA[")
-	cdataEndBytes   = []byte("]]>")
 	doctypeBytes    = []byte("<!doctype html>")
 	jsMimeBytes     = []byte("text/javascript")
 	cssMimeBytes    = []byte("text/css")

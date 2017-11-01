@@ -30,7 +30,7 @@ func TestBuffer(t *testing.T) {
 	test.That(t, z.Peek(9) == z.Peek(10), "tenth and eleventh tokens are EOF")
 	test.That(t, len(z.buf) == 10, "ten tokens after peeking")
 
-	tok = z.Shift()
+	_ = z.Shift()
 	tok = z.Shift()
 	test.That(t, tok.Hash == html.A, "third token is <a>")
 	test.That(t, z.pos == 2, "don't change position after peeking")
