@@ -112,11 +112,11 @@ func (m *M) Match(mediatype string) (string, map[string]string, MinifierFunc) {
 	mimetype, params := parse.Mediatype([]byte(mediatype))
 	if minifier, ok := m.literal[string(mimetype)]; ok { // string conversion is optimized away
 		return string(mimetype), params, minifier.Minify
-	} else {
-		for _, minifier := range m.pattern {
-			if minifier.pattern.Match(mimetype) {
-				return minifier.pattern.String(), params, minifier.Minify
-			}
+	}
+
+	for _, minifier := range m.pattern {
+		if minifier.pattern.Match(mimetype) {
+			return minifier.pattern.String(), params, minifier.Minify
 		}
 	}
 	return string(mimetype), params, nil

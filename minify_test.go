@@ -285,8 +285,8 @@ func TestHelperProcess(*testing.T) {
 		fmt.Fprintf(os.Stderr, "No command\n")
 		os.Exit(2)
 	}
-	cmd, args := args[0], args[1:]
-	switch cmd {
+
+	switch args[0] {
 	case "dummy/copy":
 		io.Copy(os.Stdout, os.Stdin)
 	case "dummy/err":
@@ -353,36 +353,4 @@ func ExampleM_Writer() {
 	if err := w.Close(); err != nil {
 		panic(err)
 	}
-}
-
-type MinifierResponseWriter struct {
-	http.ResponseWriter
-	io.Writer
-}
-
-func (m MinifierResponseWriter) Write(b []byte) (int, error) {
-	return m.Writer.Write(b)
-}
-
-func ExampleM_Minify_responseWriter(res http.ResponseWriter) http.ResponseWriter {
-	// Define the accompanying struct:
-	// type MinifierResponseWriter struct {
-	// 	http.ResponseWriter
-	// 	io.Writer
-	// }
-
-	// func (m MinifierResponseWriter) Write(b []byte) (int, error) {
-	// 	return m.Writer.Write(b)
-	// }
-
-	m := New()
-	// add minfiers
-
-	pr, pw := io.Pipe()
-	go func(w io.Writer) {
-		if err := m.Minify("mime/type", w, pr); err != nil {
-			panic(err)
-		}
-	}(res)
-	return MinifierResponseWriter{res, pw}
 }

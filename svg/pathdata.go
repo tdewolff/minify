@@ -259,9 +259,8 @@ func (state *PathDataState) copyNumber(buffer *[]byte, coord []byte, isFlag bool
 				// prevDigit stays true and prevDigitIsInt stays false
 			}
 			return
-		} else {
-			*buffer = append(*buffer, ' ')
 		}
+		*buffer = append(*buffer, ' ')
 	}
 	state.prevDigit = true
 	state.prevDigitIsInt = true
