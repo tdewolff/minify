@@ -233,7 +233,6 @@ The SVG minifier uses these minifications:
 TODO:
 - convert attributes to style attribute whenever shorter
 - merge path data? (same style and no intersection -- the latter is difficult)
-- truncate decimals
 
 Options:
 
