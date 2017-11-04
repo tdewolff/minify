@@ -47,7 +47,7 @@ The core functionality associates mimetypes with minification functions, allowin
 
 * CSS: **fully implemented**
 * HTML: **fully implemented**
-* JS: basic JSmin-like implementation
+* JS: improved JSmin implementation
 * JSON: **fully implemented**
 * SVG: partially implemented; in development
 * XML: **fully implemented**
@@ -78,37 +78,66 @@ import (
 ## API stability
 There is no guarantee for absolute stability, but I take issues and bugs seriously and don't take API changes lightly. The library will be maintained in a compatible way unless vital bugs prevent me from doing so. There has been one API change after v1 which added options support and I took the opportunity to push through some more API clean up as well. There are no plans whatsoever for future API changes.
 
-- minify-v1.0.0 depends on parse-v1.0.0
-- minify-v1.1.0 depends on parse-v1.1.0
-- minify-v2.0.0 depends on parse-v2.0.0
-- minify-v2.1.0 depends on parse-v2.1.0
-- minify-tip will always compile with my other packages on tip
-
-The API differences between v1 and v2 are listed below. If `m := minify.New()` and `w` and `r` are your writer and reader respectfully, then **v1** &#8594; **v2**:
- - `minify.Bytes(m, ...)` &#8594; `m.Bytes(...)`
- - `minify.String(m, ...)` &#8594; `m.String(...)`
- - `html.Minify(m, "text/html", w, r)` &#8594; `html.Minify(m, w, r, nil)` also for `css`, `js`, ...
- - `css.Minify(m, "text/css;inline=1", w, r)` &#8594; `css.Minify(m, w, r, map[string]string{"inline":"1"})`
-
 ## Testing
 For all subpackages and the imported `parse` and `buffer` packages, test coverage of 100% is pursued. Besides full coverage, the minifiers are [fuzz tested](https://github.com/tdewolff/fuzz) using [github.com/dvyukov/go-fuzz](http://www.github.com/dvyukov/go-fuzz), see [the wiki](https://github.com/tdewolff/minify/wiki) for the most important bugs found by fuzz testing. Furthermore am I working on adding visual testing to ensure that minification doesn't change anything visually. By using the WebKit browser to render the original and minified pages we can check whether any pixel is different.
 
 These tests ensure that everything works as intended, the code does not crash (whatever the input) and that it doesn't change the final result visually. If you still encounter a bug, please report [here](https://github.com/tdewolff/minify/issues)!
 
+## Performance
+The benchmarks directory contains a number of standardized samples used to compare performance between changes. To give an indication of the speed of this library, I've ran the tests on my Thinkpad T460 (i5-6300U quad-core 2.4GHz) running Arch Linux.
+
+```
+name                              time/op
+CSS/sample_bootstrap.css-4          3.05ms ± 1%
+CSS/sample_gumby.css-4              4.25ms ± 1%
+HTML/sample_amazon.html-4           3.33ms ± 0%
+HTML/sample_bbc.html-4              1.39ms ± 7%
+HTML/sample_blogpost.html-4          222µs ± 1%
+HTML/sample_es6.html-4              18.0ms ± 1%
+HTML/sample_stackoverflow.html-4    3.08ms ± 1%
+HTML/sample_wikipedia.html-4        6.06ms ± 1%
+JS/sample_ace.js-4                  9.92ms ± 1%
+JS/sample_dot.js-4                  91.4µs ± 4%
+JS/sample_jquery.js-4               4.00ms ± 1%
+JS/sample_jqueryui.js-4             7.93ms ± 0%
+JS/sample_moment.js-4               1.46ms ± 1%
+JSON/sample_large.json-4            5.07ms ± 4%
+JSON/sample_testsuite.json-4        2.96ms ± 0%
+JSON/sample_twitter.json-4          11.3µs ± 0%
+SVG/sample_arctic.svg-4             64.7ms ± 0%
+SVG/sample_gopher.svg-4              227µs ± 0%
+SVG/sample_usa.svg-4                35.9ms ± 6%
+XML/sample_books.xml-4              48.1µs ± 4%
+XML/sample_catalog.xml-4            20.2µs ± 0%
+XML/sample_omg.xml-4                9.02ms ± 0%
+
+name                              speed
+CSS/sample_bootstrap.css-4        45.0MB/s ± 1%
+CSS/sample_gumby.css-4            43.8MB/s ± 1%
+HTML/sample_amazon.html-4          142MB/s ± 0%
+HTML/sample_bbc.html-4            83.0MB/s ± 7%
+HTML/sample_blogpost.html-4       94.5MB/s ± 1%
+HTML/sample_es6.html-4            56.8MB/s ± 1%
+HTML/sample_stackoverflow.html-4  66.7MB/s ± 1%
+HTML/sample_wikipedia.html-4      73.5MB/s ± 1%
+JS/sample_ace.js-4                64.9MB/s ± 1%
+JS/sample_dot.js-4                56.4MB/s ± 4%
+JS/sample_jquery.js-4             61.8MB/s ± 1%
+JS/sample_jqueryui.js-4           59.2MB/s ± 0%
+JS/sample_moment.js-4             67.8MB/s ± 1%
+JSON/sample_large.json-4           150MB/s ± 4%
+JSON/sample_testsuite.json-4       233MB/s ± 0%
+JSON/sample_twitter.json-4         134MB/s ± 0%
+SVG/sample_arctic.svg-4           22.7MB/s ± 0%
+SVG/sample_gopher.svg-4           25.6MB/s ± 0%
+SVG/sample_usa.svg-4              28.6MB/s ± 6%
+XML/sample_books.xml-4            92.1MB/s ± 4%
+XML/sample_catalog.xml-4          95.6MB/s ± 0%
+```
+
 ## HTML
 
-HTML (with JS and CSS) minification typically runs at about 40MB/s ~= 140GB/h, depending on the composition of the file.
-
-Website | Original | Minified | Ratio | Time<sup>&#42;</sup>
-------- | -------- | -------- | ----- | -----------------------
-[Amazon](http://www.amazon.com/) | 463kB | **414kB** | 90% | 10ms
-[BBC](http://www.bbc.com/) | 113kB | **96kB** | 85% | 3ms
-[StackOverflow](http://stackoverflow.com/) | 201kB | **182kB** | 91% | 5ms
-[Wikipedia](http://en.wikipedia.org/wiki/President_of_the_United_States) | 435kB | **410kB** | 94%<sup>&#42;&#42;</sup> | 11ms
-
-<sup>&#42;</sup>These times are measured on my home computer which is an average development computer. The duration varies a lot but it's important to see it's in the 10ms range! The benchmark uses all the minifiers and excludes reading from and writing to the file from the measurement.
-
-<sup>&#42;&#42;</sup>Is already somewhat minified, so this doesn't reflect the full potential of this minifier.
+HTML (with JS and CSS) minification typically shaves off about 10%.
 
 The HTML5 minifier uses these minifications:
 
@@ -142,14 +171,7 @@ Make sure your HTML doesn't depend on whitespace between `block` elements that h
 
 ## CSS
 
-Minification typically runs at about 25MB/s ~= 90GB/h.
-
-Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
-------- | -------- | -------- | ----- | -----------------------
-[Bootstrap](http://getbootstrap.com/) | 134kB | **111kB** | 83% | 4ms
-[Gumby](http://gumbyframework.com/) | 182kB | **167kB** | 90% | 7ms
-
-<sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.
+Minification typically shaves off about 10%-15%.
 
 The CSS minifier will only use safe minifications:
 
@@ -190,16 +212,7 @@ Options:
 
 The JS minifier is pretty basic. It removes comments, whitespace and line breaks whenever it can. It employs all the rules that [JSMin](http://www.crockford.com/javascript/jsmin.html) does too, but has additional improvements. For example the prefix-postfix bug is fixed.
 
-Minification typically runs at about 50MB/s ~= 180GB/h. Common speeds of PHP and JS implementations are about 100-300kB/s (see [Uglify2](http://lisperator.net/uglifyjs/), [Adventures in PHP web asset minimization](https://www.happyassassin.net/2014/12/29/adventures-in-php-web-asset-minimization/)).
-
-Library | Original | Minified | Ratio | Time<sup>&#42;</sup>
-------- | -------- | -------- | ----- | -----------------------
-[ACE](https://github.com/ajaxorg/ace-builds) | 630kB | **442kB** | 70% | 12ms
-[jQuery](http://jquery.com/download/) | 242kB | **130kB** | 54% | 5ms
-[jQuery UI](http://jqueryui.com/download/) | 459kB | **300kB** | 65% | 10ms
-[Moment](http://momentjs.com/) | 97kB | **51kB** | 52% | 2ms
-
-<sup>&#42;</sup>The benchmark excludes the time reading from and writing to a file from the measurement.
+Common speeds of PHP and JS implementations are about 100-300kB/s (see [Uglify2](http://lisperator.net/uglifyjs/), [Adventures in PHP web asset minimization](https://www.happyassassin.net/2014/12/29/adventures-in-php-web-asset-minimization/)). This implementation or orders of magnitude faster, around ~50MB/s.
 
 TODO:
 - shorten local variables / function parameters names
@@ -207,13 +220,11 @@ TODO:
 
 ## JSON
 
-Minification typically runs at about 95MB/s ~= 340GB/h. It shaves off about 15% of filesize for common indented JSON such as generated by [JSON Generator](http://www.json-generator.com/).
+Minification typically shaves off about 15% of filesize for common indented JSON such as generated by [JSON Generator](http://www.json-generator.com/).
 
 The JSON minifier only removes whitespace, which is the only thing that can be left out.
 
 ## SVG
-
-Minification typically runs at about 15MB/s ~= 55GB/h. Performance improvement are due.
 
 The SVG minifier uses these minifications:
 
@@ -239,8 +250,6 @@ Options:
 - `Decimals` number of decimals to preserve for numbers, `-1` means no trimming
 
 ## XML
-
-Minification typically runs at about 70MB/s ~= 250GB/h.
 
 The XML minifier uses these minifications:
 
