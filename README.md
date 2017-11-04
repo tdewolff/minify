@@ -19,6 +19,7 @@ The core functionality associates mimetypes with minification functions, allowin
 	- [Installation](#installation)
 	- [API stability](#api-stability)
 	- [Testing](#testing)
+	- [Performance](#performance)
 	- [HTML](#html)
 		- [Whitespace removal](#whitespace-removal)
 	- [CSS](#css)
@@ -84,7 +85,7 @@ For all subpackages and the imported `parse` and `buffer` packages, test coverag
 These tests ensure that everything works as intended, the code does not crash (whatever the input) and that it doesn't change the final result visually. If you still encounter a bug, please report [here](https://github.com/tdewolff/minify/issues)!
 
 ## Performance
-The benchmarks directory contains a number of standardized samples used to compare performance between changes. To give an indication of the speed of this library, I've ran the tests on my Thinkpad T460 (i5-6300U quad-core 2.4GHz) running Arch Linux.
+The benchmarks directory contains a number of standardized samples used to compare performance between changes. To give an indication of the speed of this library, I've ran the tests on my Thinkpad T460 (i5-6300U quad-core 2.4GHz running Arch Linux) using Go 1.9.2.
 
 ```
 name                              time/op
