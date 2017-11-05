@@ -1,5 +1,6 @@
 *.test
 old
 new
+new_*
 cpu
 mem
