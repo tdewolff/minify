@@ -30,7 +30,7 @@ import (
 )
 
 const Concurrency = 50
-const Version = "2.1.0-dev"
+const Version = "2.2.0-dev"
 
 var filetypeMime = map[string]string{
 	"css":  "text/css",
