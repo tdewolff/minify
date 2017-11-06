@@ -43,18 +43,17 @@ func TestJS(t *testing.T) {
 
 	m := minify.New()
 	for _, tt := range jsTests {
-		r := bytes.NewBufferString(tt.js)
 		w := &bytes.Buffer{}
-		test.Minify(t, tt.js, Minify(m, w, r, nil), w.String(), tt.expected)
+		test.Minify(t, tt.js, Minify(m, w, []byte(tt.js), nil), w.String(), tt.expected)
 	}
 }
 
-func TestReaderErrors(t *testing.T) {
-	m := minify.New()
-	r := test.NewErrorReader(0)
-	w := &bytes.Buffer{}
-	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at first read")
-}
+// func TestReaderErrors(t *testing.T) {
+// 	m := minify.New()
+// 	r := test.NewErrorReader(0)
+// 	w := &bytes.Buffer{}
+// 	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at first read")
+// }
 
 func TestWriterErrors(t *testing.T) {
 	errorTests := []struct {
@@ -69,9 +68,8 @@ func TestWriterErrors(t *testing.T) {
 	m := minify.New()
 	for _, tt := range errorTests {
 		for _, n := range tt.n {
-			r := bytes.NewBufferString(tt.js)
 			w := test.NewErrorWriter(n)
-			test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write", n, "in", tt.js)
+			test.Error(t, Minify(m, w, []byte(tt.js), nil), test.ErrPlain, "return error at write", n, "in", tt.js)
 		}
 	}
 }

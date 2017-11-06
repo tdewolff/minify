@@ -22,18 +22,17 @@ func TestJSON(t *testing.T) {
 
 	m := minify.New()
 	for _, tt := range jsonTests {
-		r := bytes.NewBufferString(tt.json)
 		w := &bytes.Buffer{}
-		test.Minify(t, tt.json, Minify(m, w, r, nil), w.String(), tt.expected)
+		test.Minify(t, tt.json, Minify(m, w, []byte(tt.json), nil), w.String(), tt.expected)
 	}
 }
 
-func TestReaderErrors(t *testing.T) {
-	m := minify.New()
-	r := test.NewErrorReader(0)
-	w := &bytes.Buffer{}
-	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at first read")
-}
+// func TestReaderErrors(t *testing.T) {
+// 	m := minify.New()
+// 	r := test.NewErrorReader(0)
+// 	w := &bytes.Buffer{}
+// 	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at first read")
+// }
 
 func TestWriterErrors(t *testing.T) {
 	errorTests := []struct {
@@ -47,9 +46,8 @@ func TestWriterErrors(t *testing.T) {
 	m := minify.New()
 	for _, tt := range errorTests {
 		for _, n := range tt.n {
-			r := bytes.NewBufferString(tt.json)
 			w := test.NewErrorWriter(n)
-			test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write", n, "in", tt.json)
+			test.Error(t, Minify(m, w, []byte(tt.json), nil), test.ErrPlain, "return error at write", n, "in", tt.json)
 		}
 	}
 }

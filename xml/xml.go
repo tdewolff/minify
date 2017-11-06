@@ -26,17 +26,17 @@ type Minifier struct {
 }
 
 // Minify minifies XML data, it reads from r and writes to w.
-func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
-	return DefaultMinifier.Minify(m, w, r, params)
+func Minify(m *minify.M, w io.Writer, b []byte, params map[string]string) error {
+	return DefaultMinifier.Minify(m, w, b, params)
 }
 
 // Minify minifies XML data, it reads from r and writes to w.
-func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
+func (o *Minifier) Minify(m *minify.M, w io.Writer, b []byte, _ map[string]string) error {
 	omitSpace := true // on true the next text token must not start with a space
 
 	attrByteBuffer := make([]byte, 0, 64)
 
-	l := xml.NewLexer(r)
+	l := xml.NewLexer(b)
 	tb := NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()

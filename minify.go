@@ -4,6 +4,7 @@ package minify // import "github.com/tdewolff/minify"
 import (
 	"errors"
 	"io"
+	"io/ioutil"
 	"mime"
 	"net/http"
 	"net/url"
@@ -22,17 +23,17 @@ var ErrNotExist = errors.New("minifier does not exist for mimetype")
 ////////////////////////////////////////////////////////////////
 
 // MinifierFunc is a function that implements Minifer.
-type MinifierFunc func(*M, io.Writer, io.Reader, map[string]string) error
+type MinifierFunc func(*M, io.Writer, []byte, map[string]string) error
 
 // Minify calls f(m, w, r, params)
-func (f MinifierFunc) Minify(m *M, w io.Writer, r io.Reader, params map[string]string) error {
-	return f(m, w, r, params)
+func (f MinifierFunc) Minify(m *M, w io.Writer, b []byte, params map[string]string) error {
+	return f(m, w, b, params)
 }
 
 // Minifier is the interface for minifiers.
 // The *M parameter is used for minifying embedded resources, such as JS within HTML.
 type Minifier interface {
-	Minify(*M, io.Writer, io.Reader, map[string]string) error
+	Minify(*M, io.Writer, []byte, map[string]string) error
 }
 
 ////////////////////////////////////////////////////////////////
@@ -46,11 +47,11 @@ type cmdMinifier struct {
 	cmd *exec.Cmd
 }
 
-func (c *cmdMinifier) Minify(_ *M, w io.Writer, r io.Reader, _ map[string]string) error {
+func (c *cmdMinifier) Minify(_ *M, w io.Writer, b []byte, _ map[string]string) error {
 	cmd := &exec.Cmd{}
 	*cmd = *c.cmd // concurrency safety
 	cmd.Stdout = w
-	cmd.Stdin = r
+	cmd.Stdin = buffer.NewReader(b)
 	return cmd.Run()
 }
 
@@ -126,21 +127,39 @@ func (m *M) Match(mediatype string) (string, map[string]string, MinifierFunc) {
 // An error is returned when no such mimetype exists (ErrNotExist) or when an error occurred in the minifier function.
 // Mediatype may take the form of 'text/plain', 'text/*', '*/*' or 'text/plain; charset=UTF-8; version=2.0'.
 func (m *M) Minify(mediatype string, w io.Writer, r io.Reader) error {
+	var b []byte
+	if r != nil {
+		if buffer, ok := r.(interface {
+			Bytes() []byte
+		}); ok {
+			b = buffer.Bytes()
+		} else {
+			var err error
+			b, err = ioutil.ReadAll(r)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return m.MinifyBytes(mediatype, w, b)
+}
+
+func (m *M) MinifyBytes(mediatype string, w io.Writer, b []byte) error {
 	mimetype, params := parse.Mediatype([]byte(mediatype))
-	return m.MinifyMimetype(mimetype, w, r, params)
+	return m.MinifyMimetype(mimetype, w, b, params)
 }
 
 // MinifyMimetype minifies the content of a Reader and writes it to a Writer (safe for concurrent use).
 // It is a lower level version of Minify and requires the mediatype to be split up into mimetype and parameters.
 // It is mostly used internally by minifiers because it is faster (no need to convert a byte-slice to string and vice versa).
-func (m *M) MinifyMimetype(mimetype []byte, w io.Writer, r io.Reader, params map[string]string) error {
+func (m *M) MinifyMimetype(mimetype []byte, w io.Writer, b []byte, params map[string]string) error {
 	err := ErrNotExist
 	if minifier, ok := m.literal[string(mimetype)]; ok { // string conversion is optimized away
-		err = minifier.Minify(m, w, r, params)
+		err = minifier.Minify(m, w, b, params)
 	} else {
 		for _, minifier := range m.pattern {
 			if minifier.pattern.Match(mimetype) {
-				err = minifier.Minify(m, w, r, params)
+				err = minifier.Minify(m, w, b, params)
 				break
 			}
 		}
@@ -150,20 +169,20 @@ func (m *M) MinifyMimetype(mimetype []byte, w io.Writer, r io.Reader, params map
 
 // Bytes minifies an array of bytes (safe for concurrent use). When an error occurs it return the original array and the error.
 // It returns an error when no such mimetype exists (ErrNotExist) or any error occurred in the minifier function.
-func (m *M) Bytes(mediatype string, v []byte) ([]byte, error) {
-	out := buffer.NewWriter(make([]byte, 0, len(v)))
-	if err := m.Minify(mediatype, out, buffer.NewReader(v)); err != nil {
-		return v, err
+func (m *M) Bytes(mediatype string, b []byte) ([]byte, error) {
+	out := buffer.NewWriter(make([]byte, 0, len(b)))
+	if err := m.MinifyBytes(mediatype, out, b); err != nil {
+		return b, err
 	}
 	return out.Bytes(), nil
 }
 
 // String minifies a string (safe for concurrent use). When an error occurs it return the original string and the error.
 // It returns an error when no such mimetype exists (ErrNotExist) or any error occurred in the minifier function.
-func (m *M) String(mediatype string, v string) (string, error) {
-	out := buffer.NewWriter(make([]byte, 0, len(v)))
-	if err := m.Minify(mediatype, out, buffer.NewReader([]byte(v))); err != nil {
-		return v, err
+func (m *M) String(mediatype string, s string) (string, error) {
+	out := buffer.NewWriter(make([]byte, 0, len(s)))
+	if err := m.MinifyBytes(mediatype, out, []byte(s)); err != nil {
+		return s, err
 	}
 	return string(out.Bytes()), nil
 }

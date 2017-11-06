@@ -1,7 +1,6 @@
 package html // import "github.com/tdewolff/minify/html"
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/tdewolff/parse/html"
@@ -11,7 +10,7 @@ import (
 func TestBuffer(t *testing.T) {
 	//    0 12  3           45   6   7   8             9   0
 	s := `<p><a href="//url">text</a>text<!--comment--></p>`
-	z := NewTokenBuffer(html.NewLexer(bytes.NewBufferString(s)))
+	z := NewTokenBuffer(html.NewLexer([]byte(s)))
 
 	tok := z.Shift()
 	test.That(t, tok.Hash == html.P, "first token is <p>")
