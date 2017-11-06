@@ -43,9 +43,8 @@ func TestXML(t *testing.T) {
 
 	m := minify.New()
 	for _, tt := range xmlTests {
-		r := bytes.NewBufferString(tt.xml)
 		w := &bytes.Buffer{}
-		test.Minify(t, tt.xml, Minify(m, w, r, nil), w.String(), tt.expected)
+		test.Minify(t, tt.xml, Minify(m, w, []byte(tt.xml), nil), w.String(), tt.expected)
 	}
 }
 
@@ -68,18 +67,17 @@ func TestXMLKeepWhitespace(t *testing.T) {
 	m := minify.New()
 	xmlMinifier := &Minifier{KeepWhitespace: true}
 	for _, tt := range xmlTests {
-		r := bytes.NewBufferString(tt.xml)
 		w := &bytes.Buffer{}
-		test.Minify(t, tt.xml, xmlMinifier.Minify(m, w, r, nil), w.String(), tt.expected)
+		test.Minify(t, tt.xml, xmlMinifier.Minify(m, w, []byte(tt.xml), nil), w.String(), tt.expected)
 	}
 }
 
-func TestReaderErrors(t *testing.T) {
-	m := minify.New()
-	r := test.NewErrorReader(0)
-	w := &bytes.Buffer{}
-	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at first read")
-}
+// func TestReaderErrors(t *testing.T) {
+// 	m := minify.New()
+// 	r := test.NewErrorReader(0)
+// 	w := &bytes.Buffer{}
+// 	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at first read")
+// }
 
 func TestWriterErrors(t *testing.T) {
 	errorTests := []struct {
@@ -99,9 +97,8 @@ func TestWriterErrors(t *testing.T) {
 	m := minify.New()
 	for _, tt := range errorTests {
 		for _, n := range tt.n {
-			r := bytes.NewBufferString(tt.xml)
 			w := test.NewErrorWriter(n)
-			test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write", n, "in", tt.xml)
+			test.Error(t, Minify(m, w, []byte(tt.xml), nil), test.ErrPlain, "return error at write", n, "in", tt.xml)
 		}
 	}
 }
