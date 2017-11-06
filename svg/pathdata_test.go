@@ -42,7 +42,10 @@ func TestPathData(t *testing.T) {
 
 	p := NewPathData(&Minifier{Decimals: -1})
 	for _, tt := range pathDataTests {
-		test.Minify(t, tt.pathData, nil, string(p.ShortenPathData([]byte(tt.pathData))), tt.expected)
+		t.Run(tt.pathData, func(t *testing.T) {
+			path := p.ShortenPathData([]byte(tt.pathData))
+			test.Minify(t, tt.pathData, nil, string(path), tt.expected)
+		})
 	}
 }
 

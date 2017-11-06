@@ -2,6 +2,7 @@ package svg // import "github.com/tdewolff/minify/svg"
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"testing"
@@ -71,8 +72,11 @@ func TestSVG(t *testing.T) {
 
 	m := minify.New()
 	for _, tt := range svgTests {
-		w := &bytes.Buffer{}
-		test.Minify(t, tt.svg, Minify(m, w, []byte(tt.svg), nil), w.String(), tt.expected)
+		t.Run(tt.svg, func(t *testing.T) {
+			w := &bytes.Buffer{}
+			err := Minify(m, w, []byte(tt.svg), nil)
+			test.Minify(t, tt.svg, err, w.String(), tt.expected)
+		})
 	}
 }
 
@@ -91,8 +95,11 @@ func TestSVGStyle(t *testing.T) {
 	m := minify.New()
 	m.AddFunc("text/css", css.Minify)
 	for _, tt := range svgTests {
-		w := &bytes.Buffer{}
-		test.Minify(t, tt.svg, Minify(m, w, []byte(tt.svg), nil), w.String(), tt.expected)
+		t.Run(tt.svg, func(t *testing.T) {
+			w := &bytes.Buffer{}
+			err := Minify(m, w, []byte(tt.svg), nil)
+			test.Minify(t, tt.svg, err, w.String(), tt.expected)
+		})
 	}
 }
 
@@ -107,17 +114,13 @@ func TestSVGDecimals(t *testing.T) {
 	m := minify.New()
 	o := &Minifier{Decimals: 1}
 	for _, tt := range svgTests {
-		w := &bytes.Buffer{}
-		test.Minify(t, tt.svg, o.Minify(m, w, []byte(tt.svg), nil), w.String(), tt.expected)
+		t.Run(tt.svg, func(t *testing.T) {
+			w := &bytes.Buffer{}
+			err := o.Minify(m, w, []byte(tt.svg), nil)
+			test.Minify(t, tt.svg, err, w.String(), tt.expected)
+		})
 	}
 }
-
-// func TestReaderErrors(t *testing.T) {
-// 	m := minify.New()
-// 	r := test.NewErrorReader(0)
-// 	w := &bytes.Buffer{}
-// 	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at first read")
-// }
 
 func TestWriterErrors(t *testing.T) {
 	errorTests := []struct {
@@ -138,8 +141,11 @@ func TestWriterErrors(t *testing.T) {
 	m := minify.New()
 	for _, tt := range errorTests {
 		for _, n := range tt.n {
-			w := test.NewErrorWriter(n)
-			test.Error(t, Minify(m, w, []byte(tt.svg), nil), test.ErrPlain, "return error at write", n, "in", tt.svg)
+			t.Run(fmt.Sprint(tt.svg, " ", tt.n), func(t *testing.T) {
+				w := test.NewErrorWriter(n)
+				err := Minify(m, w, []byte(tt.svg), nil)
+				test.T(t, err, test.ErrPlain)
+			})
 		}
 	}
 }
@@ -159,8 +165,11 @@ func TestMinifyErrors(t *testing.T) {
 		return test.ErrPlain
 	})
 	for _, tt := range errorTests {
-		w := &bytes.Buffer{}
-		test.Error(t, Minify(m, w, []byte(tt.svg), nil), tt.err, "return error", tt.err, "in", tt.svg)
+		t.Run(tt.svg, func(t *testing.T) {
+			w := &bytes.Buffer{}
+			err := Minify(m, w, []byte(tt.svg), nil)
+			test.T(t, err, tt.err)
+		})
 	}
 }
 

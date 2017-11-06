@@ -66,24 +66,24 @@ func init() {
 }
 
 func TestMinify(t *testing.T) {
-	test.Error(t, m.Minify("?", nil, nil), ErrNotExist, "minifier doesn't exist")
-	test.Error(t, m.Minify("dummy/nil", nil, nil), nil)
-	test.Error(t, m.Minify("dummy/err", nil, nil), errDummy)
+	test.T(t, m.Minify("?", nil, nil), ErrNotExist, "minifier doesn't exist")
+	test.T(t, m.Minify("dummy/nil", nil, nil), nil)
+	test.T(t, m.Minify("dummy/err", nil, nil), errDummy)
 
 	b := []byte("test")
 	out, err := m.Bytes("dummy/nil", b)
-	test.Error(t, err, nil)
+	test.T(t, err, nil)
 	test.Bytes(t, out, []byte{}, "dummy/nil returns empty byte slice")
 	out, err = m.Bytes("?", b)
-	test.Error(t, err, ErrNotExist, "minifier doesn't exist")
+	test.T(t, err, ErrNotExist, "minifier doesn't exist")
 	test.Bytes(t, out, b, "return input when minifier doesn't exist")
 
 	s := "test"
 	out2, err := m.String("dummy/nil", s)
-	test.Error(t, err, nil)
+	test.T(t, err, nil)
 	test.String(t, out2, "", "dummy/nil returns empty string")
 	out2, err = m.String("?", s)
-	test.Error(t, err, ErrNotExist, "minifier doesn't exist")
+	test.T(t, err, ErrNotExist, "minifier doesn't exist")
 	test.String(t, out2, s, "return input when minifier doesn't exist")
 }
 
@@ -98,25 +98,25 @@ func TestAdd(t *testing.T) {
 	r := bytes.NewBufferString("test")
 	w := &bytes.Buffer{}
 	mAdd.Add("dummy/err", &DummyMinifier{})
-	test.Error(t, mAdd.Minify("dummy/err", nil, nil), errDummy)
+	test.T(t, mAdd.Minify("dummy/err", nil, nil), errDummy)
 
 	mAdd.AddRegexp(regexp.MustCompile("err1$"), &DummyMinifier{})
-	test.Error(t, mAdd.Minify("dummy/err1", nil, nil), errDummy)
+	test.T(t, mAdd.Minify("dummy/err1", nil, nil), errDummy)
 
 	mAdd.AddFunc("dummy/err", func(m *M, w io.Writer, b []byte, _ map[string]string) error {
 		return errDummy
 	})
-	test.Error(t, mAdd.Minify("dummy/err", nil, nil), errDummy)
+	test.T(t, mAdd.Minify("dummy/err", nil, nil), errDummy)
 
 	mAdd.AddFuncRegexp(regexp.MustCompile("err2$"), func(m *M, w io.Writer, b []byte, _ map[string]string) error {
 		return errDummy
 	})
-	test.Error(t, mAdd.Minify("dummy/err2", nil, nil), errDummy)
+	test.T(t, mAdd.Minify("dummy/err2", nil, nil), errDummy)
 
 	mAdd.AddCmd("dummy/copy", helperCommand(t, "dummy/copy"))
 	mAdd.AddCmd("dummy/err", helperCommand(t, "dummy/err"))
 	mAdd.AddCmdRegexp(regexp.MustCompile("err6$"), helperCommand(t, "werr6"))
-	test.Error(t, mAdd.Minify("dummy/copy", w, r), nil)
+	test.T(t, mAdd.Minify("dummy/copy", w, r), nil)
 	test.String(t, w.String(), "test", "dummy/copy command returns input")
 	test.String(t, mAdd.Minify("dummy/err", w, r).Error(), "exit status 1", "command returns status 1 for dummy/err")
 	test.String(t, mAdd.Minify("werr6", w, r).Error(), "exit status 2", "command returns status 2 when minifier doesn't exist")
@@ -153,7 +153,9 @@ func TestWildcard(t *testing.T) {
 	for _, tt := range mimetypeTests {
 		r := bytes.NewBufferString("")
 		w := &bytes.Buffer{}
-		test.Minify(t, tt.mimetype, m.Minify(tt.mimetype, w, r), w.String(), tt.expected)
+		err := m.Minify(tt.mimetype, w, r)
+		test.Error(t, err)
+		test.Minify(t, tt.mimetype, nil, w.String(), tt.expected)
 	}
 }
 
@@ -171,12 +173,12 @@ func TestReader(t *testing.T) {
 	r := bytes.NewBufferString("test")
 	mr := m.Reader("dummy/dummy", r)
 	_, err := io.Copy(w, mr)
-	test.Error(t, err, nil)
+	test.Error(t, err)
 	test.String(t, w.String(), "test", "equal input after dummy minify reader")
 
 	mr = m.Reader("dummy/err", r)
 	_, err = io.Copy(w, mr)
-	test.Error(t, err, errDummy)
+	test.T(t, err, errDummy)
 }
 
 func TestWriter(t *testing.T) {
@@ -195,19 +197,19 @@ func TestWriter(t *testing.T) {
 	w := &bytes.Buffer{}
 	mw := m.Writer("dummy/dummy", w)
 	_, _ = mw.Write([]byte("test"))
-	test.Error(t, mw.Close(), nil)
+	test.Error(t, mw.Close())
 	test.String(t, w.String(), "test", "equal input after dummy minify writer")
 
 	// w = &bytes.Buffer{}
 	// mw = m.Writer("dummy/err", w)
 	// _, _ = mw.Write([]byte("test"))
-	// test.Error(t, mw.Close(), errDummy)
+	// test.T(t, mw.Close(), errDummy)
 	// test.String(t, w.String(), "test", "equal input after dummy minify writer")
 
 	// w = &bytes.Buffer{}
 	// mw = m.Writer("dummy/late-err", w)
 	// _, _ = mw.Write([]byte("test"))
-	// test.Error(t, mw.Close(), errDummy)
+	// test.T(t, mw.Close(), errDummy)
 	// test.String(t, w.String(), "")
 }
 
@@ -237,9 +239,9 @@ func TestResponseWriter(t *testing.T) {
 	w := &responseWriter{b, http.Header{}}
 	r := &http.Request{RequestURI: "/index.html"}
 	mw := m.ResponseWriter(w, r)
-	test.Error(t, mw.Close(), nil)
+	test.Error(t, mw.Close())
 	_, _ = mw.Write([]byte("test"))
-	test.Error(t, mw.Close(), nil)
+	test.Error(t, mw.Close())
 	test.String(t, b.String(), "test", "equal input after dummy minify response writer")
 
 	b = &bytes.Buffer{}
@@ -248,7 +250,7 @@ func TestResponseWriter(t *testing.T) {
 	mw = m.ResponseWriter(w, r)
 	mw.Header().Add("Content-Type", "text/html")
 	_, _ = mw.Write([]byte("test"))
-	test.Error(t, mw.Close(), nil)
+	test.Error(t, mw.Close())
 	test.String(t, b.String(), "test", "equal input after dummy minify response writer")
 }
 
