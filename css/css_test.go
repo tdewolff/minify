@@ -2,6 +2,7 @@ package css // import "github.com/tdewolff/minify/css"
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"testing"
 
@@ -54,8 +55,11 @@ func TestCSS(t *testing.T) {
 
 	m := minify.New()
 	for _, tt := range cssTests {
-		w := &bytes.Buffer{}
-		test.Minify(t, tt.css, Minify(m, w, []byte(tt.css), nil), w.String(), tt.expected)
+		t.Run(tt.css, func(t *testing.T) {
+			w := &bytes.Buffer{}
+			err := Minify(m, w, []byte(tt.css), nil)
+			test.Minify(t, tt.css, err, w.String(), tt.expected)
+		})
 	}
 }
 
@@ -167,17 +171,13 @@ func TestCSSInline(t *testing.T) {
 	m := minify.New()
 	params := map[string]string{"inline": "1"}
 	for _, tt := range cssTests {
-		w := &bytes.Buffer{}
-		test.Minify(t, tt.css, Minify(m, w, []byte(tt.css), params), w.String(), tt.expected)
+		t.Run(tt.css, func(t *testing.T) {
+			w := &bytes.Buffer{}
+			err := Minify(m, w, []byte(tt.css), params)
+			test.Minify(t, tt.css, err, w.String(), tt.expected)
+		})
 	}
 }
-
-// func TestReaderErrors(t *testing.T) {
-// 	m := minify.New()
-// 	r := test.NewErrorReader(0)
-// 	w := &bytes.Buffer{}
-// 	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at first read")
-// }
 
 func TestWriterErrors(t *testing.T) {
 	errorTests := []struct {
@@ -202,8 +202,11 @@ func TestWriterErrors(t *testing.T) {
 	m := minify.New()
 	for _, tt := range errorTests {
 		for _, n := range tt.n {
-			w := test.NewErrorWriter(n)
-			test.Error(t, Minify(m, w, []byte(tt.css), nil), test.ErrPlain, "return error at write", n, "in", tt.css)
+			t.Run(fmt.Sprint(tt.css, " ", tt.n), func(t *testing.T) {
+				w := test.NewErrorWriter(n)
+				err := Minify(m, w, []byte(tt.css), nil)
+				test.T(t, err, test.ErrPlain)
+			})
 		}
 	}
 }

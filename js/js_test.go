@@ -2,6 +2,7 @@ package js // import "github.com/tdewolff/minify/js"
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"testing"
 
@@ -43,17 +44,13 @@ func TestJS(t *testing.T) {
 
 	m := minify.New()
 	for _, tt := range jsTests {
-		w := &bytes.Buffer{}
-		test.Minify(t, tt.js, Minify(m, w, []byte(tt.js), nil), w.String(), tt.expected)
+		t.Run(tt.js, func(t *testing.T) {
+			w := &bytes.Buffer{}
+			err := Minify(m, w, []byte(tt.js), nil)
+			test.Minify(t, tt.js, err, w.String(), tt.expected)
+		})
 	}
 }
-
-// func TestReaderErrors(t *testing.T) {
-// 	m := minify.New()
-// 	r := test.NewErrorReader(0)
-// 	w := &bytes.Buffer{}
-// 	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at first read")
-// }
 
 func TestWriterErrors(t *testing.T) {
 	errorTests := []struct {
@@ -68,8 +65,11 @@ func TestWriterErrors(t *testing.T) {
 	m := minify.New()
 	for _, tt := range errorTests {
 		for _, n := range tt.n {
-			w := test.NewErrorWriter(n)
-			test.Error(t, Minify(m, w, []byte(tt.js), nil), test.ErrPlain, "return error at write", n, "in", tt.js)
+			t.Run(fmt.Sprint(tt.js, " ", tt.n), func(t *testing.T) {
+				w := test.NewErrorWriter(n)
+				err := Minify(m, w, []byte(tt.js), nil)
+				test.T(t, err, test.ErrPlain)
+			})
 		}
 	}
 }

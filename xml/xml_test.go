@@ -2,6 +2,7 @@ package xml // import "github.com/tdewolff/minify/xml"
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"regexp"
 	"testing"
@@ -43,8 +44,11 @@ func TestXML(t *testing.T) {
 
 	m := minify.New()
 	for _, tt := range xmlTests {
-		w := &bytes.Buffer{}
-		test.Minify(t, tt.xml, Minify(m, w, []byte(tt.xml), nil), w.String(), tt.expected)
+		t.Run(tt.xml, func(t *testing.T) {
+			w := &bytes.Buffer{}
+			err := Minify(m, w, []byte(tt.xml), nil)
+			test.Minify(t, tt.xml, err, w.String(), tt.expected)
+		})
 	}
 }
 
@@ -67,17 +71,13 @@ func TestXMLKeepWhitespace(t *testing.T) {
 	m := minify.New()
 	xmlMinifier := &Minifier{KeepWhitespace: true}
 	for _, tt := range xmlTests {
-		w := &bytes.Buffer{}
-		test.Minify(t, tt.xml, xmlMinifier.Minify(m, w, []byte(tt.xml), nil), w.String(), tt.expected)
+		t.Run(tt.xml, func(t *testing.T) {
+			w := &bytes.Buffer{}
+			err := xmlMinifier.Minify(m, w, []byte(tt.xml), nil)
+			test.Minify(t, tt.xml, err, w.String(), tt.expected)
+		})
 	}
 }
-
-// func TestReaderErrors(t *testing.T) {
-// 	m := minify.New()
-// 	r := test.NewErrorReader(0)
-// 	w := &bytes.Buffer{}
-// 	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at first read")
-// }
 
 func TestWriterErrors(t *testing.T) {
 	errorTests := []struct {
@@ -97,8 +97,11 @@ func TestWriterErrors(t *testing.T) {
 	m := minify.New()
 	for _, tt := range errorTests {
 		for _, n := range tt.n {
-			w := test.NewErrorWriter(n)
-			test.Error(t, Minify(m, w, []byte(tt.xml), nil), test.ErrPlain, "return error at write", n, "in", tt.xml)
+			t.Run(fmt.Sprint(tt.xml, " ", tt.n), func(t *testing.T) {
+				w := test.NewErrorWriter(n)
+				err := Minify(m, w, []byte(tt.xml), nil)
+				test.T(t, err, test.ErrPlain)
+			})
 		}
 	}
 }
