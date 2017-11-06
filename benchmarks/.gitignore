@@ -3,5 +3,6 @@ old
 new
 new_*
 cpu
+cpu_*
 mem
-
+mem_*
