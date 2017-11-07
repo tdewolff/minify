@@ -1,5 +1,6 @@
 *.test
 old
+old_*
 new
 new_*
 cpu
