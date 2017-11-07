@@ -28,7 +28,9 @@ type PathDataState struct {
 }
 
 func NewPathData(o *Minifier) *PathData {
-	return &PathData{o: o}
+	return &PathData{
+		o: o,
+	}
 }
 
 func (p *PathData) ShortenPathData(b []byte) []byte {
