@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strings"
 	"sync/atomic"
@@ -29,8 +30,9 @@ import (
 	"github.com/tdewolff/minify/xml"
 )
 
-const Concurrency = 50
 const Version = "2.2.0-dev"
+
+var Concurrency = runtime.GOMAXPROCS(runtime.NumCPU())
 
 var filetypeMime = map[string]string{
 	"css":  "text/css",
@@ -202,18 +204,22 @@ func main() {
 			}
 		}
 	} else {
-		sem := make(chan bool, Concurrency)
+		sem := make(chan struct{}, Concurrency)
 		for _, t := range tasks {
-			sem <- true
+			sem <- struct{}{}
 			go func(t task) {
-				defer func() { <-sem }()
+				defer func() {
+					<-sem
+				}()
 				if ok := minify(mimetype, t); !ok {
 					atomic.AddInt32(&fails, 1)
 				}
 			}(t)
 		}
+
+		// wait for all jobs to be done
 		for i := 0; i < cap(sem); i++ {
-			sem <- true
+			sem <- struct{}{}
 		}
 	}
 
