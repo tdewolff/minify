@@ -1,6 +1,7 @@
 package xml // import "github.com/tdewolff/minify/xml"
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/tdewolff/parse/xml"
@@ -10,7 +11,7 @@ import (
 func TestBuffer(t *testing.T) {
 	//    0 12  3           45   6   7   8             9   0
 	s := `<p><a href="//url">text</a>text<!--comment--></p>`
-	z := NewTokenBuffer(xml.NewLexer([]byte(s)))
+	z := NewTokenBuffer(xml.NewLexer(bytes.NewBufferString(s)))
 
 	tok := z.Shift()
 	test.That(t, string(tok.Text) == "p", "first token is <p>")

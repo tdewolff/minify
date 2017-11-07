@@ -45,8 +45,9 @@ func TestXML(t *testing.T) {
 	m := minify.New()
 	for _, tt := range xmlTests {
 		t.Run(tt.xml, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.xml)
 			w := &bytes.Buffer{}
-			err := Minify(m, w, []byte(tt.xml), nil)
+			err := Minify(m, w, r, nil)
 			test.Minify(t, tt.xml, err, w.String(), tt.expected)
 		})
 	}
@@ -72,11 +73,20 @@ func TestXMLKeepWhitespace(t *testing.T) {
 	xmlMinifier := &Minifier{KeepWhitespace: true}
 	for _, tt := range xmlTests {
 		t.Run(tt.xml, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.xml)
 			w := &bytes.Buffer{}
-			err := xmlMinifier.Minify(m, w, []byte(tt.xml), nil)
+			err := xmlMinifier.Minify(m, w, r, nil)
 			test.Minify(t, tt.xml, err, w.String(), tt.expected)
 		})
 	}
+}
+
+func TestReaderErrors(t *testing.T) {
+	r := test.NewErrorReader(0)
+	w := &bytes.Buffer{}
+	m := minify.New()
+	err := Minify(m, w, r, nil)
+	test.T(t, err, test.ErrPlain, "return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
@@ -98,8 +108,9 @@ func TestWriterErrors(t *testing.T) {
 	for _, tt := range errorTests {
 		for _, n := range tt.n {
 			t.Run(fmt.Sprint(tt.xml, " ", tt.n), func(t *testing.T) {
+				r := bytes.NewBufferString(tt.xml)
 				w := test.NewErrorWriter(n)
-				err := Minify(m, w, []byte(tt.xml), nil)
+				err := Minify(m, w, r, nil)
 				test.T(t, err, test.ErrPlain)
 			})
 		}

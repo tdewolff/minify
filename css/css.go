@@ -41,17 +41,17 @@ type Minifier struct {
 }
 
 // Minify minifies CSS data, it reads from r and writes to w.
-func Minify(m *minify.M, w io.Writer, b []byte, params map[string]string) error {
-	return DefaultMinifier.Minify(m, w, b, params)
+func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+	return DefaultMinifier.Minify(m, w, r, params)
 }
 
 // Minify minifies CSS data, it reads from r and writes to w.
-func (o *Minifier) Minify(m *minify.M, w io.Writer, b []byte, params map[string]string) error {
+func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	isInline := params != nil && params["inline"] == "1"
 	c := &cssMinifier{
 		m: m,
 		w: w,
-		p: css.NewParser(b, isInline),
+		p: css.NewParser(r, isInline),
 		o: o,
 	}
 	if err := c.minifyGrammar(); err != nil && err != io.EOF {

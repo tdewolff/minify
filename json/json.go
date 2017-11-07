@@ -22,15 +22,15 @@ var DefaultMinifier = &Minifier{}
 type Minifier struct{}
 
 // Minify minifies JSON data, it reads from r and writes to w.
-func Minify(m *minify.M, w io.Writer, b []byte, params map[string]string) error {
-	return DefaultMinifier.Minify(m, w, b, params)
+func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+	return DefaultMinifier.Minify(m, w, r, params)
 }
 
 // Minify minifies JSON data, it reads from r and writes to w.
-func (o *Minifier) Minify(_ *minify.M, w io.Writer, b []byte, _ map[string]string) error {
+func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 	skipComma := true
 
-	p := json.NewParser(b)
+	p := json.NewParser(r)
 	for {
 		state := p.State()
 		gt, text := p.Next()

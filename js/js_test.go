@@ -45,11 +45,20 @@ func TestJS(t *testing.T) {
 	m := minify.New()
 	for _, tt := range jsTests {
 		t.Run(tt.js, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.js)
 			w := &bytes.Buffer{}
-			err := Minify(m, w, []byte(tt.js), nil)
+			err := Minify(m, w, r, nil)
 			test.Minify(t, tt.js, err, w.String(), tt.expected)
 		})
 	}
+}
+
+func TestReaderErrors(t *testing.T) {
+	r := test.NewErrorReader(0)
+	w := &bytes.Buffer{}
+	m := minify.New()
+	err := Minify(m, w, r, nil)
+	test.T(t, err, test.ErrPlain, "return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
@@ -66,8 +75,9 @@ func TestWriterErrors(t *testing.T) {
 	for _, tt := range errorTests {
 		for _, n := range tt.n {
 			t.Run(fmt.Sprint(tt.js, " ", tt.n), func(t *testing.T) {
+				r := bytes.NewBufferString(tt.js)
 				w := test.NewErrorWriter(n)
-				err := Minify(m, w, []byte(tt.js), nil)
+				err := Minify(m, w, r, nil)
 				test.T(t, err, test.ErrPlain)
 			})
 		}

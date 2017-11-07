@@ -56,8 +56,9 @@ func TestCSS(t *testing.T) {
 	m := minify.New()
 	for _, tt := range cssTests {
 		t.Run(tt.css, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.css)
 			w := &bytes.Buffer{}
-			err := Minify(m, w, []byte(tt.css), nil)
+			err := Minify(m, w, r, nil)
 			test.Minify(t, tt.css, err, w.String(), tt.expected)
 		})
 	}
@@ -172,11 +173,20 @@ func TestCSSInline(t *testing.T) {
 	params := map[string]string{"inline": "1"}
 	for _, tt := range cssTests {
 		t.Run(tt.css, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.css)
 			w := &bytes.Buffer{}
-			err := Minify(m, w, []byte(tt.css), params)
+			err := Minify(m, w, r, params)
 			test.Minify(t, tt.css, err, w.String(), tt.expected)
 		})
 	}
+}
+
+func TestReaderErrors(t *testing.T) {
+	r := test.NewErrorReader(0)
+	w := &bytes.Buffer{}
+	m := minify.New()
+	err := Minify(m, w, r, nil)
+	test.T(t, err, test.ErrPlain, "return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
@@ -203,8 +213,9 @@ func TestWriterErrors(t *testing.T) {
 	for _, tt := range errorTests {
 		for _, n := range tt.n {
 			t.Run(fmt.Sprint(tt.css, " ", tt.n), func(t *testing.T) {
+				r := bytes.NewBufferString(tt.css)
 				w := test.NewErrorWriter(n)
-				err := Minify(m, w, []byte(tt.css), nil)
+				err := Minify(m, w, r, nil)
 				test.T(t, err, test.ErrPlain)
 			})
 		}

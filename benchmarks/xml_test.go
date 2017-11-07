@@ -26,7 +26,7 @@ func BenchmarkXML(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				r[sample].Reset()
 				w[sample].Reset()
-				xml.Minify(m, w[sample], readerToBytes(r[sample]), nil)
+				xml.Minify(m, w[sample], r[sample], nil)
 			}
 		})
 	}

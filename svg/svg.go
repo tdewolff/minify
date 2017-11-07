@@ -37,12 +37,12 @@ type Minifier struct {
 }
 
 // Minify minifies SVG data, it reads from r and writes to w.
-func Minify(m *minify.M, w io.Writer, b []byte, params map[string]string) error {
-	return DefaultMinifier.Minify(m, w, b, params)
+func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+	return DefaultMinifier.Minify(m, w, r, params)
 }
 
 // Minify minifies SVG data, it reads from r and writes to w.
-func (o *Minifier) Minify(m *minify.M, w io.Writer, b []byte, _ map[string]string) error {
+func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 	var tag svg.Hash
 	defaultStyleType := cssMimeBytes
 	defaultStyleParams := map[string]string(nil)
@@ -53,7 +53,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, b []byte, _ map[string]strin
 	attrByteBuffer := make([]byte, 0, 64)
 	gStack := make([]bool, 0)
 
-	l := xml.NewLexer(b)
+	l := xml.NewLexer(r)
 	tb := NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()
@@ -73,7 +73,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, b []byte, _ map[string]strin
 		case xml.TextToken:
 			t.Data = parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.Data))
 			if tag == svg.Style && len(t.Data) > 0 {
-				if err := m.MinifyMimetype(defaultStyleType, w, t.Data, defaultStyleParams); err != nil {
+				if err := m.MinifyMimetype(defaultStyleType, w, buffer.NewReader(t.Data), defaultStyleParams); err != nil {
 					if err != minify.ErrNotExist {
 						return err
 					} else if _, err := w.Write(t.Data); err != nil {
@@ -86,7 +86,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, b []byte, _ map[string]strin
 		case xml.CDATAToken:
 			if tag == svg.Style {
 				minifyBuffer.Reset()
-				if err := m.MinifyMimetype(defaultStyleType, minifyBuffer, t.Text, defaultStyleParams); err == nil {
+				if err := m.MinifyMimetype(defaultStyleType, minifyBuffer, buffer.NewReader(t.Text), defaultStyleParams); err == nil {
 					t.Data = append(t.Data[:9], minifyBuffer.Bytes()...)
 					t.Text = t.Data[9:]
 					t.Data = append(t.Data, cdataEndBytes...)
@@ -186,7 +186,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, b []byte, _ map[string]strin
 				defaultStyleType = val
 			} else if attr == svg.Style {
 				minifyBuffer.Reset()
-				if err := m.MinifyMimetype(defaultStyleType, minifyBuffer, val, defaultInlineStyleParams); err == nil {
+				if err := m.MinifyMimetype(defaultStyleType, minifyBuffer, buffer.NewReader(val), defaultInlineStyleParams); err == nil {
 					val = minifyBuffer.Bytes()
 				} else if err != minify.ErrNotExist {
 					return err

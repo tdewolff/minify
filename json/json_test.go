@@ -24,11 +24,20 @@ func TestJSON(t *testing.T) {
 	m := minify.New()
 	for _, tt := range jsonTests {
 		t.Run(tt.json, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.json)
 			w := &bytes.Buffer{}
-			err := Minify(m, w, []byte(tt.json), nil)
+			err := Minify(m, w, r, nil)
 			test.Minify(t, tt.json, err, w.String(), tt.expected)
 		})
 	}
+}
+
+func TestReaderErrors(t *testing.T) {
+	r := test.NewErrorReader(0)
+	w := &bytes.Buffer{}
+	m := minify.New()
+	err := Minify(m, w, r, nil)
+	test.T(t, err, test.ErrPlain, "return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
@@ -44,8 +53,9 @@ func TestWriterErrors(t *testing.T) {
 	for _, tt := range errorTests {
 		for _, n := range tt.n {
 			t.Run(fmt.Sprint(tt.json, " ", tt.n), func(t *testing.T) {
+				r := bytes.NewBufferString(tt.json)
 				w := test.NewErrorWriter(n)
-				err := Minify(m, w, []byte(tt.json), nil)
+				err := Minify(m, w, r, nil)
 				test.T(t, err, test.ErrPlain)
 			})
 		}

@@ -73,8 +73,9 @@ func TestSVG(t *testing.T) {
 	m := minify.New()
 	for _, tt := range svgTests {
 		t.Run(tt.svg, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.svg)
 			w := &bytes.Buffer{}
-			err := Minify(m, w, []byte(tt.svg), nil)
+			err := Minify(m, w, r, nil)
 			test.Minify(t, tt.svg, err, w.String(), tt.expected)
 		})
 	}
@@ -96,8 +97,9 @@ func TestSVGStyle(t *testing.T) {
 	m.AddFunc("text/css", css.Minify)
 	for _, tt := range svgTests {
 		t.Run(tt.svg, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.svg)
 			w := &bytes.Buffer{}
-			err := Minify(m, w, []byte(tt.svg), nil)
+			err := Minify(m, w, r, nil)
 			test.Minify(t, tt.svg, err, w.String(), tt.expected)
 		})
 	}
@@ -115,11 +117,20 @@ func TestSVGDecimals(t *testing.T) {
 	o := &Minifier{Decimals: 1}
 	for _, tt := range svgTests {
 		t.Run(tt.svg, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.svg)
 			w := &bytes.Buffer{}
-			err := o.Minify(m, w, []byte(tt.svg), nil)
+			err := o.Minify(m, w, r, nil)
 			test.Minify(t, tt.svg, err, w.String(), tt.expected)
 		})
 	}
+}
+
+func TestReaderErrors(t *testing.T) {
+	r := test.NewErrorReader(0)
+	w := &bytes.Buffer{}
+	m := minify.New()
+	err := Minify(m, w, r, nil)
+	test.T(t, err, test.ErrPlain, "return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
@@ -142,8 +153,9 @@ func TestWriterErrors(t *testing.T) {
 	for _, tt := range errorTests {
 		for _, n := range tt.n {
 			t.Run(fmt.Sprint(tt.svg, " ", tt.n), func(t *testing.T) {
+				r := bytes.NewBufferString(tt.svg)
 				w := test.NewErrorWriter(n)
-				err := Minify(m, w, []byte(tt.svg), nil)
+				err := Minify(m, w, r, nil)
 				test.T(t, err, test.ErrPlain)
 			})
 		}
@@ -161,13 +173,14 @@ func TestMinifyErrors(t *testing.T) {
 	}
 
 	m := minify.New()
-	m.AddFunc("text/css", func(_ *minify.M, w io.Writer, b []byte, _ map[string]string) error {
+	m.AddFunc("text/css", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 		return test.ErrPlain
 	})
 	for _, tt := range errorTests {
 		t.Run(tt.svg, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.svg)
 			w := &bytes.Buffer{}
-			err := Minify(m, w, []byte(tt.svg), nil)
+			err := Minify(m, w, r, nil)
 			test.T(t, err, tt.err)
 		})
 	}

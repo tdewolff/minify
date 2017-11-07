@@ -28,7 +28,7 @@ func BenchmarkJS(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				r[sample].Reset()
 				w[sample].Reset()
-				js.Minify(m, w[sample], readerToBytes(r[sample]), nil)
+				js.Minify(m, w[sample], r[sample], nil)
 			}
 		})
 	}
