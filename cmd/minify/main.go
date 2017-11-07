@@ -32,8 +32,6 @@ import (
 
 const Version = "2.2.0-dev"
 
-var Concurrency = runtime.GOMAXPROCS(runtime.NumCPU())
-
 var filetypeMime = map[string]string{
 	"css":  "text/css",
 	"htm":  "text/html",
@@ -204,7 +202,12 @@ func main() {
 			}
 		}
 	} else {
-		sem := make(chan struct{}, Concurrency)
+		numWorkers := 4
+		if n := runtime.NumCPU(); n > numWorkers {
+			numWorkers = n
+		}
+
+		sem := make(chan struct{}, numWorkers)
 		for _, t := range tasks {
 			sem <- struct{}{}
 			go func(t task) {
