@@ -277,26 +277,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			if hasAttributes {
 				// rewrite attributes with interdependent conditions
 				if t.Hash == html.A {
-					attrs := tb.Attributes(html.Id, html.Name, html.Href)
+					attrs := tb.Attributes(html.Id, html.Name)
 					if id, name := attrs[0], attrs[1]; id != nil && name != nil && bytes.Equal(id.AttrVal, name.AttrVal) {
 						name.Text = nil
-					}
-					if href := attrs[2]; href != nil {
-						if len(href.AttrVal) > 5 && parse.EqualFold(href.AttrVal[:4], httpBytes) {
-							if href.AttrVal[4] == ':' {
-								if m.URL != nil && m.URL.Scheme == "http" {
-									href.AttrVal = href.AttrVal[5:]
-								} else {
-									parse.ToLower(href.AttrVal[:4])
-								}
-							} else if (href.AttrVal[4] == 's' || href.AttrVal[4] == 'S') && href.AttrVal[5] == ':' {
-								if m.URL != nil && m.URL.Scheme == "https" {
-									href.AttrVal = href.AttrVal[6:]
-								} else {
-									parse.ToLower(href.AttrVal[:5])
-								}
-							}
-						}
 					}
 				} else if t.Hash == html.Meta {
 					attrs := tb.Attributes(html.Content, html.Http_Equiv, html.Charset, html.Name)
@@ -425,20 +408,18 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							continue
 						}
 					} else if len(val) > 5 && attr.Traits&urlAttr != 0 { // anchors are already handled
-						if t.Hash != html.A {
-							if parse.EqualFold(val[:4], httpBytes) {
-								if val[4] == ':' {
-									if m.URL != nil && m.URL.Scheme == "http" {
-										val = val[5:]
-									} else {
-										parse.ToLower(val[:4])
-									}
-								} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
-									if m.URL != nil && m.URL.Scheme == "https" {
-										val = val[6:]
-									} else {
-										parse.ToLower(val[:5])
-									}
+						if parse.EqualFold(val[:4], httpBytes) {
+							if val[4] == ':' {
+								if m.URL != nil && m.URL.Scheme == "http" {
+									val = val[5:]
+								} else {
+									parse.ToLower(val[:4])
+								}
+							} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
+								if m.URL != nil && m.URL.Scheme == "https" {
+									val = val[6:]
+								} else {
+									parse.ToLower(val[:5])
 								}
 							}
 						}
