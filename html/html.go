@@ -422,8 +422,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 									parse.ToLower(val[:5])
 								}
 							}
-						}
-						if parse.EqualFold(val[:5], dataSchemeBytes) {
+						} else if parse.EqualFold(val[:5], dataSchemeBytes) {
 							val = minify.DataURI(m, val)
 						}
 					}
