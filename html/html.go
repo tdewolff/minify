@@ -275,13 +275,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 
 			if hasAttributes {
-				// rewrite attributes with interdependent conditions
-				if t.Hash == html.A {
-					attrs := tb.Attributes(html.Id, html.Name)
-					if id, name := attrs[0], attrs[1]; id != nil && name != nil && bytes.Equal(id.AttrVal, name.AttrVal) {
-						name.Text = nil
-					}
-				} else if t.Hash == html.Meta {
+				if t.Hash == html.Meta {
 					attrs := tb.Attributes(html.Content, html.Http_Equiv, html.Charset, html.Name)
 					if content := attrs[0]; content != nil {
 						if httpEquiv := attrs[1]; httpEquiv != nil {
@@ -334,12 +328,25 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				}
 
 				// write attributes
+				htmlEqualIdName := false
 				for {
 					attr := *tb.Shift()
 					if attr.TokenType != html.AttributeToken {
 						break
 					} else if attr.Text == nil {
 						continue // removed attribute
+					}
+
+					if t.Hash == html.A && (attr.Hash == html.Id || attr.Hash == html.Name) {
+						if attr.Hash == html.Id {
+							if name := tb.Attributes(html.Name)[0]; name != nil && bytes.Equal(attr.AttrVal, name.AttrVal) {
+								htmlEqualIdName = true
+							}
+						} else if htmlEqualIdName {
+							continue
+						} else if id := tb.Attributes(html.Id)[0]; id != nil && bytes.Equal(id.AttrVal, attr.AttrVal) {
+							continue
+						}
 					}
 
 					val := attr.AttrVal
@@ -383,6 +390,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						attr.Hash == html.Media && t.Hash == html.Style && bytes.Equal(val, []byte("all"))) {
 						continue
 					}
+
 					// CSS and JS minifiers for attribute inline code
 					if attr.Hash == html.Style {
 						attrMinifyBuffer.Reset()
