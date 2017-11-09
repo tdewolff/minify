@@ -55,7 +55,7 @@ The core functionality associates mimetypes with minification functions, allowin
 
 ### Roadmap
 
-- [ ] General speed-up of all minifiers
+- [ ] General speed-up of all minifiers (use ASM for whitespace funcs)
 - [ ] Improve JS minifiers by shortening variables and proper semicolon omission
 - [ ] Speed-up SVG minifier, it is very slow
 - [ ] Proper parser error reporting and line number + column information
