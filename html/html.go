@@ -275,30 +275,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 
 			if hasAttributes {
-				// rewrite attributes with interdependent conditions
-				if t.Hash == html.A {
-					attrs := tb.Attributes(html.Id, html.Name, html.Href)
-					if id, name := attrs[0], attrs[1]; id != nil && name != nil && bytes.Equal(id.AttrVal, name.AttrVal) {
-						name.Text = nil
-					}
-					if href := attrs[2]; href != nil {
-						if len(href.AttrVal) > 5 && parse.EqualFold(href.AttrVal[:4], httpBytes) {
-							if href.AttrVal[4] == ':' {
-								if m.URL != nil && m.URL.Scheme == "http" {
-									href.AttrVal = href.AttrVal[5:]
-								} else {
-									parse.ToLower(href.AttrVal[:4])
-								}
-							} else if (href.AttrVal[4] == 's' || href.AttrVal[4] == 'S') && href.AttrVal[5] == ':' {
-								if m.URL != nil && m.URL.Scheme == "https" {
-									href.AttrVal = href.AttrVal[6:]
-								} else {
-									parse.ToLower(href.AttrVal[:5])
-								}
-							}
-						}
-					}
-				} else if t.Hash == html.Meta {
+				if t.Hash == html.Meta {
 					attrs := tb.Attributes(html.Content, html.Http_Equiv, html.Charset, html.Name)
 					if content := attrs[0]; content != nil {
 						if httpEquiv := attrs[1]; httpEquiv != nil {
@@ -351,12 +328,25 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				}
 
 				// write attributes
+				htmlEqualIdName := false
 				for {
 					attr := *tb.Shift()
 					if attr.TokenType != html.AttributeToken {
 						break
 					} else if attr.Text == nil {
 						continue // removed attribute
+					}
+
+					if t.Hash == html.A && (attr.Hash == html.Id || attr.Hash == html.Name) {
+						if attr.Hash == html.Id {
+							if name := tb.Attributes(html.Name)[0]; name != nil && bytes.Equal(attr.AttrVal, name.AttrVal) {
+								htmlEqualIdName = true
+							}
+						} else if htmlEqualIdName {
+							continue
+						} else if id := tb.Attributes(html.Id)[0]; id != nil && bytes.Equal(id.AttrVal, attr.AttrVal) {
+							continue
+						}
 					}
 
 					val := attr.AttrVal
@@ -400,6 +390,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						attr.Hash == html.Media && t.Hash == html.Style && bytes.Equal(val, []byte("all"))) {
 						continue
 					}
+
 					// CSS and JS minifiers for attribute inline code
 					if attr.Hash == html.Style {
 						attrMinifyBuffer.Reset()
@@ -425,24 +416,21 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							continue
 						}
 					} else if len(val) > 5 && attr.Traits&urlAttr != 0 { // anchors are already handled
-						if t.Hash != html.A {
-							if parse.EqualFold(val[:4], httpBytes) {
-								if val[4] == ':' {
-									if m.URL != nil && m.URL.Scheme == "http" {
-										val = val[5:]
-									} else {
-										parse.ToLower(val[:4])
-									}
-								} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
-									if m.URL != nil && m.URL.Scheme == "https" {
-										val = val[6:]
-									} else {
-										parse.ToLower(val[:5])
-									}
+						if parse.EqualFold(val[:4], httpBytes) {
+							if val[4] == ':' {
+								if m.URL != nil && m.URL.Scheme == "http" {
+									val = val[5:]
+								} else {
+									parse.ToLower(val[:4])
+								}
+							} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
+								if m.URL != nil && m.URL.Scheme == "https" {
+									val = val[6:]
+								} else {
+									parse.ToLower(val[:5])
 								}
 							}
-						}
-						if parse.EqualFold(val[:5], dataSchemeBytes) {
+						} else if parse.EqualFold(val[:5], dataSchemeBytes) {
 							val = minify.DataURI(m, val)
 						}
 					}

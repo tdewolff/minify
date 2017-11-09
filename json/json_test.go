@@ -2,6 +2,7 @@ package json // import "github.com/tdewolff/minify/json"
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"regexp"
 	"testing"
@@ -22,17 +23,21 @@ func TestJSON(t *testing.T) {
 
 	m := minify.New()
 	for _, tt := range jsonTests {
-		r := bytes.NewBufferString(tt.json)
-		w := &bytes.Buffer{}
-		test.Minify(t, tt.json, Minify(m, w, r, nil), w.String(), tt.expected)
+		t.Run(tt.json, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.json)
+			w := &bytes.Buffer{}
+			err := Minify(m, w, r, nil)
+			test.Minify(t, tt.json, err, w.String(), tt.expected)
+		})
 	}
 }
 
 func TestReaderErrors(t *testing.T) {
-	m := minify.New()
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}
-	test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at first read")
+	m := minify.New()
+	err := Minify(m, w, r, nil)
+	test.T(t, err, test.ErrPlain, "return error at first read")
 }
 
 func TestWriterErrors(t *testing.T) {
@@ -47,9 +52,12 @@ func TestWriterErrors(t *testing.T) {
 	m := minify.New()
 	for _, tt := range errorTests {
 		for _, n := range tt.n {
-			r := bytes.NewBufferString(tt.json)
-			w := test.NewErrorWriter(n)
-			test.Error(t, Minify(m, w, r, nil), test.ErrPlain, "return error at write", n, "in", tt.json)
+			t.Run(fmt.Sprint(tt.json, " ", tt.n), func(t *testing.T) {
+				r := bytes.NewBufferString(tt.json)
+				w := test.NewErrorWriter(n)
+				err := Minify(m, w, r, nil)
+				test.T(t, err, test.ErrPlain)
+			})
 		}
 	}
 }

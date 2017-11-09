@@ -16,6 +16,7 @@ var (
 	spaceBytes          = []byte(" ")
 	colonBytes          = []byte(":")
 	semicolonBytes      = []byte(";")
+	commaBytes          = []byte(",")
 	leftBracketBytes    = []byte("{")
 	rightBracketBytes   = []byte("}")
 	zeroBytes           = []byte("0")
@@ -121,6 +122,13 @@ func (c *cssMinifier) minifyGrammar() error {
 				}
 			}
 			if _, err := c.w.Write(leftBracketBytes); err != nil {
+				return err
+			}
+		} else if gt == css.QualifiedRuleGrammar {
+			if err := c.minifySelectors(data, c.p.Values()); err != nil {
+				return err
+			}
+			if _, err := c.w.Write(commaBytes); err != nil {
 				return err
 			}
 		} else if gt == css.BeginRulesetGrammar {
