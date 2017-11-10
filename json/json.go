@@ -31,6 +31,8 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	skipComma := true
 
 	p := json.NewParser(r)
+	defer p.Restore()
+
 	for {
 		state := p.State()
 		gt, text := p.Next()

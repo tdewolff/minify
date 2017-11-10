@@ -35,6 +35,8 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	whitespaceQueued := false
 
 	l := js.NewLexer(r)
+	defer l.Restore()
+
 	for {
 		tt, data := l.Next()
 		if tt == js.ErrorToken {

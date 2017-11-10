@@ -55,6 +55,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 		p: css.NewParser(r, isInline),
 		o: o,
 	}
+	defer c.p.Restore()
+
 	if err := c.minifyGrammar(); err != nil && err != io.EOF {
 		return err
 	}

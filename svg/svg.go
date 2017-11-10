@@ -54,6 +54,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	gStack := make([]bool, 0)
 
 	l := xml.NewLexer(r)
+	defer l.Restore()
+
 	tb := NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()
