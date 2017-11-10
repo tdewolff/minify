@@ -165,7 +165,7 @@ func TestNumberTruncate(t *testing.T) {
 }
 
 func TestNumberRandom(t *testing.T) {
-	N := int(1e6)
+	N := int(1e4)
 	if testing.Short() {
 		N = 0
 	}
