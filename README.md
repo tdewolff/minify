@@ -4,7 +4,7 @@
 
 **[Command line tool](https://github.com/tdewolff/minify/tree/master/cmd/minify) that minifies concurrently and supports watching file changes.**
 
-**[All releases](https://dl.equinox.io/tdewolff/minify/stable) on Equinox for various platforms.**
+**[All releases](https://github.com/tdewolff/minify/releases) for various platforms.**
 
 ---
 
