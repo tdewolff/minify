@@ -31,6 +31,8 @@ import (
 )
 
 var Version = "master"
+var Commit = ""
+var Date = ""
 
 var filetypeMime = map[string]string{
 	"css":  "text/css",
@@ -114,7 +116,11 @@ func main() {
 	}
 
 	if version {
-		fmt.Println("minify", Version)
+		if Version == "devel" {
+			fmt.Printf("minify version devel+%.7s %s\n", Commit, Date)
+		} else {
+			fmt.Printf("minify version %s\n", Version)
+		}
 		return
 	}
 
