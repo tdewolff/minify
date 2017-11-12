@@ -1,0 +1,50 @@
+builds:
+    - binary: minify
+      goos:
+          - windows
+          - linux
+          - darwin
+          - freebsd
+          - netbsd
+          - openbsd
+          - dragonfly
+      goarch:
+          - amd64
+          - 386
+          - arm
+          - arm64
+      ignore:
+          - goos: openbsd
+            goarch: arm
+            goarm: 6
+fpm:
+    vendor: "github.com/tdewolff/minify"
+    maintainer: "Taco de Wolff <tacodewolff@gmail.com>"
+    description: "Go minifiers for web formats"
+    license: "MIT"
+    formats:
+        - deb
+        - rpm
+archive:
+    format: tar.gz
+    format_overrides:
+        - goos: windows
+          format: zip
+    name_template: "{{.Binary}}_{{.Version}}_{{.Os}}-{{.Arch}}"
+    replacements:
+        windows: Windows
+        linux: Linux
+        darwin: macOS
+        freebsd: FreeBSD
+        netbsd: NetBSD
+        openbsd: OpenBSD
+        dragonfly: DragonFlyBSD
+        amd64: 64bit
+        386: 32bit
+        arm: ARM
+        arm64: ARM64
+    files:
+        - README.md
+        - LICENSE.md
+release:
+    draft: true

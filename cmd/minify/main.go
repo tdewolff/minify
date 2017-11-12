@@ -30,7 +30,9 @@ import (
 	"github.com/tdewolff/minify/xml"
 )
 
-const Version = "2.3.0"
+var version = "master"
+var commit = ""
+var date = ""
 
 var filetypeMime = map[string]string{
 	"css":  "text/css",
@@ -50,7 +52,6 @@ var (
 	recursive bool
 	verbose   bool
 	version   bool
-	update    bool
 	watch     bool
 )
 
@@ -93,7 +94,6 @@ func main() {
 	flag.BoolVarP(&list, "list", "l", false, "List all accepted filetypes")
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose")
 	flag.BoolVarP(&watch, "watch", "w", false, "Watch files and minify upon changes")
-	flag.BoolVarP(&update, "update", "u", false, "Update binary")
 	flag.BoolVarP(&version, "version", "", false, "Version")
 
 	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
@@ -117,13 +117,6 @@ func main() {
 
 	if version {
 		fmt.Println("minify", Version)
-		return
-	}
-
-	if update {
-		if err := equinoxUpdate(); err != nil {
-			Error.Fatalln(err)
-		}
 		return
 	}
 
