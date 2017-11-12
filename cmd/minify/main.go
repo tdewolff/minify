@@ -30,7 +30,7 @@ import (
 	"github.com/tdewolff/minify/xml"
 )
 
-const Version = "2.2.0-dev"
+const Version = "2.3.0"
 
 var filetypeMime = map[string]string{
 	"css":  "text/css",
