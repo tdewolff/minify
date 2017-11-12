@@ -11,14 +11,6 @@ builds:
           - 386
           - arm
           - arm64
-fpm:
-    vendor: "github.com/tdewolff/minify"
-    maintainer: "Taco de Wolff <tacodewolff@gmail.com>"
-    description: "Go minifiers for web formats"
-    license: "MIT"
-    formats:
-        - deb
-        - rpm
 archive:
     format: tar.gz
     format_overrides:
