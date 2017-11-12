@@ -30,9 +30,7 @@ import (
 	"github.com/tdewolff/minify/xml"
 )
 
-var version = "master"
-var commit = ""
-var date = ""
+var Version = "master"
 
 var filetypeMime = map[string]string{
 	"css":  "text/css",
