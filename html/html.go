@@ -5,9 +5,9 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/tdewolff/buffer"
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/parse"
+	"github.com/tdewolff/parse/buffer"
 	"github.com/tdewolff/parse/html"
 )
 

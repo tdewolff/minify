@@ -6,7 +6,7 @@ import (
 	"net/url"
 
 	"github.com/tdewolff/parse"
-	"github.com/tdewolff/strconv"
+	"github.com/tdewolff/parse/strconv"
 )
 
 // Epsilon is the closest number to zero that is not considered to be zero.

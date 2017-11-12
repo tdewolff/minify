@@ -5,7 +5,7 @@ import (
 
 	"github.com/tdewolff/minify"
 	"github.com/tdewolff/parse"
-	"github.com/tdewolff/strconv"
+	"github.com/tdewolff/parse/strconv"
 )
 
 type PathData struct {

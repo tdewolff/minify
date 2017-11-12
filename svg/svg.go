@@ -5,10 +5,10 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/tdewolff/buffer"
 	"github.com/tdewolff/minify"
 	minifyCSS "github.com/tdewolff/minify/css"
 	"github.com/tdewolff/parse"
+	"github.com/tdewolff/parse/buffer"
 	"github.com/tdewolff/parse/css"
 	"github.com/tdewolff/parse/svg"
 	"github.com/tdewolff/parse/xml"
