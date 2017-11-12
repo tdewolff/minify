@@ -1,8 +1,8 @@
 # Minify [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**[Download binaries](https://dl.equinox.io/tdewolff/minify/stable) for Windows, Linux and Mac OS X**
+**[Download binaries](https://github.com/tdewolff/minify/releases) for Windows, Linux and macOS**
 
-Minify is a CLI implementation of the minify [library package](https://github.com/tdewolff/minify/blob/master/README.md).
+Minify is a CLI implementation of the minify [library package](https://github.com/tdewolff/minify).
 
 ## Installation
 Make sure you have [Go](http://golang.org/) and [Git](http://git-scm.com/) installed.
