@@ -8,7 +8,7 @@
 
 ---
 
-Minify is a minifier package written in [Go][1]. It provides HTML5, CSS3, JS, JSON, SVG and XML minifiers and an interface to implement any other minifier. Minification is the process of removing bytes from a file (such as whitespace) without changing its output and therefore shrinking its size and speeding up transmission over the internet and possibly parsing. The implemented minifiers are high performance and streaming, which implies O(n).
+Minify is a minifier package written in [Go][1]. It provides HTML5, CSS3, JS, JSON, SVG and XML minifiers and an interface to implement any other minifier. Minification is the process of removing bytes from a file (such as whitespace) without changing its output and therefore shrinking its size and speeding up transmission over the internet and possibly parsing. The implemented minifiers are designed for high performance.
 
 The core functionality associates mimetypes with minification functions, allowing embedded resources (like CSS or JS within HTML files) to be minified as well. Users can add new implementations that are triggered based on a mimetype (or pattern), or redirect to an external command (like ClosureCompiler, UglifyCSS, ...).
 
