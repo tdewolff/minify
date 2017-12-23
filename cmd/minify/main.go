@@ -148,7 +148,11 @@ func main() {
 	}
 
 	if watch && (useStdin || output == "") {
-		Error.Fatalln("watch doesn't work with stdin or stdout")
+		Error.Fatalln("watch doesn't work on stdin and stdout, specify input and output")
+	}
+
+	if recursive && (useStdin || output == "") {
+		Error.Fatalnln("recursive minification doesn't work on stdin and stdout, specify input and output")
 	}
 
 	////////////////
