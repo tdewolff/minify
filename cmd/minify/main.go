@@ -152,7 +152,7 @@ func main() {
 	}
 
 	if recursive && (useStdin || output == "") {
-		Error.Fatalnln("recursive minification doesn't work on stdin and stdout, specify input and output")
+		Error.Fatalln("recursive minification doesn't work on stdin and stdout, specify input and output")
 	}
 
 	////////////////
