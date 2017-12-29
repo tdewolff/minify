@@ -541,7 +541,7 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 	} else if tt == css.URLToken {
 		parse.ToLower(data[:3])
 		if len(data) > 10 {
-			uri := data[4 : len(data)-1]
+			uri := parse.TrimWhitespace(data[4 : len(data)-1])
 			delim := byte('"')
 			if uri[0] == '\'' || uri[0] == '"' {
 				delim = uri[0]

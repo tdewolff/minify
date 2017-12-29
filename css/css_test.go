@@ -106,6 +106,7 @@ func TestCSSInline(t *testing.T) {
 		{"margin: 0em;", "margin:0"},
 		{"font-family:'Arial', 'Times New Roman';", "font-family:arial,times new roman"},
 		{"background:url('http://domain.com/image.png');", "background:url(http://domain.com/image.png)"},
+		{"background:url( 'http://domain.com/image.png' );", "background:url(http://domain.com/image.png)"},
 		{"filter: progid : DXImageTransform.Microsoft.BasicImage(rotation=1);", "filter:progid:DXImageTransform.Microsoft.BasicImage(rotation=1)"},
 		{"filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=0);", "filter:alpha(opacity=0)"},
 		{"content: \"a\\\nb\";", "content:\"ab\""},
