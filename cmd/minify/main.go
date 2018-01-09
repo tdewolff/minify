@@ -45,15 +45,15 @@ var filetypeMime = map[string]string{
 }
 
 var (
-	hidden     bool
-	list       bool
-	m          *min.M
-	pattern    *regexp.Regexp
-	recursive  bool
-	verbose    bool
-	version    bool
-	watch      bool
-	concatOnly bool
+	hidden    bool
+	list      bool
+	m         *min.M
+	pattern   *regexp.Regexp
+	recursive bool
+	verbose   bool
+	version   bool
+	watch     bool
+	copyOnly  bool
 )
 
 type task struct {
@@ -95,7 +95,7 @@ func main() {
 	flag.BoolVarP(&list, "list", "l", false, "List all accepted filetypes")
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose")
 	flag.BoolVarP(&watch, "watch", "w", false, "Watch files and minify upon changes")
-	flag.BoolVarP(&concatOnly, "concat-only", "c", false, "Concatenate the files without minification")
+	flag.BoolVarP(&copyOnly, "copy-only", "c", false, "Copy or concatenate the files without minification")
 	flag.BoolVarP(&version, "version", "", false, "Version")
 
 	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
@@ -598,7 +598,7 @@ func minify(mimetype string, t task) bool {
 	success := true
 	startTime := time.Now()
 	var err error
-	if concatOnly {
+	if copyOnly {
 		_, err = io.Copy(w, r)
 		if err != nil {
 			Error.Println("cannot concatenate "+srcName+":", err)
