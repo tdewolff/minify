@@ -281,13 +281,16 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					attrs := tb.Attributes(html.Content, html.Http_Equiv, html.Charset, html.Name)
 					if content := attrs[0]; content != nil {
 						if httpEquiv := attrs[1]; httpEquiv != nil {
-							content.AttrVal = minify.ContentType(content.AttrVal)
-							if charset := attrs[2]; charset == nil && parse.EqualFold(httpEquiv.AttrVal, []byte("content-type")) && bytes.Equal(content.AttrVal, []byte("text/html;charset=utf-8")) {
-								httpEquiv.Text = nil
-								content.Text = []byte("charset")
-								content.Hash = html.Charset
-								content.AttrVal = []byte("utf-8")
+							if charset := attrs[2]; charset == nil && parse.EqualFold(httpEquiv.AttrVal, []byte("content-type")) {
+								content.AttrVal = minify.Mediatype(content.AttrVal)
+								if bytes.Equal(content.AttrVal, []byte("text/html;charset=utf-8")) {
+									httpEquiv.Text = nil
+									content.Text = []byte("charset")
+									content.Hash = html.Charset
+									content.AttrVal = []byte("utf-8")
+								}
 							} else if parse.EqualFold(httpEquiv.AttrVal, []byte("content-style-type")) {
+								content.AttrVal = minify.Mediatype(content.AttrVal)
 								defaultStyleType, defaultStyleParams = parse.Mediatype(content.AttrVal)
 								if defaultStyleParams != nil {
 									defaultInlineStyleParams = defaultStyleParams
@@ -296,6 +299,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 									defaultInlineStyleParams = map[string]string{"inline": "1"}
 								}
 							} else if parse.EqualFold(httpEquiv.AttrVal, []byte("content-script-type")) {
+								content.AttrVal = minify.Mediatype(content.AttrVal)
 								defaultScriptType, defaultScriptParams = parse.Mediatype(content.AttrVal)
 							}
 						}
@@ -365,7 +369,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					if attr.Traits&caselessAttr != 0 {
 						val = parse.ToLower(val)
 						if attr.Hash == html.Enctype || attr.Hash == html.Codetype || attr.Hash == html.Accept || attr.Hash == html.Type && (t.Hash == html.A || t.Hash == html.Link || t.Hash == html.Object || t.Hash == html.Param || t.Hash == html.Script || t.Hash == html.Style || t.Hash == html.Source) {
-							val = minify.ContentType(val)
+							val = minify.Mediatype(val)
 						}
 					}
 					if rawTagHash != 0 && attr.Hash == html.Type {

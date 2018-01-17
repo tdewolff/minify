@@ -184,7 +184,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 
 			if tag == svg.Svg && attr == svg.ContentStyleType {
-				val = minify.ContentType(val)
+				val = minify.Mediatype(val)
 				defaultStyleType = val
 			} else if attr == svg.Style {
 				minifyBuffer.Reset()

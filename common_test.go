@@ -12,20 +12,20 @@ import (
 	"github.com/tdewolff/test"
 )
 
-func TestContentType(t *testing.T) {
-	contentTypeTests := []struct {
-		contentType string
-		expected    string
+func TestMediatype(t *testing.T) {
+	mediatypeTests := []struct {
+		mediatype string
+		expected  string
 	}{
 		{"text/html", "text/html"},
 		{"text/html; charset=UTF-8", "text/html;charset=utf-8"},
 		{"text/html; charset=UTF-8 ; param = \" ; \"", "text/html;charset=utf-8;param=\" ; \""},
 		{"text/html, text/css", "text/html,text/css"},
 	}
-	for _, tt := range contentTypeTests {
-		t.Run(tt.contentType, func(t *testing.T) {
-			contentType := ContentType([]byte(tt.contentType))
-			test.Minify(t, tt.contentType, nil, string(contentType), tt.expected)
+	for _, tt := range mediatypeTests {
+		t.Run(tt.mediatype, func(t *testing.T) {
+			mediatype := Mediatype([]byte(tt.mediatype))
+			test.Minify(t, tt.mediatype, nil, string(mediatype), tt.expected)
 		})
 	}
 }

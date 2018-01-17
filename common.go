@@ -12,8 +12,8 @@ import (
 // Epsilon is the closest number to zero that is not considered to be zero.
 var Epsilon = 0.00001
 
-// ContentType minifies a given mediatype by removing all whitespace.
-func ContentType(b []byte) []byte {
+// Mediatype minifies a given mediatype by removing all whitespace.
+func Mediatype(b []byte) []byte {
 	j := 0
 	start := 0
 	inString := false
