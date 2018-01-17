@@ -492,10 +492,10 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 		dim := data[n:]
 		parse.ToLower(dim)
 		data = minify.Number(data[:n], c.o.Decimals)
-		if tt == css.PercentageToken && (len(data) != 1 || data[0] != '0' || prop == css.Color) {
-			data = append(data, '%')
-		} else if tt == css.DimensionToken && (len(data) != 1 || data[0] != '0' || requiredDimension[string(dim)]) {
+		if tt == css.DimensionToken && (len(data) != 1 || data[0] != '0' || !optionalZeroDimension[string(dim)]) {
 			data = append(data, dim...)
+		} else if tt == css.PercentageToken {
+			data = append(data, '%') // TODO: drop percentage for properties that accept <percentage> and <length>
 		}
 	} else if tt == css.IdentToken {
 		//parse.ToLower(data) // TODO: not all identifiers are case-insensitive; all <custom-ident> properties are case-sensitive
