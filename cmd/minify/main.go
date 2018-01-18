@@ -53,6 +53,7 @@ var (
 	verbose   bool
 	version   bool
 	watch     bool
+	copyOnly  bool
 )
 
 type task struct {
@@ -94,6 +95,7 @@ func main() {
 	flag.BoolVarP(&list, "list", "l", false, "List all accepted filetypes")
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose")
 	flag.BoolVarP(&watch, "watch", "w", false, "Watch files and minify upon changes")
+	flag.BoolVarP(&copyOnly, "copy-only", "c", false, "Copy or concatenate the files without minification")
 	flag.BoolVarP(&version, "version", "", false, "Version")
 
 	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
@@ -595,11 +597,21 @@ func minify(mimetype string, t task) bool {
 
 	success := true
 	startTime := time.Now()
-	err := m.Minify(mimetype, w, r)
-	if err != nil {
-		Error.Println("cannot minify "+srcName+":", err)
-		success = false
+	var err error
+	if copyOnly {
+		_, err = io.Copy(w, r)
+		if err != nil {
+			Error.Println("cannot concatenate "+srcName+":", err)
+			success = false
+		}
+	} else {
+		err = m.Minify(mimetype, w, r)
+		if err != nil {
+			Error.Println("cannot minify "+srcName+":", err)
+			success = false
+		}
 	}
+
 	if verbose {
 		dur := time.Since(startTime)
 		speed := "Inf MB"
