@@ -58,11 +58,11 @@ The core functionality associates mimetypes with minification functions, allowin
 - [ ] General speed-up of all minifiers (use ASM for whitespace funcs)
 - [ ] Improve JS minifiers by shortening variables and proper semicolon omission
 - [ ] Speed-up SVG minifier, it is very slow
-- [ ] Proper parser error reporting and line number + column information
+- [x] Proper parser error reporting and line number + column information
 - [ ] Generation of source maps (uncertain, might slow down parsers too much if it cannot run separately nicely)
-- [ ] Look into compression of images, fonts and other web resources (into package `compress`?)
+- [ ] Look into compression of images, fonts and other web resources (into package `compress`)?
 - [ ] Create a cmd to pack webfiles (much like webpack), ie. merging CSS and JS files, inlining small external files, minification and gzipping. This would work on HTML files.
-- [ ] Create a package to format files, much like `gofmt` for Go files
+- [ ] Create a package to format files, much like `gofmt` for Go files?
 
 ## Prologue
 Minifiers or bindings to minifiers exist in almost all programming languages. Some implementations are merely using several regular-expressions to trim whitespace and comments (even though regex for parsing HTML/XML is ill-advised, for a good read see [Regular Expressions: Now You Have Two Problems](http://blog.codinghorror.com/regular-expressions-now-you-have-two-problems/)). Some implementations are much more profound, such as the [YUI Compressor](http://yui.github.io/yuicompressor/) and [Google Closure Compiler](https://github.com/google/closure-compiler) for JS. As most existing implementations either use JavaScript, use regexes, and don't focus on performance, they are pretty slow.
