@@ -95,6 +95,8 @@ func TestCSSInline(t *testing.T) {
 		{"font-weight: bold; font-weight: normal;", "font-weight:700;font-weight:400"},
 		{"font: bold \"Times new Roman\",\"Sans-Serif\";", "font:700 times new roman,\"sans-serif\""},
 		{"outline: none;", "outline:0"},
+		{"outline: solid black 0;", "outline:0"},
+		{"outline: none black 5px;", "outline:0"},
 		{"outline: none !important;", "outline:0!important"},
 		{"border-left: none;", "border-left:0"},
 		{"margin: 1 1 1 1;", "margin:1"},
@@ -113,6 +115,7 @@ func TestCSSInline(t *testing.T) {
 		{"content: \"a\\\nb\";", "content:\"ab\""},
 		{"content: \"a\\\r\nb\\\r\nc\";", "content:\"abc\""},
 		{"content: \"\";", "content:\"\""},
+		{"x: white , white", "x:#fff,#fff"},
 
 		{"font:27px/13px arial,sans-serif", "font:27px/13px arial,sans-serif"},
 		{"text-decoration: none !important", "text-decoration:none!important"},
@@ -144,6 +147,8 @@ func TestCSSInline(t *testing.T) {
 		{"z-index:1000", "z-index:1000"},
 
 		{"any:0deg 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz", "any:0 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz"},
+		{"width:calc(0%-0px)", "width:calc(0%-0px)"},
+		{"border-left:0 none", "border-left:0"},
 		{"--custom-variable:0px;", "--custom-variable:0px"},
 		{"--foo: if(x > 5) this.width = 10", "--foo: if(x > 5) this.width = 10"},
 		{"--foo: ;", "--foo: "},
