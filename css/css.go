@@ -30,6 +30,8 @@ type cssMinifier struct {
 	w io.Writer
 	p *css.Parser
 	o *Minifier
+
+	valuesBuffer []Token
 }
 
 ////////////////////////////////////////////////////////////////
@@ -248,7 +250,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 	// Check if this is a simple list of values separated by whitespace or commas, otherwise we'll not be processing
 	simple := true
 	prevSep := true
-	values := []Token{}
+	values := c.valuesBuffer[:0]
 	for i := 0; i < len(components); i++ {
 		comp := components[i]
 		if comp.TokenType == css.LeftParenthesisToken || comp.TokenType == css.LeftBraceToken || comp.TokenType == css.LeftBracketToken || comp.TokenType == css.RightParenthesisToken || comp.TokenType == css.RightBraceToken || comp.TokenType == css.RightBracketToken {
@@ -288,6 +290,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 			values = append(values, Token{components[i].TokenType, components[i].Data, nil})
 		}
 	}
+	c.valuesBuffer = values
 
 	// Do not process complex values (eg. containing blocks or is not alternated between whitespace/commas and flat values
 	if !simple {
