@@ -111,7 +111,11 @@ func (c *cssMinifier) minifyGrammar() error {
 			if _, err := c.w.Write(data); err != nil {
 				return err
 			}
-			for _, val := range c.p.Values() {
+			values := c.p.Values()
+			if css.ToHash(data[1:]) == css.Import && len(values) == 2 && values[1].TokenType == css.URLToken {
+				values[1].Data = values[1].Data[4 : len(values[1].Data)-1]
+			}
+			for _, val := range values {
 				if _, err := c.w.Write(val.Data); err != nil {
 					return err
 				}
@@ -395,8 +399,13 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 				values[0].Data = zeroBytes
 			}
 		case css.Background:
-			if len(values) == 1 && css.ToHash(values[0].Data) == css.None {
+			ident := css.ToHash(values[0].Data)
+			if len(values) == 1 && (ident == css.None || ident == css.Transparent) {
 				values[0].Data = backgroundNoneBytes
+			}
+		case css.Box_Shadow:
+			if len(values) == 4 && len(values[0].Data) == 1 && values[0].Data[0] == '0' && len(values[1].Data) == 1 && values[1].Data[0] == '0' && len(values[2].Data) == 1 && values[2].Data[0] == '0' && len(values[3].Data) == 1 && values[3].Data[0] == '0' {
+				values = values[:2]
 			}
 		default:
 			if bytes.Equal(property, msfilterBytes) {

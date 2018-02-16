@@ -23,6 +23,7 @@ func TestCSS(t *testing.T) {
 		{".cla[id ^= L] { x:y; }", ".cla[id^=L]{x:y}"},
 		{"area:focus { outline : 0;}", "area:focus{outline:0}"},
 		{"@import 'file';", "@import 'file'"},
+		{"@import url('file');", "@import 'file'"},
 		{"@font-face { x:y; }", "@font-face{x:y}"},
 
 		{"input[type=\"radio\"]{x:y}", "input[type=radio]{x:y}"},
@@ -145,7 +146,10 @@ func TestCSSInline(t *testing.T) {
 		{"margin:0 0 18px 0;", "margin:0 0 18px"},
 		{"background:none", "background:0 0"},
 		{"background:none 1 1", "background:none 1 1"},
+		{"background:transparent", "background:0 0"},
+		{"background:transparent no-repeat", "background:transparent no-repeat"},
 		{"z-index:1000", "z-index:1000"},
+		{"box-shadow:0 0 0 0", "box-shadow:0 0"},
 
 		{"any:0deg 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz", "any:0 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz"},
 		{"width:calc(0%-0px)", "width:calc(0%-0px)"},
