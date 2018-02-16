@@ -99,6 +99,7 @@ func TestCSSInline(t *testing.T) {
 		{"outline: none black 5px;", "outline:0"},
 		{"outline: none !important;", "outline:0!important"},
 		{"border-left: none;", "border-left:0"},
+		{"border-left: none 0;", "border-left:0"},
 		{"margin: 1 1 1 1;", "margin:1"},
 		{"margin: 1 2 1 2;", "margin:1 2"},
 		{"margin: 1 2 3 2;", "margin:1 2 3"},
