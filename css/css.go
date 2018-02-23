@@ -113,7 +113,15 @@ func (c *cssMinifier) minifyGrammar() error {
 			}
 			values := c.p.Values()
 			if css.ToHash(data[1:]) == css.Import && len(values) == 2 && values[1].TokenType == css.URLToken {
-				values[1].Data = values[1].Data[4 : len(values[1].Data)-1]
+				url := values[1].Data
+				if url[4] != '"' && url[4] != '\'' {
+					url = url[3:]
+					url[0] = '"'
+					url[len(url)-1] = '"'
+				} else {
+					url = url[4 : len(url)-1]
+				}
+				values[1].Data = url
 			}
 			for _, val := range values {
 				if _, err := c.w.Write(val.Data); err != nil {

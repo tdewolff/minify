@@ -24,6 +24,7 @@ func TestCSS(t *testing.T) {
 		{"area:focus { outline : 0;}", "area:focus{outline:0}"},
 		{"@import 'file';", "@import 'file'"},
 		{"@import url('file');", "@import 'file'"},
+		{"@import url(//url);", `@import "//url"`},
 		{"@font-face { x:y; }", "@font-face{x:y}"},
 
 		{"input[type=\"radio\"]{x:y}", "input[type=radio]{x:y}"},
