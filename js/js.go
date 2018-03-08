@@ -72,8 +72,8 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 		} else {
 			first := data[0]
-			if (prev == js.IdentifierToken || prev == js.NumericToken || prev == js.PunctuatorToken || prev == js.StringToken || prev == js.RegexpToken) &&
-				(tt == js.IdentifierToken || tt == js.NumericToken || tt == js.StringToken || tt == js.PunctuatorToken || tt == js.RegexpToken) {
+			if (prev == js.IdentifierToken || prev == js.NumericToken || prev == js.PunctuatorToken || prev == js.StringToken || prev == js.TemplateToken || prev == js.RegexpToken) &&
+				(tt == js.IdentifierToken || tt == js.NumericToken || tt == js.StringToken || tt == js.TemplateToken || tt == js.PunctuatorToken || tt == js.RegexpToken) {
 				if lineTerminatorQueued && (prev != js.PunctuatorToken || prevLast == '}' || prevLast == ']' || prevLast == ')' || prevLast == '+' || prevLast == '-' || prevLast == '"' || prevLast == '\'') &&
 					(tt != js.PunctuatorToken || first == '{' || first == '[' || first == '(' || first == '+' || first == '-' || first == '!' || first == '~') {
 					if _, err := w.Write(newlineBytes); err != nil {
