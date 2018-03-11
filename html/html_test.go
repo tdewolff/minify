@@ -172,6 +172,26 @@ func TestHTMLKeepEndTags(t *testing.T) {
 	}
 }
 
+func TestHTMLKeepInlineSvg(t *testing.T) {
+	htmlTests := []struct {
+		html     string
+		expected string
+	}{
+		{`<svg> <g id="parent"> <g id="child1"></g> <g id="child"></g> </g> </svg>`, `<svg> <g id="parent"> <g id="child1"></g> <g id="child"></g> </g> </svg>`},
+	}
+
+	m := minify.New()
+	htmlMinifier := &Minifier{KeepInlineSvg: true}
+	m.AddFunc("image/svg+xml", svg.Minify)
+	for _, tt := range htmlTests {
+		t.Run(tt.html, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.html)
+			w := &bytes.Buffer{}
+			err := htmlMinifier.Minify(m, w, r, nil)
+			test.Minify(t, tt.html, err, w.String(), tt.expected)
+		})
+	}
+}
 func TestHTMLKeepConditionalComments(t *testing.T) {
 	htmlTests := []struct {
 		html     string

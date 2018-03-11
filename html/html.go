@@ -38,6 +38,7 @@ type Minifier struct {
 	KeepDocumentTags        bool
 	KeepEndTags             bool
 	KeepWhitespace          bool
+	KeepInlineSvg           bool
 }
 
 // Minify minifies HTML data, it reads from r and writes to w.
@@ -100,11 +101,17 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				}
 			}
 		case html.SvgToken:
-			if err := m.MinifyMimetype(svgMimeBytes, w, buffer.NewReader(t.Data), nil); err != nil {
-				if err != minify.ErrNotExist {
+			if o.KeepInlineSvg {
+				if _, err := w.Write(t.Data); err != nil {
 					return err
-				} else if _, err := w.Write(t.Data); err != nil {
-					return err
+				}
+			} else {
+				if err := m.MinifyMimetype(svgMimeBytes, w, buffer.NewReader(t.Data), nil); err != nil {
+					if err != minify.ErrNotExist {
+						return err
+					} else if _, err := w.Write(t.Data); err != nil {
+						return err
+					}
 				}
 			}
 		case html.MathToken:
