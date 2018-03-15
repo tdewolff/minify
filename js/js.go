@@ -48,7 +48,7 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			lineTerminatorQueued = true
 		} else if tt == js.WhitespaceToken {
 			whitespaceQueued = true
-		} else if tt == js.CommentToken || tt == js.MultiLineCommentToken {
+		} else if tt == js.SingleLineCommentToken || tt == js.MultiLineCommentToken {
 			if len(data) > 5 && data[1] == '*' && data[2] == '!' {
 				if _, err := w.Write(data[:3]); err != nil {
 					return err
