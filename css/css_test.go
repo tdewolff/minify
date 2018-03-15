@@ -96,6 +96,7 @@ func TestCSSInline(t *testing.T) {
 		{"background: hsla(0,0%,100%,.7);", "background:hsla(0,0%,100%,.7)"},
 		{"font-weight: bold; font-weight: normal;", "font-weight:700;font-weight:400"},
 		{"font: bold \"Times new Roman\",\"Sans-Serif\";", "font:700 times new roman,\"sans-serif\""},
+		{"font: normal normal normal normal 20px normal", "font:20px normal"},
 		{"outline: none;", "outline:0"},
 		{"outline: solid black 0;", "outline:0"},
 		{"outline: none black 5px;", "outline:0"},

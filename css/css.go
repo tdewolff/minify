@@ -342,10 +342,20 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 	if len(values) > 0 {
 		switch prop {
 		case css.Font, css.Font_Weight, css.Font_Family:
+			if prop == css.Font {
+				// in "font:" shorthand all values before the size have "normal"
+				// as valid and, at the same time, default value, so just skip them
+				for i, value := range values {
+					if !(value.TokenType == css.IdentToken && css.ToHash(value.Data) == css.Normal) {
+						values = values[i:]
+						break
+					}
+				}
+			}
 			for i, value := range values {
 				if value.TokenType == css.IdentToken {
 					val := css.ToHash(value.Data)
-					if val == css.Normal {
+					if prop == css.Font_Weight && val == css.Normal {
 						values[i].TokenType = css.NumberToken
 						values[i].Data = []byte("400")
 					} else if val == css.Bold {
