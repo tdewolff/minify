@@ -70,7 +70,7 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					if _, err := w.Write(newlineBytes); err != nil {
 						return err
 					}
-				} else if whitespaceQueued && (prev != js.StringToken && prev != js.PunctuatorToken && tt != js.PunctuatorToken || (prevLast == '+' || prevLast == '-') && first == prevLast) {
+				} else if whitespaceQueued && (prev != js.StringToken && prev != js.PunctuatorToken && tt != js.PunctuatorToken || (prevLast == '+' || prevLast == '-' || prevLast == '/') && first == prevLast) {
 					if _, err := w.Write(spaceBytes); err != nil {
 						return err
 					}
