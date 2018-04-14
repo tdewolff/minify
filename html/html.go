@@ -86,13 +86,18 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				if bytes.HasPrefix(t.Data, []byte("<!--[if ")) && len(t.Data) > len("<!--[if ]><![endif]-->") { // downlevel-hidden
 					begin := bytes.IndexByte(t.Data, '>') + 1
 					end := len(t.Data) - len("<![endif]-->")
-					if _, err := w.Write(t.Data[:begin]); err != nil {
-						return err
-					}
-					if err := o.Minify(m, w, buffer.NewReader(t.Data[begin:end]), nil); err != nil {
-						return err
-					}
-					if _, err := w.Write(t.Data[end:]); err != nil {
+
+					if begin < end {
+					    if _, err := w.Write(t.Data[:begin]); err != nil {
+						    return err
+					    }
+					    if err := o.Minify(m, w, buffer.NewReader(t.Data[begin:end]), nil); err != nil {
+						    return err
+					    }
+					    if _, err := w.Write(t.Data[end:]); err != nil {
+						    return err
+					    }
+					} else if _, err := w.Write(t.Data); err != nil { // downlevel-hidden
 						return err
 					}
 				} else if _, err := w.Write(t.Data); err != nil { // downlevel-revealed or short downlevel-hidden
