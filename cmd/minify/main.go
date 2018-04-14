@@ -45,14 +45,15 @@ var filetypeMime = map[string]string{
 }
 
 var (
-	hidden    bool
-	list      bool
-	m         *min.M
-	pattern   *regexp.Regexp
-	recursive bool
-	verbose   bool
-	version   bool
-	watch     bool
+	hidden              bool
+	list                bool
+	m                   *min.M
+	pattern             *regexp.Regexp
+	recursive           bool
+	svgMinifierDisabled bool
+	verbose             bool
+	version             bool
+	watch               bool
 )
 
 type task struct {
@@ -103,6 +104,7 @@ func main() {
 	flag.BoolVar(&htmlMinifier.KeepDocumentTags, "html-keep-document-tags", false, "Preserve html, head and body tags")
 	flag.BoolVar(&htmlMinifier.KeepEndTags, "html-keep-end-tags", false, "Preserve all end tags")
 	flag.BoolVar(&htmlMinifier.KeepWhitespace, "html-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
+	flag.BoolVar(&svgMinifierDisabled, "svg-minifier-disabled", false, "Disable SVG Minifier")
 	flag.IntVar(&svgMinifier.Decimals, "svg-decimals", -1, "Number of decimals to preserve in numbers, -1 is all")
 	flag.BoolVar(&xmlMinifier.KeepWhitespace, "xml-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
 	flag.Parse()
@@ -185,7 +187,9 @@ func main() {
 	m.Add("text/css", cssMinifier)
 	m.Add("text/html", htmlMinifier)
 	m.Add("text/javascript", jsMinifier)
-	m.Add("image/svg+xml", svgMinifier)
+	if !svgMinifierDisabled {
+		m.Add("image/svg+xml", svgMinifier)
+	}
 	m.AddRegexp(regexp.MustCompile("[/+]json$"), jsonMinifier)
 	m.AddRegexp(regexp.MustCompile("[/+]xml$"), xmlMinifier)
 

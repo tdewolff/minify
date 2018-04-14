@@ -105,6 +105,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					return err
 				} else if _, err := w.Write(t.Data); err != nil {
 					return err
+
 				}
 			}
 		case html.MathToken:
