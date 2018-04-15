@@ -125,6 +125,26 @@ func TestSVGDecimals(t *testing.T) {
 	}
 }
 
+func TestKeepEmptyContainers(t *testing.T) {
+	var svgTests = []struct {
+		svg      string
+		expected string
+	}{
+		{`<svg> <g id="parent"> <g id="child1"></g> <g id="child2"></g> </g> </svg>`, `<svg><g id="parent"><g id="child1"/><g id="child2"/></g></svg>`},
+	}
+
+	m := minify.New()
+	o := &Minifier{KeepEmptyContainers: true}
+	for _, tt := range svgTests {
+		t.Run(tt.svg, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.svg)
+			w := &bytes.Buffer{}
+			err := o.Minify(m, w, r, nil)
+			test.Minify(t, tt.svg, err, w.String(), tt.expected)
+		})
+	}
+}
+
 func TestReaderErrors(t *testing.T) {
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}

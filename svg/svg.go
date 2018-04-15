@@ -33,7 +33,8 @@ var DefaultMinifier = &Minifier{Decimals: -1}
 
 // Minifier is an SVG minifier.
 type Minifier struct {
-	Decimals int
+	Decimals            int
+	KeepEmptyContainers bool
 }
 
 // Minify minifies SVG data, it reads from r and writes to w.
@@ -113,7 +114,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 		case xml.StartTagToken:
 			tag = t.Hash
-			if containerTagMap[tag] { // skip empty containers
+			if !o.KeepEmptyContainers && containerTagMap[tag] { // skip empty containers
 				i := 0
 				for {
 					next := tb.Peek(i)

@@ -104,6 +104,7 @@ func main() {
 	flag.BoolVar(&htmlMinifier.KeepEndTags, "html-keep-end-tags", false, "Preserve all end tags")
 	flag.BoolVar(&htmlMinifier.KeepWhitespace, "html-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
 	flag.IntVar(&svgMinifier.Decimals, "svg-decimals", -1, "Number of decimals to preserve in numbers, -1 is all")
+	flag.BoolVar(&svgMinifier.KeepEmptyContainers, "svg-keep-empty-containers", false, "Preserve all container tags even if they are empty")
 	flag.BoolVar(&xmlMinifier.KeepWhitespace, "xml-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
 	flag.Parse()
 	rawInputs := flag.Args()
