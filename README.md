@@ -246,7 +246,6 @@ The SVG minifier uses these minifications:
 - strip SVG version
 - strip CDATA sections wherever possible
 - collapse tags with no content to a void tag
-- collapse empty container tags (`g`, `svg`, ...)
 - minify style tag and attributes with the CSS minifier
 - minify colors
 - shorten lengths and numbers and remove default `px` unit
