@@ -34,6 +34,7 @@ var DefaultMinifier = &Minifier{}
 // Minifier is an HTML minifier.
 type Minifier struct {
 	KeepConditionalComments bool
+	KeepEsiIncludeComments	bool
 	KeepDefaultAttrVals     bool
 	KeepDocumentTags        bool
 	KeepEndTags             bool
@@ -80,6 +81,11 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				return err
 			}
 		case html.CommentToken:
+			if o.KeepEsiIncludeComments && bytes.HasPrefix(t.Text, []byte("esi")) && bytes.Contains(t.Text, []byte("esi:include")) {
+				if _, err := w.Write(t.Data); err != nil {
+					return err
+				}
+			}
 			if o.KeepConditionalComments && len(t.Text) > 6 && (bytes.HasPrefix(t.Text, []byte("[if ")) || bytes.Equal(t.Text, []byte("[endif]")) || bytes.Equal(t.Text, []byte("<![endif]"))) {
 				// [if ...] is always 7 or more characters, [endif] is only encountered for downlevel-revealed
 				// see https://msdn.microsoft.com/en-us/library/ms537512(v=vs.85).aspx#syntax

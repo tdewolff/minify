@@ -264,6 +264,28 @@ func TestHTMLURL(t *testing.T) {
 	}
 }
 
+func TestHTMLKeepEsiIncludeComments(t *testing.T) {
+	htmlTests := []struct {
+		html     string
+		expected string
+	}{
+		{` <!--esi <esi:include src="https://example.com/" /> --> `, `<!--esi <esi:include src="https://example.com/" /> -->`},
+		{" <!--esi any text\n<esi:include src=\"https://example.com/\" /> --> ", "<!--esi any text\n<esi:include src=\"https://example.com/\" /> -->"},
+	}
+
+	m := minify.New()
+	htmlMinifier := &Minifier{KeepEsiIncludeComments: true}
+	for _, tt := range htmlTests {
+		t.Run(tt.html, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.html)
+			w := &bytes.Buffer{}
+			err := htmlMinifier.Minify(m, w, r, nil)
+			test.Minify(t, tt.html, err, w.String(), tt.expected)
+		})
+	}
+
+}
+
 func TestSpecialTagClosing(t *testing.T) {
 	m := minify.New()
 	m.AddFunc("text/html", Minify)
