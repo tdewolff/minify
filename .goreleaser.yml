@@ -5,14 +5,14 @@ builds:
       env:
           - CGO_ENABLED=0
       goos:
-          - windows
           - linux
+          - windows
           - darwin
+          - freebsd
+          - netbsd
+          - openbsd
       goarch:
           - amd64
-          - 386
-          - arm
-          - arm64
 archive:
     format: tar.gz
     format_overrides:
