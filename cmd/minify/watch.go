@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -75,6 +76,7 @@ func (rw *RecursiveWatcher) Run() chan string {
 		for rw.watcher.Events != nil && rw.watcher.Errors != nil {
 			select {
 			case event, ok := <-rw.watcher.Events:
+				fmt.Println(event)
 				if !ok {
 					rw.watcher.Events = nil
 					break
@@ -87,7 +89,7 @@ func (rw *RecursiveWatcher) Run() chan string {
 							}
 						}
 					} else if validFile(info) {
-						if event.Op&fsnotify.Create == fsnotify.Create || event.Op&fsnotify.Write == fsnotify.Write {
+						if event.Op&fsnotify.Write == fsnotify.Write {
 							files <- event.Name
 						}
 					}

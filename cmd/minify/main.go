@@ -214,14 +214,13 @@ func main() {
 	}
 
 	if watch {
-		var watcher *RecursiveWatcher
-		watcher, err = NewRecursiveWatcher(recursive)
+		watcher, err := NewRecursiveWatcher(recursive)
 		if err != nil {
 			Error.Fatalln(err)
 		}
 		defer watcher.Close()
 
-		var watcherTasks = make(map[string]Task, len(rawInputs))
+		watcherTasks := make(map[string]Task, len(rawInputs))
 		for _, task := range tasks {
 			for _, src := range task.srcs {
 				watcherTasks[src] = task
@@ -238,6 +237,7 @@ func main() {
 			select {
 			case <-c:
 				watcher.Close()
+				fmt.Printf("\n")
 			case file, ok := <-changes:
 				if !ok {
 					changes = nil
@@ -253,7 +253,7 @@ func main() {
 				var t Task
 				if t, ok = watcherTasks[file]; ok {
 					if !verbose {
-						fmt.Fprintln(os.Stderr, file, "changed")
+						Info.Println(file, "changed")
 					}
 					for _, src := range t.srcs {
 						if src == t.dst {
@@ -267,15 +267,14 @@ func main() {
 		}
 	}
 
-	if verbose {
-		Info.Println(time.Since(start), "total")
-	}
-
-	close(chanTasks)
-
 	fails := 0
+	close(chanTasks)
 	for n := 0; n < numWorkers; n++ {
 		fails += <-chanFails
+	}
+
+	if verbose {
+		Info.Println(time.Since(start), "total")
 	}
 	if fails > 0 {
 		os.Exit(1)
