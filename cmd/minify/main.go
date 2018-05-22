@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -474,7 +473,7 @@ func getOutputFilename(output string, t Task) (string, error) {
 	return output, nil
 }
 
-func openInputFile(input string) (*os.File, bool) {
+func openInputFile(input string) (*os.File, error) {
 	var r *os.File
 	if input == "" {
 		r = os.Stdin
@@ -485,21 +484,19 @@ func openInputFile(input string) (*os.File, bool) {
 			return attempt < 5, ferr
 		})
 		if err != nil {
-			Error.Println(err)
-			return nil, false
+			return nil, err
 		}
 	}
-	return r, true
+	return r, nil
 }
 
-func openOutputFile(output string) (*os.File, bool) {
+func openOutputFile(output string) (*os.File, error) {
 	var w *os.File
 	if output == "" {
 		w = os.Stdout
 	} else {
 		if err := os.MkdirAll(path.Dir(output), 0777); err != nil {
-			Error.Println(err)
-			return nil, false
+			return nil, err
 		}
 		err := try.Do(func(attempt int) (bool, error) {
 			var ferr error
@@ -507,11 +504,10 @@ func openOutputFile(output string) (*os.File, bool) {
 			return attempt < 5, ferr
 		})
 		if err != nil {
-			Error.Println(err)
-			return nil, false
+			return nil, err
 		}
 	}
-	return w, true
+	return w, nil
 }
 
 func minify(mimetype string, t Task) bool {
@@ -561,42 +557,33 @@ func minify(mimetype string, t Task) bool {
 		}
 	}
 
-	frs := make([]io.Reader, len(t.srcs))
-	for i, src := range t.srcs {
-		fr, ok := openInputFile(src)
-		if !ok {
-			for _, fr := range frs {
-				fr.(io.ReadCloser).Close()
-			}
-			return false
-		}
-		if i > 0 && mimetype == filetypeMime["js"] {
-			// prepend newline when concatenating JS files
-			frs[i] = NewPrependReader(fr, []byte("\n"))
-		} else {
-			frs[i] = fr
-		}
+	fr, err := NewConcatFileReader(t.srcs, openInputFile)
+	if err != nil {
+		Error.Println(err)
+		return false
 	}
-	r := &countingReader{io.MultiReader(frs...), 0}
+	fr.SetSeparator([]byte("."))
+	if mimetype == filetypeMime["js"] {
+		fr.SetSeparator([]byte("\n"))
+	}
+	r := NewCountingReader(fr)
 
-	fw, ok := openOutputFile(t.dst)
-	if !ok {
-		for _, fr := range frs {
-			fr.(io.ReadCloser).Close()
-		}
+	fw, err := openOutputFile(t.dst)
+	if err != nil {
+		Error.Println(err)
+		fr.Close()
 		return false
 	}
 	var w *countingWriter
 	if fw == os.Stdout {
-		w = &countingWriter{fw, 0}
+		w = NewCountingWriter(fw)
 	} else {
-		w = &countingWriter{bufio.NewWriter(fw), 0}
+		w = NewCountingWriter(bufio.NewWriter(fw))
 	}
 
 	success := true
 	startTime := time.Now()
-	err := m.Minify(mimetype, w, r)
-	if err != nil {
+	if err = m.Minify(mimetype, w, r); err != nil {
 		Error.Println("cannot minify "+srcName+":", err)
 		success = false
 	}
@@ -619,9 +606,7 @@ func minify(mimetype string, t Task) bool {
 		}
 	}
 
-	for _, fr := range frs {
-		fr.(io.ReadCloser).Close()
-	}
+	fr.Close()
 	if bw, ok := w.Writer.(*bufio.Writer); ok {
 		bw.Flush()
 	}
