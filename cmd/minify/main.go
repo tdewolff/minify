@@ -194,12 +194,12 @@ func main() {
 
 	start := time.Now()
 
-	chanTasks := make(chan Task, 10)
-	chanFails := make(chan int, 10)
+	chanTasks := make(chan Task, 100)
+	chanFails := make(chan int, 100)
 
 	numWorkers := 1
 	if !verbose && len(tasks) > 1 {
-		numWorkers := 4
+		numWorkers = 4
 		if n := runtime.NumCPU(); n > numWorkers {
 			numWorkers = n
 		}
