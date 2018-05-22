@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -473,7 +474,7 @@ func getOutputFilename(output string, t Task) (string, error) {
 	return output, nil
 }
 
-func openInputFile(input string) (*os.File, error) {
+func openInputFile(input string) (io.ReadCloser, error) {
 	var r *os.File
 	if input == "" {
 		r = os.Stdin
@@ -562,7 +563,6 @@ func minify(mimetype string, t Task) bool {
 		Error.Println(err)
 		return false
 	}
-	fr.SetSeparator([]byte("."))
 	if mimetype == filetypeMime["js"] {
 		fr.SetSeparator([]byte("\n"))
 	}

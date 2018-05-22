@@ -2,7 +2,6 @@ package main
 
 import (
 	"io"
-	"os"
 )
 
 type countingReader struct {
@@ -47,7 +46,7 @@ func (r eofReader) Close() error {
 
 type concatFileReader struct {
 	filenames []string
-	opener    func(string) (*os.File, error)
+	opener    func(string) (io.ReadCloser, error)
 	sep       []byte
 
 	cur      io.ReadCloser
@@ -57,7 +56,7 @@ type concatFileReader struct {
 // NewConcatFileReader reads from a list of filenames, and lazily loads files as it needs it.
 // It is a reader that reads a concatenation of those files separated by the separator.
 // You must call Close to close the last file in the list.
-func NewConcatFileReader(filenames []string, opener func(string) (*os.File, error)) (*concatFileReader, error) {
+func NewConcatFileReader(filenames []string, opener func(string) (io.ReadCloser, error)) (*concatFileReader, error) {
 	var cur io.ReadCloser
 	if len(filenames) > 0 {
 		var filename string
@@ -78,16 +77,18 @@ func (r *concatFileReader) SetSeparator(sep []byte) {
 }
 
 func (r *concatFileReader) Read(p []byte) (int, error) {
+	m := 0
 	if r.writeSep {
 		r.writeSep = false
-		n := copy(p, r.sep)
-		if n != len(r.sep) {
-			return n, io.ErrShortBuffer
+		if m = copy(p, r.sep); m != len(r.sep) {
+			return m, io.ErrShortBuffer
 		}
-		p = p[n:]
+		p = p[m:]
 	}
 
 	n, err := r.cur.Read(p)
+	n += m
+
 	// current reader is finished, load in the new reader
 	if err == io.EOF && len(r.filenames) > 0 {
 		if err := r.cur.Close(); err != nil {
@@ -105,7 +106,7 @@ func (r *concatFileReader) Read(p []byte) (int, error) {
 
 		// if previous read returned (0, io.EOF), read from the new reader
 		if n == 0 {
-			return r.Read(p[n:])
+			return r.Read(p)
 		}
 	}
 	return n, err
