@@ -15,7 +15,6 @@ import (
 	"runtime"
 	"sort"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	humanize "github.com/dustin/go-humanize"
@@ -55,7 +54,7 @@ var (
 	watch     bool
 )
 
-type task struct {
+type Task struct {
 	srcs   []string
 	srcDir string
 	dst    string
@@ -121,7 +120,7 @@ func main() {
 		} else {
 			fmt.Printf("minify version %s\n", Version)
 		}
-		return
+		os.Exit(0)
 	}
 
 	if list {
@@ -133,7 +132,7 @@ func main() {
 		for _, k := range keys {
 			fmt.Println(k + "\t" + filetypeMime[k])
 		}
-		return
+		os.Exit(0)
 	}
 
 	useStdin := len(rawInputs) == 0
@@ -178,7 +177,7 @@ func main() {
 	}
 
 	if len(tasks) == 0 {
-		tasks = append(tasks, task{[]string{""}, "", output}) // stdin
+		tasks = append(tasks, Task{[]string{""}, "", output}) // stdin
 	}
 
 	m = min.New()
@@ -195,36 +194,23 @@ func main() {
 
 	start := time.Now()
 
-	var fails int32
-	if verbose || len(tasks) == 1 {
-		for _, t := range tasks {
-			if ok := minify(mimetype, t); !ok {
-				fails++
-			}
-		}
-	} else {
+	chanTasks := make(chan Task, 10)
+	chanFails := make(chan int, 10)
+
+	numWorkers := 1
+	if !verbose && len(tasks) > 1 {
 		numWorkers := 4
 		if n := runtime.NumCPU(); n > numWorkers {
 			numWorkers = n
 		}
+	}
 
-		sem := make(chan struct{}, numWorkers)
-		for _, t := range tasks {
-			sem <- struct{}{}
-			go func(t task) {
-				defer func() {
-					<-sem
-				}()
-				if ok := minify(mimetype, t); !ok {
-					atomic.AddInt32(&fails, 1)
-				}
-			}(t)
-		}
+	for n := 0; n < numWorkers; n++ {
+		go minifyWorker(mimetype, chanTasks, chanFails)
+	}
 
-		// wait for all jobs to be done
-		for i := 0; i < cap(sem); i++ {
-			sem <- struct{}{}
-		}
+	for _, task := range tasks {
+		chanTasks <- task
 	}
 
 	if watch {
@@ -235,7 +221,7 @@ func main() {
 		}
 		defer watcher.Close()
 
-		var watcherTasks = make(map[string]task, len(rawInputs))
+		var watcherTasks = make(map[string]Task, len(rawInputs))
 		for _, task := range tasks {
 			for _, src := range task.srcs {
 				watcherTasks[src] = task
@@ -264,7 +250,7 @@ func main() {
 					continue
 				}
 
-				var t task
+				var t Task
 				if t, ok = watcherTasks[file]; ok {
 					if !verbose {
 						fmt.Fprintln(os.Stderr, file, "changed")
@@ -275,9 +261,7 @@ func main() {
 							break
 						}
 					}
-					if ok := minify(mimetype, t); !ok {
-						fails++
-					}
+					chanTasks <- t
 				}
 			}
 		}
@@ -287,9 +271,26 @@ func main() {
 		Info.Println(time.Since(start), "total")
 	}
 
+	close(chanTasks)
+
+	fails := 0
+	for n := 0; n < numWorkers; n++ {
+		fails += <-chanFails
+	}
 	if fails > 0 {
 		os.Exit(1)
 	}
+	os.Exit(0)
+}
+
+func minifyWorker(mimetype string, chanTasks <-chan Task, chanFails chan<- int) {
+	fails := 0
+	for task := range chanTasks {
+		if ok := minify(mimetype, task); !ok {
+			fails++
+		}
+	}
+	chanFails <- fails
 }
 
 func getMimetype(mimetype, filetype string, useStdin bool) string {
@@ -348,9 +349,9 @@ func validDir(info os.FileInfo) bool {
 	return info.Mode().IsDir() && len(info.Name()) > 0 && (hidden || info.Name()[0] != '.')
 }
 
-func expandInputs(inputs []string, dirDst bool) ([]task, bool) {
+func expandInputs(inputs []string, dirDst bool) ([]Task, bool) {
 	ok := true
-	tasks := []task{}
+	tasks := []Task{}
 	for _, input := range inputs {
 		input = sanitizePath(input)
 		info, err := os.Stat(input)
@@ -361,7 +362,7 @@ func expandInputs(inputs []string, dirDst bool) ([]task, bool) {
 		}
 
 		if info.Mode().IsRegular() {
-			tasks = append(tasks, task{[]string{filepath.ToSlash(input)}, "", ""})
+			tasks = append(tasks, Task{[]string{filepath.ToSlash(input)}, "", ""})
 		} else if info.Mode().IsDir() {
 			expandDir(input, &tasks, &ok)
 		} else {
@@ -395,7 +396,7 @@ func expandInputs(inputs []string, dirDst bool) ([]task, bool) {
 	return tasks, ok
 }
 
-func expandDir(input string, tasks *[]task, ok *bool) {
+func expandDir(input string, tasks *[]Task, ok *bool) {
 	if !recursive {
 		if verbose {
 			Info.Println("expanding directory", input)
@@ -408,7 +409,7 @@ func expandDir(input string, tasks *[]task, ok *bool) {
 		}
 		for _, info := range infos {
 			if validFile(info) {
-				*tasks = append(*tasks, task{[]string{path.Join(input, info.Name())}, input, ""})
+				*tasks = append(*tasks, Task{[]string{path.Join(input, info.Name())}, input, ""})
 			}
 		}
 	} else {
@@ -421,7 +422,7 @@ func expandDir(input string, tasks *[]task, ok *bool) {
 				return err
 			}
 			if validFile(info) {
-				*tasks = append(*tasks, task{[]string{filepath.ToSlash(path)}, input, ""})
+				*tasks = append(*tasks, Task{[]string{filepath.ToSlash(path)}, input, ""})
 			} else if info.Mode().IsDir() && !validDir(info) && info.Name() != "." && info.Name() != ".." { // check for IsDir, so we don't skip the rest of the directory when we have an invalid file
 				return filepath.SkipDir
 			}
@@ -434,7 +435,7 @@ func expandDir(input string, tasks *[]task, ok *bool) {
 	}
 }
 
-func expandOutputs(output string, tasks *[]task) bool {
+func expandOutputs(output string, tasks *[]Task) bool {
 	if verbose {
 		if output == "" {
 			Info.Println("minify to stdout")
@@ -463,7 +464,7 @@ func expandOutputs(output string, tasks *[]task) bool {
 	return ok
 }
 
-func getOutputFilename(output string, t task) (string, error) {
+func getOutputFilename(output string, t Task) (string, error) {
 	if len(output) > 0 && output[len(output)-1] == '/' {
 		rel, err := filepath.Rel(t.srcDir, t.srcs[0])
 		if err != nil {
@@ -514,7 +515,7 @@ func openOutputFile(output string) (*os.File, bool) {
 	return w, true
 }
 
-func minify(mimetype string, t task) bool {
+func minify(mimetype string, t Task) bool {
 	if mimetype == "" {
 		for _, src := range t.srcs {
 			if len(path.Ext(src)) > 0 {
