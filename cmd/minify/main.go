@@ -480,9 +480,9 @@ func openInputFile(input string) (*os.File, bool) {
 		r = os.Stdin
 	} else {
 		err := try.Do(func(attempt int) (bool, error) {
-			var err error
-			r, err = os.Open(input)
-			return attempt < 5, err
+			var ferr error
+			r, ferr = os.Open(input)
+			return attempt < 5, ferr
 		})
 		if err != nil {
 			Error.Println(err)
@@ -502,9 +502,9 @@ func openOutputFile(output string) (*os.File, bool) {
 			return nil, false
 		}
 		err := try.Do(func(attempt int) (bool, error) {
-			var err error
-			w, err = os.OpenFile(output, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
-			return attempt < 5, err
+			var ferr error
+			w, ferr = os.OpenFile(output, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
+			return attempt < 5, ferr
 		})
 		if err != nil {
 			Error.Println(err)
@@ -549,8 +549,8 @@ func minify(mimetype string, t Task) bool {
 			if t.srcs[i] == t.dst {
 				t.srcs[i] += ".bak"
 				err := try.Do(func(attempt int) (bool, error) {
-					err := os.Rename(t.dst, t.srcs[i])
-					return attempt < 5, err
+					ferr := os.Rename(t.dst, t.srcs[i])
+					return attempt < 5, ferr
 				})
 				if err != nil {
 					Error.Println(err)
