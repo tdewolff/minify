@@ -49,8 +49,8 @@ type concatFileReader struct {
 	opener    func(string) (io.ReadCloser, error)
 	sep       []byte
 
-	cur      io.ReadCloser
-	writeSep bool
+	cur     io.ReadCloser
+	sepLeft int
 }
 
 // NewConcatFileReader reads from a list of filenames, and lazily loads files as it needs it.
@@ -69,7 +69,7 @@ func NewConcatFileReader(filenames []string, opener func(string) (io.ReadCloser,
 	} else {
 		cur = eofReader{}
 	}
-	return &concatFileReader{filenames, opener, nil, cur, false}, nil
+	return &concatFileReader{filenames, opener, nil, cur, 0}, nil
 }
 
 func (r *concatFileReader) SetSeparator(sep []byte) {
@@ -77,16 +77,8 @@ func (r *concatFileReader) SetSeparator(sep []byte) {
 }
 
 func (r *concatFileReader) Read(p []byte) (int, error) {
-	m := 0
-	if r.writeSep {
-		r.writeSep = false
-		if m = copy(p, r.sep); m != len(r.sep) {
-			return m, io.ErrShortBuffer
-		}
-		p = p[m:]
-	}
-
-	n, err := r.cur.Read(p)
+	m := r.writeSep(p)
+	n, err := r.cur.Read(p[m:])
 	n += m
 
 	// current reader is finished, load in the new reader
@@ -100,16 +92,25 @@ func (r *concatFileReader) Read(p []byte) (int, error) {
 		if r.cur, err = r.opener(filename); err != nil {
 			return n, err
 		}
-		if r.sep != nil {
-			r.writeSep = true
-		}
+		r.sepLeft = len(r.sep)
 
 		// if previous read returned (0, io.EOF), read from the new reader
 		if n == 0 {
 			return r.Read(p)
+		} else {
+			n += r.writeSep(p[n:])
 		}
 	}
 	return n, err
+}
+
+func (r *concatFileReader) writeSep(p []byte) int {
+	m := 0
+	if r.sepLeft > 0 {
+		m = copy(p, r.sep[len(r.sep)-r.sepLeft:])
+		r.sepLeft -= m
+	}
+	return m
 }
 
 func (r *concatFileReader) Close() error {
