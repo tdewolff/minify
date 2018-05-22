@@ -37,11 +37,12 @@ type cssMinifier struct {
 ////////////////////////////////////////////////////////////////
 
 // DefaultMinifier is the default minifier.
-var DefaultMinifier = &Minifier{Decimals: -1}
+var DefaultMinifier = &Minifier{Decimals: -1, KeepCSS2: false}
 
 // Minifier is a CSS minifier.
 type Minifier struct {
 	Decimals int
+	KeepCSS2 bool
 }
 
 // Minify minifies CSS data, it reads from r and writes to w.
@@ -603,7 +604,11 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 		}
 		dim := data[n:]
 		parse.ToLower(dim)
-		data = minify.Number(data[:n], c.o.Decimals)
+		if !c.o.KeepCSS2 {
+			data = minify.Number(data[:n], c.o.Decimals)
+		} else {
+			data = data[:n]
+		}
 		if tt == css.DimensionToken && (len(data) != 1 || data[0] != '0' || !optionalZeroDimension[string(dim)]) {
 			data = append(data, dim...)
 		} else if tt == css.PercentageToken {

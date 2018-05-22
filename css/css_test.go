@@ -195,6 +195,27 @@ func TestCSSInline(t *testing.T) {
 	}
 }
 
+func TestCSSKeepCSS2(t *testing.T) {
+	tests := []struct {
+		css      string
+		expected string
+	}{
+		{`margin:5000em`, `margin:5000em`},
+	}
+
+	m := minify.New()
+	params := map[string]string{"inline": "1"}
+	cssMinifier := &Minifier{Decimals: -1, KeepCSS2: true}
+	for _, tt := range tests {
+		t.Run(tt.css, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.css)
+			w := &bytes.Buffer{}
+			err := cssMinifier.Minify(m, w, r, params)
+			test.Minify(t, tt.css, err, w.String(), tt.expected)
+		})
+	}
+}
+
 func TestReaderErrors(t *testing.T) {
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}
