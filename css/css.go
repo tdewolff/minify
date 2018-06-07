@@ -611,7 +611,7 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 		} else {
 			data = data[:n]
 		}
-		if tt == css.DimensionToken && (len(data) != 1 || data[0] != '0' || !optionalZeroDimension[string(dim)]) {
+		if tt == css.DimensionToken && (len(data) != 1 || data[0] != '0' || !optionalZeroDimension[string(dim)] || prop == css.Flex) {
 			data = append(data, dim...)
 		} else if tt == css.PercentageToken {
 			data = append(data, '%') // TODO: drop percentage for properties that accept <percentage> and <length>
