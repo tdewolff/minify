@@ -406,16 +406,18 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 			}
 		case css.Outline, css.Border, css.Border_Bottom, css.Border_Left, css.Border_Right, css.Border_Top:
 			none := false
-			for _, value := range values {
-				if len(value.Data) == 1 && value.Data[0] == '0' || css.ToHash(value.Data) == css.None {
+			iZero := -1
+			for i, value := range values {
+				if len(value.Data) == 1 && value.Data[0] == '0' {
+					iZero = i
+				} else if css.ToHash(value.Data) == css.None {
+					values[i].TokenType = css.NumberToken
+					values[i].Data = zeroBytes
 					none = true
-					break
 				}
 			}
-			if none {
-				values = values[:1]
-				values[0].TokenType = css.NumberToken
-				values[0].Data = zeroBytes
+			if none && iZero != -1 {
+				values = append(values[:iZero], values[iZero+1:]...)
 			}
 		case css.Background:
 			ident := css.ToHash(values[0].Data)
