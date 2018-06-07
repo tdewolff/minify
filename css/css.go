@@ -609,7 +609,7 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 		if !c.o.KeepCSS2 {
 			data = minify.Number(data[:n], c.o.Decimals)
 		} else {
-			data = data[:n]
+			data = minify.Decimal(data[:n], c.o.Decimals) // don't use exponents
 		}
 		if tt == css.DimensionToken && (len(data) != 1 || data[0] != '0' || !optionalZeroDimension[string(dim)] || prop == css.Flex) {
 			data = append(data, dim...)
