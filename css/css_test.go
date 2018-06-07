@@ -53,6 +53,7 @@ func TestCSS(t *testing.T) {
 		// go-fuzz
 		{"input[type=\"\x00\"] {  a: b\n}.a{}", "input[type=\"\x00\"]{a:b}.a{}"},
 		{"a{a:)'''", "a{a:)'''}"},
+		{"{T:l(", "{t:l(}"},
 	}
 
 	m := minify.New()

@@ -474,94 +474,67 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 
 func (c *cssMinifier) minifyFunction(values []css.Token) error {
 	n := len(values)
-	simple := true
-	for i, value := range values[1 : n-1] {
-		if i%2 == 0 && (value.TokenType != css.NumberToken && value.TokenType != css.PercentageToken) || (i%2 == 1 && value.TokenType != css.CommaToken) {
-			simple = false
-		}
-	}
-
-	if simple && n%2 == 1 {
-		fun := css.ToHash(values[0].Data[0 : len(values[0].Data)-1])
-		for i := 1; i < n; i += 2 {
-			values[i].TokenType, values[i].Data = c.shortenToken(0, values[i].TokenType, values[i].Data)
+	if n > 2 {
+		simple := true
+		for i, value := range values[1 : n-1] {
+			if i%2 == 0 && (value.TokenType != css.NumberToken && value.TokenType != css.PercentageToken) || (i%2 == 1 && value.TokenType != css.CommaToken) {
+				simple = false
+			}
 		}
 
-		nArgs := (n - 1) / 2
-		if (fun == css.Rgba || fun == css.Hsla) && nArgs == 4 {
-			d, _ := strconv.ParseFloat(string(values[7].Data), 32) // can never fail because if simple == true than this is a NumberToken or PercentageToken
-			if d-1.0 > -minify.Epsilon {
-				if fun == css.Rgba {
-					values[0].Data = []byte("rgb(")
-					fun = css.Rgb
-				} else {
-					values[0].Data = []byte("hsl(")
-					fun = css.Hsl
-				}
-				values = values[:len(values)-2]
-				values[len(values)-1].Data = []byte(")")
-				nArgs = 3
-			} else if d < minify.Epsilon {
-				values[0].Data = []byte("transparent")
-				values = values[:1]
-				fun = 0
-				nArgs = 0
+		if simple && n%2 == 1 {
+			fun := css.ToHash(values[0].Data[0 : len(values[0].Data)-1])
+			for i := 1; i < n; i += 2 {
+				values[i].TokenType, values[i].Data = c.shortenToken(0, values[i].TokenType, values[i].Data)
 			}
-		}
-		if fun == css.Rgb && nArgs == 3 {
-			var err [3]error
-			rgb := [3]byte{}
-			for j := 0; j < 3; j++ {
-				val := values[j*2+1]
-				if val.TokenType == css.NumberToken {
-					var d int64
-					d, err[j] = strconv.ParseInt(string(val.Data), 10, 32)
-					if d < 0 {
-						d = 0
-					} else if d > 255 {
-						d = 255
+
+			nArgs := (n - 1) / 2
+			if (fun == css.Rgba || fun == css.Hsla) && nArgs == 4 {
+				d, _ := strconv.ParseFloat(string(values[7].Data), 32) // can never fail because if simple == true than this is a NumberToken or PercentageToken
+				if d-1.0 > -minify.Epsilon {
+					if fun == css.Rgba {
+						values[0].Data = []byte("rgb(")
+						fun = css.Rgb
+					} else {
+						values[0].Data = []byte("hsl(")
+						fun = css.Hsl
 					}
-					rgb[j] = byte(d)
-				} else if val.TokenType == css.PercentageToken {
-					var d float64
-					d, err[j] = strconv.ParseFloat(string(val.Data[:len(val.Data)-1]), 32)
-					if d < 0.0 {
-						d = 0.0
-					} else if d > 100.0 {
-						d = 100.0
-					}
-					rgb[j] = byte((d / 100.0 * 255.0) + 0.5)
+					values = values[:len(values)-2]
+					values[len(values)-1].Data = []byte(")")
+					nArgs = 3
+				} else if d < minify.Epsilon {
+					values[0].Data = []byte("transparent")
+					values = values[:1]
+					fun = 0
+					nArgs = 0
 				}
 			}
-			if err[0] == nil && err[1] == nil && err[2] == nil {
-				val := make([]byte, 7)
-				val[0] = '#'
-				hex.Encode(val[1:], rgb[:])
-				parse.ToLower(val)
-				if s, ok := ShortenColorHex[string(val)]; ok {
-					if _, err := c.w.Write(s); err != nil {
-						return err
-					}
-				} else {
-					if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
-						val[2] = val[3]
-						val[3] = val[5]
-						val = val[:4]
-					}
-					if _, err := c.w.Write(val); err != nil {
-						return err
+			if fun == css.Rgb && nArgs == 3 {
+				var err [3]error
+				rgb := [3]byte{}
+				for j := 0; j < 3; j++ {
+					val := values[j*2+1]
+					if val.TokenType == css.NumberToken {
+						var d int64
+						d, err[j] = strconv.ParseInt(string(val.Data), 10, 32)
+						if d < 0 {
+							d = 0
+						} else if d > 255 {
+							d = 255
+						}
+						rgb[j] = byte(d)
+					} else if val.TokenType == css.PercentageToken {
+						var d float64
+						d, err[j] = strconv.ParseFloat(string(val.Data[:len(val.Data)-1]), 32)
+						if d < 0.0 {
+							d = 0.0
+						} else if d > 100.0 {
+							d = 100.0
+						}
+						rgb[j] = byte((d / 100.0 * 255.0) + 0.5)
 					}
 				}
-				return nil
-			}
-		} else if fun == css.Hsl && nArgs == 3 {
-			if values[1].TokenType == css.NumberToken && values[3].TokenType == css.PercentageToken && values[5].TokenType == css.PercentageToken {
-				h, err1 := strconv.ParseFloat(string(values[1].Data), 32)
-				s, err2 := strconv.ParseFloat(string(values[3].Data[:len(values[3].Data)-1]), 32)
-				l, err3 := strconv.ParseFloat(string(values[5].Data[:len(values[5].Data)-1]), 32)
-				if err1 == nil && err2 == nil && err3 == nil {
-					r, g, b := css.HSL2RGB(h/360.0, s/100.0, l/100.0)
-					rgb := []byte{byte((r * 255.0) + 0.5), byte((g * 255.0) + 0.5), byte((b * 255.0) + 0.5)}
+				if err[0] == nil && err[1] == nil && err[2] == nil {
 					val := make([]byte, 7)
 					val[0] = '#'
 					hex.Encode(val[1:], rgb[:])
@@ -582,9 +555,39 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 					}
 					return nil
 				}
+			} else if fun == css.Hsl && nArgs == 3 {
+				if values[1].TokenType == css.NumberToken && values[3].TokenType == css.PercentageToken && values[5].TokenType == css.PercentageToken {
+					h, err1 := strconv.ParseFloat(string(values[1].Data), 32)
+					s, err2 := strconv.ParseFloat(string(values[3].Data[:len(values[3].Data)-1]), 32)
+					l, err3 := strconv.ParseFloat(string(values[5].Data[:len(values[5].Data)-1]), 32)
+					if err1 == nil && err2 == nil && err3 == nil {
+						r, g, b := css.HSL2RGB(h/360.0, s/100.0, l/100.0)
+						rgb := []byte{byte((r * 255.0) + 0.5), byte((g * 255.0) + 0.5), byte((b * 255.0) + 0.5)}
+						val := make([]byte, 7)
+						val[0] = '#'
+						hex.Encode(val[1:], rgb[:])
+						parse.ToLower(val)
+						if s, ok := ShortenColorHex[string(val)]; ok {
+							if _, err := c.w.Write(s); err != nil {
+								return err
+							}
+						} else {
+							if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
+								val[2] = val[3]
+								val[3] = val[5]
+								val = val[:4]
+							}
+							if _, err := c.w.Write(val); err != nil {
+								return err
+							}
+						}
+						return nil
+					}
+				}
 			}
 		}
 	}
+
 	for _, value := range values {
 		if _, err := c.w.Write(value.Data); err != nil {
 			return err
