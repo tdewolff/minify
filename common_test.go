@@ -62,6 +62,72 @@ func TestDataURI(t *testing.T) {
 	}
 }
 
+func TestDecimal(t *testing.T) {
+	numberTests := []struct {
+		number   string
+		expected string
+	}{
+		{"0", "0"},
+		{".0", "0"},
+		{"1.0", "1"},
+		{"0.1", ".1"},
+		{"+1", "1"},
+		{"-1", "-1"},
+		{"-0.1", "-.1"},
+		{"10", "10"},
+		{"100", "100"},
+		{"1000", "1000"},
+		{"0.001", ".001"},
+		{"0.0001", ".0001"},
+		{"0.252", ".252"},
+		{"1.252", "1.252"},
+		{"-1.252", "-1.252"},
+		{"0.075", ".075"},
+		{"789012345678901234567890123456789e9234567890123456789", "789012345678901234567890123456789e9234567890123456789"},
+		{".000100009", ".000100009"},
+		{".0001000009", ".0001000009"},
+		{".0001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009", ".0001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009"},
+		{"E\x1f", "E\x1f"}, // fuzz
+	}
+	for _, tt := range numberTests {
+		t.Run(tt.number, func(t *testing.T) {
+			number := Decimal([]byte(tt.number), -1)
+			test.Minify(t, tt.number, nil, string(number), tt.expected)
+		})
+	}
+}
+
+func TestDecimalTruncate(t *testing.T) {
+	numberTests := []struct {
+		number   string
+		truncate int
+		expected string
+	}{
+		{"0.1", 1, ".1"},
+		{"0.0001", 1, "0"},
+		{"0.111", 1, ".1"},
+		{"0.111", 0, "0"},
+		{"0.075", 1, ".1"},
+		{"0.025", 1, "0"},
+		{"9.99", 1, "10"},
+		{"8.88", 1, "8.9"},
+		{"8.88", 0, "9"},
+		{"8.00", 0, "8"},
+		{".88", 0, "1"},
+		{"1.234", 1, "1.2"},
+		{"33.33", 0, "33"},
+		{"29.666", 0, "30"},
+		{"1.51", 1, "1.5"},
+		{"1.01", 1, "1"},
+	}
+	for _, tt := range numberTests {
+		t.Run(tt.number, func(t *testing.T) {
+			number := Decimal([]byte(tt.number), tt.truncate)
+			test.Minify(t, tt.number, nil, string(number), tt.expected, "truncate to", tt.truncate)
+		})
+	}
+}
+
 func TestNumber(t *testing.T) {
 	numberTests := []struct {
 		number   string
@@ -164,13 +230,32 @@ func TestNumberTruncate(t *testing.T) {
 	}
 }
 
+func TestDecimalRandom(t *testing.T) {
+	N := int(1e4)
+	if testing.Short() {
+		N = 0
+	}
+	for i := 0; i < N; i++ {
+		b := RandNumBytes(false)
+		f, _ := strconv.ParseFloat(string(b), 64)
+
+		b2 := make([]byte, len(b))
+		copy(b2, b)
+		b2 = Decimal(b2, -1)
+		f2, _ := strconv.ParseFloat(string(b2), 64)
+		if math.Abs(f-f2) > 1e-6 {
+			fmt.Println("Bad:", f, "!=", f2, "in", string(b), "to", string(b2))
+		}
+	}
+}
+
 func TestNumberRandom(t *testing.T) {
 	N := int(1e4)
 	if testing.Short() {
 		N = 0
 	}
 	for i := 0; i < N; i++ {
-		b := RandNumBytes()
+		b := RandNumBytes(true)
 		f, _ := strconv.ParseFloat(string(b), 64)
 
 		b2 := make([]byte, len(b))
@@ -191,11 +276,11 @@ var numbers [][]byte
 func TestMain(t *testing.T) {
 	numbers = make([][]byte, 0, n)
 	for j := 0; j < n; j++ {
-		numbers = append(numbers, RandNumBytes())
+		numbers = append(numbers, RandNumBytes(true))
 	}
 }
 
-func RandNumBytes() []byte {
+func RandNumBytes(withExp bool) []byte {
 	var b []byte
 	n := rand.Int() % 10
 	for i := 0; i < n; i++ {
@@ -208,7 +293,7 @@ func RandNumBytes() []byte {
 			b = append(b, byte(rand.Int()%10)+'0')
 		}
 	}
-	if rand.Int()%2 == 0 {
+	if withExp && rand.Int()%2 == 0 {
 		b = append(b, 'e')
 		if rand.Int()%2 == 0 {
 			b = append(b, '-')
