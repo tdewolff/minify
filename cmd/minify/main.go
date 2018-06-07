@@ -44,6 +44,7 @@ var filetypeMime = map[string]string{
 }
 
 var (
+	help      bool
 	hidden    bool
 	list      bool
 	m         *min.M
@@ -79,15 +80,18 @@ func main() {
 	svgMinifier := &svg.Minifier{}
 	xmlMinifier := &xml.Minifier{}
 
+	flag := flag.NewFlagSet("minify", flag.ContinueOnError)
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [input]\n\nOptions:\n", os.Args[0])
 		flag.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\nInput:\n  Files or directories, leave blank to use stdin\n")
 	}
+
+	flag.BoolVarP(&help, "help", "h", false, "Show usage")
 	flag.StringVarP(&output, "output", "o", "", "Output file or directory (must have trailing slash), leave blank to use stdout")
-	flag.StringVar(&mimetype, "mime", "", "Mimetype (text/css, application/javascript, ...), optional for input filenames, has precedence over -type")
-	flag.StringVar(&filetype, "type", "", "Filetype (css, html, js, ...), optional for input filenames")
-	flag.StringVar(&match, "match", "", "Filename pattern matching using regular expressions, see https://github.com/google/re2/wiki/Syntax")
+	flag.StringVar(&mimetype, "mime", "", "Mimetype (eg. text/css), optional for input filenames, has precedence over -type")
+	flag.StringVar(&filetype, "type", "", "Filetype (eg. css), optional for input filenames")
+	flag.StringVar(&match, "match", "", "Filename pattern matching using regular expressions")
 	flag.BoolVarP(&recursive, "recursive", "r", false, "Recursively minify directories")
 	flag.BoolVarP(&hidden, "all", "a", false, "Minify all files, including hidden files and files in hidden directories")
 	flag.BoolVarP(&list, "list", "l", false, "List all accepted filetypes")
@@ -104,7 +108,11 @@ func main() {
 	flag.BoolVar(&htmlMinifier.KeepWhitespace, "html-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
 	flag.IntVar(&svgMinifier.Decimals, "svg-decimals", -1, "Number of decimals to preserve in numbers, -1 is all")
 	flag.BoolVar(&xmlMinifier.KeepWhitespace, "xml-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
-	flag.Parse()
+	if err := flag.Parse(os.Args[1:]); err != nil {
+		fmt.Printf("Error: %v\n\n", err)
+		flag.Usage()
+		os.Exit(2)
+	}
 	rawInputs := flag.Args()
 
 	Error = log.New(os.Stderr, "ERROR: ", 0)
@@ -112,6 +120,11 @@ func main() {
 		Info = log.New(os.Stderr, "INFO: ", 0)
 	} else {
 		Info = log.New(ioutil.Discard, "INFO: ", 0)
+	}
+
+	if help {
+		flag.Usage()
+		os.Exit(0)
 	}
 
 	if version {
