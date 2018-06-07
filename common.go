@@ -412,24 +412,46 @@ func Number(num []byte, prec int) []byte {
 		}
 	} else {
 		// case 3
-		if dot < end {
-			if dot == start {
-				copy(num[start:], num[end-n:end])
-				end = start + n
-			} else {
-				copy(num[dot:], num[dot+1:end])
-				end--
+
+		// find new end, considering moving numbers to the front, removing the dot and increasing the length of the exponent
+		newEnd := end
+		if dot == start {
+			newEnd = start + n
+		} else {
+			newEnd--
+		}
+		newEnd += 2 + lenIntExp
+
+		exp := intExp
+		lenExp := lenIntExp
+		if newEnd < len(num) {
+			// it saves space to convert the decimal to an integer and decrease the exponent
+			if dot < end {
+				if dot == start {
+					copy(num[start:], num[end-n:end])
+					end = start + n
+				} else {
+					copy(num[dot:], num[dot+1:end])
+					end--
+				}
+			}
+		} else {
+			// it does not save space and will panic, so we revert to the original representation
+			exp = origExp
+			lenExp = 1
+			if origExp <= -10 || origExp >= 10 {
+				lenExp = strconv.LenInt(int64(origExp))
 			}
 		}
 		num[end] = 'e'
 		num[end+1] = '-'
 		end += 2
-		intExp = -intExp
-		for i := end + lenIntExp - 1; i >= end; i-- {
-			num[i] = byte(intExp%10) + '0'
-			intExp /= 10
+		exp = -exp
+		for i := end + lenExp - 1; i >= end; i-- {
+			num[i] = byte(exp%10) + '0'
+			exp /= 10
 		}
-		end += lenIntExp
+		end += lenExp
 	}
 
 	if neg {
