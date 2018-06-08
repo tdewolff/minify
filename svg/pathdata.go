@@ -202,7 +202,8 @@ func (p *PathData) shortenCurPosInstruction(cmd byte, coords [][]byte) PathDataS
 	}
 	for i, coord := range coords {
 		isFlag := false
-		if (cmd == 'A' || cmd == 'a') && (i%7 == 3 || i%7 == 4) {
+		// Arc has boolean flags that can only be 0 or 1. Setting isFlag prevents from adding a dot before a zero (instead of a space). However, when the dot already was there, the command is malformed and could make the path longer than before, introducing bugs.
+		if (cmd == 'A' || cmd == 'a') && (i%7 == 3 || i%7 == 4) && coord[0] != '.' {
 			isFlag = true
 		}
 
