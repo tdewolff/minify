@@ -13,6 +13,10 @@ Run the following command
 
 and the `minify` command will be in your `$GOPATH/bin`.
 
+You can enable bash tab completion by using
+
+    source minify_bash_tab_completion
+
 ## Usage
     Usage: minify [options] [input]
 
