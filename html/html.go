@@ -337,6 +337,15 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				htmlEqualIdName := false
 				for {
 					attr := *tb.Shift()
+
+					//ignore {{ .Go .Template .Code }} in attr variables, do not remove quotes or optimize it in any way
+					if len(attr.AttrVal) > 6 && bytes.Contains(attr.AttrVal, []byte("{{")) && bytes.Contains(attr.AttrVal, []byte("}}")) {
+						if _, err := w.Write(attr.Data); err != nil {
+							return err
+						}
+						continue
+					}
+
 					if attr.TokenType != html.AttributeToken {
 						break
 					} else if attr.Text == nil {
