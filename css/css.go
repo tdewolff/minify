@@ -246,6 +246,18 @@ func (t Token) String() string {
 	}
 }
 
+func (a Token) Equal(b Token) bool {
+	if a.TokenType == b.TokenType && bytes.Equal(a.Data, b.Data) && len(a.Components) == len(b.Components) {
+		for i := 0; i < len(a.Components); i++ {
+			if a.Components[i].TokenType != b.Components[i].TokenType || !bytes.Equal(a.Components[i].Data, b.Components[i].Data) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
+}
+
 func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token) error {
 	if len(components) == 0 {
 		return nil
@@ -386,21 +398,21 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 		case css.Margin, css.Padding, css.Border_Width:
 			n := len(values)
 			if n == 2 {
-				if bytes.Equal(values[0].Data, values[1].Data) {
+				if values[0].Equal(values[1]) {
 					values = values[:1]
 				}
 			} else if n == 3 {
-				if bytes.Equal(values[0].Data, values[1].Data) && bytes.Equal(values[0].Data, values[2].Data) {
+				if values[0].Equal(values[1]) && values[0].Equal(values[2]) {
 					values = values[:1]
-				} else if bytes.Equal(values[0].Data, values[2].Data) {
+				} else if values[0].Equal(values[2]) {
 					values = values[:2]
 				}
 			} else if n == 4 {
-				if bytes.Equal(values[0].Data, values[1].Data) && bytes.Equal(values[0].Data, values[2].Data) && bytes.Equal(values[0].Data, values[3].Data) {
+				if values[0].Equal(values[1]) && values[0].Equal(values[2]) && values[0].Equal(values[3]) {
 					values = values[:1]
-				} else if bytes.Equal(values[0].Data, values[2].Data) && bytes.Equal(values[1].Data, values[3].Data) {
+				} else if values[0].Equal(values[2]) && values[1].Equal(values[3]) {
 					values = values[:2]
-				} else if bytes.Equal(values[1].Data, values[3].Data) {
+				} else if values[1].Equal(values[3]) {
 					values = values[:3]
 				}
 			}

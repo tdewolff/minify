@@ -158,6 +158,7 @@ func TestCSSInline(t *testing.T) {
 
 		{"any:0deg 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz", "any:0 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz"},
 		{"width:calc(0%-0px)", "width:calc(0%-0px)"},
+		{"margin:calc(10px) calc(20px)", "margin:calc(10px) calc(20px)"},
 		{"border-left:0 none", "border-left:0"},
 		{"--custom-variable:0px;", "--custom-variable:0px"},
 		{"--foo: if(x > 5) this.width = 10", "--foo: if(x > 5) this.width = 10"},
