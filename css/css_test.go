@@ -46,9 +46,9 @@ func TestCSS(t *testing.T) {
 		{"a, b + c { x:y; }", "a,b+c{x:y}"},
 
 		// bad declaration
-		{".clearfix { *zoom: 1px; }", ".clearfix{*zoom:1px}"},
-		{".clearfix { *zoom: 1px }", ".clearfix{*zoom:1px}"},
-		{".clearfix { color:green; *zoom: 1px; color:red; }", ".clearfix{color:green;*zoom:1px;color:red}"},
+		{".clearfix { *zoom: 1px; }", ".clearfix{*zoom: 1px}"},
+		{".clearfix { *zoom: 1px }", ".clearfix{*zoom: 1px}"},
+		{".clearfix { color:green; *zoom: 1px; color:red; }", ".clearfix{color:green;*zoom: 1px;color:red}"},
 
 		// go-fuzz
 		{"input[type=\"\x00\"] {  a: b\n}.a{}", "input[type=\"\x00\"]{a:b}.a{}"},

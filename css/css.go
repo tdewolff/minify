@@ -83,12 +83,16 @@ func (c *cssMinifier) minifyGrammar() error {
 				if _, err := c.w.Write(data); err != nil {
 					return err
 				}
-				for _, val := range c.p.Values() {
+				vals := c.p.Values()
+				if len(vals) > 0 && vals[len(vals)-1].TokenType == css.SemicolonToken {
+					vals = vals[:len(vals)-1]
+					semicolonQueued = true
+				}
+				for _, val := range vals {
 					if _, err := c.w.Write(val.Data); err != nil {
 						return err
 					}
 				}
-				semicolonQueued = true
 				continue
 			} else {
 				return c.p.Err()
