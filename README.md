@@ -188,7 +188,7 @@ Minification typically shaves off about 10%-15%.
 
 The CSS minifier will only use safe minifications:
 
-- remove comments and unnecessary whitespace
+- remove comments and unnecessary whitespace (but keep `/*! ... */` which usually contains the license)
 - remove trailing semicolons
 - optimize `margin`, `padding` and `border-width` number of sides
 - shorten numbers by removing unnecessary `+` and zeros and rewriting with/without exponent
