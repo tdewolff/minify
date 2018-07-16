@@ -287,15 +287,15 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 			break
 		}
 
-		if !prevSep && comp.TokenType != css.WhitespaceToken && comp.TokenType != css.CommaToken {
+		if !prevSep && comp.TokenType != css.WhitespaceToken && comp.TokenType != css.CommaToken && (comp.TokenType != css.DelimToken || comp.Data[0] != '/') {
 			simple = false
 			break
 		}
 
-		if comp.TokenType == css.WhitespaceToken || comp.TokenType == css.CommaToken {
+		if comp.TokenType == css.WhitespaceToken || comp.TokenType == css.CommaToken || comp.TokenType == css.DelimToken && comp.Data[0] == '/' {
 			prevSep = true
-			if comp.TokenType == css.CommaToken {
-				values = append(values, Token{components[i].TokenType, components[i].Data, nil})
+			if comp.TokenType != css.WhitespaceToken {
+				values = append(values, Token{comp.TokenType, comp.Data, nil})
 			}
 		} else if comp.TokenType == css.FunctionToken {
 			prevSep = false
@@ -355,108 +355,20 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 	for i := range values {
 		values[i].TokenType, values[i].Data = c.shortenToken(prop, values[i].TokenType, values[i].Data)
 	}
-
 	if len(values) > 0 {
-		switch prop {
-		case css.Font, css.Font_Weight, css.Font_Family:
-			if prop == css.Font {
-				// in "font:" shorthand all values before the size have "normal"
-				// as valid and, at the same time, default value, so just skip them
-				for i, value := range values {
-					if !(value.TokenType == css.IdentToken && css.ToHash(value.Data) == css.Normal) {
-						values = values[i:]
-						break
-					}
-				}
-			}
-			for i, value := range values {
-				if value.TokenType == css.IdentToken {
-					val := css.ToHash(value.Data)
-					if prop == css.Font_Weight && val == css.Normal {
-						values[i].TokenType = css.NumberToken
-						values[i].Data = []byte("400")
-					} else if val == css.Bold {
-						values[i].TokenType = css.NumberToken
-						values[i].Data = []byte("700")
-					}
-				} else if value.TokenType == css.StringToken && len(value.Data) > 2 {
-					unquote := true
-					parse.ToLower(value.Data)
-					s := value.Data[1 : len(value.Data)-1]
-					if len(s) > 0 {
-						for _, split := range bytes.Split(s, spaceBytes) {
-							val := css.ToHash(split)
-							// if len is zero, it contains two consecutive spaces
-							if val == css.Inherit || val == css.Serif || val == css.Sans_Serif || val == css.Monospace || val == css.Fantasy || val == css.Cursive || val == css.Initial || val == css.Default ||
-								len(split) == 0 || !css.IsIdent(split) {
-								unquote = false
-								break
-							}
-						}
-					}
-					if unquote {
-						values[i].Data = s
-					}
-				}
-			}
-		case css.Margin, css.Padding, css.Border_Width:
-			n := len(values)
-			if n == 2 {
-				if values[0].Equal(values[1]) {
-					values = values[:1]
-				}
-			} else if n == 3 {
-				if values[0].Equal(values[1]) && values[0].Equal(values[2]) {
-					values = values[:1]
-				} else if values[0].Equal(values[2]) {
-					values = values[:2]
-				}
-			} else if n == 4 {
-				if values[0].Equal(values[1]) && values[0].Equal(values[2]) && values[0].Equal(values[3]) {
-					values = values[:1]
-				} else if values[0].Equal(values[2]) && values[1].Equal(values[3]) {
-					values = values[:2]
-				} else if values[1].Equal(values[3]) {
-					values = values[:3]
-				}
-			}
-		case css.Outline, css.Border, css.Border_Bottom, css.Border_Left, css.Border_Right, css.Border_Top:
-			none := false
-			iZero := -1
-			for i, value := range values {
-				if len(value.Data) == 1 && value.Data[0] == '0' {
-					iZero = i
-				} else if css.ToHash(value.Data) == css.None {
-					values[i].TokenType = css.NumberToken
-					values[i].Data = zeroBytes
-					none = true
-				}
-			}
-			if none && iZero != -1 {
-				values = append(values[:iZero], values[iZero+1:]...)
-			}
-		case css.Background:
-			ident := css.ToHash(values[0].Data)
-			if len(values) == 1 && (ident == css.None || bytes.Equal(values[0].Data, []byte("#0000"))) {
-				values[0].Data = backgroundNoneBytes
-			}
-		case css.Box_Shadow:
-			if len(values) == 4 && len(values[0].Data) == 1 && values[0].Data[0] == '0' && len(values[1].Data) == 1 && values[1].Data[0] == '0' && len(values[2].Data) == 1 && values[2].Data[0] == '0' && len(values[3].Data) == 1 && values[3].Data[0] == '0' {
-				values = values[:2]
-			}
-		default:
-			if bytes.Equal(property, msfilterBytes) {
-				alpha := []byte("progid:DXImageTransform.Microsoft.Alpha(Opacity=")
-				if values[0].TokenType == css.StringToken && bytes.HasPrefix(values[0].Data[1:len(values[0].Data)-1], alpha) {
-					values[0].Data = append(append([]byte{values[0].Data[0]}, []byte("alpha(opacity=")...), values[0].Data[1+len(alpha):]...)
-				}
+		values = c.minifyProperty(prop, values)
+
+		if bytes.Equal(property, msfilterBytes) {
+			alpha := []byte("progid:DXImageTransform.Microsoft.Alpha(Opacity=")
+			if values[0].TokenType == css.StringToken && bytes.HasPrefix(values[0].Data[1:len(values[0].Data)-1], alpha) {
+				values[0].Data = append(append([]byte{values[0].Data[0]}, []byte("alpha(opacity=")...), values[0].Data[1+len(alpha):]...)
 			}
 		}
 	}
 
-	prevComma := true
+	prevSep = true
 	for _, value := range values {
-		if !prevComma && value.TokenType != css.CommaToken {
+		if !prevSep && value.TokenType != css.CommaToken && (value.TokenType != css.DelimToken || value.Data[0] != '/') {
 			if _, err := c.w.Write([]byte(" ")); err != nil {
 				return err
 			}
@@ -473,10 +385,10 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 			}
 		}
 
-		if value.TokenType == css.CommaToken {
-			prevComma = true
+		if value.TokenType == css.CommaToken || value.TokenType == css.DelimToken && value.Data[0] == '/' {
+			prevSep = true
 		} else {
-			prevComma = false
+			prevSep = false
 		}
 	}
 
@@ -486,6 +398,141 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 		}
 	}
 	return nil
+}
+
+func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
+	switch prop {
+	case css.Font:
+		if len(values) > 1 {
+			i := len(values)
+			for j, value := range values[2:] {
+				if value.TokenType == css.CommaToken {
+					i = 2 + j - 1 // identifier before first comma is a font-family
+					break
+				}
+			}
+
+			i--
+			for ; i > 0; i-- { // i cannot be 0, font-family must be prepended by font-size
+				if values[i-1].TokenType == css.DelimToken && values[i-1].Data[0] == '/' {
+					break
+				} else if values[i].TokenType != css.IdentToken && values[i].TokenType != css.StringToken {
+					break
+				} else if values[i].TokenType == css.IdentToken {
+					h := css.ToHash(values[i].Data)
+					// inherit, initial and unset are followed by an IdentToken/StringToken, so must be for font-size
+					if h == css.Xx_Small || h == css.X_Small || h == css.Small || h == css.Medium || h == css.Large || h == css.X_Large || h == css.Xx_Large || h == css.Smaller || h == css.Larger || h == css.Inherit || h == css.Initial || h == css.Unset {
+						break
+					}
+				}
+			}
+
+			// font-family minified in place
+			values = append(values[:i+1], c.minifyProperty(css.Font_Family, values[i+1:])...)
+
+			if i > 0 {
+				// line-height
+				if i > 2 && values[i-1].TokenType == css.DelimToken && values[i-1].Data[0] == '/' {
+					if values[i].TokenType == css.IdentToken && bytes.Equal(values[i].Data, []byte("normal")) {
+						values = append(values[:i-1], values[i+1:]...)
+					}
+					i -= 2
+				}
+
+				// font-size
+				i--
+
+				for ; i > -1; i-- {
+					if values[i].TokenType == css.IdentToken {
+						val := css.ToHash(values[i].Data)
+						if val == css.Normal {
+							values = append(values[:i], values[i+1:]...)
+						} else if val == css.Bold {
+							values[i].TokenType = css.NumberToken
+							values[i].Data = []byte("700")
+						}
+					}
+				}
+			}
+		}
+	case css.Font_Family:
+		for i, value := range values {
+			if value.TokenType == css.StringToken && len(value.Data) > 2 {
+				unquote := true
+				parse.ToLower(value.Data)
+				s := value.Data[1 : len(value.Data)-1]
+				if len(s) > 0 {
+					for _, split := range bytes.Split(s, spaceBytes) {
+						// if len is zero, it contains two consecutive spaces
+						if len(split) == 0 || !css.IsIdent(split) {
+							unquote = false
+							break
+						}
+					}
+				}
+				if unquote {
+					values[i].Data = s
+				}
+			}
+		}
+	case css.Font_Weight:
+		if len(values) == 1 && values[0].TokenType == css.IdentToken {
+			val := css.ToHash(values[0].Data)
+			if prop == css.Font_Weight && val == css.Normal {
+				values[0].TokenType = css.NumberToken
+				values[0].Data = []byte("400")
+			} else if val == css.Bold {
+				values[0].TokenType = css.NumberToken
+				values[0].Data = []byte("700")
+			}
+		}
+	case css.Margin, css.Padding, css.Border_Width:
+		n := len(values)
+		if n == 2 {
+			if values[0].Equal(values[1]) {
+				values = values[:1]
+			}
+		} else if n == 3 {
+			if values[0].Equal(values[1]) && values[0].Equal(values[2]) {
+				values = values[:1]
+			} else if values[0].Equal(values[2]) {
+				values = values[:2]
+			}
+		} else if n == 4 {
+			if values[0].Equal(values[1]) && values[0].Equal(values[2]) && values[0].Equal(values[3]) {
+				values = values[:1]
+			} else if values[0].Equal(values[2]) && values[1].Equal(values[3]) {
+				values = values[:2]
+			} else if values[1].Equal(values[3]) {
+				values = values[:3]
+			}
+		}
+	case css.Outline, css.Border, css.Border_Bottom, css.Border_Left, css.Border_Right, css.Border_Top:
+		none := false
+		iZero := -1
+		for i, value := range values {
+			if len(value.Data) == 1 && value.Data[0] == '0' {
+				iZero = i
+			} else if css.ToHash(value.Data) == css.None {
+				values[i].TokenType = css.NumberToken
+				values[i].Data = zeroBytes
+				none = true
+			}
+		}
+		if none && iZero != -1 {
+			values = append(values[:iZero], values[iZero+1:]...)
+		}
+	case css.Background:
+		ident := css.ToHash(values[0].Data)
+		if len(values) == 1 && (ident == css.None || bytes.Equal(values[0].Data, []byte("#0000"))) {
+			values[0].Data = backgroundNoneBytes
+		}
+	case css.Box_Shadow:
+		if len(values) == 4 && len(values[0].Data) == 1 && values[0].Data[0] == '0' && len(values[1].Data) == 1 && values[1].Data[0] == '0' && len(values[2].Data) == 1 && values[2].Data[0] == '0' && len(values[3].Data) == 1 && values[3].Data[0] == '0' {
+			values = values[:2]
+		}
+	}
+	return values
 }
 
 func (c *cssMinifier) minifyFunction(values []css.Token) error {
