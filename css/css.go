@@ -496,7 +496,7 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 			vals := []*css.Token{}
 			for i, value := range values[1 : n-1] {
 				numeric := value.TokenType == css.NumberToken || value.TokenType == css.PercentageToken
-				if i%2 == 0 && !numeric || i%2 == 1 && !numeric && value.TokenType != css.CommaToken {
+				if i%2 == 0 && !numeric || i%2 == 1 && value.TokenType != css.WhitespaceToken && value.TokenType != css.CommaToken {
 					valid = false
 				} else if numeric {
 					vals = append(vals, &values[i+1])
