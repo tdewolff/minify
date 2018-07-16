@@ -162,4 +162,5 @@ var ShortenColorName = map[css.Hash][]byte{
 	css.Yellow:               []byte("#ff0"),
 	css.Lightyellow:          []byte("#ffffe0"),
 	css.White:                []byte("#fff"),
+	css.Transparent:          []byte("#0000"),
 }
