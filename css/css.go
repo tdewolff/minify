@@ -489,6 +489,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 }
 
 func (c *cssMinifier) minifyFunction(values []css.Token) error {
+	fun := css.ToHash(values[0].Data[0 : len(values[0].Data)-1])
 	n := len(values)
 	if n > 2 {
 		simple := true
@@ -499,22 +500,21 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 		}
 
 		if simple && n%2 == 1 {
-			fun := css.ToHash(values[0].Data[0 : len(values[0].Data)-1])
 			for i := 1; i < n; i += 2 {
 				values[i].TokenType, values[i].Data = c.shortenToken(0, values[i].TokenType, values[i].Data)
 			}
 
 			nArgs := (n - 1) / 2
 			if (fun == css.Rgba || fun == css.Hsla) && nArgs == 4 {
+				if fun == css.Rgba {
+					values[0].Data = []byte("rgb(")
+					fun = css.Rgb
+				} else {
+					values[0].Data = []byte("hsl(")
+					fun = css.Hsl
+				}
 				d, _ := strconv.ParseFloat(string(values[7].Data), 32) // can never fail because if simple == true than this is a NumberToken or PercentageToken
 				if d-1.0 > -minify.Epsilon {
-					if fun == css.Rgba {
-						values[0].Data = []byte("rgb(")
-						fun = css.Rgb
-					} else {
-						values[0].Data = []byte("hsl(")
-						fun = css.Hsl
-					}
 					values = values[:len(values)-2]
 					values[len(values)-1].Data = []byte(")")
 					nArgs = 3
@@ -601,6 +601,15 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 					}
 				}
 			}
+		} else if fun == css.Local && n == 3 {
+			data := values[1].Data
+			if data[0] == '\'' || data[0] == '"' {
+				data = removeStringNewlinex(data)
+				if css.IsURLUnquoted(data[1 : len(data)-1]) {
+					data = data[1 : len(data)-1]
+				}
+				values[1].Data = data
+			}
 		}
 	}
 
@@ -653,29 +662,7 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 			data = data[:4]
 		}
 	} else if tt == css.StringToken {
-		// remove any \\\r\n \\\r \\\n
-		for i := 1; i < len(data)-2; i++ {
-			if data[i] == '\\' && (data[i+1] == '\n' || data[i+1] == '\r') {
-				// encountered first replacee, now start to move bytes to the front
-				j := i + 2
-				if data[i+1] == '\r' && len(data) > i+2 && data[i+2] == '\n' {
-					j++
-				}
-				for ; j < len(data); j++ {
-					if data[j] == '\\' && len(data) > j+1 && (data[j+1] == '\n' || data[j+1] == '\r') {
-						if data[j+1] == '\r' && len(data) > j+2 && data[j+2] == '\n' {
-							j++
-						}
-						j++
-					} else {
-						data[i] = data[j]
-						i++
-					}
-				}
-				data = data[:i]
-				break
-			}
-		}
+		data = removeStringNewlinex(data)
 	} else if tt == css.URLToken {
 		parse.ToLower(data[:3])
 		if len(data) > 10 {
@@ -683,6 +670,7 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 			delim := byte('"')
 			if uri[0] == '\'' || uri[0] == '"' {
 				delim = uri[0]
+				uri = removeStringNewlinex(uri)
 				uri = uri[1 : len(uri)-1]
 			}
 			uri = minify.DataURI(c.m, uri)
@@ -694,4 +682,31 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 		}
 	}
 	return tt, data
+}
+
+func removeStringNewlinex(data []byte) []byte {
+	// remove any \\\r\n \\\r \\\n
+	for i := 1; i < len(data)-2; i++ {
+		if data[i] == '\\' && (data[i+1] == '\n' || data[i+1] == '\r') {
+			// encountered first replacee, now start to move bytes to the front
+			j := i + 2
+			if data[i+1] == '\r' && len(data) > i+2 && data[i+2] == '\n' {
+				j++
+			}
+			for ; j < len(data); j++ {
+				if data[j] == '\\' && len(data) > j+1 && (data[j+1] == '\n' || data[j+1] == '\r') {
+					if data[j+1] == '\r' && len(data) > j+2 && data[j+2] == '\n' {
+						j++
+					}
+					j++
+				} else {
+					data[i] = data[j]
+					i++
+				}
+			}
+			data = data[:i]
+			break
+		}
+	}
+	return data
 }
