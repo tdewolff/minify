@@ -251,6 +251,7 @@ func TestResponseWriter(t *testing.T) {
 	mw = m.ResponseWriter(w, r)
 	mw.Header().Add("Content-Type", "text/html")
 	_, _ = mw.Write([]byte("test"))
+	mw.WriteHeader(http.StatusForbidden)
 	test.Error(t, mw.Close())
 	test.String(t, b.String(), "test", "equal input after dummy minify response writer")
 }

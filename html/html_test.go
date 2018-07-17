@@ -108,6 +108,7 @@ func TestHTML(t *testing.T) {
 		{`<script language="x" charset="x" src="y"></script>`, `<script src=y></script>`},
 		{`<style media="all">x</style>`, `<style>x</style>`},
 		{`<a id="abc" name="abc">y</a>`, `<a id=abc>y</a>`},
+		{`<a name="abc" id="abc">y</a>`, `<a id=abc>y</a>`},
 		{`<a id="" value="">y</a>`, `<a value>y</a>`},
 
 		// from Kangax html-minfier
