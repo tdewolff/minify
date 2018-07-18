@@ -28,6 +28,7 @@ func TestCSS(t *testing.T) {
 		{"@font-face { x:y; }", "@font-face{x:y}"},
 
 		{"input[type=\"radio\"]{x:y}", "input[type=radio]{x:y}"},
+		{"input[type=\"radio\" i]{x:y}", "input[type=radio i]{x:y}"},
 		{"DIV{margin:1em}", "div{margin:1em}"},
 		{".CLASS{margin:1em}", ".CLASS{margin:1em}"},
 		{"@MEDIA all{}", "@media all{}"},

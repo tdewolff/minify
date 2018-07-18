@@ -226,7 +226,11 @@ func (c *cssMinifier) minifySelectors(property []byte, values []css.Token) error
 				}
 			} else if val.TokenType == css.RightBracketToken {
 				inAttr = false
-			}
+			} else if val.TokenType == css.IdentToken && len(val.Data) == 1 && (val.Data[0] == 'i' || val.Data[0] == 'I') {
+                if _, err := c.w.Write([]byte(" ")); err != nil {
+                    return err
+                }
+            }
 		}
 		if _, err := c.w.Write(val.Data); err != nil {
 			return err
