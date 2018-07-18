@@ -47,9 +47,9 @@ func TestCSS(t *testing.T) {
 		{"a, b + c { x:y; }", "a,b+c{x:y}"},
 
 		// bad declaration
-		{".clearfix { *zoom: 1px; }", ".clearfix{*zoom: 1px}"},
-		{".clearfix { *zoom: 1px }", ".clearfix{*zoom: 1px}"},
-		{".clearfix { color:green; *zoom: 1px; color:red; }", ".clearfix{color:green;*zoom: 1px;color:red}"},
+		{".clearfix { *zoom: 1px; }", ".clearfix{*zoom:1px}"},
+		{".clearfix { *zoom: 1px }", ".clearfix{*zoom:1px}"},
+		{".clearfix { color:green; *zoom: 1px; color:red; }", ".clearfix{color:green;*zoom:1px;color:red}"},
 
 		// go-fuzz
 		{"input[type=\"\x00\"] {  a: b\n}.a{}", "input[type=\"\x00\"]{a:b}.a{}"},
@@ -103,7 +103,7 @@ func TestCSSInline(t *testing.T) {
 		{"font: bold 5px \"Times new Roman\",\"Sans-Serif\";", "font:700 5px times new roman,sans-serif"},
 		{"font: normal normal normal normal 20px normal", "font:20px normal"},
 		{"font:27px/13px arial,sans-serif", "font:27px/13px arial,sans-serif"},
-        {"font:normal normal bold normal medium/normal arial,sans-serif", "font:700 medium arial,sans-serif"},
+		{"font:normal normal bold normal medium/normal arial,sans-serif", "font:700 medium arial,sans-serif"},
 		{"font:400 medium/normal 'Arial'", "font:medium arial"},
 		{"font:medium/normal 'Arial'", "font:medium arial"},
 		{"outline: none;", "outline:0"},
