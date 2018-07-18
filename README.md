@@ -184,7 +184,7 @@ Make sure your HTML doesn't depend on whitespace between `block` elements that h
 
 ## CSS
 
-Minification typically shaves off about 10%-15%.
+Minification typically shaves off about 10%-15%. This CSS minifier will _not_ do structural changes to your stylesheets. Although this could result in smaller files, the complexity is quite high and the risk of breaking website is high too.
 
 The CSS minifier will only use safe minifications:
 
@@ -195,14 +195,16 @@ The CSS minifier will only use safe minifications:
 - remove dimension and percentage for zero values
 - remove quotes for URLs
 - remove quotes for font families and make lowercase
-- rewrite hex colors to/from color names, or to 3 digit hex
+- rewrite hex colors to/from color names, or to three digit hex
 - rewrite `rgb(`, `rgba(`, `hsl(` and `hsla(` colors to hex or name
+- use four digit hex for alpha values (`transparent` &#8594; `#0000`)
 - replace `normal` and `bold` by numbers for `font-weight` and `font`
 - replace `none` &#8594; `0` for `border`, `background` and `outline`
 - lowercase all identifiers except classes, IDs and URLs to enhance gzip compression
 - shorten MS alpha function
 - rewrite data URIs with base64 or ASCII whichever is shorter
 - calls minifier for data URI mediatypes, thus you can compress embedded SVG files if you have that minifier attached
+- shorten aggregate declarations such as `background` and `font`
 
 It does purposely not use the following techniques:
 
@@ -215,11 +217,12 @@ It does purposely not use the following techniques:
 - rewrite attribute selectors for IDs and classes (`div[id=a]` &#8594; `div#a`)
 - put space after pseudo-selectors (IE6 is old, move on!)
 
-It's great that so many other tools make comparison tables: [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html), [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). From the last link, this CSS minifier is almost without doubt the fastest and has near-perfect minification rates. It falls short with the purposely not implemented and often unsafe techniques, so that's fine.
+There are a couple of comparison tables online, such as [CSS Minifier Comparison](http://www.codenothing.com/benchmarks/css-compressor-3.0/full.html), [CSS minifiers comparison](http://www.phpied.com/css-minifiers-comparison/) and [CleanCSS tests](http://goalsmashers.github.io/css-minification-benchmark/). Comparing speed between each, this minifier will usually be between 10x-300x faster than existing implementations, and even rank among the top for minification ratios. It falls short with the purposely not implemented and often unsafe techniques.
 
 Options:
 
 - `Decimals` number of decimals to preserve for numbers, `-1` means no trimming
+- `KeepCSS2` prohibits using CSS3 syntax (such as exponents in numbers, or `rgba(` &#8594; `rgb(`), might be incomplete
 
 ## JS
 
