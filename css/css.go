@@ -21,7 +21,6 @@ var (
 	leftBracketBytes    = []byte("{")
 	rightBracketBytes   = []byte("}")
 	zeroBytes           = []byte("0")
-	msfilterBytes       = []byte("-ms-filter")
 	backgroundNoneBytes = []byte("0 0")
 )
 
@@ -267,8 +266,6 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 		return nil
 	}
 
-	prop := css.ToHash(property)
-
 	// Strip !important from the component list, this will be added later separately
 	important := false
 	if len(components) > 2 && components[len(components)-2].TokenType == css.DelimToken && components[len(components)-2].Data[0] == '!' && css.ToHash(components[len(components)-1].Data) == css.Important {
@@ -321,6 +318,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 	}
 	c.valuesBuffer = values
 
+	prop := css.ToHash(property)
 	// Do not process complex values (eg. containing blocks or is not alternated between whitespace/commas and flat values
 	if !simple {
 		if prop == css.Filter && len(components) == 11 {
@@ -357,13 +355,6 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 	}
 	if len(values) > 0 {
 		values = c.minifyProperty(prop, values)
-
-		if bytes.Equal(property, msfilterBytes) {
-			alpha := []byte("progid:DXImageTransform.Microsoft.Alpha(Opacity=")
-			if values[0].TokenType == css.StringToken && bytes.HasPrefix(values[0].Data[1:len(values[0].Data)-1], alpha) {
-				values[0].Data = append(append([]byte{values[0].Data[0]}, []byte("alpha(opacity=")...), values[0].Data[1+len(alpha):]...)
-			}
-		}
 	}
 
 	prevSep = true
@@ -432,7 +423,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 
 			if i > 0 {
 				// line-height
-				if i > 2 && values[i-1].TokenType == css.DelimToken && values[i-1].Data[0] == '/' {
+				if i > 1 && values[i-1].TokenType == css.DelimToken && values[i-1].Data[0] == '/' {
 					if values[i].TokenType == css.IdentToken && bytes.Equal(values[i].Data, []byte("normal")) {
 						values = append(values[:i-1], values[i+1:]...)
 					}
@@ -451,7 +442,9 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 							values[i].TokenType = css.NumberToken
 							values[i].Data = []byte("700")
 						}
-					}
+					} else if values[i].TokenType == css.NumberToken && bytes.Equal(values[i].Data, []byte("400")) {
+						values = append(values[:i], values[i+1:]...)
+                    }
 				}
 			}
 		}
@@ -531,6 +524,11 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 		if len(values) == 4 && len(values[0].Data) == 1 && values[0].Data[0] == '0' && len(values[1].Data) == 1 && values[1].Data[0] == '0' && len(values[2].Data) == 1 && values[2].Data[0] == '0' && len(values[3].Data) == 1 && values[3].Data[0] == '0' {
 			values = values[:2]
 		}
+    case css.Ms_Filter:
+        alpha := []byte("progid:DXImageTransform.Microsoft.Alpha(Opacity=")
+        if values[0].TokenType == css.StringToken && bytes.HasPrefix(values[0].Data[1:len(values[0].Data)-1], alpha) {
+            values[0].Data = append(append([]byte{values[0].Data[0]}, []byte("alpha(opacity=")...), values[0].Data[1+len(alpha):]...)
+        }
 	}
 	return values
 }
