@@ -520,10 +520,48 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 			values = append(values[:iZero], values[iZero+1:]...)
 		}
 	case css.Background:
-		ident := css.ToHash(values[0].Data)
-		if len(values) == 1 && (ident == css.None || bytes.Equal(values[0].Data, []byte("#0000"))) {
-			values[0].Data = backgroundNoneBytes
-		}
+        iPaddingBox := -1 // position of background-origin that is padding-box
+        for i := 0; i < len(values); {
+            if values[i].TokenType == css.DelimToken && values[i].Data[0] == '/' && len(values) > i+2 &&
+                values[i+1].TokenType == css.IdentToken && bytes.Equal(values[i+1].Data, []byte("auto")) &&
+                values[i+2].TokenType == css.IdentToken && bytes.Equal(values[i+2].Data, []byte("auto")) {
+                values = append(values[:i], values[i+3:]...)
+                continue
+            } else if values[i].TokenType == css.IdentToken {
+                h := css.ToHash(values[i].Data)
+                if h == css.None || h == css.Scroll || h == css.Repeat {
+                    values = append(values[:i], values[i+1:]...)
+                    continue
+                } else if h == css.Border_Box || h == css.Padding_Box {
+                    if iPaddingBox == -1 && h == css.Padding_Box { // background-origin
+                        iPaddingBox = i
+                    } else if iPaddingBox != -1 && h == css.Border_Box { // background-clip
+                        values = append(values[:i], values[i+1:]...)
+                        values = append(values[:iPaddingBox], values[iPaddingBox+1:]...)
+                        i--
+                        continue
+                    }
+                } else if h == css.Left && len(values) > i+1 && bytes.Equal(values[i+1].Data, []byte("top")) {
+                    values = append(values[:i], values[i+2:]...) // background-position: left top
+                    continue
+                }
+            } else if values[i].TokenType == css.HashToken && bytes.Equal(values[i].Data, []byte("#0000")) {
+                values = append(values[:i], values[i+1:]...)
+                continue
+            } else if len(values) > i+1 {
+                isZero := values[i].TokenType == css.NumberToken && bytes.Equal(values[i].Data, []byte("0"))
+                isZeroPercent := values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, []byte("0%"))
+                if (isZero || isZeroPercent) && values[i].Equal(values[i+1]) {
+                    values = append(values[:i], values[i+2:]...) // background-position: 0 0 | 0% 0%
+                    continue
+                }
+            }
+            i++
+        }
+
+        if len(values) == 0 {
+            values = []Token{{css.NumberToken, []byte("0"), nil}, {css.NumberToken, []byte("0"), nil}}
+        }
 	case css.Box_Shadow:
 		if len(values) == 4 && len(values[0].Data) == 1 && values[0].Data[0] == '0' && len(values[1].Data) == 1 && values[1].Data[0] == '0' && len(values[2].Data) == 1 && values[2].Data[0] == '0' && len(values[3].Data) == 1 && values[3].Data[0] == '0' {
 			values = values[:2]
