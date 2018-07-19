@@ -520,6 +520,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 			values = append(values[:iZero], values[iZero+1:]...)
 		}
 	case css.Background:
+        var h css.Hash
         iPaddingBox := -1 // position of background-origin that is padding-box
         for i := 0; i < len(values); {
             if values[i].TokenType == css.DelimToken && values[i].Data[0] == '/' && len(values) > i+2 &&
@@ -528,7 +529,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
                 values = append(values[:i], values[i+3:]...)
                 continue
             } else if values[i].TokenType == css.IdentToken {
-                h := css.ToHash(values[i].Data)
+                h = css.ToHash(values[i].Data)
                 if h == css.None || h == css.Scroll || h == css.Repeat {
                     values = append(values[:i], values[i+1:]...)
                     continue
@@ -541,20 +542,32 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
                         i--
                         continue
                     }
-                } else if h == css.Left && i+1 < len(values) && bytes.Equal(values[i+1].Data, []byte("top")) {
-                    values = append(values[:i], values[i+2:]...) // background-position: left top
-                    continue
                 }
             } else if values[i].TokenType == css.HashToken && bytes.Equal(values[i].Data, []byte("#0000")) {
                 values = append(values[:i], values[i+1:]...)
                 continue
-            } else if i+1 < len(values) {
-                isZero := values[i].TokenType == css.NumberToken && bytes.Equal(values[i].Data, []byte("0"))
-                isZeroPercent := values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, []byte("0%"))
-                if (isZero || isZeroPercent) && values[i].Equal(values[i+1]) {
-                    values = append(values[:i], values[i+2:]...) // background-position: 0 0 | 0% 0%
-                    continue
+            }
+
+            if values[i].TokenType == css.NumberToken || values[i].TokenType == css.PercentageToken || values[i].TokenType == css.IdentToken && (h == css.Left || h == css.Right || h == css.Top || h == css.Bottom || h == css.Center) {
+                j := i+1
+                for ; j < len(values); j++ {
+                    if values[j].TokenType == css.IdentToken {
+                        h := css.ToHash(values[j].Data)
+                        if h == css.Left || h == css.Right || h == css.Top || h == css.Bottom || h == css.Center {
+                            continue
+                        }
+                    } else if values[j].TokenType == css.NumberToken || values[j].TokenType == css.PercentageToken {
+                        continue
+                    }
+                    break
                 }
+
+                positionValues := c.minifyProperty(css.Background_Position, values[i:j])
+                if len(positionValues) == 2 && positionValues[0].TokenType == css.NumberToken && bytes.Equal(positionValues[0].Data, []byte("0")) && positionValues[0].Equal(positionValues[1]) {
+                    positionValues = positionValues[:0]
+                }
+                values = append(values[:i], append(positionValues, values[j:]...)...)
+                i += len(positionValues)-1
             }
             i++
         }
@@ -604,6 +617,9 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
                     }
                 } else if i == 1 && values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, []byte("50%")) {
                     values = values[:1]
+                } else if values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, []byte("0%")) {
+                    values[i].TokenType = css.NumberToken
+                    values[i].Data = []byte("0")
                 }
             }
         }
