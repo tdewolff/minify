@@ -520,28 +520,50 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 			values = append(values[:iZero], values[iZero+1:]...)
 		}
 	case css.Background:
+        hasSize := false
+        for i := 0; i < len(values); i++ {
+            if values[i].TokenType == css.DelimToken && values[i].Data[0] == '/' {
+                hasSize = true
+                if i+1 < len(values) && (values[i+1].TokenType == css.NumberToken || values[i+1].TokenType == css.PercentageToken || values[i+1].TokenType == css.IdentToken && bytes.Equal(values[i+1].Data, []byte("auto"))) {
+                    if i+2 < len(values) && (values[i+2].TokenType == css.NumberToken || values[i+2].TokenType == css.PercentageToken || values[i+2].TokenType == css.IdentToken && bytes.Equal(values[i+2].Data, []byte("auto"))) {
+                        sizeValues := c.minifyProperty(css.Background_Size, values[i+1:i+3])
+                        if len(sizeValues) == 1 && bytes.Equal(sizeValues[0].Data, []byte("auto")) {
+                            values = append(values[:i], values[i+3:]...)
+                            hasSize = false
+                            i--
+                        } else {
+                            values = append(values[:i+1], append(sizeValues, values[i+3:]...)...)
+                            i += len(sizeValues) - 1
+                        }
+                    } else if values[i+1].TokenType == css.IdentToken && bytes.Equal(values[i+1].Data, []byte("auto")){
+                        values = append(values[:i], values[i+2:]...)
+                        hasSize = false
+                        i--
+                    }
+                }
+            }
+        }
+
         var h css.Hash
         iPaddingBox := -1 // position of background-origin that is padding-box
-        for i := 0; i < len(values); {
-            if values[i].TokenType == css.DelimToken && values[i].Data[0] == '/' && len(values) > i+2 &&
-                values[i+1].TokenType == css.IdentToken && bytes.Equal(values[i+1].Data, []byte("auto")) &&
-                values[i+2].TokenType == css.IdentToken && bytes.Equal(values[i+2].Data, []byte("auto")) {
-                values = append(values[:i], values[i+3:]...)
-                continue
-            } else if values[i].TokenType == css.IdentToken {
+        for i := 0; i < len(values); i++ {
+            if values[i].TokenType == css.IdentToken {
                 h = css.ToHash(values[i].Data)
                 if i+1 < len(values) && values[i+1].TokenType == css.IdentToken && (h == css.Space || h == css.Round || h == css.Repeat || h == css.No_Repeat) {
                     if h2 := css.ToHash(values[i+1].Data); h2 == css.Space || h2 == css.Round || h2 == css.Repeat || h2 == css.No_Repeat {
                         repeatValues := c.minifyProperty(css.Background_Repeat, values[i:i+2])
                         if len(repeatValues) == 1 && bytes.Equal(repeatValues[0].Data, []byte("repeat")) {
-                            repeatValues = repeatValues[:0]
+                            values = append(values[:i], values[i+2:]...)
+                            i--
+                        } else {
+                            values = append(values[:i], append(repeatValues, values[i+2:]...)...)
+                            i += len(repeatValues)-1
                         }
-                        values = append(values[:i], append(repeatValues, values[i+2:]...)...)
-                        i++
                         continue
                     }
                 } else if h == css.None || h == css.Scroll {
                     values = append(values[:i], values[i+1:]...)
+                    i--
                     continue
                 } else if h == css.Border_Box || h == css.Padding_Box {
                     if iPaddingBox == -1 && h == css.Padding_Box { // background-origin
@@ -549,12 +571,13 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
                     } else if iPaddingBox != -1 && h == css.Border_Box { // background-clip
                         values = append(values[:i], values[i+1:]...)
                         values = append(values[:iPaddingBox], values[iPaddingBox+1:]...)
-                        i--
-                        continue
+                        i -= 2
                     }
+                    continue
                 }
             } else if values[i].TokenType == css.HashToken && bytes.Equal(values[i].Data, []byte("#0000")) {
                 values = append(values[:i], values[i+1:]...)
+                i--
                 continue
             }
 
@@ -573,17 +596,22 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
                 }
 
                 positionValues := c.minifyProperty(css.Background_Position, values[i:j])
-                if len(positionValues) == 2 && positionValues[0].TokenType == css.NumberToken && bytes.Equal(positionValues[0].Data, []byte("0")) && positionValues[0].Equal(positionValues[1]) {
-                    positionValues = positionValues[:0]
+                if !hasSize && len(positionValues) == 2 && positionValues[0].TokenType == css.NumberToken && bytes.Equal(positionValues[0].Data, []byte("0")) && positionValues[0].Equal(positionValues[1]) {
+                    values = append(values[:i], values[j:]...)
+                    i--
+                } else {
+                    values = append(values[:i], append(positionValues, values[j:]...)...)
+                    i += len(positionValues)-1
                 }
-                values = append(values[:i], append(positionValues, values[j:]...)...)
-                i += len(positionValues)-1
             }
-            i++
         }
 
         if len(values) == 0 {
             values = []Token{{css.NumberToken, []byte("0"), nil}, {css.NumberToken, []byte("0"), nil}}
+        }
+    case css.Background_Size:
+        if len(values) == 2 && values[1].TokenType == css.IdentToken && bytes.Equal(values[1].Data, []byte("auto")) {
+            values = values[:1]
         }
     case css.Background_Repeat:
         if len(values) == 2 && values[0].TokenType == css.IdentToken && values[1].TokenType == css.IdentToken {
