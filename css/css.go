@@ -530,7 +530,17 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
                 continue
             } else if values[i].TokenType == css.IdentToken {
                 h = css.ToHash(values[i].Data)
-                if h == css.None || h == css.Scroll || h == css.Repeat {
+                if i+1 < len(values) && values[i+1].TokenType == css.IdentToken && (h == css.Space || h == css.Round || h == css.Repeat || h == css.No_Repeat) {
+                    if h2 := css.ToHash(values[i+1].Data); h2 == css.Space || h2 == css.Round || h2 == css.Repeat || h2 == css.No_Repeat {
+                        repeatValues := c.minifyProperty(css.Background_Repeat, values[i:i+2])
+                        if len(repeatValues) == 1 && bytes.Equal(repeatValues[0].Data, []byte("repeat")) {
+                            repeatValues = repeatValues[:0]
+                        }
+                        values = append(values[:i], append(repeatValues, values[i+2:]...)...)
+                        i++
+                        continue
+                    }
+                } else if h == css.None || h == css.Scroll {
                     values = append(values[:i], values[i+1:]...)
                     continue
                 } else if h == css.Border_Box || h == css.Padding_Box {
@@ -574,6 +584,20 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 
         if len(values) == 0 {
             values = []Token{{css.NumberToken, []byte("0"), nil}, {css.NumberToken, []byte("0"), nil}}
+        }
+    case css.Background_Repeat:
+        if len(values) == 2 && values[0].TokenType == css.IdentToken && values[1].TokenType == css.IdentToken {
+            h0 := css.ToHash(values[0].Data)
+            h1 := css.ToHash(values[1].Data)
+            if h0 == h1 {
+                values = values[:1]
+            } else if h0 == css.Repeat && h1 == css.No_Repeat {
+                values = values[:1]
+                values[0].Data = []byte("repeat-x")
+            } else if h0 == css.No_Repeat && h1 == css.Repeat {
+                values = values[:1]
+                values[0].Data = []byte("repeat-y")
+            }
         }
     case css.Background_Position:
         if len(values) == 3 || len(values) == 4 {
