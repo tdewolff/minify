@@ -541,14 +541,14 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
                         i--
                         continue
                     }
-                } else if h == css.Left && len(values) > i+1 && bytes.Equal(values[i+1].Data, []byte("top")) {
+                } else if h == css.Left && i+1 < len(values) && bytes.Equal(values[i+1].Data, []byte("top")) {
                     values = append(values[:i], values[i+2:]...) // background-position: left top
                     continue
                 }
             } else if values[i].TokenType == css.HashToken && bytes.Equal(values[i].Data, []byte("#0000")) {
                 values = append(values[:i], values[i+1:]...)
                 continue
-            } else if len(values) > i+1 {
+            } else if i+1 < len(values) {
                 isZero := values[i].TokenType == css.NumberToken && bytes.Equal(values[i].Data, []byte("0"))
                 isZeroPercent := values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, []byte("0%"))
                 if (isZero || isZeroPercent) && values[i].Equal(values[i+1]) {
@@ -561,6 +561,51 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 
         if len(values) == 0 {
             values = []Token{{css.NumberToken, []byte("0"), nil}, {css.NumberToken, []byte("0"), nil}}
+        }
+    case css.Background_Position:
+        if len(values) == 3 || len(values) == 4 {
+            // remove zero offsets
+            for i := 0; i < len(values); i++ {
+                if values[i].TokenType == css.IdentToken {
+                    h := css.ToHash(values[i].Data)
+                    if h == css.Left || h == css.Top || h == css.Right || h == css.Bottom {
+                        if i+1 < len(values) {
+                            if values[i+1].TokenType == css.NumberToken && bytes.Equal(values[i+1].Data, []byte("0")) || values[i+1].TokenType == css.PercentageToken && bytes.Equal(values[i+1].Data, []byte("0%")) {
+                                values = append(values[:i+1], values[i+2:]...)
+                            } else {
+                                i++
+                            }
+                        }
+                    } else if h != css.Center {
+                        break // error, must encounter top|bottom|left|right followed by length|percentage or center
+                    }
+                }
+            }
+        }
+        // removing zero offsets in the previous loop might make it eligible for the next loop
+        if len(values) < 3 {
+            // transform keywords to lengths|percentages
+            for i := 0; i < len(values); i++ {
+                if values[i].TokenType == css.IdentToken {
+                    h := css.ToHash(values[i].Data)
+                    if h == css.Left || h == css.Top {
+                        values[i].TokenType = css.NumberToken
+                        values[i].Data = []byte("0")
+                    } else if h == css.Right || h == css.Bottom {
+                        values[i].TokenType = css.PercentageToken
+                        values[i].Data = []byte("100%")
+                    } else if h == css.Center {
+                        if i == 0 {
+                            values[i].TokenType = css.PercentageToken
+                            values[i].Data = []byte("50%")
+                        } else {
+                            values = values[:1]
+                        }
+                    }
+                } else if i == 1 && values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, []byte("50%")) {
+                    values = values[:1]
+                }
+            }
         }
 	case css.Box_Shadow:
 		if len(values) == 4 && len(values[0].Data) == 1 && values[0].Data[0] == '0' && len(values[1].Data) == 1 && values[1].Data[0] == '0' && len(values[2].Data) == 1 && values[2].Data[0] == '0' && len(values[3].Data) == 1 && values[3].Data[0] == '0' {
