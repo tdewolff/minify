@@ -227,10 +227,10 @@ func (c *cssMinifier) minifySelectors(property []byte, values []css.Token) error
 			} else if val.TokenType == css.RightBracketToken {
 				inAttr = false
 			} else if val.TokenType == css.IdentToken && len(val.Data) == 1 && (val.Data[0] == 'i' || val.Data[0] == 'I') {
-                if _, err := c.w.Write([]byte(" ")); err != nil {
-                    return err
-                }
-            }
+				if _, err := c.w.Write([]byte(" ")); err != nil {
+					return err
+				}
+			}
 		}
 		if _, err := c.w.Write(val.Data); err != nil {
 			return err
@@ -448,7 +448,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 						}
 					} else if values[i].TokenType == css.NumberToken && bytes.Equal(values[i].Data, []byte("400")) {
 						values = append(values[:i], values[i+1:]...)
-                    }
+					}
 				}
 			}
 		}
@@ -520,170 +520,170 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 			values = append(values[:iZero], values[iZero+1:]...)
 		}
 	case css.Background:
-        hasSize := false
-        for i := 0; i < len(values); i++ {
-            if values[i].TokenType == css.DelimToken && values[i].Data[0] == '/' {
-                hasSize = true
-                if i+1 < len(values) && (values[i+1].TokenType == css.NumberToken || values[i+1].TokenType == css.PercentageToken || values[i+1].TokenType == css.IdentToken && bytes.Equal(values[i+1].Data, []byte("auto"))) {
-                    if i+2 < len(values) && (values[i+2].TokenType == css.NumberToken || values[i+2].TokenType == css.PercentageToken || values[i+2].TokenType == css.IdentToken && bytes.Equal(values[i+2].Data, []byte("auto"))) {
-                        sizeValues := c.minifyProperty(css.Background_Size, values[i+1:i+3])
-                        if len(sizeValues) == 1 && bytes.Equal(sizeValues[0].Data, []byte("auto")) {
-                            values = append(values[:i], values[i+3:]...)
-                            hasSize = false
-                            i--
-                        } else {
-                            values = append(values[:i+1], append(sizeValues, values[i+3:]...)...)
-                            i += len(sizeValues) - 1
-                        }
-                    } else if values[i+1].TokenType == css.IdentToken && bytes.Equal(values[i+1].Data, []byte("auto")){
-                        values = append(values[:i], values[i+2:]...)
-                        hasSize = false
-                        i--
-                    }
-                }
-            }
-        }
+		hasSize := false
+		for i := 0; i < len(values); i++ {
+			if values[i].TokenType == css.DelimToken && values[i].Data[0] == '/' {
+				hasSize = true
+				if i+1 < len(values) && (values[i+1].TokenType == css.NumberToken || values[i+1].TokenType == css.PercentageToken || values[i+1].TokenType == css.IdentToken && bytes.Equal(values[i+1].Data, []byte("auto"))) {
+					if i+2 < len(values) && (values[i+2].TokenType == css.NumberToken || values[i+2].TokenType == css.PercentageToken || values[i+2].TokenType == css.IdentToken && bytes.Equal(values[i+2].Data, []byte("auto"))) {
+						sizeValues := c.minifyProperty(css.Background_Size, values[i+1:i+3])
+						if len(sizeValues) == 1 && bytes.Equal(sizeValues[0].Data, []byte("auto")) {
+							values = append(values[:i], values[i+3:]...)
+							hasSize = false
+							i--
+						} else {
+							values = append(values[:i+1], append(sizeValues, values[i+3:]...)...)
+							i += len(sizeValues) - 1
+						}
+					} else if values[i+1].TokenType == css.IdentToken && bytes.Equal(values[i+1].Data, []byte("auto")) {
+						values = append(values[:i], values[i+2:]...)
+						hasSize = false
+						i--
+					}
+				}
+			}
+		}
 
-        var h css.Hash
-        iPaddingBox := -1 // position of background-origin that is padding-box
-        for i := 0; i < len(values); i++ {
-            if values[i].TokenType == css.IdentToken {
-                h = css.ToHash(values[i].Data)
-                if i+1 < len(values) && values[i+1].TokenType == css.IdentToken && (h == css.Space || h == css.Round || h == css.Repeat || h == css.No_Repeat) {
-                    if h2 := css.ToHash(values[i+1].Data); h2 == css.Space || h2 == css.Round || h2 == css.Repeat || h2 == css.No_Repeat {
-                        repeatValues := c.minifyProperty(css.Background_Repeat, values[i:i+2])
-                        if len(repeatValues) == 1 && bytes.Equal(repeatValues[0].Data, []byte("repeat")) {
-                            values = append(values[:i], values[i+2:]...)
-                            i--
-                        } else {
-                            values = append(values[:i], append(repeatValues, values[i+2:]...)...)
-                            i += len(repeatValues)-1
-                        }
-                        continue
-                    }
-                } else if h == css.None || h == css.Scroll {
-                    values = append(values[:i], values[i+1:]...)
-                    i--
-                    continue
-                } else if h == css.Border_Box || h == css.Padding_Box {
-                    if iPaddingBox == -1 && h == css.Padding_Box { // background-origin
-                        iPaddingBox = i
-                    } else if iPaddingBox != -1 && h == css.Border_Box { // background-clip
-                        values = append(values[:i], values[i+1:]...)
-                        values = append(values[:iPaddingBox], values[iPaddingBox+1:]...)
-                        i -= 2
-                    }
-                    continue
-                }
-            } else if values[i].TokenType == css.HashToken && bytes.Equal(values[i].Data, []byte("#0000")) {
-                values = append(values[:i], values[i+1:]...)
-                i--
-                continue
-            }
+		var h css.Hash
+		iPaddingBox := -1 // position of background-origin that is padding-box
+		for i := 0; i < len(values); i++ {
+			if values[i].TokenType == css.IdentToken {
+				h = css.ToHash(values[i].Data)
+				if i+1 < len(values) && values[i+1].TokenType == css.IdentToken && (h == css.Space || h == css.Round || h == css.Repeat || h == css.No_Repeat) {
+					if h2 := css.ToHash(values[i+1].Data); h2 == css.Space || h2 == css.Round || h2 == css.Repeat || h2 == css.No_Repeat {
+						repeatValues := c.minifyProperty(css.Background_Repeat, values[i:i+2])
+						if len(repeatValues) == 1 && bytes.Equal(repeatValues[0].Data, []byte("repeat")) {
+							values = append(values[:i], values[i+2:]...)
+							i--
+						} else {
+							values = append(values[:i], append(repeatValues, values[i+2:]...)...)
+							i += len(repeatValues) - 1
+						}
+						continue
+					}
+				} else if h == css.None || h == css.Scroll {
+					values = append(values[:i], values[i+1:]...)
+					i--
+					continue
+				} else if h == css.Border_Box || h == css.Padding_Box {
+					if iPaddingBox == -1 && h == css.Padding_Box { // background-origin
+						iPaddingBox = i
+					} else if iPaddingBox != -1 && h == css.Border_Box { // background-clip
+						values = append(values[:i], values[i+1:]...)
+						values = append(values[:iPaddingBox], values[iPaddingBox+1:]...)
+						i -= 2
+					}
+					continue
+				}
+			} else if values[i].TokenType == css.HashToken && bytes.Equal(values[i].Data, []byte("#0000")) {
+				values = append(values[:i], values[i+1:]...)
+				i--
+				continue
+			}
 
-            if values[i].TokenType == css.NumberToken || values[i].TokenType == css.PercentageToken || values[i].TokenType == css.IdentToken && (h == css.Left || h == css.Right || h == css.Top || h == css.Bottom || h == css.Center) {
-                j := i+1
-                for ; j < len(values); j++ {
-                    if values[j].TokenType == css.IdentToken {
-                        h := css.ToHash(values[j].Data)
-                        if h == css.Left || h == css.Right || h == css.Top || h == css.Bottom || h == css.Center {
-                            continue
-                        }
-                    } else if values[j].TokenType == css.NumberToken || values[j].TokenType == css.PercentageToken {
-                        continue
-                    }
-                    break
-                }
+			if values[i].TokenType == css.NumberToken || values[i].TokenType == css.PercentageToken || values[i].TokenType == css.IdentToken && (h == css.Left || h == css.Right || h == css.Top || h == css.Bottom || h == css.Center) {
+				j := i + 1
+				for ; j < len(values); j++ {
+					if values[j].TokenType == css.IdentToken {
+						h := css.ToHash(values[j].Data)
+						if h == css.Left || h == css.Right || h == css.Top || h == css.Bottom || h == css.Center {
+							continue
+						}
+					} else if values[j].TokenType == css.NumberToken || values[j].TokenType == css.PercentageToken {
+						continue
+					}
+					break
+				}
 
-                positionValues := c.minifyProperty(css.Background_Position, values[i:j])
-                if !hasSize && len(positionValues) == 2 && positionValues[0].TokenType == css.NumberToken && bytes.Equal(positionValues[0].Data, []byte("0")) && positionValues[0].Equal(positionValues[1]) {
-                    values = append(values[:i], values[j:]...)
-                    i--
-                } else {
-                    values = append(values[:i], append(positionValues, values[j:]...)...)
-                    i += len(positionValues)-1
-                }
-            }
-        }
+				positionValues := c.minifyProperty(css.Background_Position, values[i:j])
+				if !hasSize && len(positionValues) == 2 && positionValues[0].TokenType == css.NumberToken && bytes.Equal(positionValues[0].Data, []byte("0")) && positionValues[0].Equal(positionValues[1]) {
+					values = append(values[:i], values[j:]...)
+					i--
+				} else {
+					values = append(values[:i], append(positionValues, values[j:]...)...)
+					i += len(positionValues) - 1
+				}
+			}
+		}
 
-        if len(values) == 0 {
-            values = []Token{{css.NumberToken, []byte("0"), nil}, {css.NumberToken, []byte("0"), nil}}
-        }
-    case css.Background_Size:
-        if len(values) == 2 && values[1].TokenType == css.IdentToken && bytes.Equal(values[1].Data, []byte("auto")) {
-            values = values[:1]
-        }
-    case css.Background_Repeat:
-        if len(values) == 2 && values[0].TokenType == css.IdentToken && values[1].TokenType == css.IdentToken {
-            h0 := css.ToHash(values[0].Data)
-            h1 := css.ToHash(values[1].Data)
-            if h0 == h1 {
-                values = values[:1]
-            } else if h0 == css.Repeat && h1 == css.No_Repeat {
-                values = values[:1]
-                values[0].Data = []byte("repeat-x")
-            } else if h0 == css.No_Repeat && h1 == css.Repeat {
-                values = values[:1]
-                values[0].Data = []byte("repeat-y")
-            }
-        }
-    case css.Background_Position:
-        if len(values) == 3 || len(values) == 4 {
-            // remove zero offsets
-            for i := 0; i < len(values); i++ {
-                if values[i].TokenType == css.IdentToken {
-                    h := css.ToHash(values[i].Data)
-                    if h == css.Left || h == css.Top || h == css.Right || h == css.Bottom {
-                        if i+1 < len(values) {
-                            if values[i+1].TokenType == css.NumberToken && bytes.Equal(values[i+1].Data, []byte("0")) || values[i+1].TokenType == css.PercentageToken && bytes.Equal(values[i+1].Data, []byte("0%")) {
-                                values = append(values[:i+1], values[i+2:]...)
-                            } else {
-                                i++
-                            }
-                        }
-                    } else if h != css.Center {
-                        break // error, must encounter top|bottom|left|right followed by length|percentage or center
-                    }
-                }
-            }
-        }
-        // removing zero offsets in the previous loop might make it eligible for the next loop
-        if len(values) < 3 {
-            // transform keywords to lengths|percentages
-            for i := 0; i < len(values); i++ {
-                if values[i].TokenType == css.IdentToken {
-                    h := css.ToHash(values[i].Data)
-                    if h == css.Left || h == css.Top {
-                        values[i].TokenType = css.NumberToken
-                        values[i].Data = []byte("0")
-                    } else if h == css.Right || h == css.Bottom {
-                        values[i].TokenType = css.PercentageToken
-                        values[i].Data = []byte("100%")
-                    } else if h == css.Center {
-                        if i == 0 {
-                            values[i].TokenType = css.PercentageToken
-                            values[i].Data = []byte("50%")
-                        } else {
-                            values = values[:1]
-                        }
-                    }
-                } else if i == 1 && values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, []byte("50%")) {
-                    values = values[:1]
-                } else if values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, []byte("0%")) {
-                    values[i].TokenType = css.NumberToken
-                    values[i].Data = []byte("0")
-                }
-            }
-        }
+		if len(values) == 0 {
+			values = []Token{{css.NumberToken, []byte("0"), nil}, {css.NumberToken, []byte("0"), nil}}
+		}
+	case css.Background_Size:
+		if len(values) == 2 && values[1].TokenType == css.IdentToken && bytes.Equal(values[1].Data, []byte("auto")) {
+			values = values[:1]
+		}
+	case css.Background_Repeat:
+		if len(values) == 2 && values[0].TokenType == css.IdentToken && values[1].TokenType == css.IdentToken {
+			h0 := css.ToHash(values[0].Data)
+			h1 := css.ToHash(values[1].Data)
+			if h0 == h1 {
+				values = values[:1]
+			} else if h0 == css.Repeat && h1 == css.No_Repeat {
+				values = values[:1]
+				values[0].Data = []byte("repeat-x")
+			} else if h0 == css.No_Repeat && h1 == css.Repeat {
+				values = values[:1]
+				values[0].Data = []byte("repeat-y")
+			}
+		}
+	case css.Background_Position:
+		if len(values) == 3 || len(values) == 4 {
+			// remove zero offsets
+			for i := 0; i < len(values); i++ {
+				if values[i].TokenType == css.IdentToken {
+					h := css.ToHash(values[i].Data)
+					if h == css.Left || h == css.Top || h == css.Right || h == css.Bottom {
+						if i+1 < len(values) {
+							if values[i+1].TokenType == css.NumberToken && bytes.Equal(values[i+1].Data, []byte("0")) || values[i+1].TokenType == css.PercentageToken && bytes.Equal(values[i+1].Data, []byte("0%")) {
+								values = append(values[:i+1], values[i+2:]...)
+							} else {
+								i++
+							}
+						}
+					} else if h != css.Center {
+						break // error, must encounter top|bottom|left|right followed by length|percentage or center
+					}
+				}
+			}
+		}
+		// removing zero offsets in the previous loop might make it eligible for the next loop
+		if len(values) < 3 {
+			// transform keywords to lengths|percentages
+			for i := 0; i < len(values); i++ {
+				if values[i].TokenType == css.IdentToken {
+					h := css.ToHash(values[i].Data)
+					if h == css.Left || h == css.Top {
+						values[i].TokenType = css.NumberToken
+						values[i].Data = []byte("0")
+					} else if h == css.Right || h == css.Bottom {
+						values[i].TokenType = css.PercentageToken
+						values[i].Data = []byte("100%")
+					} else if h == css.Center {
+						if i == 0 {
+							values[i].TokenType = css.PercentageToken
+							values[i].Data = []byte("50%")
+						} else {
+							values = values[:1]
+						}
+					}
+				} else if i == 1 && values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, []byte("50%")) {
+					values = values[:1]
+				} else if values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, []byte("0%")) {
+					values[i].TokenType = css.NumberToken
+					values[i].Data = []byte("0")
+				}
+			}
+		}
 	case css.Box_Shadow:
 		if len(values) == 4 && len(values[0].Data) == 1 && values[0].Data[0] == '0' && len(values[1].Data) == 1 && values[1].Data[0] == '0' && len(values[2].Data) == 1 && values[2].Data[0] == '0' && len(values[3].Data) == 1 && values[3].Data[0] == '0' {
 			values = values[:2]
 		}
-    case css.Ms_Filter:
-        alpha := []byte("progid:DXImageTransform.Microsoft.Alpha(Opacity=")
-        if values[0].TokenType == css.StringToken && bytes.HasPrefix(values[0].Data[1:len(values[0].Data)-1], alpha) {
-            values[0].Data = append(append([]byte{values[0].Data[0]}, []byte("alpha(opacity=")...), values[0].Data[1+len(alpha):]...)
-        }
+	case css.Ms_Filter:
+		alpha := []byte("progid:DXImageTransform.Microsoft.Alpha(Opacity=")
+		if values[0].TokenType == css.StringToken && bytes.HasPrefix(values[0].Data[1:len(values[0].Data)-1], alpha) {
+			values[0].Data = append(append([]byte{values[0].Data[0]}, []byte("alpha(opacity=")...), values[0].Data[1+len(alpha):]...)
+		}
 	}
 	return values
 }
@@ -861,7 +861,8 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 }
 
 func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte) (css.TokenType, []byte) {
-	if tt == css.NumberToken || tt == css.PercentageToken || tt == css.DimensionToken {
+	switch tt {
+	case css.NumberToken, css.PercentageToken, css.DimensionToken:
 		if tt == css.NumberToken && (prop == css.Z_Index || prop == css.Counter_Increment || prop == css.Counter_Reset || prop == css.Orphans || prop == css.Widows) {
 			return tt, data // integers
 		}
@@ -883,13 +884,13 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 		} else if tt == css.PercentageToken {
 			data = append(data, '%') // TODO: drop percentage for properties that accept <percentage> and <length>
 		}
-	} else if tt == css.IdentToken {
+	case css.IdentToken:
 		parse.ToLower(parse.Copy(data)) // not all identifiers are case-insensitive; all <custom-ident> properties are case-sensitive
 		if hex, ok := ShortenColorName[css.ToHash(data)]; ok {
 			tt = css.HashToken
 			data = hex
 		}
-	} else if tt == css.HashToken {
+	case css.HashToken:
 		parse.ToLower(data)
 		if len(data) == 9 && data[7] == data[8] {
 			if data[7] == 'f' {
@@ -913,9 +914,9 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 			data[4] = data[7]
 			data = data[:5]
 		}
-	} else if tt == css.StringToken {
+	case css.StringToken:
 		data = removeStringNewlinex(data)
-	} else if tt == css.URLToken {
+	case css.URLToken:
 		parse.ToLower(data[:3])
 		if len(data) > 10 {
 			uri := parse.TrimWhitespace(data[4 : len(data)-1])
