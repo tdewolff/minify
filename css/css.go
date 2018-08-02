@@ -284,27 +284,27 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 	prevSep := true
 	values := c.valuesBuffer[:0]
 
-outerLoop:
 	for i := 0; i < len(components); i++ {
-		comp := &components[i]
+		comp := components[i]
+		tt := comp.TokenType
 
-		switch comp.TokenType {
-		case css.LeftParenthesisToken, css.LeftBraceToken, css.LeftBracketToken, css.RightParenthesisToken, css.RightBraceToken, css.RightBracketToken:
-			simple = false
-			break outerLoop
-		}
-
-		if !prevSep && comp.TokenType != css.WhitespaceToken && comp.TokenType != css.CommaToken && (comp.TokenType != css.DelimToken || comp.Data[0] != '/') {
+		if tt == css.LeftParenthesisToken || tt == css.LeftBraceToken || tt == css.LeftBracketToken ||
+			tt == css.RightParenthesisToken || tt == css.RightBraceToken || tt == css.RightBracketToken {
 			simple = false
 			break
 		}
 
-		if comp.TokenType == css.WhitespaceToken || comp.TokenType == css.CommaToken || comp.TokenType == css.DelimToken && comp.Data[0] == '/' {
+		if !prevSep && tt != css.WhitespaceToken && tt != css.CommaToken && (tt != css.DelimToken || comp.Data[0] != '/') {
+			simple = false
+			break
+		}
+
+		if tt == css.WhitespaceToken || tt == css.CommaToken || tt == css.DelimToken && comp.Data[0] == '/' {
 			prevSep = true
-			if comp.TokenType != css.WhitespaceToken {
-				values = append(values, Token{comp.TokenType, comp.Data, nil})
+			if tt != css.WhitespaceToken {
+				values = append(values, Token{tt, comp.Data, nil})
 			}
-		} else if comp.TokenType == css.FunctionToken {
+		} else if tt == css.FunctionToken {
 			prevSep = false
 			j := i + 1
 			level := 0
