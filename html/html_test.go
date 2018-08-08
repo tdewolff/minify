@@ -125,8 +125,8 @@ func TestHTML(t *testing.T) {
 		{`<script><!--<`, `<script><!--<`},
 
 		// bugs
-		{`<p>text</p><br>text`, `<p>text</p><br>text`},                         // #122
-		{`text <img> text`, `text <img> text`},                                 // #89
+		{`<p>text</p><br>text`, `<p>text</p><br>text`}, // #122
+		{`text <img> text`, `text <img> text`},         // #89
 		{`text <progress></progress> text`, `text <progress></progress> text`}, // #89
 		{`<pre> <x> a  b </x> </pre>`, `<pre> <x> a  b </x> </pre>`},           // #82
 		{`<svg id="1"></svg>`, `<svg id="1"></svg>`},                           // #67

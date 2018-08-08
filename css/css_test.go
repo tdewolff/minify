@@ -126,7 +126,7 @@ func TestCSSInline(t *testing.T) {
 		{"background:0% 0%", "background:0 0"},
 		{"background:left top", "background:0 0"},
 		{"background:no-repeat repeat", "background:repeat-y"},
-        {"font-weight: bold; font-weight: normal;", "font-weight:700;font-weight:400"},
+		{"font-weight: bold; font-weight: normal;", "font-weight:700;font-weight:400"},
 		{"font: bold 5px \"Times new Roman\",\"Sans-Serif\";", "font:700 5px times new roman,sans-serif"},
 		{"font: normal normal normal normal 20px normal", "font:20px normal"},
 		{"font:27px/13px arial,sans-serif", "font:27px/13px arial,sans-serif"},
