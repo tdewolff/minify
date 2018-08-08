@@ -1,6 +1,6 @@
 # Minify <a name="minify"></a> [![Build Status](https://travis-ci.org/tdewolff/minify.svg?branch=master)](https://travis-ci.org/tdewolff/minify) [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![Coverage Status](https://coveralls.io/repos/github/tdewolff/minify/badge.svg?branch=master)](https://coveralls.io/github/tdewolff/minify?branch=master) [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**[Online demo](http://go.tacodewolff.nl/minify) if you need to minify files *now*.**
+**[Online demo](https://go.tacodewolff.nl/minify) if you need to minify files *now*.**
 
 **[Command line tool](https://github.com/tdewolff/minify/tree/master/cmd/minify) that minifies concurrently and supports watching file changes.**
 
@@ -72,7 +72,7 @@ This minifier proves to be that fast and extensive minifier that can handle HTML
 ## Installation
 Run the following command
 
-	go get github.com/tdewolff/minify
+	go get -u github.com/tdewolff/minify
 
 or add the following imports and run the project with `go get`
 ``` go
