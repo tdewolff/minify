@@ -509,20 +509,31 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 				values = values[:3]
 			}
 		}
-	case css.Outline, css.Border, css.Border_Bottom, css.Border_Left, css.Border_Right, css.Border_Top:
-		none := false
-		iZero := -1
-		for i, value := range values {
-			if len(value.Data) == 1 && value.Data[0] == '0' {
-				iZero = i
-			} else if css.ToHash(value.Data) == css.None {
-				values[i].TokenType = css.NumberToken
-				values[i].Data = zeroBytes
-				none = true
+	case css.Border, css.Border_Bottom, css.Border_Left, css.Border_Right, css.Border_Top:
+		for i := 0; i < len(values); i++ {
+			if values[i].TokenType == css.IdentToken {
+				val := css.ToHash(values[i].Data)
+				if val == css.None || val == css.Currentcolor || val == css.Medium {
+					values = append(values[:i], values[i+1:]...)
+					i--
+				}
 			}
 		}
-		if none && iZero != -1 {
-			values = append(values[:iZero], values[iZero+1:]...)
+		if len(values) == 0 {
+			values = []Token{{css.IdentToken, []byte("none"), nil}}
+		}
+	case css.Outline:
+		for i := 0; i < len(values); i++ {
+			if values[i].TokenType == css.IdentToken {
+				val := css.ToHash(values[i].Data)
+				if val == css.None || val == css.Medium { // color=invert is not supported by all browsers
+					values = append(values[:i], values[i+1:]...)
+					i--
+				}
+			}
+		}
+		if len(values) == 0 {
+			values = []Token{{css.IdentToken, []byte("none"), nil}}
 		}
 	case css.Background:
 		hasSize := false
