@@ -9,6 +9,8 @@ import (
 var cssSamples = []string{
 	"sample_bootstrap.css",
 	"sample_gumby.css",
+	"sample_fontawesome.css",
+	"sample_normalize.css",
 }
 
 func init() {
