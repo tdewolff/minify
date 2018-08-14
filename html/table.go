@@ -184,3 +184,8 @@ var attrMap = map[html.Hash]traits{
 	html.Visible:         booleanAttr,
 	html.Xmlns:           urlAttr,
 }
+
+var jsMimetypes = map[string]bool{
+	"text/javascript":        true,
+	"application/javascript": true,
+}

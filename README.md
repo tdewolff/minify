@@ -168,7 +168,7 @@ The HTML5 minifier uses these minifications:
 Options:
 
 - `KeepConditionalComments` preserve all IE conditional comments such as `<!--[if IE 6]><![endif]-->` and `<![if IE 6]><![endif]>`, see https://msdn.microsoft.com/en-us/library/ms537512(v=vs.85).aspx#syntax
-- `KeepDefaultAttrVals` preserve default attribute values such as `<script type="text/javascript">`
+- `KeepDefaultAttrVals` preserve default attribute values such as `<script type="application/javascript">`
 - `KeepDocumentTags` preserve `html`, `head` and `body` tags
 - `KeepEndTags` preserve all end tags
 - `KeepWhitespace` preserve whitespace between inline tags but still collapse multiple whitespace characters into one
@@ -291,8 +291,8 @@ The following loads all provided minifiers.
 m := minify.New()
 m.AddFunc("text/css", css.Minify)
 m.AddFunc("text/html", html.Minify)
-m.AddFunc("text/javascript", js.Minify)
 m.AddFunc("image/svg+xml", svg.Minify)
+m.AddFuncRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), js.Minify)
 m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
 m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 ```
@@ -423,13 +423,13 @@ func main() {
 	m := minify.New()
 	m.AddFunc("text/css", css.Minify)
 	m.AddFunc("text/html", html.Minify)
-	m.AddFunc("text/javascript", js.Minify)
 	m.AddFunc("image/svg+xml", svg.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), js.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
 	// Or use the following for better minification of JS but lower speed:
-	// m.AddCmd("text/javascript", exec.Command("java", "-jar", "build/compiler.jar"))
+	// m.AddCmdRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), exec.Command("java", "-jar", "build/compiler.jar"))
 
 	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
 		panic(err)
@@ -489,8 +489,8 @@ func main() {
 	m := minify.New()
 	m.AddFunc("text/css", css.Minify)
 	m.AddFunc("text/html", html.Minify)
-	m.AddFunc("text/javascript", js.Minify)
 	m.AddFunc("image/svg+xml", svg.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), js.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 

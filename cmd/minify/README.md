@@ -50,7 +50,7 @@ You can enable bash tab completion by using
 	css     text/css
 	htm     text/html
 	html    text/html
-	js      text/javascript
+	js      application/javascript
 	json    application/json
 	svg     image/svg+xml
 	xml     text/xml
@@ -73,7 +73,7 @@ $ minify --type=html -o index-min.tpl index.tpl
 
 You need to set the type or the mimetype option when using standard input:
 ```sh
-$ minify --mime=text/javascript < script.js > script-min.js
+$ minify --mime=application/javascript < script.js > script-min.js
 
 $ cat script.js | minify --type=js > script-min.js
 ```

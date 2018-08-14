@@ -37,7 +37,7 @@ var filetypeMime = map[string]string{
 	"css":  "text/css",
 	"htm":  "text/html",
 	"html": "text/html",
-	"js":   "text/javascript",
+	"js":   "application/javascript",
 	"json": "application/json",
 	"svg":  "image/svg+xml",
 	"xml":  "text/xml",
@@ -196,8 +196,8 @@ func main() {
 	m = min.New()
 	m.Add("text/css", cssMinifier)
 	m.Add("text/html", htmlMinifier)
-	m.Add("text/javascript", jsMinifier)
 	m.Add("image/svg+xml", svgMinifier)
+	m.AddRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), jsMinifier)
 	m.AddRegexp(regexp.MustCompile("[/+]json$"), jsonMinifier)
 	m.AddRegexp(regexp.MustCompile("[/+]xml$"), xmlMinifier)
 

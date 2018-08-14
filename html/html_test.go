@@ -54,11 +54,9 @@ func TestHTML(t *testing.T) {
 
 		// increase coverage
 		{`<script style="css">js</script>`, `<script style=css>js</script>`},
-		{`<script type="application/javascript">js</script>`, `<script type=application/javascript>js</script>`},
+		{`<script type="text/javascript">js</script>`, `<script>js</script>`},
+		{`<script type="application/javascript">js</script>`, `<script>js</script>`},
 		{`<meta http-equiv="content-type" content="text/plain, text/html">`, `<meta http-equiv=content-type content=text/plain,text/html>`},
-		{`<meta http-equiv="content-style-type" content="text/less">`, `<meta http-equiv=content-style-type content=text/less>`},
-		{`<meta http-equiv="content-style-type" content="text/less; charset=utf-8">`, `<meta http-equiv=content-style-type content="text/less;charset=utf-8">`},
-		{`<meta http-equiv="content-script-type" content="application/js">`, `<meta http-equiv=content-script-type content=application/js>`},
 		{`<span attr=""></span>`, `<span attr></span>`},
 		{`<code>x</code>`, `<code>x</code>`},
 		{`<p></p><p></p>`, `<p><p>`},
@@ -125,8 +123,8 @@ func TestHTML(t *testing.T) {
 		{`<script><!--<`, `<script><!--<`},
 
 		// bugs
-		{`<p>text</p><br>text`, `<p>text</p><br>text`}, // #122
-		{`text <img> text`, `text <img> text`},         // #89
+		{`<p>text</p><br>text`, `<p>text</p><br>text`},                         // #122
+		{`text <img> text`, `text <img> text`},                                 // #89
 		{`text <progress></progress> text`, `text <progress></progress> text`}, // #89
 		{`<pre> <x> a  b </x> </pre>`, `<pre> <x> a  b </x> </pre>`},           // #82
 		{`<svg id="1"></svg>`, `<svg id="1"></svg>`},                           // #67
@@ -138,7 +136,7 @@ func TestHTML(t *testing.T) {
 		_, err := io.Copy(w, r)
 		return err
 	})
-	m.AddFunc("text/javascript", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
+	m.AddFunc("application/javascript", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 		_, err := io.Copy(w, r)
 		return err
 	})
@@ -343,7 +341,7 @@ func TestMinifyErrors(t *testing.T) {
 	m.AddFunc("text/css", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 		return test.ErrPlain
 	})
-	m.AddFunc("text/javascript", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
+	m.AddFunc("application/javascript", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 		return test.ErrPlain
 	})
 	m.AddFunc("image/svg+xml", func(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
@@ -368,8 +366,8 @@ func ExampleMinify() {
 	m := minify.New()
 	m.AddFunc("text/html", Minify)
 	m.AddFunc("text/css", css.Minify)
-	m.AddFunc("text/javascript", js.Minify)
 	m.AddFunc("image/svg+xml", svg.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), js.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
