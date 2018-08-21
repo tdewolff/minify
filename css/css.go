@@ -844,11 +844,9 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 						}
 
 						if !c.o.KeepCSS2 || a == 255 {
-							if _, err := c.w.Write(val); err != nil {
-								return err
-							}
+							_, err := c.w.Write(val)
+							return err
 						}
-						return nil
 					}
 				}
 			}

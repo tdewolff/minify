@@ -238,6 +238,8 @@ func TestCSSKeepCSS2(t *testing.T) {
 		expected string
 	}{
 		{`margin:5000em`, `margin:5000em`},
+		{"color: rgba(0%,15%,25%,0.2);", "color:rgba(0%,15%,25%,.2)"},
+		{"color: hsla(5,0%,10%,0.75);", "color:hsla(5,0%,10%,.75)"},
 	}
 
 	m := minify.New()
