@@ -664,7 +664,21 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 			}
 		}
 		// removing zero offsets in the previous loop might make it eligible for the next loop
-		if len(values) < 3 {
+		if len(values) == 1 || len(values) == 2 {
+			if values[0].TokenType == css.IdentToken {
+				h := css.ToHash(values[0].Data)
+				if h == css.Top || h == css.Bottom {
+					if len(values) == 1 {
+						// we can't make this smaller, and converting to a number will break it
+						// (https://github.com/tdewolff/minify/issues/221#issuecomment-415419918)
+						break
+					}
+					// if it's a vertical position keyword, swap it with the next element
+					// since otherwise converted number positions won't be valid anymore
+					// (https://github.com/tdewolff/minify/issues/221#issue-353067229)
+					values[0], values[1] = values[1], values[0]
+				}
+			}
 			// transform keywords to lengths|percentages
 			for i := 0; i < len(values); i++ {
 				if values[i].TokenType == css.IdentToken {
