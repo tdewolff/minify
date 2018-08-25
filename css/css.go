@@ -704,6 +704,35 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 	return values
 }
 
+func (c *cssMinifier) minifyColorAsHex(rgba [4]byte) error {
+	val := make([]byte, 9)
+	val[0] = '#'
+	hex.Encode(val[1:], rgba[:])
+	parse.ToLower(val)
+	if rgba[3] == 255 {
+		if s, ok := ShortenColorHex[string(val[:7])]; ok {
+			if _, err := c.w.Write(s); err != nil {
+				return err
+			}
+			return nil
+		} else if val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
+			val[2] = val[3]
+			val[3] = val[5]
+			val = val[:4]
+		} else {
+			val = val[:7]
+		}
+	} else if val[1] == val[2] && val[3] == val[4] && val[5] == val[6] && val[7] == val[8] {
+		val[2] = val[3]
+		val[3] = val[5]
+		val[4] = val[7]
+		val = val[:5]
+	}
+
+	_, err := c.w.Write(val)
+	return err
+}
+
 func (c *cssMinifier) minifyFunction(values []css.Token) error {
 	if n := len(values); n > 2 {
 		fun := css.ToHash(values[0].Data[0 : len(values[0].Data)-1])
@@ -729,77 +758,47 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 				if len(vals) == 4 {
 					d, _ := strconv.ParseFloat(string(values[7].Data), 32) // can never fail because if valid == true than this is a NumberToken or PercentageToken
 					if d < minify.Epsilon {                                // zero or less
-						_, err := c.w.Write(transparentBytes)
-						return err
-					}
-					if d >= 1.0 {
+						a = 0
+					} else if d >= 1.0 {
 						values = values[:7]
 					} else {
 						a = byte(d*255.0 + 0.5)
 					}
 				}
 
-				if (fun == css.Rgb || fun == css.Rgba) && (len(vals) == 3 || len(vals) == 4) {
-					if !c.o.KeepCSS2 && fun == css.Rgba {
-						values[0].Data = []byte("rgb(")
-					}
-
-					rgba := [4]byte{}
-					rgba[3] = a
-					for j, val := range vals[:3] {
-						if val.TokenType == css.NumberToken {
-							d, _ := strconv.ParseInt(string(val.Data), 10, 32)
-							if d < 0 {
-								d = 0
-							} else if d > 255 {
-								d = 255
-							}
-							rgba[j] = byte(d)
-						} else if val.TokenType == css.PercentageToken {
-							d, _ := strconv.ParseFloat(string(val.Data[:len(val.Data)-1]), 32)
-							if d < 0.0 {
-								d = 0.0
-							} else if d > 100.0 {
-								d = 100.0
-							}
-							rgba[j] = byte((d / 100.0 * 255.0) + 0.5)
-						}
-					}
-
-					val := make([]byte, 9)
-					val[0] = '#'
-					hex.Encode(val[1:], rgba[:])
-					parse.ToLower(val)
-					if a == 255 {
-						if s, ok := ShortenColorHex[string(val[:7])]; ok {
-							if _, err := c.w.Write(s); err != nil {
-								return err
-							}
-							return nil
-						} else if val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
-							val[2] = val[3]
-							val[3] = val[5]
-							val = val[:4]
-						} else {
-							val = val[:7]
-						}
-					} else if val[1] == val[2] && val[3] == val[4] && val[5] == val[6] && val[7] == val[8] {
-						val[2] = val[3]
-						val[3] = val[5]
-						val[4] = val[7]
-						val = val[:5]
-					}
-
-					if !c.o.KeepCSS2 || a == 255 {
-						_, err := c.w.Write(val)
+				if !c.o.KeepCSS2 || a == 255 {
+					if a == 0 {
+						_, err := c.w.Write(transparentBytes)
 						return err
 					}
-				} else if (fun == css.Hsl || fun == css.Hsla) && (len(vals) == 3 || len(vals) == 4) {
-					if !c.o.KeepCSS2 && fun == css.Hsla {
-						values[0].Data = []byte("hsl(")
-					}
 
-					if vals[0].TokenType == css.NumberToken && vals[1].TokenType == css.PercentageToken && vals[2].TokenType == css.PercentageToken {
+					if (fun == css.Rgb || fun == css.Rgba) && (len(vals) == 3 || len(vals) == 4) {
+						rgba := [4]byte{}
+
+						for j, val := range vals[:3] {
+							if val.TokenType == css.NumberToken {
+								d, _ := strconv.ParseInt(string(val.Data), 10, 32)
+								if d < 0 {
+									d = 0
+								} else if d > 255 {
+									d = 255
+								}
+								rgba[j] = byte(d)
+							} else if val.TokenType == css.PercentageToken {
+								d, _ := strconv.ParseFloat(string(val.Data[:len(val.Data)-1]), 32)
+								if d < 0.0 {
+									d = 0.0
+								} else if d > 100.0 {
+									d = 100.0
+								}
+								rgba[j] = byte((d / 100.0 * 255.0) + 0.5)
+							}
+						}
+
+						rgba[3] = a
+
+						return c.minifyColorAsHex(rgba)
+					} else if (fun == css.Hsl || fun == css.Hsla) && (len(vals) == 3 || len(vals) == 4) && vals[0].TokenType == css.NumberToken && vals[1].TokenType == css.PercentageToken && vals[2].TokenType == css.PercentageToken {
 						h, _ := strconv.ParseFloat(string(vals[0].Data), 32)
 						s, _ := strconv.ParseFloat(string(vals[1].Data[:len(vals[1].Data)-1]), 32)
 						l, _ := strconv.ParseFloat(string(vals[2].Data[:len(vals[2].Data)-1]), 32)
@@ -818,37 +817,8 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 						}
 
 						r, g, b := css.HSL2RGB(h/360.0, s/100.0, l/100.0)
-						rgba := []byte{byte((r * 255.0) + 0.5), byte((g * 255.0) + 0.5), byte((b * 255.0) + 0.5), a}
-						val := make([]byte, 9)
-						val[0] = '#'
-						hex.Encode(val[1:], rgba[:])
-						parse.ToLower(val)
-						if a == 255 {
-							if s, ok := ShortenColorHex[string(val[:7])]; ok {
-								if _, err := c.w.Write(s); err != nil {
-									return err
-								}
-								return nil
-							} else if val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
-								val[2] = val[3]
-								val[3] = val[5]
-								val = val[:4]
-							} else {
-								val = val[:7]
-							}
-						} else if val[1] == val[2] && val[3] == val[4] && val[5] == val[6] && val[7] == val[8] {
-							val[2] = val[3]
-							val[3] = val[5]
-							val[4] = val[7]
-							val = val[:5]
-						}
-
-						if !c.o.KeepCSS2 || a == 255 {
-							if _, err := c.w.Write(val); err != nil {
-								return err
-							}
-						}
-						return nil
+						rgba := [4]byte{byte((r * 255.0) + 0.5), byte((g * 255.0) + 0.5), byte((b * 255.0) + 0.5), a}
+						return c.minifyColorAsHex(rgba)
 					}
 				}
 			}
@@ -898,9 +868,14 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 		}
 	case css.IdentToken:
 		parse.ToLower(parse.Copy(data)) // not all identifiers are case-insensitive; all <custom-ident> properties are case-sensitive
-		if hexValue, ok := ShortenColorName[css.ToHash(data)]; ok {
+		hash := css.ToHash(data)
+		if hexValue, ok := ShortenColorName[hash]; ok {
 			tt = css.HashToken
 			data = hexValue
+		}
+		if !c.o.KeepCSS2 && hash == css.Transparent {
+			tt = css.HashToken
+			data = transparentBytes
 		}
 	case css.HashToken:
 		parse.ToLower(data)
