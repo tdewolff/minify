@@ -867,39 +867,43 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 			data = append(data, '%') // TODO: drop percentage for properties that accept <percentage> and <length>
 		}
 	case css.IdentToken:
-		parse.ToLower(parse.Copy(data)) // not all identifiers are case-insensitive; all <custom-ident> properties are case-sensitive
-		hash := css.ToHash(data)
-		if hexValue, ok := ShortenColorName[hash]; ok {
-			tt = css.HashToken
-			data = hexValue
-		}
-		if !c.o.KeepCSS2 && hash == css.Transparent {
-			tt = css.HashToken
-			data = transparentBytes
-		}
-	case css.HashToken:
-		parse.ToLower(data)
-		if len(data) == 9 && data[7] == data[8] {
-			if data[7] == 'f' {
-				data = data[:7]
-			} else if data[7] == '0' {
+		if colorProperty[prop] {
+			parse.ToLower(parse.Copy(data)) // not all identifiers are case-insensitive; all <custom-ident> properties are case-sensitive
+			hash := css.ToHash(data)
+			if hexValue, ok := ShortenColorName[hash]; ok {
+				tt = css.HashToken
+				data = hexValue
+			}
+			if !c.o.KeepCSS2 && hash == css.Transparent {
+				tt = css.HashToken
 				data = transparentBytes
 			}
 		}
-		if ident, ok := ShortenColorHex[string(data)]; ok {
-			tt = css.IdentToken
-			data = ident
-		} else if len(data) == 7 && data[1] == data[2] && data[3] == data[4] && data[5] == data[6] {
-			tt = css.HashToken
-			data[2] = data[3]
-			data[3] = data[5]
-			data = data[:4]
-		} else if len(data) == 9 && data[1] == data[2] && data[3] == data[4] && data[5] == data[6] && data[7] == data[8] {
-			tt = css.HashToken
-			data[2] = data[3]
-			data[3] = data[5]
-			data[4] = data[7]
-			data = data[:5]
+	case css.HashToken:
+		parse.ToLower(data)
+		if colorProperty[prop] {
+			if len(data) == 9 && data[7] == data[8] {
+				if data[7] == 'f' {
+					data = data[:7]
+				} else if data[7] == '0' {
+					data = transparentBytes
+				}
+			}
+			if ident, ok := ShortenColorHex[string(data)]; ok {
+				tt = css.IdentToken
+				data = ident
+			} else if len(data) == 7 && data[1] == data[2] && data[3] == data[4] && data[5] == data[6] {
+				tt = css.HashToken
+				data[2] = data[3]
+				data[3] = data[5]
+				data = data[:4]
+			} else if len(data) == 9 && data[1] == data[2] && data[3] == data[4] && data[5] == data[6] && data[7] == data[8] {
+				tt = css.HashToken
+				data[2] = data[3]
+				data[3] = data[5]
+				data[4] = data[7]
+				data = data[:5]
+			}
 		}
 	case css.StringToken:
 		data = removeStringNewlinex(data)

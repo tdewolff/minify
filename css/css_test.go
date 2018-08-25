@@ -155,7 +155,7 @@ func TestCSSInline(t *testing.T) {
 		{"content: \"a\\\nb\";", "content:\"ab\""},
 		{"content: \"a\\\r\nb\\\r\nc\";", "content:\"abc\""},
 		{"content: \"\";", "content:\"\""},
-		{"x: white , white", "x:#fff,#fff"},
+		{"color: white , white", "color:#fff,#fff"},
 
 		{"text-decoration: none !important", "text-decoration:none!important"},
 		{"color:#fff", "color:#fff"},
