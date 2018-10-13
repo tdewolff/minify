@@ -75,10 +75,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				return err
 			}
 		case html.CommentToken:
-			if o.KeepConditionalComments && len(t.Text) > 6 && (bytes.HasPrefix(t.Text, []byte("[if ")) || bytes.Equal(t.Text, []byte("[endif]")) || bytes.Equal(t.Text, []byte("<![endif]"))) {
+			if o.KeepConditionalComments && len(t.Text) > 6 && (bytes.HasPrefix(t.Text, []byte("[if ")) || bytes.HasSuffix(t.Text, []byte("[endif]")) || bytes.HasSuffix(t.Text, []byte("[endif]--"))) {
 				// [if ...] is always 7 or more characters, [endif] is only encountered for downlevel-revealed
 				// see https://msdn.microsoft.com/en-us/library/ms537512(v=vs.85).aspx#syntax
-				if bytes.HasPrefix(t.Data, []byte("<!--[if ")) && len(t.Data) > len("<!--[if ]><![endif]-->") { // downlevel-hidden
+				if bytes.HasPrefix(t.Data, []byte("<!--[if ")) && bytes.HasSuffix(t.Data, []byte("<![endif]-->")) { // downlevel-hidden
 					begin := bytes.IndexByte(t.Data, '>') + 1
 					end := len(t.Data) - len("<![endif]-->")
 					if _, err := w.Write(t.Data[:begin]); err != nil {

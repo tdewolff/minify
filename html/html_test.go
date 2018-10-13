@@ -180,7 +180,9 @@ func TestHTMLKeepConditionalComments(t *testing.T) {
 	}{
 		{`<!--[if IE 6]> <b> </b> <![endif]-->`, `<!--[if IE 6]><b></b><![endif]-->`},
 		{`<![if IE 6]> <b> </b> <![endif]>`, `<![if IE 6]><b></b><![endif]>`},
+		{`<!--[if IE 6]--> <b> </b> <!--[endif]-->`, `<!--[if IE 6]--><b></b><!--[endif]-->`},
 		{`<!--[if !mso]><!--> <b> </b> <!--<![endif]-->`, `<!--[if !mso]><!--><b></b><!--<![endif]-->`},
+		{`<!--[if gt IE 6]><!--> <b> </b> <![endif]-->`, `<!--[if gt IE 6]><!--><b></b><![endif]-->`},
 	}
 
 	m := minify.New()
