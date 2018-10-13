@@ -51,8 +51,8 @@ func TestHTML(t *testing.T) {
 		{`</span >`, `</span>`},
 		{`<meta name=viewport content="width=0.1, initial-scale=1.0 , maximum-scale=1000">`, `<meta name=viewport content="width=.1,initial-scale=1,maximum-scale=1e3">`},
 		{`<br/>`, `<br>`},
-        {`<input type="radio" value="">`, `<input type=radio value>`},
-        {`<input type="radio" value="on">`, `<input type=radio>`},
+		{`<input type="radio" value="">`, `<input type=radio value>`},
+		{`<input type="radio" value="on">`, `<input type=radio>`},
 
 		// increase coverage
 		{`<script style="css">js</script>`, `<script style=css>js</script>`},

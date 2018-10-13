@@ -313,16 +313,16 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						attrs[1].Text = nil
 					}
 				} else if t.Hash == html.Input {
-                    attrs := tb.Attributes(html.Type, html.Value)
-                    if t, value := attrs[0], attrs[1]; t != nil && value != nil {
-                        isRadio := parse.EqualFold(t.AttrVal, []byte("radio"))
-                        if !isRadio && len(value.AttrVal) == 0 {
-                            value.Text = nil
-                        } else if isRadio && parse.EqualFold(value.AttrVal, []byte("on")) {
-                            value.Text = nil
-                        }
-                    }
-                }
+					attrs := tb.Attributes(html.Type, html.Value)
+					if t, value := attrs[0], attrs[1]; t != nil && value != nil {
+						isRadio := parse.EqualFold(t.AttrVal, []byte("radio"))
+						if !isRadio && len(value.AttrVal) == 0 {
+							value.Text = nil
+						} else if isRadio && parse.EqualFold(value.AttrVal, []byte("on")) {
+							value.Text = nil
+						}
+					}
+				}
 
 				// write attributes
 				htmlEqualIdName := false
