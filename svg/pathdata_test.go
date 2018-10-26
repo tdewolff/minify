@@ -54,6 +54,23 @@ func TestPathData(t *testing.T) {
 	}
 }
 
+func TestPathDataTruncated(t *testing.T) {
+	var pathDataTests = []struct {
+		pathData string
+		expected string
+	}{
+		{"m100 0 50 50zM100 0z", "m1e2.0 50 50zm0 0z"},
+	}
+
+	p := NewPathData(&Minifier{Decimals: 3})
+	for _, tt := range pathDataTests {
+		t.Run(tt.pathData, func(t *testing.T) {
+			path := p.ShortenPathData([]byte(tt.pathData))
+			test.Minify(t, tt.pathData, nil, string(path), tt.expected)
+		})
+	}
+}
+
 ////////////////////////////////////////////////////////////////
 
 func BenchmarkShortenPathData(b *testing.B) {

@@ -12,6 +12,7 @@ type PathData struct {
 	o *Minifier
 
 	x, y        float64
+	x0, y0      float64
 	coords      [][]byte
 	coordFloats []float64
 
@@ -36,7 +37,6 @@ func NewPathData(o *Minifier) *PathData {
 // ShortenPathData takes a full pathdata string and returns a shortened version. The original string is overwritten.
 // It parses all commands (M, A, Z, ...) and coordinates (numbers) and calls copyInstruction for each command.
 func (p *PathData) ShortenPathData(b []byte) []byte {
-	var x0, y0 float64
 	var cmd byte
 
 	p.x, p.y = 0.0, 0.0
@@ -52,13 +52,6 @@ func (p *PathData) ShortenPathData(b []byte) []byte {
 		} else if c >= 'A' && (cmd == 0 || cmd != c || c == 'M' || c == 'm') { // any command
 			if cmd != 0 {
 				j += p.copyInstruction(b[j:], cmd)
-				if cmd == 'M' || cmd == 'm' {
-					x0 = p.x
-					y0 = p.y
-				} else if cmd == 'Z' || cmd == 'z' {
-					p.x = x0
-					p.y = y0
-				}
 			}
 			cmd = c
 			p.coords = p.coords[:0]
@@ -82,6 +75,8 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 	n := len(p.coords)
 	if n == 0 {
 		if cmd == 'Z' || cmd == 'z' {
+			p.x = p.x0
+			p.y = p.y0
 			b[0] = 'z'
 			return 1
 		}
@@ -190,6 +185,10 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 		} else {
 			p.x = ax
 			p.y = ay
+		}
+		if i == 0 && (origCmd == 'M' || origCmd == 'm') {
+			p.x0 = p.x
+			p.y0 = p.y
 		}
 	}
 	return j
