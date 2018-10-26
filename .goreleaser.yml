@@ -25,4 +25,4 @@ archive:
 snapshot:
     name_template: "devel"
 release:
-    draft: true
+    disable: true
