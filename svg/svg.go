@@ -5,13 +5,13 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/tdewolff/minify"
-	minifyCSS "github.com/tdewolff/minify/css"
-	"github.com/tdewolff/parse"
-	"github.com/tdewolff/parse/buffer"
-	"github.com/tdewolff/parse/css"
-	"github.com/tdewolff/parse/svg"
-	"github.com/tdewolff/parse/xml"
+	"github.com/tdewolff/minify/v2"
+	minifyCSS "github.com/tdewolff/minify/v2/css"
+	"github.com/tdewolff/parse/v2"
+	"github.com/tdewolff/parse/v2/buffer"
+	"github.com/tdewolff/parse/v2/css"
+	"github.com/tdewolff/parse/v2/svg"
+	"github.com/tdewolff/parse/v2/xml"
 )
 
 var (

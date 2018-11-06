@@ -5,8 +5,8 @@ import (
 	"encoding/base64"
 	"net/url"
 
-	"github.com/tdewolff/parse"
-	"github.com/tdewolff/parse/strconv"
+	"github.com/tdewolff/parse/v2"
+	"github.com/tdewolff/parse/v2/strconv"
 )
 
 // Epsilon is the closest number to zero that is not considered to be zero.

@@ -5,10 +5,10 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/tdewolff/minify"
-	"github.com/tdewolff/parse"
-	"github.com/tdewolff/parse/buffer"
-	"github.com/tdewolff/parse/html"
+	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/parse/v2"
+	"github.com/tdewolff/parse/v2/buffer"
+	"github.com/tdewolff/parse/v2/html"
 )
 
 var (

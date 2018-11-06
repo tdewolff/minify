@@ -1,6 +1,6 @@
 package xml // import "github.com/tdewolff/minify/xml"
 
-import "github.com/tdewolff/parse/xml"
+import "github.com/tdewolff/parse/v2/xml"
 
 // Token is a single token unit with an attribute value (if given) and hash of the data.
 type Token struct {

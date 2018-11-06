@@ -8,9 +8,9 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/tdewolff/minify"
-	"github.com/tdewolff/parse"
-	"github.com/tdewolff/parse/css"
+	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/parse/v2"
+	"github.com/tdewolff/parse/v2/css"
 )
 
 var (

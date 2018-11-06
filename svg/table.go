@@ -1,6 +1,6 @@
 package svg // import "github.com/tdewolff/minify/svg"
 
-import "github.com/tdewolff/parse/svg"
+import "github.com/tdewolff/parse/v2/svg"
 
 var colorAttrMap = map[svg.Hash]bool{
 	svg.Color:          true,

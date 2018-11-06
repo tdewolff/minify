@@ -12,8 +12,8 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/tdewolff/parse"
-	"github.com/tdewolff/parse/buffer"
+	"github.com/tdewolff/parse/v2"
+	"github.com/tdewolff/parse/v2/buffer"
 )
 
 // ErrNotExist is returned when no minifier exists for a given mimetype.

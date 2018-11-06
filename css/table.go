@@ -1,6 +1,6 @@
 package css
 
-import "github.com/tdewolff/parse/css"
+import "github.com/tdewolff/parse/v2/css"
 
 var optionalZeroDimension = map[string]bool{
 	"px":   true,

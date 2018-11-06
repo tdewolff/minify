@@ -1,6 +1,6 @@
 package html // import "github.com/tdewolff/minify/html"
 
-import "github.com/tdewolff/parse/html"
+import "github.com/tdewolff/parse/v2/html"
 
 type traits uint8
 
