@@ -1,4 +1,4 @@
-# Minify <a name="minify"></a> [![Build Status](https://travis-ci.org/tdewolff/minify.svg?branch=master)](https://travis-ci.org/tdewolff/minify) [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![Coverage Status](https://coveralls.io/repos/github/tdewolff/minify/badge.svg?branch=master)](https://coveralls.io/github/tdewolff/minify?branch=master)
+# Minify <a name="minify"></a> [![Build Status](https://travis-ci.org/tdewolff/minify.svg?branch=master)](https://travis-ci.org/tdewolff/minify) [![GoDoc](http://godoc.org/github.com/tdewolff/minify?status.svg)](http://godoc.org/github.com/tdewolff/minify) [![Coverage Status](https://coveralls.io/repos/github/tdewolff/minify/badge.svg?branch=master)](https://coveralls.io/github/tdewolff/minify?branch=master) [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ***BE AWARE: YOU NEED GO 1.9.7+, 1.10.3+, 1.11 to run the latest release!!!***
 
