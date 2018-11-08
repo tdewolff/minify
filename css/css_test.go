@@ -70,7 +70,7 @@ func TestCSS(t *testing.T) {
 
 	// coverage
 	test.T(t, Token{css.IdentToken, []byte("data"), nil}.String(), "Ident(data)")
-	test.T(t, Token{css.FunctionToken, nil, []css.Token{{css.IdentToken, []byte("data")}}}.String(), "[Ident(data)]")
+	test.T(t, Token{css.FunctionToken, nil, []css.Token{{css.IdentToken, []byte("data")}}}.String(), "[Ident('data')]")
 }
 
 func TestCSSInline(t *testing.T) {
@@ -216,6 +216,7 @@ func TestCSSInline(t *testing.T) {
 		{"--custom-variable:0px;", "--custom-variable:0px"},
 		{"--foo: if(x > 5) this.width = 10", "--foo: if(x > 5) this.width = 10"},
 		{"--foo: ;", "--foo: "},
+		{"color=blue;", "color=blue"},
 
 		// case sensitivity
 		{"animation:Ident", "animation:Ident"},
@@ -308,9 +309,10 @@ func TestWriterErrors(t *testing.T) {
 		{`a{--var:val}`, []int{2, 3, 4}},
 		{`a{*color:0}`, []int{2, 3}},
 		{`a{color:0;baddecl 5}`, []int{5}},
-		{`a,b[id="x" i]{color:0}`, []int{1, 7}},
+		{`a[id="x" i],b{color:0}`, []int{5, 8}},
 		{`a{color:()!important}`, []int{4, 6}},
 		{`a{margin:5 4}`, []int{5}},
+		{`a{margin=5}`, []int{2, 3}},
 	}
 
 	m := minify.New()
