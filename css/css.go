@@ -404,15 +404,18 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 	switch prop {
 	case css.Font:
 		if len(values) > 1 {
-			i := len(values)
+			// the font-families are separated by commas and are at the end of font
+			// get index for the first font-family given
+			i := len(values) - 1
 			for j, value := range values[2:] {
 				if value.TokenType == css.CommaToken {
 					i = 2 + j - 1 // identifier before first comma is a font-family
 					break
 				}
 			}
-
 			i--
+
+			// advance i while still at font-families when they contain spaces but no quotes
 			for ; i > 0; i-- { // i cannot be 0, font-family must be prepended by font-size
 				if values[i-1].TokenType == css.DelimToken && values[i-1].Data[0] == '/' {
 					break
@@ -657,8 +660,6 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 								i++
 							}
 						}
-					} else if h != css.Center {
-						break // error, must encounter top|bottom|left|right followed by length|percentage or center
 					}
 				}
 			}

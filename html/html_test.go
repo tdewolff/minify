@@ -53,6 +53,7 @@ func TestHTML(t *testing.T) {
 		{`<br/>`, `<br>`},
 		{`<input type="radio" value="">`, `<input type=radio value>`},
 		{`<input type="radio" value="on">`, `<input type=radio>`},
+		{`<input type="text" value="">`, `<input>`},
 
 		// increase coverage
 		{`<script style="css">js</script>`, `<script style=css>js</script>`},

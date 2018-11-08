@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/parse/v2/css"
 	"github.com/tdewolff/test"
 )
 
@@ -66,6 +67,10 @@ func TestCSS(t *testing.T) {
 			test.Minify(t, tt.css, err, w.String(), tt.expected)
 		})
 	}
+
+	// coverage
+	test.T(t, Token{css.IdentToken, []byte("data"), nil}.String(), "Ident(data)")
+	test.T(t, Token{css.FunctionToken, nil, []css.Token{{css.IdentToken, []byte("data")}}}.String(), "[Ident(data)]")
 }
 
 func TestCSSInline(t *testing.T) {
@@ -81,6 +86,9 @@ func TestCSSInline(t *testing.T) {
 		{"margin: 0 1; padding: 0 1;", "margin:0 1;padding:0 1"},
 		{"color: #FF0000;", "color:red"},
 		{"color: #000000;", "color:#000"},
+		{"color: #aabbccdd;", "color:#abcd"},
+		{"color: #aabbccff;", "color:#abc"},
+		{"color: #aabbcc00;", "color:#0000"},
 		{"color: black;", "color:#000"},
 		{"color: rgb(255,255,255);", "color:#fff"},
 		{"color: rgb(100%,100%,100%);", "color:#fff"},
@@ -90,6 +98,7 @@ func TestCSSInline(t *testing.T) {
 		{"color: rgba(255,0,0,-1);", "color:#0000"},
 		{"color: rgba(0%,15%,25%,0.2);", "color:#00264033"},
 		{"color: rgba(0,0,0,0.5);", "color:#00000080"},
+		{"color: rgba(0,0,0,0.264705882);", "color:#0004"},
 		{"color: rgb(255 0 0 / 1);", "color:red"},
 		{"color: hsla(5,0%,10%,0.75);", "color:#1a1a1abf"},
 		{"color: hsl(0,100%,50%);", "color:red"},
@@ -135,12 +144,16 @@ func TestCSSInline(t *testing.T) {
 		{"background:top right", "background:100% 0"},
 		{"background:bottom left", "background:0 100%"},
 		{"font-weight: bold; font-weight: normal;", "font-weight:700;font-weight:400"},
+		{"font: caption;", "font:caption"},
 		{"font: bold 5px \"Times new Roman\",\"Sans-Serif\";", "font:700 5px times new roman,sans-serif"},
+		{"font: bold xx-small times new roman;", "font:700 xx-small times new roman"},
 		{"font: normal normal normal normal 20px normal", "font:20px normal"},
 		{"font:27px/13px arial,sans-serif", "font:27px/13px arial,sans-serif"},
 		{"font:normal normal bold normal medium/normal arial,sans-serif", "font:700 medium arial,sans-serif"},
 		{"font:400 medium/normal 'Arial'", "font:medium arial"},
 		{"font:medium/normal 'Arial'", "font:medium arial"},
+		{"font-family:'Arial', 'Times New Roman';", "font-family:arial,times new roman"},
+		{"font-family:'a  b';", "font-family:'a  b'"},
 		{"outline: none;", "outline:none"},
 		{"outline: solid black 0;", "outline:solid #000 0"},
 		{"outline: none black medium;", "outline:#000"},
@@ -157,7 +170,6 @@ func TestCSSInline(t *testing.T) {
 		{"margin: 1 1 1 1 !important;", "margin:1!important"},
 		{"padding:.2em .4em .2em", "padding:.2em .4em"},
 		{"margin: 0em;", "margin:0"},
-		{"font-family:'Arial', 'Times New Roman';", "font-family:arial,times new roman"},
 		{"filter: progid : DXImageTransform.Microsoft.BasicImage(rotation=1);", "filter:progid:DXImageTransform.Microsoft.BasicImage(rotation=1)"},
 		{"filter: progid:DXImageTransform.Microsoft.Alpha(Opacity=0);", "filter:alpha(opacity=0)"},
 		{"content: \"a\\\nb\";", "content:\"ab\""},
@@ -215,14 +227,16 @@ func TestCSSInline(t *testing.T) {
 		{"margin: 1 1 1;", "margin:1"},
 		{"margin: 1 2 1;", "margin:1 2"},
 		{"margin: 1 2 3;", "margin:1 2 3"},
-		// {"margin: 0%;", "margin:0"},
+		// {"margin: 0%;", "margin:0"}, // TODO
 		{"color: rgb(255,64,64);", "color:#ff4040"},
 		{"color: rgb(256,-34,2342435);", "color:#f0f"},
 		{"color: rgb(120%,-45%,234234234%);", "color:#f0f"},
 		{"color: rgb(0, 1, ident);", "color:rgb(0,1,ident)"},
 		{"color: rgb(ident);", "color:rgb(ident)"},
+		{"color: hsl(0,-1%,-1%);", "color:#000"},
 		{"margin: rgb(ident);", "margin:rgb(ident)"},
 		{"filter: progid:b().c.Alpha(rgba(x));", "filter:progid:b().c.Alpha(rgba(x))"},
+		{"margin: rgb((brackets));", "margin:rgb((brackets))"},
 
 		// go-fuzz
 		{"FONT-FAMILY: ru\"", "font-family:ru\""},
@@ -294,6 +308,9 @@ func TestWriterErrors(t *testing.T) {
 		{`a{--var:val}`, []int{2, 3, 4}},
 		{`a{*color:0}`, []int{2, 3}},
 		{`a{color:0;baddecl 5}`, []int{5}},
+		{`a,b[id="x" i]{color:0}`, []int{1, 7}},
+		{`a{color:()!important}`, []int{4, 6}},
+		{`a{margin:5 4}`, []int{5}},
 	}
 
 	m := minify.New()
