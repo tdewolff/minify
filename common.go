@@ -382,6 +382,7 @@ func Number(num []byte, prec int) []byte {
 								end--
 							} else {
 								num[i] = '0'
+								break
 							}
 						} else {
 							num[i]++
@@ -390,6 +391,8 @@ func Number(num []byte, prec int) []byte {
 						}
 					} else if i > dot && num[i] == '0' {
 						end--
+					} else {
+						break
 					}
 				}
 			}

@@ -226,6 +226,7 @@ func TestNumberTruncate(t *testing.T) {
 		{"29.666", 0, "30"},
 		{"1.51", 1, "1.5"},
 		{"1.01", 1, "1"},
+		{"-16.400000000000006", 3, "-16.4"}, // #233
 	}
 	for _, tt := range numberTests {
 		t.Run(tt.number, func(t *testing.T) {
