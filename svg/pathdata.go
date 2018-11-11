@@ -140,8 +140,8 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 		if cmd == 'L' || cmd == 'l' {
 			if isRelCmd {
 				if coordFloats[0] == 0 && coordFloats[1] == 0 {
-                    continue
-                } else if coordFloats[0] == 0 {
+					continue
+				} else if coordFloats[0] == 0 {
 					cmd = 'v'
 					coords = coords[1:]
 					coordFloats = coordFloats[1:]
@@ -152,7 +152,7 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 				}
 			} else {
 				if coordFloats[0] == p.x && coordFloats[1] == p.y {
-                    continue
+					continue
 				} else if coordFloats[0] == p.x {
 					cmd = 'V'
 					coords = coords[1:]
