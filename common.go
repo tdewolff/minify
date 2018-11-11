@@ -3,7 +3,6 @@ package minify // import "github.com/tdewolff/minify"
 import (
 	"bytes"
 	"encoding/base64"
-	_ "fmt"
 	"net/url"
 
 	"github.com/tdewolff/parse/v2"
