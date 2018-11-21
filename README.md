@@ -14,6 +14,10 @@ If you cannot upgrade Go, please pin to **minify@v2.3.6** and **parse@v2.3.4**
 
 ---
 
+**NOTICE:** this HTML minifier will **delete `<html>` and `<body>` tags** when it is safe to do so. There are people claiming this is bad or dangerous, but that is not true. The specifications state very clearly that they are optional, no website will break unless you use out-dated or broken software. In fact, the shortest **valid** piece of HTML 5 is `<!doctype html><meta charset=utf-8><title>-</title>`. See for yourself at the [W3C Validator](http://validator.w3.org/).
+
+---
+
 Minify is a minifier package written in [Go][1]. It provides HTML5, CSS3, JS, JSON, SVG and XML minifiers and an interface to implement any other minifier. Minification is the process of removing bytes from a file (such as whitespace) without changing its output and therefore shrinking its size and speeding up transmission over the internet and possibly parsing. The implemented minifiers are designed for high performance.
 
 The core functionality associates mimetypes with minification functions, allowing embedded resources (like CSS or JS within HTML files) to be minified as well. Users can add new implementations that are triggered based on a mimetype (or pattern), or redirect to an external command (like ClosureCompiler, UglifyCSS, ...).
