@@ -21,7 +21,7 @@ var (
 	leftBracketBytes  = []byte("{")
 	rightBracketBytes = []byte("}")
 	zeroBytes         = []byte("0")
-	transparentBytes  = []byte("#0000")
+	transparentBytes  = []byte("transparent")
 	importantBytes    = []byte("!important")
 )
 
@@ -580,7 +580,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 						}
 						continue
 					}
-				} else if h == css.None || h == css.Scroll {
+				} else if h == css.None || h == css.Scroll || h == css.Transparent {
 					values = append(values[:i], values[i+1:]...)
 					i--
 					continue
@@ -594,7 +594,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 					}
 					continue
 				}
-			} else if values[i].TokenType == css.HashToken && bytes.Equal(values[i].Data, transparentBytes) {
+			} else if values[i].TokenType == css.HashToken && bytes.Equal(values[i].Data, []byte("#0000")) {
 				values = append(values[:i], values[i+1:]...)
 				i--
 				continue
@@ -719,29 +719,22 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 	return values
 }
 
-func (c *cssMinifier) minifyColorAsHex(rgba [4]byte) error {
-	val := make([]byte, 9)
+func (c *cssMinifier) minifyColorAsHex(rgba [3]byte) error {
+	val := make([]byte, 7)
 	val[0] = '#'
 	hex.Encode(val[1:], rgba[:])
 	parse.ToLower(val)
-	if rgba[3] == 255 {
-		if s, ok := ShortenColorHex[string(val[:7])]; ok {
-			if _, err := c.w.Write(s); err != nil {
-				return err
-			}
-			return nil
-		} else if val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
-			val[2] = val[3]
-			val[3] = val[5]
-			val = val[:4]
-		} else {
-			val = val[:7]
+	if s, ok := ShortenColorHex[string(val[:7])]; ok {
+		if _, err := c.w.Write(s); err != nil {
+			return err
 		}
-	} else if val[1] == val[2] && val[3] == val[4] && val[5] == val[6] && val[7] == val[8] {
+		return nil
+	} else if val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
 		val[2] = val[3]
 		val[3] = val[5]
-		val[4] = val[7]
-		val = val[:5]
+		val = val[:4]
+	} else {
+		val = val[:7]
 	}
 
 	_, err := c.w.Write(val)
@@ -773,7 +766,8 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 				if len(vals) == 4 {
 					d, _ := strconv.ParseFloat(string(values[7].Data), 32) // can never fail because if valid == true than this is a NumberToken or PercentageToken
 					if d < minify.Epsilon {                                // zero or less
-						a = 0
+						_, err := c.w.Write(transparentBytes)
+						return err
 					} else if d >= 1.0 {
 						values = values[:7]
 					} else {
@@ -781,14 +775,9 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 					}
 				}
 
-				if !c.o.KeepCSS2 || a == 255 {
-					if a == 0 {
-						_, err := c.w.Write(transparentBytes)
-						return err
-					}
-
+				if a == 255 { // only minify color if fully opaque
 					if (fun == css.Rgb || fun == css.Rgba) && (len(vals) == 3 || len(vals) == 4) {
-						rgba := [4]byte{}
+						rgb := [3]byte{}
 
 						for j, val := range vals[:3] {
 							if val.TokenType == css.NumberToken {
@@ -798,7 +787,7 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 								} else if d > 255 {
 									d = 255
 								}
-								rgba[j] = byte(d)
+								rgb[j] = byte(d)
 							} else if val.TokenType == css.PercentageToken {
 								d, _ := strconv.ParseFloat(string(val.Data[:len(val.Data)-1]), 32)
 								if d < 0.0 {
@@ -806,13 +795,10 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 								} else if d > 100.0 {
 									d = 100.0
 								}
-								rgba[j] = byte((d / 100.0 * 255.0) + 0.5)
+								rgb[j] = byte((d / 100.0 * 255.0) + 0.5)
 							}
 						}
-
-						rgba[3] = a
-
-						return c.minifyColorAsHex(rgba)
+						return c.minifyColorAsHex(rgb)
 					} else if (fun == css.Hsl || fun == css.Hsla) && (len(vals) == 3 || len(vals) == 4) && vals[0].TokenType == css.NumberToken && vals[1].TokenType == css.PercentageToken && vals[2].TokenType == css.PercentageToken {
 						h, _ := strconv.ParseFloat(string(vals[0].Data), 32)
 						s, _ := strconv.ParseFloat(string(vals[1].Data[:len(vals[1].Data)-1]), 32)
@@ -832,8 +818,8 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 						}
 
 						r, g, b := css.HSL2RGB(h/360.0, s/100.0, l/100.0)
-						rgba := [4]byte{byte((r * 255.0) + 0.5), byte((g * 255.0) + 0.5), byte((b * 255.0) + 0.5), a}
-						return c.minifyColorAsHex(rgba)
+						rgb := [3]byte{byte((r * 255.0) + 0.5), byte((g * 255.0) + 0.5), byte((b * 255.0) + 0.5)}
+						return c.minifyColorAsHex(rgb)
 					}
 				}
 			}
@@ -888,17 +874,13 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 			tt = css.HashToken
 			data = hexValue
 		}
-		if !c.o.KeepCSS2 && hash == css.Transparent {
-			tt = css.HashToken
-			data = transparentBytes
-		}
 	case css.HashToken:
 		parse.ToLower(data)
 		if len(data) == 9 && data[7] == data[8] {
 			if data[7] == 'f' {
 				data = data[:7]
 			} else if data[7] == '0' {
-				data = transparentBytes
+				data = []byte("#0000")
 			}
 		}
 		if ident, ok := ShortenColorHex[string(data)]; ok {
@@ -910,6 +892,7 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 			data[3] = data[5]
 			data = data[:4]
 		} else if len(data) == 9 && data[1] == data[2] && data[3] == data[4] && data[5] == data[6] && data[7] == data[8] {
+			// from working draft Color Module Level 4
 			tt = css.HashToken
 			data[2] = data[3]
 			data[3] = data[5]
