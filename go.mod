@@ -1,9 +1,5 @@
 module github.com/tdewolff/minify/v2
 
-replace github.com/tdewolff/parse/v2 => ../parse
-
-replace github.com/tdewolff/test => ../test
-
 require (
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
 	github.com/dustin/go-humanize v1.0.0
