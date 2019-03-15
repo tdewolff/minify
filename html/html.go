@@ -441,14 +441,12 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						if _, err := w.Write(isBytes); err != nil {
 							return err
 						}
-						if false { // TODO: keep quotes around certain attributes, see #236
-							// keep original attribute value on meta tags, ie. keep quotes
-							// this fixes bugs with many HTML interpreters, such as WhatsApp, Facebook and Bing
-							val = attr.AttrVal
-						} else {
-							// no quotes if possible, else prefer single or double depending on which occurs more often in value
-							val = html.EscapeAttrVal(&attrByteBuffer, attr.AttrVal, val)
-						}
+
+						// use double quotes for RDFa attributes
+						isXML := attr.Hash == html.Vocab || attr.Hash == html.Typeof || attr.Hash == html.Property || attr.Hash == html.Resource || attr.Hash == html.Prefix || attr.Hash == html.Content || attr.Hash == html.About || attr.Hash == html.Rev || attr.Hash == html.Datatype || attr.Hash == html.Inlist
+
+						// no quotes if possible, else prefer single or double depending on which occurs more often in value
+						val = html.EscapeAttrVal(&attrByteBuffer, attr.AttrVal, val, isXML)
 						if _, err := w.Write(val); err != nil {
 							return err
 						}
