@@ -64,6 +64,9 @@ func TestSVG(t *testing.T) {
 
 		{`<polygon fill="none" stroke="#000" points="-0.1,"/>`, `<polygon fill="none" stroke="#000" points="-0.1,"/>`}, // #45
 		{`<path stroke="url(#UPPERCASE)"/>`, `<path stroke="url(#UPPERCASE)"/>`},                                       // #117
+		{`<rect height="10"/><path/>`, `<path/>`},                                                                      // #244
+		{`<rect height="10"><path/></rect>`, ``},                                                                       // #244
+		{`<rect height="10"><path/></g>`, ``},                                                                          // #244
 
 		// go fuzz
 		{`<0 d=09e9.6e-9e0`, `<0 d=""`},

@@ -112,12 +112,12 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		case xml.StartTagToken:
 			tag = t.Hash
 			if tag == svg.Metadata {
-				skipTag(tb, tag)
+				skipTag(tb)
 				break
 			} else if tag == svg.Line {
 				o.shortenLine(tb, &t, p)
 			} else if tag == svg.Rect && !o.shortenRect(tb, &t, p) {
-				skipTag(tb, tag)
+				skipTag(tb)
 				break
 			} else if tag == svg.Polygon || tag == svg.Polyline {
 				o.shortenPoly(tb, &t, p)
@@ -394,10 +394,18 @@ func (o *Minifier) shortenPoly(tb *TokenBuffer, t *Token, p *PathData) {
 
 ////////////////////////////////////////////////////////////////
 
-func skipTag(tb *TokenBuffer, tag svg.Hash) {
+func skipTag(tb *TokenBuffer) {
+	level := 0
 	for {
-		if t := *tb.Shift(); (t.TokenType == xml.EndTagToken || t.TokenType == xml.StartTagCloseVoidToken) && t.Hash == tag || t.TokenType == xml.ErrorToken {
+		if t := *tb.Shift(); t.TokenType == xml.ErrorToken {
 			break
+		} else if t.TokenType == xml.EndTagToken || t.TokenType == xml.StartTagCloseVoidToken {
+			if level == 0 {
+				break
+			}
+			level--
+		} else if t.TokenType == xml.StartTagToken {
+			level++
 		}
 	}
 }
