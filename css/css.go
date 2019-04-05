@@ -539,12 +539,15 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 			values = []Token{{css.IdentToken, []byte("none"), nil}}
 		}
 	case css.Background:
+		// TODO: multiple background layers separated by comma
 		hasSize := false
 		for i := 0; i < len(values); i++ {
 			if values[i].TokenType == css.DelimToken && values[i].Data[0] == '/' {
 				hasSize = true
-				if i+1 < len(values) && (values[i+1].TokenType == css.NumberToken || values[i+1].TokenType == css.PercentageToken || values[i+1].TokenType == css.IdentToken && bytes.Equal(values[i+1].Data, []byte("auto"))) {
-					if i+2 < len(values) && (values[i+2].TokenType == css.NumberToken || values[i+2].TokenType == css.PercentageToken || values[i+2].TokenType == css.IdentToken && bytes.Equal(values[i+2].Data, []byte("auto"))) {
+				// background-size consists of either [<length-percentage> | auto | cover | contain] or [<length-percentage> | auto]{2}
+				// we can only minify the latter
+				if i+1 < len(values) && (values[i+1].TokenType == css.NumberToken || values[i+1].TokenType == css.PercentageToken || values[i+1].TokenType == css.IdentToken && bytes.Equal(values[i+1].Data, []byte("auto")) || values[i+1].TokenType == css.FunctionToken) {
+					if i+2 < len(values) && (values[i+2].TokenType == css.NumberToken || values[i+2].TokenType == css.PercentageToken || values[i+2].TokenType == css.IdentToken && bytes.Equal(values[i+2].Data, []byte("auto")) || values[i+2].TokenType == css.FunctionToken) {
 						sizeValues := c.minifyProperty(css.Background_Size, values[i+1:i+3])
 						if len(sizeValues) == 1 && bytes.Equal(sizeValues[0].Data, []byte("auto")) {
 							values = append(values[:i], values[i+3:]...)
@@ -554,10 +557,6 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 							values = append(values[:i+1], append(sizeValues, values[i+3:]...)...)
 							i += len(sizeValues) - 1
 						}
-					} else if values[i+1].TokenType == css.IdentToken && bytes.Equal(values[i+1].Data, []byte("auto")) {
-						values = append(values[:i], values[i+2:]...)
-						hasSize = false
-						i--
 					}
 				}
 			}
@@ -600,6 +599,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 				continue
 			}
 
+			// background-position or background-size
 			if values[i].TokenType == css.NumberToken || values[i].TokenType == css.PercentageToken || values[i].TokenType == css.IdentToken && (h == css.Left || h == css.Right || h == css.Top || h == css.Bottom || h == css.Center) {
 				j := i + 1
 				for ; j < len(values); j++ {
