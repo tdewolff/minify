@@ -58,6 +58,7 @@ func (c *cmdMinifier) Minify(_ *M, w io.Writer, r io.Reader, _ map[string]string
 
 // M holds a map of mimetype => function to allow recursive minifier calls of the minifier functions.
 type M struct {
+	mutex   sync.RWMutex
 	literal map[string]Minifier
 	pattern []patternMinifier
 
@@ -67,6 +68,7 @@ type M struct {
 // New returns a new M.
 func New() *M {
 	return &M{
+		sync.RWMutex{},
 		map[string]Minifier{},
 		[]patternMinifier{},
 		nil,
@@ -75,40 +77,55 @@ func New() *M {
 
 // Add adds a minifier to the mimetype => function map (unsafe for concurrent use).
 func (m *M) Add(mimetype string, minifier Minifier) {
+	m.mutex.Lock()
 	m.literal[mimetype] = minifier
+	m.mutex.Unlock()
 }
 
 // AddFunc adds a minify function to the mimetype => function map (unsafe for concurrent use).
 func (m *M) AddFunc(mimetype string, minifier MinifierFunc) {
+	m.mutex.Lock()
 	m.literal[mimetype] = minifier
+	m.mutex.Unlock()
 }
 
 // AddRegexp adds a minifier to the mimetype => function map (unsafe for concurrent use).
 func (m *M) AddRegexp(pattern *regexp.Regexp, minifier Minifier) {
+	m.mutex.Lock()
 	m.pattern = append(m.pattern, patternMinifier{pattern, minifier})
+	m.mutex.Unlock()
 }
 
 // AddFuncRegexp adds a minify function to the mimetype => function map (unsafe for concurrent use).
 func (m *M) AddFuncRegexp(pattern *regexp.Regexp, minifier MinifierFunc) {
+	m.mutex.Lock()
 	m.pattern = append(m.pattern, patternMinifier{pattern, minifier})
+	m.mutex.Unlock()
 }
 
 // AddCmd adds a minify function to the mimetype => function map (unsafe for concurrent use) that executes a command to process the minification.
 // It allows the use of external tools like ClosureCompiler, UglifyCSS, etc. for a specific mimetype.
 func (m *M) AddCmd(mimetype string, cmd *exec.Cmd) {
+	m.mutex.Lock()
 	m.literal[mimetype] = &cmdMinifier{cmd}
+	m.mutex.Unlock()
 }
 
 // AddCmdRegexp adds a minify function to the mimetype => function map (unsafe for concurrent use) that executes a command to process the minification.
 // It allows the use of external tools like ClosureCompiler, UglifyCSS, etc. for a specific mimetype regular expression.
 func (m *M) AddCmdRegexp(pattern *regexp.Regexp, cmd *exec.Cmd) {
+	m.mutex.Lock()
 	m.pattern = append(m.pattern, patternMinifier{pattern, &cmdMinifier{cmd}})
+	m.mutex.Unlock()
 }
 
 // Match returns the pattern and minifier that gets matched with the mediatype.
 // It returns nil when no matching minifier exists.
 // It has the same matching algorithm as Minify.
 func (m *M) Match(mediatype string) (string, map[string]string, MinifierFunc) {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
 	mimetype, params := parse.Mediatype([]byte(mediatype))
 	if minifier, ok := m.literal[string(mimetype)]; ok { // string conversion is optimized away
 		return string(mimetype), params, minifier.Minify
@@ -134,6 +151,9 @@ func (m *M) Minify(mediatype string, w io.Writer, r io.Reader) error {
 // It is a lower level version of Minify and requires the mediatype to be split up into mimetype and parameters.
 // It is mostly used internally by minifiers because it is faster (no need to convert a byte-slice to string and vice versa).
 func (m *M) MinifyMimetype(mimetype []byte, w io.Writer, r io.Reader, params map[string]string) error {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+
 	err := ErrNotExist
 	if minifier, ok := m.literal[string(mimetype)]; ok { // string conversion is optimized away
 		err = minifier.Minify(m, w, r, params)
