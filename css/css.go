@@ -557,6 +557,11 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 							values = append(values[:i+1], append(sizeValues, values[i+3:]...)...)
 							i += len(sizeValues) - 1
 						}
+					} else if values[i+1].TokenType == css.IdentToken && bytes.Equal(values[i+1].Data, []byte("auto")) {
+						// remove background-size if it is '/ auto'
+						values = append(values[:i], values[i+2:]...)
+						hasSize = false
+						i--
 					}
 				}
 			}
@@ -600,7 +605,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 			}
 
 			// background-position or background-size
-			if values[i].TokenType == css.NumberToken || values[i].TokenType == css.PercentageToken || values[i].TokenType == css.IdentToken && (h == css.Left || h == css.Right || h == css.Top || h == css.Bottom || h == css.Center) {
+			if values[i].TokenType == css.NumberToken || values[i].TokenType == css.PercentageToken || values[i].TokenType == css.IdentToken && (h == css.Left || h == css.Right || h == css.Top || h == css.Bottom || h == css.Center) || values[i].TokenType == css.FunctionToken {
 				j := i + 1
 				for ; j < len(values); j++ {
 					if values[j].TokenType == css.IdentToken {
