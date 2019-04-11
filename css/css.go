@@ -551,6 +551,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 					if i+2 < len(values) && (values[i+2].TokenType == css.NumberToken || values[i+2].TokenType == css.PercentageToken || values[i+2].TokenType == css.IdentToken && bytes.Equal(values[i+2].Data, []byte("auto")) || values[i+2].TokenType == css.FunctionToken) {
 						sizeValues := c.minifyProperty(css.Background_Size, values[i+1:i+3])
 						if len(sizeValues) == 1 && bytes.Equal(sizeValues[0].Data, []byte("auto")) {
+							// remove background-size if it is '/ auto' after minifying the property
 							values = append(values[:i], values[i+3:]...)
 							hasSize = false
 							i--
