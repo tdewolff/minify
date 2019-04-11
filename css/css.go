@@ -11,6 +11,7 @@ import (
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/css"
+	strconvParse "github.com/tdewolff/parse/v2/strconv"
 )
 
 var (
@@ -48,6 +49,31 @@ type Minifier struct {
 // Minify minifies CSS data, it reads from r and writes to w.
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	return DefaultMinifier.Minify(m, w, r, params)
+}
+
+type Token struct {
+	css.TokenType
+	Data       []byte
+	Components []css.Token // only filled for functions
+}
+
+func (t Token) String() string {
+	if len(t.Components) == 0 {
+		return t.TokenType.String() + "(" + string(t.Data) + ")"
+	}
+	return fmt.Sprint(t.Components)
+}
+
+func (a Token) Equal(b Token) bool {
+	if a.TokenType == b.TokenType && bytes.Equal(a.Data, b.Data) && len(a.Components) == len(b.Components) {
+		for i := 0; i < len(a.Components); i++ {
+			if a.Components[i].TokenType != b.Components[i].TokenType || !bytes.Equal(a.Components[i].Data, b.Components[i].Data) {
+				return false
+			}
+		}
+		return true
+	}
+	return false
 }
 
 // Minify minifies CSS data, it reads from r and writes to w.
@@ -241,31 +267,6 @@ func (c *cssMinifier) minifySelectors(property []byte, values []css.Token) error
 		}
 	}
 	return nil
-}
-
-type Token struct {
-	css.TokenType
-	Data       []byte
-	Components []css.Token // only filled for functions
-}
-
-func (t Token) String() string {
-	if len(t.Components) == 0 {
-		return t.TokenType.String() + "(" + string(t.Data) + ")"
-	}
-	return fmt.Sprint(t.Components)
-}
-
-func (a Token) Equal(b Token) bool {
-	if a.TokenType == b.TokenType && bytes.Equal(a.Data, b.Data) && len(a.Components) == len(b.Components) {
-		for i := 0; i < len(a.Components); i++ {
-			if a.Components[i].TokenType != b.Components[i].TokenType || !bytes.Equal(a.Components[i].Data, b.Components[i].Data) {
-				return false
-			}
-		}
-		return true
-	}
-	return false
 }
 
 func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token) error {
@@ -605,7 +606,8 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 			}
 
 			// background-position or background-size
-			if values[i].TokenType == css.NumberToken || values[i].TokenType == css.PercentageToken || values[i].TokenType == css.IdentToken && (h == css.Left || h == css.Right || h == css.Top || h == css.Bottom || h == css.Center) || values[i].TokenType == css.FunctionToken {
+			// TODO: allow only functions that return Number, Percentage or Dimension token? Make whitelist?
+			if values[i].TokenType == css.NumberToken || values[i].TokenType == css.DimensionToken || values[i].TokenType == css.PercentageToken || values[i].TokenType == css.IdentToken && (h == css.Left || h == css.Right || h == css.Top || h == css.Bottom || h == css.Center) || values[i].TokenType == css.FunctionToken {
 				j := i + 1
 				for ; j < len(values); j++ {
 					if values[j].TokenType == css.IdentToken {
@@ -613,7 +615,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 						if h == css.Left || h == css.Right || h == css.Top || h == css.Bottom || h == css.Center {
 							continue
 						}
-					} else if values[j].TokenType == css.NumberToken || values[j].TokenType == css.PercentageToken {
+					} else if values[j].TokenType == css.NumberToken || values[j].TokenType == css.DimensionToken || values[j].TokenType == css.PercentageToken || values[j].TokenType == css.FunctionToken {
 						continue
 					}
 					break
@@ -654,19 +656,68 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 	case css.Background_Position:
 		if len(values) == 3 || len(values) == 4 {
 			// remove zero offsets
-			for i := 0; i < len(values); i++ {
-				if values[i].TokenType == css.IdentToken {
-					h := css.ToHash(values[i].Data)
-					if h == css.Left || h == css.Top || h == css.Right || h == css.Bottom {
-						if i+1 < len(values) {
-							if values[i+1].TokenType == css.NumberToken && bytes.Equal(values[i+1].Data, []byte("0")) || values[i+1].TokenType == css.PercentageToken && bytes.Equal(values[i+1].Data, []byte("0%")) {
-								values = append(values[:i+1], values[i+2:]...)
+			for _, i := range []int{len(values) - 1, 1} {
+				if values[i].TokenType == css.NumberToken && bytes.Equal(values[i].Data, []byte("0")) || values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, []byte("0%")) {
+					values = append(values[:i], values[i+1:]...)
+				}
+			}
+
+			j := 1
+			if values[2].TokenType == css.IdentToken {
+				j = 2
+			}
+			hs := make([]css.Hash, 3)
+			hs[0] = css.ToHash(values[0].Data)
+			hs[j] = css.ToHash(values[j].Data)
+
+			b := make([]byte, 0, 4)
+			offsets := make([]Token, 2)
+			for _, i := range []int{j, 0} {
+				if i+1 < len(values) && i+1 != j {
+					if values[i+1].TokenType == css.PercentageToken {
+						// change right or bottom with percentage offset to left or top respectively
+						if hs[i] == css.Right || hs[i] == css.Bottom {
+							n, _ := strconvParse.ParseInt(values[i+1].Data[:len(values[i+1].Data)-1])
+							b = strconv.AppendInt(b[:0], 100-n, 10)
+							b = append(b, '%')
+							values[i+1].Data = b
+							if hs[i] == css.Right {
+								values[i].Data = []byte("left")
+								hs[i] = css.Left
 							} else {
-								i++
+								values[i].Data = []byte("top")
+								hs[i] = css.Top
 							}
 						}
 					}
+					if hs[i] == css.Left {
+						offsets[0] = values[i+1]
+					} else if hs[i] == css.Top {
+						offsets[1] = values[i+1]
+					}
+				} else if hs[i] == css.Left {
+					offsets[0] = Token{css.NumberToken, []byte("0"), nil}
+				} else if hs[i] == css.Top {
+					offsets[1] = Token{css.NumberToken, []byte("0"), nil}
+				} else if hs[i] == css.Right {
+					offsets[0] = Token{css.PercentageToken, []byte("100%"), nil}
+					hs[i] = css.Left
+				} else if hs[i] == css.Bottom {
+					offsets[1] = Token{css.PercentageToken, []byte("100%"), nil}
+					hs[i] = css.Top
 				}
+			}
+
+			if hs[0] == css.Center || hs[j] == css.Center {
+				if hs[0] == css.Left || hs[j] == css.Left {
+					offsets = offsets[:1]
+				} else if hs[0] == css.Top || hs[j] == css.Top {
+					offsets[0] = Token{css.NumberToken, []byte("50%"), nil}
+				}
+			}
+
+			if offsets[0].Data != nil && (len(offsets) == 1 || offsets[1].Data != nil) {
+				values = offsets
 			}
 		}
 		// removing zero offsets in the previous loop might make it eligible for the next loop
