@@ -10,6 +10,7 @@ var svgSamples = []string{
 	"sample_arctic.svg",
 	"sample_gopher.svg",
 	"sample_usa.svg",
+	"sample_car.svg",
 }
 
 func init() {
