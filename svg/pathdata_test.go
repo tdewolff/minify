@@ -33,6 +33,22 @@ func TestPathData(t *testing.T) {
 		{"A1.1.0.0.0.0.2.3", "A1.1.0.0.0.0.2.3"},                               // bad input (sweep and large-arc are not booleans) gives bad output
 		{"A.0.0.4.0.0.0.3", "A0 0 .4.0.0.0.3"},                                 // bad input, keep dot for booleans
 
+		// change/remove commands
+		{"M10 10L10 10L20 10z", "M10 10H20z"},
+		{"M10 10T20 10", "M10 10H20"},
+		{"M10 10T20 10T20 20", "M10 10t10 0 0 10"},
+		{"M10 10Q10 10 20 10", "M10 10H20"},
+		{"M10 10Q20 10 20 10", "M10 10H20"},
+		{"M10 10Q15 20 20 10Q25 0 30 10", "M10 10q5 10 10 0t10 0"},
+		{"M10 10S10 10 20 10", "M10 10H20"},
+		{"M10 10S20 10 20 10", "M10 10H20"},
+		{"M10 10C10 10 10 10 20 10", "M10 10H20"},
+		{"M10 10C10 10 20 10 20 10", "M10 10H20"},
+		{"M10 10C20 10 10 10 20 10", "M10 10H20"},
+		{"M10 10C20 10 20 10 20 10", "M10 10H20"},
+		{"M10 10C10 20 20 20 20 10C20 0 30 0 30 10", "M10 10c0 10 10 10 10 0S30 0 30 10"},
+		// does not have C/S -> Q/T since subsequent commands could rely on the control points, and both are incompatible for that
+
 		// fuzz
 		{"", ""},
 		{"ML", ""},
@@ -61,7 +77,7 @@ func TestPathDataTruncated(t *testing.T) {
 		expected string
 	}{
 		{"m100 0 50 50zM100 0z", "m1e2.0 50 50zm0 0z"},
-		{"M194.4 16.4C194.4 7.4 187 0 177.9 0 168.8 0 161.5 7.4 161.5 16.4", "M194.4 16.4c0-9-7.4-16.4-16.5-16.4-9.1.0-16.4 7.4-16.4 16.4"}, // #233
+		{"M194.4 16.4C194.4 7.4 187 0 177.9 0 168.8 0 161.5 7.4 161.5 16.4", "M194.4 16.4c0-9-7.4-16.4-16.5-16.4s-16.4 7.4-16.4 16.4"}, // #233
 	}
 
 	p := NewPathData(&Minifier{Decimals: 3})

@@ -1,6 +1,7 @@
 package svg
 
 import (
+	"math"
 	strconvStdlib "strconv"
 
 	"github.com/tdewolff/minify/v2"
@@ -15,6 +16,8 @@ type PathData struct {
 	x0, y0      float64
 	coords      [][]byte
 	coordFloats []float64
+	cx, cy      float64 // last control point for cubic bezier
+	qx, qy      float64 // last control point for quadratic bezier
 
 	state       PathDataState
 	curBuffer   []byte
@@ -30,7 +33,11 @@ type PathDataState struct {
 
 func NewPathData(o *Minifier) *PathData {
 	return &PathData{
-		o: o,
+		o:  o,
+		cx: math.NaN(),
+		cy: math.NaN(),
+		qx: math.NaN(),
+		qy: math.NaN(),
 	}
 }
 
@@ -106,7 +113,6 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 
 	j := 0
 	origCmd := cmd
-	ax, ay := 0.0, 0.0
 	for i := 0; i < n; i += di {
 		// subsequent coordinate pairs for M are really L
 		if i > 0 && (origCmd == 'M' || origCmd == 'm') {
@@ -117,6 +123,8 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 		coords := p.coords[i : i+di]
 		coordFloats := p.coordFloats[i : i+di]
 
+		// set next coordinate
+		var ax, ay float64
 		if cmd == 'H' || cmd == 'h' {
 			ax = coordFloats[di-1]
 			if isRelCmd {
@@ -136,28 +144,115 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 			ay = coordFloats[di-1]
 		}
 
+		// switch from C to S whenever possible
+		if cmd == 'C' || cmd == 'c' || cmd == 'S' || cmd == 's' {
+			if math.IsNaN(p.cx) {
+				p.cx, p.cy = p.x, p.y
+			} else {
+				p.cx, p.cy = 2*p.x-p.cx, 2*p.y-p.cy
+			}
+
+			var cp1x, cp1y float64
+			cp2x, cp2y := coordFloats[di-4], coordFloats[di-3]
+			if cmd == 'C' || cmd == 'c' {
+				cp1x, cp1y = coordFloats[di-6], coordFloats[di-5]
+				if cp1x == p.cx && cp1y == p.cy {
+					if isRelCmd {
+						cmd = 's'
+					} else {
+						cmd = 'S'
+					}
+					coords = coords[2:]
+					coordFloats = coordFloats[2:]
+				}
+			} else {
+				cp1x, cp1y = p.cx, p.cy
+			}
+
+			// if control points overlap begin/end points, this is a straight line
+			// even though if the control points would be along the straight line, we won't minify that as the control points influence the speed along the curve (important for dashes for example)
+			// only change to a lines if we are sure no 'S' or 's' follows
+			if (cmd == 'C' || cmd == 'c' || i+di >= n) && (cp1x == p.x || cp1x == ax) && (cp1y == p.y || cp1y == ay) && (cp2x == p.x || cp2x == ax) && (cp2y == p.y || cp2y == ay) {
+				if isRelCmd {
+					cmd = 'l'
+				} else {
+					cmd = 'L'
+				}
+				coords = coords[len(coords)-2:]
+				coordFloats = coordFloats[len(coordFloats)-2:]
+				cp2x, cp2y = math.NaN(), math.NaN()
+			}
+			p.cx, p.cy = cp2x, cp2y
+		} else {
+			p.cx, p.cy = math.NaN(), math.NaN()
+		}
+
+		// switch from Q to T whenever possible
+		if cmd == 'Q' || cmd == 'q' || cmd == 'T' || cmd == 't' {
+			if math.IsNaN(p.qx) {
+				p.qx, p.qy = p.x, p.y
+			} else {
+				p.qx, p.qy = 2*p.x-p.qx, 2*p.y-p.qy
+			}
+
+			var cpx, cpy float64
+			if cmd == 'Q' || cmd == 'q' {
+				cpx, cpy = coordFloats[di-4], coordFloats[di-3]
+				if cpx == p.qx && cpy == p.qy {
+					if isRelCmd {
+						cmd = 't'
+					} else {
+						cmd = 'T'
+					}
+					coords = coords[2:]
+					coordFloats = coordFloats[2:]
+				}
+			} else {
+				cpx, cpy = p.qx, p.qy
+			}
+
+			// if control point overlaps begin/end points, this is a straight line
+			// even though if the control point would be along the straight line, we won't minify that as the control point influences the speed along the curve (important for dashes for example)
+			// only change to a lines if we are sure no 'T' or 't' follows
+			if (cmd == 'Q' || cmd == 'q' || i+di >= n) && (cpx == p.x || cpx == ax) && (cpy == p.y || cpy == ay) {
+				if isRelCmd {
+					cmd = 'l'
+				} else {
+					cmd = 'L'
+				}
+				coords = coords[len(coords)-2:]
+				coordFloats = coordFloats[len(coordFloats)-2:]
+				cpx, cpy = math.NaN(), math.NaN()
+			}
+			p.qx, p.qy = cpx, cpy
+		} else {
+			p.qx, p.qy = math.NaN(), math.NaN()
+		}
+
 		// switch from L to H or V whenever possible
 		if cmd == 'L' || cmd == 'l' {
 			if isRelCmd {
-				if coordFloats[0] == 0 && coordFloats[1] == 0 {
+				if ax == 0 && ay == 0 {
 					continue
-				} else if coordFloats[0] == 0 {
+				} else if ax == 0 {
 					cmd = 'v'
 					coords = coords[1:]
 					coordFloats = coordFloats[1:]
-				} else if coordFloats[1] == 0 {
+					ax = 0
+				} else if ay == 0 {
 					cmd = 'h'
 					coords = coords[:1]
 					coordFloats = coordFloats[:1]
+					ay = 0
 				}
 			} else {
-				if coordFloats[0] == p.x && coordFloats[1] == p.y {
+				if ax == p.x && ay == p.y {
 					continue
-				} else if coordFloats[0] == p.x {
+				} else if ax == p.x {
 					cmd = 'V'
 					coords = coords[1:]
 					coordFloats = coordFloats[1:]
-				} else if coordFloats[1] == p.y {
+				} else if ay == p.y {
 					cmd = 'H'
 					coords = coords[:1]
 					coordFloats = coordFloats[:1]
