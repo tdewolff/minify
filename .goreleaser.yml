@@ -14,7 +14,8 @@ builds:
           - openbsd
       goarch:
           - amd64
-archive:
+archives:
+  - id: minify
     format: tar.gz
     format_overrides:
         - goos: windows
@@ -23,7 +24,5 @@ archive:
     files:
         - cmd/minify/README.md
         - LICENSE.md
-snapshot:
-    name_template: "devel"
 release:
     disable: true
