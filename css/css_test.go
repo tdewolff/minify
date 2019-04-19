@@ -120,6 +120,8 @@ func TestCSSInline(t *testing.T) {
 		{"background-position:bottom 5% right 0%", "background-position:100% 95%"},
 		{"background-position:bottom 0 right 10%", "background-position:90% 100%"},
 		{"background-position:top 10% left 5%", "background-position:5% 10%"},
+		{"background-position:top 10% left", "background-position:0 10%"},
+		{"background-position:left 10% top", "background-position:10% 0"},
 		{"background-position:center left 5%", "background-position:5%"},
 		{"background-position:center right 10%", "background-position:90%"},
 		{"background-position:right .75rem center", "background-position:right .75rem center"},
@@ -317,6 +319,8 @@ func TestWriterErrors(t *testing.T) {
 		{`a{color:()!important}`, []int{4, 6}},
 		{`a{margin:5 4}`, []int{5}},
 		{`a{margin=5}`, []int{2, 3}},
+		{`a;`, []int{1}},
+		{`a{000}`, []int{2}},
 	}
 
 	m := minify.New()

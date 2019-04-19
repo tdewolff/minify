@@ -99,7 +99,7 @@ func (c *cssMinifier) minifyGrammar() error {
 		gt, _, data := c.p.Next()
 		switch gt {
 		case css.ErrorGrammar:
-			if perr, ok := c.p.Err().(*parse.Error); ok && perr.Message == "unexpected token in declaration" {
+			if _, ok := c.p.Err().(*parse.Error); ok {
 				if semicolonQueued {
 					if _, err := c.w.Write(semicolonBytes); err != nil {
 						return err
