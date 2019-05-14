@@ -663,8 +663,8 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 				}
 			}
 
-			j := 1
-			if values[2].TokenType == css.IdentToken {
+			j := 1 // position of second set of horizontal/vertical values
+			if 2 < len(values) && values[2].TokenType == css.IdentToken {
 				j = 2
 			}
 			hs := make([]css.Hash, 3)
