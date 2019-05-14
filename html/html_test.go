@@ -90,6 +90,9 @@ func TestHTML(t *testing.T) {
 		{"abc\n</body>\ndef", "abc\ndef"},
 		{"<x>\n<!--y-->\n</x>", "<x></x>"},
 		{"a <template> b </template> c", "a <template>b</template>c"},
+		{`<p class="  name  ">`, `<p class=name>`},
+		{`<p onclick="  javascript:lala  ">`, `<p onclick=lala>`},
+		{`<p url="  http://test  ">`, `<p url=http://test>`},
 
 		// from HTML Minifier
 		{`<DIV TITLE="blah">boo</DIV>`, `<div title=blah>boo</div>`},

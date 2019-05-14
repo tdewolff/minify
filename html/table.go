@@ -2,17 +2,18 @@ package html // import "github.com/tdewolff/minify/html"
 
 import "github.com/tdewolff/parse/v2/html"
 
-type traits uint8
+type traits uint16
 
 const (
 	rawTag traits = 1 << iota
 	nonPhrasingTag
 	objectTag
+	omitPTag // omit p end tag if it is followed by this start tag
+	keepPTag // keep p end tag if it is followed by this end tag
 	booleanAttr
 	caselessAttr
 	urlAttr
-	omitPTag // omit p end tag if it is followed by this start tag
-	keepPTag // keep p end tag if it is followed by this end tag
+	trimAttr
 )
 
 var tagMap = map[html.Hash]traits{
@@ -108,11 +109,14 @@ var attrMap = map[html.Hash]traits{
 	html.Charset:         caselessAttr,
 	html.Checked:         booleanAttr,
 	html.Cite:            urlAttr,
+	html.Class:           trimAttr,
 	html.Classid:         urlAttr,
 	html.Clear:           caselessAttr,
 	html.Codebase:        urlAttr,
 	html.Codetype:        caselessAttr,
 	html.Color:           caselessAttr,
+	html.Cols:            trimAttr,
+	html.Colspan:         trimAttr,
 	html.Compact:         booleanAttr,
 	html.Controls:        booleanAttr,
 	html.Data:            urlAttr,
@@ -143,7 +147,8 @@ var attrMap = map[html.Hash]traits{
 	html.Link:            caselessAttr,
 	html.Longdesc:        urlAttr,
 	html.Manifest:        urlAttr,
-	html.Media:           caselessAttr,
+	html.Maxlength:       trimAttr,
+	html.Media:           caselessAttr | trimAttr,
 	html.Method:          caselessAttr,
 	html.Multiple:        booleanAttr,
 	html.Muted:           booleanAttr,
@@ -161,6 +166,8 @@ var attrMap = map[html.Hash]traits{
 	html.Required:        booleanAttr,
 	html.Rev:             caselessAttr,
 	html.Reversed:        booleanAttr,
+	html.Rows:            trimAttr,
+	html.Rowspan:         trimAttr,
 	html.Rules:           caselessAttr,
 	html.Scope:           caselessAttr,
 	html.Scoped:          booleanAttr,
@@ -168,8 +175,12 @@ var attrMap = map[html.Hash]traits{
 	html.Seamless:        booleanAttr,
 	html.Selected:        booleanAttr,
 	html.Shape:           caselessAttr,
+	html.Size:            trimAttr,
 	html.Sortable:        booleanAttr,
+	html.Span:            trimAttr,
 	html.Src:             urlAttr,
+	html.Srcset:          trimAttr,
+	html.Tabindex:        trimAttr,
 	html.Target:          caselessAttr,
 	html.Text:            caselessAttr,
 	html.Translate:       booleanAttr,

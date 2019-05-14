@@ -347,6 +347,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 
 					val := attr.AttrVal
+					if attr.Traits&trimAttr != 0 {
+						val = parse.TrimWhitespace(val)
+						val = parse.ReplaceMultipleWhitespace(val)
+					}
 					if len(val) == 0 && (attr.Hash == html.Class ||
 						attr.Hash == html.Dir ||
 						attr.Hash == html.Id ||
@@ -389,6 +393,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 					// CSS and JS minifiers for attribute inline code
 					if attr.Hash == html.Style {
+						val = parse.TrimWhitespace(val)
 						attrMinifyBuffer.Reset()
 						if err := m.MinifyMimetype(cssMimeBytes, attrMinifyBuffer, buffer.NewReader(val), inlineParams); err == nil {
 							val = attrMinifyBuffer.Bytes()
@@ -399,6 +404,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							continue
 						}
 					} else if len(attr.Text) > 2 && attr.Text[0] == 'o' && attr.Text[1] == 'n' {
+						val = parse.TrimWhitespace(val)
 						if len(val) >= 11 && parse.EqualFold(val[:11], jsSchemeBytes) {
 							val = val[11:]
 						}
@@ -411,23 +417,26 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						if len(val) == 0 {
 							continue
 						}
-					} else if len(val) > 5 && attr.Traits&urlAttr != 0 { // anchors are already handled
-						if parse.EqualFold(val[:4], httpBytes) {
-							if val[4] == ':' {
-								if m.URL != nil && m.URL.Scheme == "http" {
-									val = val[5:]
-								} else {
-									parse.ToLower(val[:4])
+					} else if attr.Traits&urlAttr != 0 { // anchors are already handled
+						val = parse.TrimWhitespace(val)
+						if 5 < len(val) {
+							if parse.EqualFold(val[:4], httpBytes) {
+								if val[4] == ':' {
+									if m.URL != nil && m.URL.Scheme == "http" {
+										val = val[5:]
+									} else {
+										parse.ToLower(val[:4])
+									}
+								} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
+									if m.URL != nil && m.URL.Scheme == "https" {
+										val = val[6:]
+									} else {
+										parse.ToLower(val[:5])
+									}
 								}
-							} else if (val[4] == 's' || val[4] == 'S') && val[5] == ':' {
-								if m.URL != nil && m.URL.Scheme == "https" {
-									val = val[6:]
-								} else {
-									parse.ToLower(val[:5])
-								}
+							} else if parse.EqualFold(val[:5], dataSchemeBytes) {
+								val = minify.DataURI(m, val)
 							}
-						} else if parse.EqualFold(val[:5], dataSchemeBytes) {
-							val = minify.DataURI(m, val)
 						}
 					}
 
