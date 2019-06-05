@@ -18,6 +18,7 @@ func TestCSS(t *testing.T) {
 	}{
 		{"/*comment*/", ""},
 		{"/*! bang  comment */", "/*!bang comment*/"},
+		{"a;", "a"},
 		{"i{}/*! bang  comment */", "i{}/*!bang comment*/"},
 		{"i { key: value; key2: value; }", "i{key:value;key2:value}"},
 		{".cla .ss > #id { x:y; }", ".cla .ss>#id{x:y}"},
@@ -80,6 +81,7 @@ func TestCSSInline(t *testing.T) {
 	}{
 		{"/*comment*/", ""},
 		{"/*! bang  comment */", ""},
+		{"}", "}"},
 		{";", ""},
 		{"empty:", "empty:"},
 		{"key: value;", "key:value"},
@@ -320,7 +322,7 @@ func TestWriterErrors(t *testing.T) {
 		{`a{color:()!important}`, []int{4, 6}},
 		{`a{margin:5 4}`, []int{5}},
 		{`a{margin=5}`, []int{2, 3}},
-		{`a;`, []int{1}},
+		{`a;`, []int{0}},
 		{`a{000}`, []int{2}},
 	}
 

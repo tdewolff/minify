@@ -1,6 +1,6 @@
 module github.com/tdewolff/minify/v2
 
-//replace github.com/tdewolff/parse/v2 => ../parse
+replace github.com/tdewolff/parse/v2 => ../parse
 
 require (
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
