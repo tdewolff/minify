@@ -54,6 +54,7 @@ func TestSVG(t *testing.T) {
 		{`<rect x="5" y="10" rx="2" ry="3"/>`, `<rect x="5" y="10" rx="2" ry="3"/>`},
 		{`<rect x="5" y="10" height="40"/>`, ``},
 		{`<rect x="5" y="10" width="30" height="0"/>`, ``},
+		{`<rect x="5" y="10" width="30%" height="100%"/>`, `<rect x="5" y="10" width="30%" height="100%"/>`},
 		{`<polygon points="1,2 3,4"/>`, `<path d="M1 2 3 4z"/>`},
 		{`<polyline points="1,2 3,4"/>`, `<path d="M1 2 3 4"/>`},
 		{`<svg contentStyleType="text/json ; charset=iso-8859-1"><style>{a : true}</style></svg>`, `<svg contentStyleType="text/json;charset=iso-8859-1"><style>{a : true}</style></svg>`},

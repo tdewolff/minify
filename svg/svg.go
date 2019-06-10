@@ -112,17 +112,17 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		case xml.StartTagToken:
 			tag = t.Hash
 			if tag == svg.Metadata {
-				skipTag(tb)
-				break
+				t.Data = nil
 			} else if tag == svg.Line {
 				o.shortenLine(tb, &t, p)
-			} else if tag == svg.Rect && !o.shortenRect(tb, &t, p) {
-				skipTag(tb)
-				break
+			} else if tag == svg.Rect {
+				o.shortenRect(tb, &t, p)
 			} else if tag == svg.Polygon || tag == svg.Polyline {
 				o.shortenPoly(tb, &t, p)
 			}
-			if _, err := w.Write(t.Data); err != nil {
+			if t.Data == nil {
+				skipTag(tb)
+			} else if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
 		case xml.AttributeToken:
@@ -273,6 +273,15 @@ func (o *Minifier) shortenDimension(b []byte) ([]byte, int) {
 func (o *Minifier) shortenLine(tb *TokenBuffer, t *Token, p *PathData) {
 	x1, y1, x2, y2 := zeroBytes, zeroBytes, zeroBytes, zeroBytes
 	if attrs, replacee := tb.Attributes(svg.X1, svg.Y1, svg.X2, svg.Y2); replacee != nil {
+		// skip converting to path if any attribute contains dimensions, TODO: convert non-percentage dimensions to px
+		for _, attr := range attrs {
+			if attr != nil {
+				if _, dim := parse.Dimension(attr.AttrVal); dim != 0 {
+					return
+				}
+			}
+		}
+
 		if attrs[0] != nil {
 			x1 = minify.Number(attrs[0].AttrVal, o.Decimals)
 			attrs[0].Text = nil
@@ -308,8 +317,17 @@ func (o *Minifier) shortenLine(tb *TokenBuffer, t *Token, p *PathData) {
 	}
 }
 
-func (o *Minifier) shortenRect(tb *TokenBuffer, t *Token, p *PathData) bool {
+func (o *Minifier) shortenRect(tb *TokenBuffer, t *Token, p *PathData) {
 	if attrs, replacee := tb.Attributes(svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry); replacee != nil && attrs[4] == nil && attrs[5] == nil {
+		// skip converting to path if any attribute contains dimensions, TODO: convert non-percentage dimensions to px
+		for _, attr := range attrs {
+			if attr != nil {
+				if _, dim := parse.Dimension(attr.AttrVal); dim != 0 {
+					return
+				}
+			}
+		}
+
 		x, y, w, h := zeroBytes, zeroBytes, zeroBytes, zeroBytes
 		if attrs[0] != nil {
 			x = minify.Number(attrs[0].AttrVal, o.Decimals)
@@ -328,7 +346,8 @@ func (o *Minifier) shortenRect(tb *TokenBuffer, t *Token, p *PathData) bool {
 			attrs[3].Text = nil
 		}
 		if len(w) == 0 || w[0] == '0' || len(h) == 0 || h[0] == '0' {
-			return false
+			t.Data = nil
+			return
 		}
 
 		d := make([]byte, 0, 6+2*len(x)+len(y)+len(w)+len(h))
@@ -349,7 +368,6 @@ func (o *Minifier) shortenRect(tb *TokenBuffer, t *Token, p *PathData) bool {
 		replacee.Text = dBytes
 		replacee.AttrVal = d
 	}
-	return true
 }
 
 func (o *Minifier) shortenPoly(tb *TokenBuffer, t *Token, p *PathData) {
