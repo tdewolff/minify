@@ -588,7 +588,7 @@ func compileTemplates(filenames ...string) (*template.Template, error) {
 Example usage:
 
 ``` go
-templates := template.MustCompile(compileTemplates("view.html", "home.html"))
+templates := template.Must(compileTemplates("view.html", "home.html"))
 ```
 
 ## License
