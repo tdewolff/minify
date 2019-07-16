@@ -1,4 +1,4 @@
-package js // import "github.com/tdewolff/minify/js"
+package js
 
 import (
 	"bytes"

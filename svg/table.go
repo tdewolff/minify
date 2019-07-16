@@ -1,4 +1,4 @@
-package svg // import "github.com/tdewolff/minify/svg"
+package svg
 
 import "github.com/tdewolff/parse/v2/svg"
 

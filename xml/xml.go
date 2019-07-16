@@ -1,5 +1,5 @@
 // Package xml minifies XML1.0 following the specifications at http://www.w3.org/TR/xml/.
-package xml // import "github.com/tdewolff/minify/xml"
+package xml
 
 import (
 	"io"

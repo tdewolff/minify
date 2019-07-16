@@ -1,5 +1,5 @@
 // Package minify relates MIME type to minifiers. Several minifiers are provided in the subpackages.
-package minify // import "github.com/tdewolff/minify"
+package minify
 
 import (
 	"errors"

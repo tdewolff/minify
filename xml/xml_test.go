@@ -1,4 +1,4 @@
-package xml // import "github.com/tdewolff/minify/xml"
+package xml
 
 import (
 	"bytes"

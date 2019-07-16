@@ -1,4 +1,4 @@
-package json // import "github.com/tdewolff/minify/json"
+package json
 
 import (
 	"bytes"

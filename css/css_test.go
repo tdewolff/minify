@@ -1,4 +1,4 @@
-package css // import "github.com/tdewolff/minify/css"
+package css
 
 import (
 	"bytes"
