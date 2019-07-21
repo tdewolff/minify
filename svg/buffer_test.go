@@ -44,7 +44,7 @@ func TestAttributes(t *testing.T) {
 	tb := NewTokenBuffer(l)
 	tb.Shift()
 	for k := 0; k < 2; k++ { // run twice to ensure similar results
-		attrs, _ := tb.Attributes(svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
+		attrs := tb.Attributes(svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
 		for i := 0; i < 6; i++ {
 			test.That(t, attrs[i] != nil, "attr must not be nil")
 			val := string(attrs[i].AttrVal)

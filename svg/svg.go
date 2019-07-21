@@ -113,13 +113,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			tag = t.Hash
 			if tag == svg.Metadata {
 				t.Data = nil
-			} else if tag == svg.Line {
-				o.shortenLine(tb, &t, p)
 			} else if tag == svg.Rect {
-				o.shortenRect(tb, &t, p)
-			} else if tag == svg.Polygon || tag == svg.Polyline {
-				o.shortenPoly(tb, &t, p)
+				o.shortenRect(tb, &t)
 			}
+
 			if t.Data == nil {
 				skipTag(tb)
 			} else if _, err := w.Write(t.Data); err != nil {
@@ -270,143 +267,19 @@ func (o *Minifier) shortenDimension(b []byte) ([]byte, int) {
 	return b, 0
 }
 
-func (o *Minifier) shortenLine(tb *TokenBuffer, t *Token, p *PathData) {
-	x1, y1, x2, y2 := zeroBytes, zeroBytes, zeroBytes, zeroBytes
-	if attrs, replacee := tb.Attributes(svg.X1, svg.Y1, svg.X2, svg.Y2); replacee != nil {
-		// skip converting to path if any attribute contains dimensions, TODO: convert non-percentage dimensions to px
-		for _, attr := range attrs {
-			if attr != nil {
-				if _, dim := parse.Dimension(attr.AttrVal); dim != 0 {
-					return
-				}
-			}
-		}
-
-		if attrs[0] != nil {
-			x1 = minify.Number(attrs[0].AttrVal, o.Decimals)
-			attrs[0].Text = nil
-		}
-		if attrs[1] != nil {
-			y1 = minify.Number(attrs[1].AttrVal, o.Decimals)
-			attrs[1].Text = nil
-		}
-		if attrs[2] != nil {
-			x2 = minify.Number(attrs[2].AttrVal, o.Decimals)
-			attrs[2].Text = nil
-		}
-		if attrs[3] != nil {
-			y2 = minify.Number(attrs[3].AttrVal, o.Decimals)
-			attrs[3].Text = nil
-		}
-
-		d := make([]byte, 0, 5+len(x1)+len(y1)+len(x2)+len(y2))
-		d = append(d, 'M')
-		d = append(d, x1...)
-		d = append(d, ' ')
-		d = append(d, y1...)
-		d = append(d, 'L')
-		d = append(d, x2...)
-		d = append(d, ' ')
-		d = append(d, y2...)
-		d = append(d, 'z')
-		d = p.ShortenPathData(d)
-
-		t.Data = pathBytes
-		replacee.Text = dBytes
-		replacee.AttrVal = d
+func (o *Minifier) shortenRect(tb *TokenBuffer, t *Token) {
+	w, h := zeroBytes, zeroBytes
+	attrs := tb.Attributes(svg.Width, svg.Height)
+	if attrs[0] != nil {
+		n, _ := parse.Dimension(attrs[0].AttrVal)
+		w = minify.Number(attrs[0].AttrVal[:n], o.Decimals)
 	}
-}
-
-func (o *Minifier) shortenRect(tb *TokenBuffer, t *Token, p *PathData) {
-	if attrs, replacee := tb.Attributes(svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry); replacee != nil && attrs[4] == nil && attrs[5] == nil {
-		// skip converting to path if any attribute contains dimensions, TODO: convert non-percentage dimensions to px
-		for _, attr := range attrs {
-			if attr != nil {
-				if _, dim := parse.Dimension(attr.AttrVal); dim != 0 {
-					return
-				}
-			}
-		}
-
-		x, y, w, h := zeroBytes, zeroBytes, zeroBytes, zeroBytes
-		if attrs[0] != nil {
-			x = minify.Number(attrs[0].AttrVal, o.Decimals)
-			attrs[0].Text = nil
-		}
-		if attrs[1] != nil {
-			y = minify.Number(attrs[1].AttrVal, o.Decimals)
-			attrs[1].Text = nil
-		}
-		if attrs[2] != nil {
-			w = minify.Number(attrs[2].AttrVal, o.Decimals)
-			attrs[2].Text = nil
-		}
-		if attrs[3] != nil {
-			h = minify.Number(attrs[3].AttrVal, o.Decimals)
-			attrs[3].Text = nil
-		}
-		if len(w) == 0 || w[0] == '0' || len(h) == 0 || h[0] == '0' {
-			t.Data = nil
-			return
-		}
-
-		d := make([]byte, 0, 6+2*len(x)+len(y)+len(w)+len(h))
-		d = append(d, 'M')
-		d = append(d, x...)
-		d = append(d, ' ')
-		d = append(d, y...)
-		d = append(d, 'h')
-		d = append(d, w...)
-		d = append(d, 'v')
-		d = append(d, h...)
-		d = append(d, 'H')
-		d = append(d, x...)
-		d = append(d, 'z')
-		d = p.ShortenPathData(d)
-
-		t.Data = pathBytes
-		replacee.Text = dBytes
-		replacee.AttrVal = d
+	if attrs[1] != nil {
+		n, _ := parse.Dimension(attrs[1].AttrVal)
+		h = minify.Number(attrs[1].AttrVal[:n], o.Decimals)
 	}
-}
-
-func (o *Minifier) shortenPoly(tb *TokenBuffer, t *Token, p *PathData) {
-	if attrs, replacee := tb.Attributes(svg.Points); replacee != nil && attrs[0] != nil {
-		points := attrs[0].AttrVal
-
-		i := 0
-		for i < len(points) && !(points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
-			i++
-		}
-		for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
-			i++
-		}
-		for i < len(points) && !(points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
-			i++
-		}
-		endMoveTo := i
-		for i < len(points) && (points[i] == ' ' || points[i] == ',' || points[i] == '\n' || points[i] == '\r' || points[i] == '\t') {
-			i++
-		}
-		startLineTo := i
-
-		if i == len(points) {
-			return
-		}
-
-		d := make([]byte, 0, len(points)+3)
-		d = append(d, 'M')
-		d = append(d, points[:endMoveTo]...)
-		d = append(d, 'L')
-		d = append(d, points[startLineTo:]...)
-		if t.Hash == svg.Polygon {
-			d = append(d, 'z')
-		}
-		d = p.ShortenPathData(d)
-
-		t.Data = pathBytes
-		replacee.Text = dBytes
-		replacee.AttrVal = d
+	if len(w) == 0 || w[0] == '0' || len(h) == 0 || h[0] == '0' {
+		t.Data = nil
 	}
 }
 

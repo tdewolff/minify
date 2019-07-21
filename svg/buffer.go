@@ -100,7 +100,7 @@ func (z *TokenBuffer) Shift() *Token {
 
 // Attributes extracts the gives attribute hashes from a tag.
 // It returns in the same order pointers to the requested token data or nil.
-func (z *TokenBuffer) Attributes(hashes ...svg.Hash) ([]*Token, *Token) {
+func (z *TokenBuffer) Attributes(hashes ...svg.Hash) []*Token {
 	n := 0
 	for {
 		if t := z.Peek(n); t.TokenType != xml.AttributeToken {
@@ -116,15 +116,13 @@ func (z *TokenBuffer) Attributes(hashes ...svg.Hash) ([]*Token, *Token) {
 			z.attrBuffer[i] = nil
 		}
 	}
-	var replacee *Token
 	for i := z.pos; i < z.pos+n; i++ {
 		attr := &z.buf[i]
 		for j, hash := range hashes {
 			if hash == attr.Hash {
 				z.attrBuffer[j] = attr
-				replacee = attr
 			}
 		}
 	}
-	return z.attrBuffer, replacee
+	return z.attrBuffer
 }
