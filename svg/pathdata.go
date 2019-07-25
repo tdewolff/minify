@@ -128,20 +128,22 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 		if cmd == 'H' || cmd == 'h' {
 			ax = coordFloats[di-1]
 			if isRelCmd {
-				ay = 0
-			} else {
-				ay = p.y
+				ax += p.x
 			}
+			ay = p.y
 		} else if cmd == 'V' || cmd == 'v' {
-			if isRelCmd {
-				ax = 0
-			} else {
-				ax = p.x
-			}
+			ax = p.x
 			ay = coordFloats[di-1]
+			if isRelCmd {
+				ay += p.y
+			}
 		} else {
 			ax = coordFloats[di-2]
 			ay = coordFloats[di-1]
+			if isRelCmd {
+				ax += p.x
+				ay += p.y
+			}
 		}
 
 		// switch from C to S whenever possible
@@ -154,8 +156,16 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 
 			var cp1x, cp1y float64
 			cp2x, cp2y := coordFloats[di-4], coordFloats[di-3]
+			if isRelCmd {
+				cp2x += p.x
+				cp2y += p.y
+			}
 			if cmd == 'C' || cmd == 'c' {
 				cp1x, cp1y = coordFloats[di-6], coordFloats[di-5]
+				if isRelCmd {
+					cp1x += p.x
+					cp1y += p.y
+				}
 				if cp1x == p.cx && cp1y == p.cy {
 					if isRelCmd {
 						cmd = 's'
@@ -198,6 +208,10 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 			var cpx, cpy float64
 			if cmd == 'Q' || cmd == 'q' {
 				cpx, cpy = coordFloats[di-4], coordFloats[di-3]
+				if isRelCmd {
+					cpx += p.x
+					cpy += p.y
+				}
 				if cpx == p.qx && cpy == p.qy {
 					if isRelCmd {
 						cmd = 't'
@@ -231,32 +245,24 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 
 		// switch from L to H or V whenever possible
 		if cmd == 'L' || cmd == 'l' {
-			if isRelCmd {
-				if ax == 0 && ay == 0 {
-					continue
-				} else if ax == 0 {
+			if ax == p.x && ay == p.y {
+				continue
+			} else if ax == p.x {
+				if isRelCmd {
 					cmd = 'v'
-					coords = coords[1:]
-					coordFloats = coordFloats[1:]
-					ax = 0
-				} else if ay == 0 {
-					cmd = 'h'
-					coords = coords[:1]
-					coordFloats = coordFloats[:1]
-					ay = 0
-				}
-			} else {
-				if ax == p.x && ay == p.y {
-					continue
-				} else if ax == p.x {
+				} else {
 					cmd = 'V'
-					coords = coords[1:]
-					coordFloats = coordFloats[1:]
-				} else if ay == p.y {
-					cmd = 'H'
-					coords = coords[:1]
-					coordFloats = coordFloats[:1]
 				}
+				coords = coords[1:]
+				coordFloats = coordFloats[1:]
+			} else if ay == p.y {
+				if isRelCmd {
+					cmd = 'h'
+				} else {
+					cmd = 'H'
+				}
+				coords = coords[:1]
+				coordFloats = coordFloats[:1]
 			}
 		}
 
@@ -278,13 +284,8 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 			p.state = curState
 		}
 
-		if isRelCmd {
-			p.x += ax
-			p.y += ay
-		} else {
-			p.x = ax
-			p.y = ay
-		}
+		p.x = ax
+		p.y = ay
 		if i == 0 && (origCmd == 'M' || origCmd == 'm') {
 			p.x0 = p.x
 			p.y0 = p.y
