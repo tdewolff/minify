@@ -39,6 +39,7 @@ func TestCSS(t *testing.T) {
 		{"[class^=icon-] i[class^=icon-],i[class*=\" icon-\"]{x:y}", "[class^=icon-] i[class^=icon-],i[class*=\" icon-\"]{x:y}"},
 		{"html{line-height:1;}html{line-height:1;}", "html{line-height:1}html{line-height:1}"},
 		{"a { b: 1", "a{b:1}"},
+		{"@unknown { border:1px solid #000 }", "@unknown{border:1px solid #000 }"},
 
 		{":root { --custom-variable:0px; }", ":root{--custom-variable:0px}"},
 
