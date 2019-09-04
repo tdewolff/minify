@@ -10,3 +10,5 @@ require (
 	github.com/tdewolff/test v1.0.3
 	golang.org/x/sys v0.0.0-20181031143558-9b800f95dbbc // indirect
 )
+
+go 1.13
