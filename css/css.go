@@ -960,7 +960,7 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 		if 10 < len(data) {
 			uri := parse.TrimWhitespace(data[4 : len(data)-1])
 			delim := byte('"')
-			if 0 < len(uri) && (uri[0] == '\'' || uri[0] == '"') {
+			if 1 < len(uri) && (uri[0] == '\'' || uri[0] == '"') {
 				delim = uri[0]
 				uri = removeStringNewlinex(uri)
 				uri = uri[1 : len(uri)-1]
