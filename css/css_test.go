@@ -58,6 +58,7 @@ func TestCSS(t *testing.T) {
 		{"input[type=\"\x00\"] {  a: b\n}.a{}", "input[type=\"\x00\"]{a:b}.a{}"},
 		{"a{a:)'''", "a{a:)'''}"},
 		{"{T:l(", "{t:l(}"},
+		{"{background:0 0 0", "{background:0 0}"},
 	}
 
 	m := minify.New()
@@ -159,7 +160,7 @@ func TestCSSInline(t *testing.T) {
 		{"background:#fff url(foo.svg) no-repeat right .75rem center / auto calc(100% - 1.5rem)", "background:#fff url(foo.svg) no-repeat right .75rem center/auto calc(100% - 1.5rem)"},
 		{"background:#fff / 5% auto", "background:#fff/5%"},
 		{"background:#fff / auto 5%", "background:#fff/auto 5%"},
-		//{"background:calc(5%-2%) center", "background:calc(5%-2%)"},
+		{"background:calc(5%-2%) center", "background:calc(5%-2%)"},
 		{"font-weight: bold; font-weight: normal;", "font-weight:700;font-weight:400"},
 		{"font: caption;", "font:caption"},
 		{"font: bold 5px \"Times new Roman\",\"Sans-Serif\";", "font:700 5px times new roman,sans-serif"},
@@ -257,7 +258,7 @@ func TestCSSInline(t *testing.T) {
 		{"margin: rgb((brackets));", "margin:rgb((brackets))"},
 
 		// bugs
-		//{"background: linear-gradient(-180deg, #355FFF 0%, #1F52FF 100%) 0% 0% / cover", "background: linear-gradient(-180deg, #355FFF 0%, #1F52FF 100%) 0% 0% / cover"}, // #263
+		{"background: linear-gradient(-180deg, #355FFF 0%, #1F52FF 100%) 0% 0% / cover", "background:linear-gradient(-180deg,#355FFF 0%,#1F52FF 100%) 0 0/cover"}, // #263
 
 		// go-fuzz
 		{"FONT-FAMILY: ru\"", "font-family:ru\""},

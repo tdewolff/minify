@@ -605,7 +605,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 
 			// background-position or background-size
 			// TODO: allow only functions that return Number, Percentage or Dimension token. Make whitelist?
-			if values[i].TokenType == css.NumberToken || values[i].TokenType == css.DimensionToken || values[i].TokenType == css.PercentageToken || values[i].TokenType == css.IdentToken && (h == css.Left || h == css.Right || h == css.Top || h == css.Bottom || h == css.Center) {
+			if values[i].TokenType == css.NumberToken || values[i].TokenType == css.DimensionToken || values[i].TokenType == css.PercentageToken || values[i].TokenType == css.IdentToken && (h == css.Left || h == css.Right || h == css.Top || h == css.Bottom || h == css.Center) || values[i].TokenType == css.FunctionToken && bytes.Equal(values[i].Data, []byte("calc(")) {
 				j := i + 1
 				for ; j < len(values); j++ {
 					if values[j].TokenType == css.IdentToken {
@@ -613,7 +613,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 						if h == css.Left || h == css.Right || h == css.Top || h == css.Bottom || h == css.Center {
 							continue
 						}
-					} else if values[j].TokenType == css.NumberToken || values[j].TokenType == css.DimensionToken || values[j].TokenType == css.PercentageToken {
+					} else if values[j].TokenType == css.NumberToken || values[j].TokenType == css.DimensionToken || values[j].TokenType == css.PercentageToken || values[i].TokenType == css.FunctionToken && bytes.Equal(values[i].Data, []byte("calc(")) {
 						continue
 					}
 					break
@@ -655,7 +655,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 		if len(values) == 3 || len(values) == 4 {
 			// remove zero offsets
 			for _, i := range []int{len(values) - 1, 1} {
-				if values[i].TokenType == css.NumberToken && bytes.Equal(values[i].Data, []byte("0")) || values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, []byte("0%")) {
+				if 2 < len(values) && (values[i].TokenType == css.NumberToken && bytes.Equal(values[i].Data, []byte("0")) || values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, []byte("0%"))) {
 					values = append(values[:i], values[i+1:]...)
 				}
 			}
