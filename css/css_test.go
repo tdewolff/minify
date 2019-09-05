@@ -61,6 +61,7 @@ func TestCSS(t *testing.T) {
 		{"{background:0 0 0", "{background:0 0}"},
 		{"{d:url( \n  \n\t0", "{d:url()}"},
 		{"{d:urL(     '0", `{d:url("'")}`},
+		{`{-ms-filter:"`, `{-ms-filter:"}`},
 	}
 
 	m := minify.New()
