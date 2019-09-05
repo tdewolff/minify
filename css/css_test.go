@@ -59,6 +59,7 @@ func TestCSS(t *testing.T) {
 		{"a{a:)'''", "a{a:)'''}"},
 		{"{T:l(", "{t:l(}"},
 		{"{background:0 0 0", "{background:0 0}"},
+		{"{d:url( \n  \n\t0", "{d:url()}"},
 	}
 
 	m := minify.New()
