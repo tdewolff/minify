@@ -160,7 +160,7 @@ func TestCSSInline(t *testing.T) {
 		{"background:no-repeat repeat", "background:repeat-y"},
 		{"background:top right", "background:100% 0"},
 		{"background:bottom left", "background:0 100%"},
-		{"background:#fff url(foo.svg) no-repeat right .75rem center / auto calc(100% - 1.5rem)", "background:#fff url(foo.svg) no-repeat right .75rem center/auto calc(100% - 1.5rem)"},
+		{"background:#fff url(foo.svg) no-repeat right .75rem center / auto calc(100% - 1.5rem)", "background:#fff url(foo.svg)no-repeat right .75rem center/auto calc(100% - 1.5rem)"},
 		{"background:#fff / 5% auto", "background:#fff/5%"},
 		{"background:#fff / auto 5%", "background:#fff/auto 5%"},
 		{"background:calc(5%-2%) center", "background:calc(5%-2%)"},
@@ -229,10 +229,11 @@ func TestCSSInline(t *testing.T) {
 		{"flex:0px", "flex:0px"},
 		{"g:url('abc\\\ndef')", "g:url(abcdef)"},
 		{"url:local('abc\\\ndef')", "url:local(abcdef)"},
+		{"url:local('abc def') , url('abc def') format('truetype')", "url:local('abc def'),url('abc def')format('truetype')"},
 
 		{"any:0deg 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz", "any:0 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz"},
 		{"width:calc(0%-0px)", "width:calc(0%-0px)"},
-		{"margin:calc(10px) calc(20px)", "margin:calc(10px) calc(20px)"},
+		{"margin:calc(10px) calc(20px)", "margin:calc(10px)calc(20px)"},
 		{"border-left:0 none", "border-left:0"},
 		{"--custom-variable:0px;", "--custom-variable:0px"},
 		{"--foo: if(x > 5) this.width = 10", "--foo: if(x > 5) this.width = 10"},
@@ -261,7 +262,7 @@ func TestCSSInline(t *testing.T) {
 		{"margin: rgb((brackets));", "margin:rgb((brackets))"},
 
 		// bugs
-		{"background: linear-gradient(-180deg, #355FFF 0%, #1F52FF 100%) 0% 0% / cover", "background:linear-gradient(-180deg,#355FFF 0%,#1F52FF 100%) 0 0/cover"}, // #263
+		{"background: linear-gradient(-180deg, #355FFF 0%, #1F52FF 100%) 0% 0% / cover", "background:linear-gradient(-180deg,#355FFF 0%,#1F52FF 100%)0 0/cover"}, // #263
 
 		// go-fuzz
 		{"FONT-FAMILY: ru\"", "font-family:ru\""},

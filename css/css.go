@@ -383,7 +383,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 			return err
 		}
 
-		if value.TokenType == css.CommaToken || value.TokenType == css.DelimToken && value.Data[0] == '/' {
+		if value.TokenType == css.CommaToken || value.TokenType == css.DelimToken && value.Data[0] == '/' || value.TokenType == css.FunctionToken || value.TokenType == css.URLToken {
 			prevSep = true
 		} else {
 			prevSep = false
@@ -487,6 +487,23 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 			} else if val == css.Bold {
 				values[0].TokenType = css.NumberToken
 				values[0].Data = []byte("700")
+			}
+		}
+	case css.Url:
+		for i := 0; i < len(values); i++ {
+			if values[i].TokenType == css.FunctionToken && 2 < len(values[i].Components) {
+				fun := values[i].Components
+				name := css.ToHash(fun[0].Data[0 : len(fun[0].Data)-1])
+				if name == css.Local {
+					data := fun[1].Data
+					if data[0] == '\'' || data[0] == '"' {
+						data = removeStringNewlinex(data)
+						if css.IsURLUnquoted(data[1 : len(data)-1]) {
+							data = data[1 : len(data)-1]
+						}
+						fun[1].Data = data
+					}
+				}
 			}
 		}
 	case css.Margin, css.Padding, css.Border_Width:
@@ -876,15 +893,6 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 						return c.minifyColorAsHex(rgb)
 					}
 				}
-			}
-		} else if fun == css.Local && n == 3 {
-			data := values[1].Data
-			if data[0] == '\'' || data[0] == '"' {
-				data = removeStringNewlinex(data)
-				if css.IsURLUnquoted(data[1 : len(data)-1]) {
-					data = data[1 : len(data)-1]
-				}
-				values[1].Data = data
 			}
 		}
 	}
