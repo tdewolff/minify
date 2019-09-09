@@ -8,8 +8,8 @@ github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 h1:JAEbJn3j/FrhdWA9jW8
 github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2/go.mod h1:0KeJpeMD6o+O4hW7qJOT7vyQPKrWmj26uf5wMc/IiIs=
 github.com/spf13/pflag v1.0.3 h1:zPAT6CGy6wXeQ7NtTnaTerfKOsV6V6F8agHXFiazDkg=
 github.com/spf13/pflag v1.0.3/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
-github.com/tdewolff/parse/v2 v2.3.9 h1:d8/K6XOLy5JVpLTG9Kx+SxA72rlm5OowFmVSVgtOlmM=
-github.com/tdewolff/parse/v2 v2.3.9/go.mod h1:HansaqmN4I/U7L6/tUp0NcwT2tFO0F4EAWYGSDzkYNk=
+github.com/tdewolff/parse/v2 v2.3.10-0.20190909171411-d69b3429e657 h1:uuG1kpNgP+a+3fNgdBIYzZ9B8BHm31Ngj1DWdjUeSFY=
+github.com/tdewolff/parse/v2 v2.3.10-0.20190909171411-d69b3429e657/go.mod h1:OWzzDDVZ41oSQxwx/HN4HB6Sz9LBv6+pgOUb7FZJAP8=
 github.com/tdewolff/test v1.0.0/go.mod h1:DiQUlutnqlEvdvhSn2LPGy4TFwRauAaYDsL+683RNX4=
 github.com/tdewolff/test v1.0.4 h1:ih38SXuQJ32Hng5EtSW32xqEsVeMnPp6nNNRPhBBDE8=
 github.com/tdewolff/test v1.0.4/go.mod h1:6DAvZliBAAnD7rhVgwaM7DE5/d9NMOAJ09SqYqeK4QE=
