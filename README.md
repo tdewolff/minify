@@ -251,7 +251,6 @@ The SVG minifier uses these minifications:
 - minify colors
 - shorten lengths and numbers and remove default `px` unit
 - shorten `path` data
-- convert `rect`, `line`, `polygon`, `polyline` to `path`
 - use relative or absolute positions in path data whichever is shorter
 
 TODO:
