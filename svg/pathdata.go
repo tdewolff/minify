@@ -56,13 +56,26 @@ func (p *PathData) ShortenPathData(b []byte) []byte {
 		c := b[i]
 		if c == ' ' || c == ',' || c == '\n' || c == '\r' || c == '\t' {
 			continue
-		} else if c >= 'A' && (cmd == 0 || cmd != c || c == 'M' || c == 'm') { // any command
+		} else if c >= 'A' && c != 'e' && c != 'E' && (cmd == 0 || cmd != c || c == 'M' || c == 'm') { // any command
 			if cmd != 0 {
 				j += p.copyInstruction(b[j:], cmd)
+			} else {
+				j = i
 			}
 			cmd = c
 			p.coords = p.coords[:0]
 			p.coordFloats = p.coordFloats[:0]
+		} else if (cmd == 'A' || cmd == 'a') && (len(p.coordFloats) == 3 || len(p.coordFloats) == 4) {
+			// boolean flags for arc command
+			if c == '1' {
+				p.coords = append(p.coords, b[i:i+1])
+				p.coordFloats = append(p.coordFloats, 1.0)
+			} else if c == '0' {
+				p.coords = append(p.coords, b[i:i+1])
+				p.coordFloats = append(p.coordFloats, 0.0)
+			} else {
+				cmd = 0 // bad format, don't minify
+			}
 		} else if n := parse.Number(b[i:]); n > 0 {
 			f, _ := strconv.ParseFloat(b[i : i+n])
 			p.coords = append(p.coords, b[i:i+n])
@@ -72,6 +85,8 @@ func (p *PathData) ShortenPathData(b []byte) []byte {
 	}
 	if cmd != 0 {
 		j += p.copyInstruction(b[j:], cmd)
+	} else {
+		j = len(b)
 	}
 	return b[:j]
 }
@@ -108,7 +123,7 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 	} else if (cmd == 'A' || cmd == 'a') && n%7 == 0 {
 		di = 7
 	} else {
-		return 0
+		return len(b)
 	}
 
 	j := 0
