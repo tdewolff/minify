@@ -29,6 +29,7 @@ type PathDataState struct {
 	cmd            byte
 	prevDigit      bool
 	prevDigitIsInt bool
+	prevFlag       bool
 }
 
 func NewPathData(o *Minifier) *PathData {
@@ -320,14 +321,14 @@ func (p *PathData) shortenCurPosInstruction(cmd byte, coords [][]byte) PathDataS
 		state.prevDigitIsInt = false
 	}
 	for i, coord := range coords {
-		isFlag := false
-		// Arc has boolean flags that can only be 0 or 1. Setting isFlag prevents from adding a dot before a zero (instead of a space). However, when the dot already was there, the command is malformed and could make the path longer than before, introducing bugs.
-		if (cmd == 'A' || cmd == 'a') && (i%7 == 3 || i%7 == 4) && coord[0] != '.' {
-			isFlag = true
+		// Arc has boolean flags that can only be 0 or 1. copyFlag prevents from adding a dot before a zero (instead of a space). However, when the dot already was there, the command is malformed and could make the path longer than before, introducing bugs.
+		if (cmd == 'A' || cmd == 'a') && (i%7 == 3 || i%7 == 4) {
+			state.copyFlag(&p.curBuffer, coord[0] == '1')
+			continue
 		}
 
 		coord = minify.Number(coord, p.o.Decimals)
-		state.copyNumber(&p.curBuffer, coord, isFlag)
+		state.copyNumber(&p.curBuffer, coord)
 	}
 	return state
 }
@@ -343,7 +344,6 @@ func (p *PathData) shortenAltPosInstruction(cmd byte, coordFloats []float64, x, 
 		state.prevDigitIsInt = false
 	}
 	for i, f := range coordFloats {
-		isFlag := false
 		if cmd == 'L' || cmd == 'l' || cmd == 'C' || cmd == 'c' || cmd == 'S' || cmd == 's' || cmd == 'Q' || cmd == 'q' || cmd == 'T' || cmd == 't' || cmd == 'M' || cmd == 'm' {
 			if i%2 == 0 {
 				f += x
@@ -360,28 +360,24 @@ func (p *PathData) shortenAltPosInstruction(cmd byte, coordFloats []float64, x, 
 			} else if i%7 == 6 {
 				f += y
 			} else if i%7 == 3 || i%7 == 4 {
-				isFlag = true
+				state.copyFlag(&p.altBuffer, f == 1.0)
+				continue
 			}
 		}
 
 		p.coordBuffer = strconvStdlib.AppendFloat(p.coordBuffer[:0], f, 'g', -1, 64)
 		coord := minify.Number(p.coordBuffer, p.o.Decimals)
-		state.copyNumber(&p.altBuffer, coord, isFlag)
+		state.copyNumber(&p.altBuffer, coord)
 	}
 	return state
 }
 
 // copyNumber will copy a number to the destination buffer, taking into account space or dot insertion to guarantee the shortest pathdata.
-func (state *PathDataState) copyNumber(buffer *[]byte, coord []byte, isFlag bool) {
+func (state *PathDataState) copyNumber(buffer *[]byte, coord []byte) {
 	if state.prevDigit && (coord[0] >= '0' && coord[0] <= '9' || coord[0] == '.' && state.prevDigitIsInt) {
 		if coord[0] == '0' && !state.prevDigitIsInt {
-			if isFlag {
-				*buffer = append(*buffer, ' ', '0')
-				state.prevDigitIsInt = true
-			} else {
-				*buffer = append(*buffer, '.', '0') // aggresively add dot so subsequent numbers could drop leading space
-				// prevDigit stays true and prevDigitIsInt stays false
-			}
+			*buffer = append(*buffer, '.', '0') // aggresively add dot so subsequent numbers could drop leading space
+			// prevDigit stays true and prevDigitIsInt stays false
 			return
 		}
 		*buffer = append(*buffer, ' ')
@@ -401,4 +397,24 @@ func (state *PathDataState) copyNumber(buffer *[]byte, coord []byte, isFlag bool
 		}
 	}
 	*buffer = append(*buffer, coord...)
+	state.prevFlag = false
+}
+
+func (state *PathDataState) copyFlag(buffer *[]byte, flag bool) {
+	if !state.prevFlag {
+		if flag {
+			*buffer = append(*buffer, ' ', '1')
+		} else {
+			*buffer = append(*buffer, ' ', '0')
+		}
+	} else {
+		if flag {
+			*buffer = append(*buffer, '1')
+		} else {
+			*buffer = append(*buffer, '0')
+		}
+	}
+	state.prevFlag = true
+	state.prevDigit = false
+	state.prevDigitIsInt = false
 }

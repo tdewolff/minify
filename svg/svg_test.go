@@ -66,7 +66,7 @@ func TestSVG(t *testing.T) {
 		{`<rect height="10"><path/></g>`, ``},                                                                          // #244
 
 		// go fuzz
-		{`<0 d=09e9.6e-9e0`, `<0 d=""`},
+		{`<0 d=09e9.6e-9e0`, `<0 d="09e9.6e-9e0"`},
 		{`<line`, `<line`},
 	}
 
