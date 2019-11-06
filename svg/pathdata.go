@@ -42,6 +42,29 @@ func NewPathData(o *Minifier) *PathData {
 	}
 }
 
+var pathCmds = map[byte]bool{
+	'M': true,
+	'm': true,
+	'L': true,
+	'l': true,
+	'H': true,
+	'h': true,
+	'V': true,
+	'v': true,
+	'Q': true,
+	'q': true,
+	'T': true,
+	't': true,
+	'C': true,
+	'c': true,
+	'S': true,
+	's': true,
+	'A': true,
+	'a': true,
+	'Z': true,
+	'z': true,
+}
+
 // ShortenPathData takes a full pathdata string and returns a shortened version. The original string is overwritten.
 // It parses all commands (M, A, Z, ...) and coordinates (numbers) and calls copyInstruction for each command.
 func (p *PathData) ShortenPathData(b []byte) []byte {
@@ -57,7 +80,7 @@ func (p *PathData) ShortenPathData(b []byte) []byte {
 		c := b[i]
 		if c == ' ' || c == ',' || c == '\n' || c == '\r' || c == '\t' {
 			continue
-		} else if c >= 'A' && c != 'e' && c != 'E' && (cmd == 0 || cmd != c || c == 'M' || c == 'm') { // any command
+		} else if pathCmds[c] && (cmd == 0 || cmd != c || c == 'M' || c == 'm') { // any command
 			if cmd != 0 {
 				j += p.copyInstruction(b[j:], cmd)
 			} else {
