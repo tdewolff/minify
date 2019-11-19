@@ -189,7 +189,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if len(tasks) == 0 {
+	if useStdin {
 		tasks = append(tasks, Task{[]string{""}, "", output}) // stdin
 	}
 
