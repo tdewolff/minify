@@ -131,11 +131,12 @@ func TestHTML(t *testing.T) {
 		{`<script><!--<`, `<script><!--<`},
 
 		// bugs
-		{`<p>text</p><br>text`, `<p>text</p><br>text`},                         // #122
-		{`text <img> text`, `text <img> text`},                                 // #89
-		{`text <progress></progress> text`, `text <progress></progress> text`}, // #89
-		{`<pre> <x> a  b </x> </pre>`, `<pre> <x> a  b </x> </pre>`},           // #82
-		{`<svg id="1"></svg>`, `<svg id="1"></svg>`},                           // #67
+		{`<amp-analytics type=adobeanalytics_nativeConfig>`, `<amp-analytics type=adobeanalytics_nativeConfig>`}, // #270
+		{`<p>text</p><br>text`, `<p>text</p><br>text`},                                                           // #122
+		{`text <img> text`, `text <img> text`},                                                                   // #89
+		{`text <progress></progress> text`, `text <progress></progress> text`},                                   // #89
+		{`<pre> <x> a  b </x> </pre>`, `<pre> <x> a  b </x> </pre>`},                                             // #82
+		{`<svg id="1"></svg>`, `<svg id="1"></svg>`},                                                             // #67
 	}
 
 	m := minify.New()
@@ -341,8 +342,8 @@ func TestMinifyErrors(t *testing.T) {
 		err  error
 	}{
 		{`<style>abc</style>`, test.ErrPlain},
-		{`<path style="abc"/>`, test.ErrPlain},
-		{`<path onclick="abc"/>`, test.ErrPlain},
+		{`<p style="abc"/>`, test.ErrPlain},
+		{`<p onclick="abc"/>`, test.ErrPlain},
 		{`<svg></svg>`, test.ErrPlain},
 		{`<math></math>`, test.ErrPlain},
 	}

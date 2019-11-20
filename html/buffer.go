@@ -46,7 +46,7 @@ func (z *TokenBuffer) read(t *Token) {
 	} else if t.TokenType == html.StartTagToken || t.TokenType == html.EndTagToken {
 		t.AttrVal = nil
 		t.Hash = html.ToHash(t.Text)
-		t.Traits = tagMap[t.Hash]
+		t.Traits = tagMap[t.Hash] // zero if not exist
 	} else {
 		t.AttrVal = nil
 		t.Hash = 0
