@@ -347,11 +347,11 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 
 					val := attr.AttrVal
+					if attr.Traits&trimAttr != 0 {
+						val = parse.TrimWhitespace(val)
+						val = parse.ReplaceMultipleWhitespace(val)
+					}
 					if t.Traits != 0 {
-						if attr.Traits&trimAttr != 0 {
-							val = parse.TrimWhitespace(val)
-							val = parse.ReplaceMultipleWhitespace(val)
-						}
 						if len(val) == 0 && (attr.Hash == html.Class ||
 							attr.Hash == html.Dir ||
 							attr.Hash == html.Id ||
@@ -363,7 +363,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						}
 						if attr.Traits&caselessAttr != 0 {
 							val = parse.ToLower(val)
-							if attr.Hash == html.Enctype || attr.Hash == html.Codetype || attr.Hash == html.Accept || attr.Hash == html.Type && (t.Hash == html.A || t.Hash == html.Link || t.Hash == html.Object || t.Hash == html.Param || t.Hash == html.Script || t.Hash == html.Style || t.Hash == html.Source) {
+							if attr.Hash == html.Enctype || attr.Hash == html.Codetype || attr.Hash == html.Accept || attr.Hash == html.Type && (t.Hash == html.A || t.Hash == html.Link || t.Hash == html.Embed || t.Hash == html.Object || t.Hash == html.Source || t.Hash == html.Script || t.Hash == html.Style) {
 								val = minify.Mediatype(val)
 							}
 						}
@@ -392,8 +392,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							continue
 						}
 
-						// CSS and JS minifiers for attribute inline code
 						if attr.Hash == html.Style {
+							// CSS minifier for attribute inline code
 							val = parse.TrimWhitespace(val)
 							attrMinifyBuffer.Reset()
 							if err := m.MinifyMimetype(cssMimeBytes, attrMinifyBuffer, buffer.NewReader(val), inlineParams); err == nil {
@@ -405,6 +405,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 								continue
 							}
 						} else if len(attr.Text) > 2 && attr.Text[0] == 'o' && attr.Text[1] == 'n' {
+							// JS minifier for attribute inline code
 							val = parse.TrimWhitespace(val)
 							if len(val) >= 11 && parse.EqualFold(val[:11], jsSchemeBytes) {
 								val = val[11:]
