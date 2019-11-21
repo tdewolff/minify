@@ -38,7 +38,7 @@ func TestHTML(t *testing.T) {
 		{`<span attr="test"></span>`, `<span attr=test></span>`},
 		{`<span attr='test&apos;test'></span>`, `<span attr="test'test"></span>`},
 		{`<span attr="test&quot;test"></span>`, `<span attr='test"test'></span>`},
-		{`<span attr='test""&apos;&amp;test'></span>`, `<span attr='test""&#39;&amp;test'></span>`},
+		{`<span attr='test""&apos;&amp;test'></span>`, `<span attr='test""&#39;&test'></span>`},
 		{`<span attr="test/test"></span>`, `<span attr=test/test></span>`},
 		{`<span attr="test/"></span>`, `<span attr=test/></span>`},
 		{`<span>&amp;</span>`, `<span>&amp;</span>`},
@@ -149,6 +149,29 @@ func TestHTML(t *testing.T) {
 		_, err := io.Copy(w, r)
 		return err
 	})
+	for _, tt := range htmlTests {
+		t.Run(tt.html, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.html)
+			w := &bytes.Buffer{}
+			err := Minify(m, w, r, nil)
+			test.Minify(t, tt.html, err, w.String(), tt.expected)
+		})
+	}
+}
+
+func TestHTMLCSSJS(t *testing.T) {
+	htmlTests := []struct {
+		html     string
+		expected string
+	}{
+		// bugs
+		{`<div style="font-family: Arial, &#39;sans-serif&#39;; font-size: 22px;">`, `<div style=font-family:Arial,sans-serif;font-size:22px>`}, // #272
+	}
+
+	m := minify.New()
+	m.AddFunc("text/html", Minify)
+	m.AddFunc("text/css", css.Minify)
+	m.AddFunc("application/javascript", js.Minify)
 	for _, tt := range htmlTests {
 		t.Run(tt.html, func(t *testing.T) {
 			r := bytes.NewBufferString(tt.html)

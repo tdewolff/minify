@@ -145,8 +145,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					return err
 				}
 			} else {
-				// prefer single or double quotes depending on what occurs more often in value
-				val := xml.EscapeAttrVal(&attrByteBuffer, t.AttrVal[1:len(t.AttrVal)-1])
+				val := t.AttrVal[1 : len(t.AttrVal)-1]
+				val = parse.ReplaceEntities(val, xml.Entities)
+				val = xml.EscapeAttrVal(&attrByteBuffer, val) // prefer single or double quotes depending on what occurs more often in value
 				if _, err := w.Write(val); err != nil {
 					return err
 				}

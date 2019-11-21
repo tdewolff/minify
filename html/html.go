@@ -347,11 +347,12 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 
 					val := attr.AttrVal
-					if attr.Traits&trimAttr != 0 {
-						val = parse.TrimWhitespace(val)
-						val = parse.ReplaceMultipleWhitespace(val)
-					}
+					val = parse.ReplaceEntities(val, html.Entities)
 					if t.Traits != 0 {
+						if attr.Traits&trimAttr != 0 {
+							val = parse.TrimWhitespace(val)
+							val = parse.ReplaceMultipleWhitespace(val)
+						}
 						if len(val) == 0 && (attr.Hash == html.Class ||
 							attr.Hash == html.Dir ||
 							attr.Hash == html.Id ||
