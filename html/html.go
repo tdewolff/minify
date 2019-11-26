@@ -141,6 +141,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				}
 			} else {
 				t.Data = parse.ReplaceMultipleWhitespace(t.Data)
+				t.Data = parse.ReplaceEntities(t.Data, html.EntitiesMap, html.TextRevEntitiesMap)
 
 				// whitespace removal; trim left
 				if omitSpace && (t.Data[0] == ' ' || t.Data[0] == '\n') {
@@ -347,7 +348,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 
 					val := attr.AttrVal
-					val = parse.ReplaceEntities(val, html.Entities)
+					val = parse.ReplaceEntities(val, html.EntitiesMap, nil)
 					if t.Traits != 0 {
 						if attr.Traits&trimAttr != 0 {
 							val = parse.TrimWhitespace(val)
