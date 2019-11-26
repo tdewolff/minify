@@ -71,7 +71,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				}
 			}
 		case xml.TextToken:
-			t.Data = parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.Data))
+			t.Data = parse.ReplaceMultipleWhitespaceAndEntities(t.Data, xml.EntitiesMap, nil)
+			t.Data = parse.TrimWhitespace(t.Data)
+
 			if tag == svg.Style && len(t.Data) > 0 {
 				if err := m.MinifyMimetype(defaultStyleType, w, buffer.NewReader(t.Data), defaultStyleParams); err != nil {
 					if err != minify.ErrNotExist {
@@ -96,7 +98,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 			var useText bool
 			if t.Text, useText = xml.EscapeCDATAVal(&attrByteBuffer, t.Text); useText {
-				t.Text = parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.Text))
+				t.Text = parse.ReplaceMultipleWhitespace(t.Text)
+				t.Text = parse.TrimWhitespace(t.Text)
+
 				if _, err := w.Write(t.Text); err != nil {
 					return err
 				}

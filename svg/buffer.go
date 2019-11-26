@@ -39,7 +39,9 @@ func (z *TokenBuffer) read(t *Token) {
 	if t.TokenType == xml.AttributeToken {
 		t.AttrVal = z.l.AttrVal()
 		if len(t.AttrVal) > 1 && (t.AttrVal[0] == '"' || t.AttrVal[0] == '\'') {
-			t.AttrVal = parse.ReplaceMultipleWhitespace(parse.TrimWhitespace(t.AttrVal[1 : len(t.AttrVal)-1])) // quotes will be readded in attribute loop if necessary
+			t.AttrVal = t.AttrVal[1 : len(t.AttrVal)-1] // quotes will be readded in attribute loop if necessary
+			t.AttrVal = parse.ReplaceMultipleWhitespaceAndEntities(t.AttrVal, xml.EntitiesMap, nil)
+			t.AttrVal = parse.TrimWhitespace(t.AttrVal)
 		}
 		t.Hash = svg.ToHash(t.Text)
 	} else if t.TokenType == xml.StartTagToken || t.TokenType == xml.EndTagToken {

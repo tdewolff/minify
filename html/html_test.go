@@ -32,8 +32,10 @@ func TestHTML(t *testing.T) {
 		{`<html><head></head><body>x</body></html>`, `x`},
 		{`<meta http-equiv="content-type" content="text/html; charset=utf-8">`, `<meta charset=utf-8>`},
 		{`<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`, `<meta charset=utf-8>`},
+		{`<meta http-equiv=" content-type " content=" text/html;  charset=utf-8 ">`, `<meta charset=utf-8>`},
 		{`<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src https://*; child-src 'none';">`, `<meta http-equiv=content-security-policy content="default-src 'self'; img-src https://*; child-src 'none';">`},
 		{`<meta name="keywords" content="a, b">`, `<meta name=keywords content="a,b">`},
+		//{`<meta name="keywords" content=" a,  b ">`, `<meta name=keywords content="a,b">`}, // TODO
 		{`<meta name="viewport" content="width = 996" />`, `<meta name=viewport content="width=996">`},
 		{`<span attr="test"></span>`, `<span attr=test></span>`},
 		{`<span attr='test&apos;test'></span>`, `<span attr="test'test"></span>`},
@@ -45,6 +47,7 @@ func TestHTML(t *testing.T) {
 		{`<span>&lt;</span>`, `<span>&lt;</span>`},
 		{`<span>&gt;</span>`, `<span>></span>`},
 		{`<code>&quot;&rsquor;</code>`, `<code>"&#8217;</code>`},
+		{`<small>&#160;</small>`, `<small>&#160;</small>`},
 		{`<span name="&lt;&apos;">a</span>`, `<span name="<'">a</span>`},
 		{`<span clear=none method=GET></span>`, `<span></span>`},
 		{`<span onload="javascript:x;"></span>`, `<span onload=x;></span>`},
