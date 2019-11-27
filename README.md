@@ -6,6 +6,9 @@
 
 **[All releases](https://github.com/tdewolff/minify/releases) for various platforms.**
 
+- [Arch Linux](https://aur.archlinux.org/packages/minify/)
+- [FreeBSD](https://www.freshports.org/textproc/minify)
+
 ---
 
 *Did you know that the shortest valid piece of HTML5 is `<!doctype html><html lang><title>x</title>`? See for yourself at the [W3C Validator](http://validator.w3.org/)!*
