@@ -45,12 +45,14 @@ func TestDataURI(t *testing.T) {
 		{"data:text/xml; version = 2.0,content", "data:text/xml;version=2.0,content"},
 		{"data:,=====", "data:,%3D%3D%3D%3D%3D"},
 		{"data:,======", "data:;base64,PT09PT09"},
-		{"data:text/x,<?x?>", "data:text/x,%3C%3Fx%3F%3E"},
+		{"data:text/x,<?xx?>", "data:text/x,%3C%3Fxx%3F%3E"},
+		{"data:text/other,\"<\u2318", "data:text/other,%22%3C%E2%8C%98"},
+		{"data:text/other,\"<\u2318>", "data:text/other;base64,IjzijJg+"},
 	}
 	m := New()
 	m.AddFunc("text/x", func(_ *M, w io.Writer, r io.Reader, _ map[string]string) error {
 		b, _ := ioutil.ReadAll(r)
-		test.String(t, string(b), "<?x?>")
+		test.String(t, string(b), "<?xx?>")
 		w.Write(b)
 		return nil
 	})

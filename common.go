@@ -1,9 +1,7 @@
 package minify
 
 import (
-	"bytes"
 	"encoding/base64"
-	"net/url"
 
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/strconv"
@@ -43,9 +41,7 @@ func DataURI(m *M, dataURI []byte) []byte {
 		base64Len := len(";base64") + base64.StdEncoding.EncodedLen(len(dataURI))
 		asciiLen := len(dataURI)
 		for _, c := range dataURI {
-			if 'A' <= c && c <= 'Z' || 'a' <= c && c <= 'z' || '0' <= c && c <= '9' || c == '-' || c == '_' || c == '.' || c == '~' || c == ' ' {
-				asciiLen++
-			} else {
+			if parse.URLEncodingTable[c] {
 				asciiLen += 2
 			}
 			if asciiLen > base64Len {
@@ -58,8 +54,7 @@ func DataURI(m *M, dataURI []byte) []byte {
 			dataURI = encoded
 			mediatype = append(mediatype, []byte(";base64")...)
 		} else {
-			dataURI = []byte(url.QueryEscape(string(dataURI)))
-			dataURI = bytes.Replace(dataURI, []byte("\""), []byte("\\\""), -1)
+			dataURI = parse.EncodeURL(dataURI, parse.URLEncodingTable)
 		}
 		if len("text/plain") <= len(mediatype) && parse.EqualFold(mediatype[:len("text/plain")], []byte("text/plain")) {
 			mediatype = mediatype[len("text/plain"):]
