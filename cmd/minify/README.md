@@ -35,6 +35,7 @@ You can enable bash tab completion by using
       -o, --output string                    Output file or directory (must have trailing slash), leave blank to use stdout
       -r, --recursive                        Recursively minify directories
           --svg-decimals int                 Number of decimals to preserve in numbers, -1 is all (default -1)
+	  -s, --sync                             Copy all files to destination directory and minify when filetype matches
           --type string                      Filetype (eg. css), optional for input filenames
           --url string                       URL of file to enable URL minification
       -v, --verbose                          Verbose

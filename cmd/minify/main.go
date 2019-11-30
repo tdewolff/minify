@@ -53,6 +53,7 @@ var (
 	verbose   bool
 	version   bool
 	watch     bool
+	sync      bool
 )
 
 type Task struct {
@@ -97,6 +98,7 @@ func main() {
 	flag.BoolVarP(&list, "list", "l", false, "List all accepted filetypes")
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose")
 	flag.BoolVarP(&watch, "watch", "w", false, "Watch files and minify upon changes")
+	flag.BoolVarP(&sync, "sync", "s", false, "Copy all files to destination directory and minify when filetype matches")
 	flag.BoolVarP(&version, "version", "", false, "Version")
 
 	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
@@ -114,6 +116,7 @@ func main() {
 		os.Exit(2)
 	}
 	rawInputs := flag.Args()
+	useStdin := len(rawInputs) == 0
 
 	Error = log.New(os.Stderr, "ERROR: ", 0)
 	if verbose {
@@ -148,9 +151,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	useStdin := len(rawInputs) == 0
-	mimetype = getMimetype(mimetype, filetype, useStdin)
-
 	var err error
 	if match != "" {
 		pattern, err = regexp.Compile(match)
@@ -159,12 +159,35 @@ func main() {
 		}
 	}
 
-	if watch && (useStdin || output == "") {
-		Error.Fatalln("watch doesn't work on stdin and stdout, specify input and output")
+	if (useStdin || output == "") && (watch || sync || recursive) {
+		if watch {
+			Error.Println("--watch doesn't work on stdin and stdout, specify input and output")
+		}
+		if sync {
+			Error.Println("--sync doesn't work on stdin and stdout, specify input and output")
+		}
+		if recursive {
+			Error.Println("--recursive doesn't work on stdin and stdout, specify input and output")
+		}
+		os.Exit(1)
+	}
+	if mimetype == "" && filetype == "" && useStdin {
+		Error.Fatalln("must specify --mime or --type for stdin")
 	}
 
-	if recursive && (useStdin || output == "") {
-		Error.Fatalln("recursive minification doesn't work on stdin and stdout, specify input and output")
+	// detect mimetype, mimetype=="" means we'll infer mimetype from file extensions
+	if mimetype == "" && filetype != "" {
+		var ok bool
+		if mimetype, ok = filetypeMime[filetype]; !ok {
+			Error.Fatalln("cannot find mimetype for filetype", filetype)
+		}
+	}
+	if verbose {
+		if mimetype == "" {
+			Info.Println("infer mimetype from file extensions")
+		} else {
+			Info.Println("use mimetype", mimetype)
+		}
 	}
 
 	////////////////
@@ -178,6 +201,10 @@ func main() {
 				Error.Fatalln(err)
 			}
 		}
+	}
+
+	if sync && !dirDst {
+		Error.Fatalln("--sync requires destination to be a directory")
 	}
 
 	tasks, ok := expandInputs(rawInputs, dirDst)
@@ -305,27 +332,6 @@ func minifyWorker(mimetype string, chanTasks <-chan Task, chanFails chan<- int) 
 	chanFails <- fails
 }
 
-func getMimetype(mimetype, filetype string, useStdin bool) string {
-	if mimetype == "" && filetype != "" {
-		var ok bool
-		if mimetype, ok = filetypeMime[filetype]; !ok {
-			Error.Fatalln("cannot find mimetype for filetype", filetype)
-		}
-	}
-	if mimetype == "" && useStdin {
-		Error.Fatalln("must specify mimetype or filetype for stdin")
-	}
-
-	if verbose {
-		if mimetype == "" {
-			Info.Println("infer mimetype from file extensions")
-		} else {
-			Info.Println("use mimetype", mimetype)
-		}
-	}
-	return mimetype
-}
-
 func sanitizePath(p string) string {
 	p = filepath.ToSlash(p)
 	isDir := p[len(p)-1] == '/'
@@ -344,13 +350,15 @@ func validFile(info os.FileInfo) bool {
 			return false
 		}
 
-		ext := path.Ext(info.Name())
-		if len(ext) > 0 {
-			ext = ext[1:]
-		}
+		if !sync {
+			ext := path.Ext(info.Name())
+			if len(ext) > 0 {
+				ext = ext[1:]
+			}
 
-		if _, ok := filetypeMime[ext]; !ok {
-			return false
+			if _, ok := filetypeMime[ext]; !ok {
+				return false
+			}
 		}
 		return true
 	}
@@ -529,7 +537,9 @@ func minify(mimetype string, t Task) bool {
 		for _, src := range t.srcs {
 			if len(path.Ext(src)) > 0 {
 				srcMimetype, ok := filetypeMime[path.Ext(src)[1:]]
-				if !ok {
+				if !ok && sync {
+					break // is sync==true, then len(t.srcs)==1
+				} else if !ok {
 					Error.Println("cannot infer mimetype from extension in", src)
 					return false
 				}
@@ -592,6 +602,18 @@ func minify(mimetype string, t Task) bool {
 		w = NewCountingWriter(fw)
 	} else {
 		w = NewCountingWriter(bufio.NewWriter(fw))
+	}
+
+	// synchronize file
+	if sync && mimetype == "" {
+		_, err = io.Copy(fw, fr)
+		fr.Close()
+		fw.Close()
+		if err != nil {
+			Error.Println(err)
+			return false
+		}
+		return true
 	}
 
 	success := true
