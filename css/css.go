@@ -401,9 +401,9 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 	switch prop {
 	case css.Font:
-		if len(values) > 1 {
+		if len(values) > 1 { // must contain atleast font-size and font-family
 			// the font-families are separated by commas and are at the end of font
-			// get index for the first font-family given
+			// get index for last token before font family names
 			i := len(values) - 1
 			for j, value := range values[2:] {
 				if value.TokenType == css.CommaToken {
@@ -430,6 +430,15 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 
 			// font-family minified in place
 			values = append(values[:i+1], c.minifyProperty(css.Font_Family, values[i+1:])...)
+
+			// fix for IE9, IE10, IE11: font name starting with `-` is not recognized
+			if values[i+1].Data[0] == '-' {
+				v := make([]byte, len(values[i+1].Data)+2)
+				v[0] = '\''
+				copy(v[1:], values[i+1].Data)
+				v[len(v)-1] = '\''
+				values[i+1].Data = v
+			}
 
 			if i > 0 {
 				// line-height

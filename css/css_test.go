@@ -165,6 +165,8 @@ func TestCSSInline(t *testing.T) {
 		{"background:#fff / auto 5%", "background:#fff/auto 5%"},
 		{"background:calc(5%-2%) center", "background:calc(5%-2%)"},
 		{"font-weight: bold; font-weight: normal;", "font-weight:700;font-weight:400"},
+		{"font: ;", "font:"},
+		{"font: 2em;", "font:2em"},
 		{"font: caption;", "font:caption"},
 		{"font: bold 5px \"Times new Roman\",\"Sans-Serif\";", "font:700 5px times new roman,sans-serif"},
 		{"font: bold xx-small times new roman;", "font:700 xx-small times new roman"},
@@ -263,6 +265,8 @@ func TestCSSInline(t *testing.T) {
 
 		// bugs
 		{"background: linear-gradient(-180deg, #355FFF 0%, #1F52FF 100%) 0% 0% / cover", "background:linear-gradient(-180deg,#355FFF 0%,#1F52FF 100%)0 0/cover"}, // #263
+		{"font:1em -apple-system", "font:1em '-apple-system'"}, // support for IE9, IE10, IE11, fixes #251
+		{"font:1em -", "font:1em '-'"},                         // support for IE9, IE10, IE11, fixes #251
 
 		// go-fuzz
 		{"FONT-FAMILY: ru\"", "font-family:ru\""},
