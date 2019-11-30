@@ -169,16 +169,16 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					return err
 				}
 			} else {
-				if _, err := w.Write(t.Text); err != nil {
+				if _, err := w.Write(t.Data); err != nil {
 					return err
 				}
 			}
 		case xml.StartTagCloseVoidToken:
-			if _, err := w.Write(t.Text); err != nil {
+			if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
 		case xml.StartTagClosePIToken:
-			if _, err := w.Write(t.Text); err != nil {
+			if _, err := w.Write(t.Data); err != nil {
 				return err
 			}
 		case xml.EndTagToken:
