@@ -21,7 +21,7 @@ You can enable bash tab completion by executing
 
     source minify_bash_tab_completion
 
-#### Arch Linux
+### Arch Linux
 Using `yay`:
 
 ```
@@ -30,12 +30,12 @@ yay -Syu minify
 
 [Minify in AUR](https://aur.archlinux.org/packages/minify/)
 
-#### FreeBSD
+### FreeBSD
 ```
 pkg install minify
 ```
 
-#### MacOS
+### MacOS
 Using Homebrew:
 
 ```
@@ -44,7 +44,7 @@ brew install tdewolff/tap/minify
 
 [Brew tap](https://github.com/tdewolff/homebrew-tap/)
 
-#### Ubuntu
+### Ubuntu
 Update the package index:
 
 ```
