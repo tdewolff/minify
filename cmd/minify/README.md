@@ -9,13 +9,48 @@ Make sure you have [Go](http://golang.org/) and [Git](http://git-scm.com/) insta
 
 Run the following command
 
-	go get github.com/tdewolff/minify/cmd/minify
+    mkdir $HOME/src
+    cd $HOME/src
+    git clone https://github.com/tdewolff/minify.git
+    cd minify/cmd/minify
+    go install
 
-and the `minify` command will be in your `$GOPATH/bin`.
+and the `minify` command will be in `$GOPATH/bin` or `$HOME/go/bin`.
 
-You can enable bash tab completion by using
+You can enable bash tab completion by executing
 
     source minify_bash_tab_completion
+
+#### [Arch Linux](https://aur.archlinux.org/packages/minify/)
+Using `yay`:
+
+```
+yay -Syu minify
+```
+
+#### [FreeBSD](https://svnweb.freebsd.org/ports/head/textproc/minify/)
+```
+pkg install minify
+```
+
+#### [MacOS](https://github.com/tdewolff/homebrew-tap)
+Using Homebrew:
+
+```
+brew install tdewolff/tap/minify
+```
+
+#### [Ubuntu](https://packages.ubuntu.com/eoan/minify)
+Update the package index:
+
+```
+sudo apt-get update
+```
+
+Install minify deb package:
+```
+sudo apt-get install minify
+```
 
 ## Usage
     Usage: minify [options] [input]
