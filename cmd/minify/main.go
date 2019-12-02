@@ -29,6 +29,8 @@ import (
 	"github.com/tdewolff/minify/v2/xml"
 )
 
+// TODO: watch functionality not great. Does not detect new files in directory, minifies twice with src==dst directory
+
 var Version = "master"
 var Commit = ""
 var Date = ""
@@ -313,7 +315,7 @@ func main() {
 		fails += <-chanFails
 	}
 
-	if verbose {
+	if verbose && !watch {
 		Info.Println(time.Since(start), "total")
 	}
 	if fails > 0 {
@@ -400,18 +402,8 @@ func expandInputs(inputs []string, dirDst bool) ([]Task, bool) {
 		tasks = tasks[:1]
 	}
 
-	if verbose && ok {
-		if len(inputs) == 0 {
-			Info.Println("minify from stdin")
-		} else if len(tasks) == 1 {
-			if len(tasks[0].srcs) > 1 {
-				Info.Println("minify and concatenate", len(tasks[0].srcs), "input files")
-			} else {
-				Info.Println("minify input file", tasks[0].srcs[0])
-			}
-		} else {
-			Info.Println("minify", len(tasks), "input files")
-		}
+	if verbose && ok && len(inputs) == 0 {
+		Info.Println("minify from stdin")
 	}
 	return tasks, ok
 }
@@ -553,6 +545,11 @@ func minify(mimetype string, t Task) bool {
 		}
 	}
 
+	// synchronizing files that are not minified but just copied to the same directory, no action needed
+	if sync && mimetype == "" && t.srcs[0] == t.dst {
+		return true
+	}
+
 	srcName := strings.Join(t.srcs, " + ")
 	if len(t.srcs) > 1 {
 		srcName = "(" + srcName + ")"
@@ -613,6 +610,7 @@ func minify(mimetype string, t Task) bool {
 			Error.Println(err)
 			return false
 		}
+		Info.Println("copy ", srcName, "to", dstName)
 		return true
 	}
 

@@ -13,7 +13,7 @@ Run the following command
     cd $HOME/src
     git clone https://github.com/tdewolff/minify.git
     cd minify/cmd/minify
-    go install
+    ./install.sh
 
 and the `minify` command will be in `$GOPATH/bin` or `$HOME/go/bin`.
 
