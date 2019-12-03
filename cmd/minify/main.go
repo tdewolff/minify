@@ -29,8 +29,6 @@ import (
 	"github.com/tdewolff/minify/v2/xml"
 )
 
-// TODO: watch functionality not great. Does not detect new files in directory, minifies twice with src==dst directory
-
 var Version = "master"
 var Commit = ""
 var Date = ""
@@ -59,9 +57,20 @@ var (
 )
 
 type Task struct {
-	srcs   []string
-	srcDir string
-	dst    string
+	srcs []string
+	dst  string
+}
+
+func NewTask(root, input, output string) Task {
+	t := Task{[]string{input}, output}
+	if 0 < len(output) && output[len(output)-1] == '/' {
+		rel, err := filepath.Rel(root, input)
+		if err != nil {
+			Error.Fatalln(err)
+		}
+		t.dst = path.Clean(filepath.ToSlash(path.Join(output, rel)))
+	}
+	return t
 }
 
 var (
@@ -194,6 +203,7 @@ func main() {
 
 	////////////////
 
+	// set output, empty means stdout, ending in slash means a directory, otherwise a file
 	dirDst := false
 	if output != "" {
 		output = sanitizePath(output)
@@ -204,23 +214,48 @@ func main() {
 			}
 		}
 	}
-
-	if sync && !dirDst {
-		Error.Fatalln("--sync requires destination to be a directory")
-	}
-
-	tasks, ok := expandInputs(rawInputs, dirDst)
-	if !ok {
+	if !dirDst && (sync || watch) {
+		if sync {
+			Error.Println("--sync requires destination to be a directory")
+		}
+		if watch {
+			Error.Println("--watch requires destination to be a directory")
+		}
 		os.Exit(1)
 	}
-
-	if ok = expandOutputs(output, &tasks); !ok {
-		os.Exit(1)
+	if verbose {
+		if output == "" {
+			Info.Println("minify to stdout")
+		} else if !dirDst {
+			Info.Println("minify to output file", output)
+		} else if output == "./" {
+			Info.Println("minify to current working directory")
+		} else {
+			Info.Println("minify to output directory", output)
+		}
+		if useStdin {
+			Info.Println("minify from stdin")
+		}
 	}
 
+	var tasks []Task
+	var roots []string
 	if useStdin {
-		tasks = append(tasks, Task{[]string{""}, "", output}) // stdin
+		tasks = append(tasks, NewTask("", "", output))
+		roots = append(roots, "")
+	} else {
+		tasks, roots = createTasks(rawInputs, output)
 	}
+
+	// concatenate
+	if 1 < len(tasks) && !dirDst {
+		for _, task := range tasks[1:] {
+			tasks[0].srcs = append(tasks[0].srcs, task.srcs[0])
+		}
+		tasks = tasks[:1]
+	}
+
+	////////////////
 
 	m = min.New()
 	m.Add("text/css", cssMinifier)
@@ -234,11 +269,6 @@ func main() {
 		Error.Fatalln(err)
 	}
 
-	start := time.Now()
-
-	chanTasks := make(chan Task, 100)
-	chanFails := make(chan int, 100)
-
 	numWorkers := 1
 	if !verbose && len(tasks) > 1 {
 		numWorkers = 4
@@ -247,6 +277,10 @@ func main() {
 		}
 	}
 
+	start := time.Now()
+
+	chanTasks := make(chan Task, 100)
+	chanFails := make(chan int, numWorkers)
 	for n := 0; n < numWorkers; n++ {
 		go minifyWorker(mimetype, chanTasks, chanFails)
 	}
@@ -256,30 +290,22 @@ func main() {
 	}
 
 	if watch {
-		watcher, err := NewRecursiveWatcher(recursive)
+		watcher, err := NewWatcher(recursive)
 		if err != nil {
 			Error.Fatalln(err)
 		}
 		defer watcher.Close()
 
-		watcherTasks := make(map[string]Task, len(rawInputs))
-		for _, task := range tasks {
-			for _, src := range task.srcs {
-				watcherTasks[src] = task
-				watcher.AddPath(src)
-			}
+		for _, root := range roots {
+			watcher.AddPath(root)
 		}
 
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
-
-		skip := make(map[string]int)
-		changes := watcher.Run()
-		for changes != nil {
+		for changes := watcher.Run(); changes != nil; {
 			select {
 			case <-c:
 				watcher.Close()
-				fmt.Printf("\n")
 			case file, ok := <-changes:
 				if !ok {
 					changes = nil
@@ -287,24 +313,20 @@ func main() {
 				}
 				file = sanitizePath(file)
 
-				if skip[file] > 0 {
-					skip[file]--
-					continue
+				// find longest common path among roots
+				root := roots[0]
+				for _, path := range roots[1:] {
+					pathRel, err1 := filepath.Rel(path, file)
+					rootRel, err2 := filepath.Rel(root, file)
+					if err2 != nil || err1 == nil && len(pathRel) < len(rootRel) {
+						root = path
+					}
 				}
 
-				var t Task
-				if t, ok = watcherTasks[file]; ok {
-					if !verbose {
-						Info.Println(file, "changed")
-					}
-					for _, src := range t.srcs {
-						if src == t.dst {
-							skip[file] = 2 // minify creates both a CREATE and WRITE on the file
-							break
-						}
-					}
-					chanTasks <- t
+				if !verbose {
+					Info.Println(file, "changed")
 				}
+				chanTasks <- NewTask(root, file, output)
 			}
 		}
 	}
@@ -371,120 +393,51 @@ func validDir(info os.FileInfo) bool {
 	return info.Mode().IsDir() && len(info.Name()) > 0 && (hidden || info.Name()[0] != '.')
 }
 
-func expandInputs(inputs []string, dirDst bool) ([]Task, bool) {
-	ok := true
+func createTasks(inputs []string, output string) ([]Task, []string) {
 	tasks := []Task{}
+	roots := []string{}
 	for _, input := range inputs {
 		input = sanitizePath(input)
 		info, err := os.Stat(input)
 		if err != nil {
-			Error.Println(err)
-			ok = false
-			continue
+			Error.Fatalln(err)
 		}
 
 		if info.Mode().IsRegular() {
-			tasks = append(tasks, Task{[]string{filepath.ToSlash(input)}, "", ""})
+			tasks = append(tasks, NewTask("", input, output))
 		} else if info.Mode().IsDir() {
-			expandDir(input, &tasks, &ok)
+			roots = append(roots, input)
+			if !recursive {
+				infos, err := ioutil.ReadDir(input)
+				if err != nil {
+					Error.Fatalln(err)
+				}
+				for _, info := range infos {
+					if validFile(info) {
+						tasks = append(tasks, NewTask(input, path.Join(input, info.Name()), output))
+					}
+				}
+			} else {
+				err := filepath.Walk(input, func(path string, info os.FileInfo, err error) error {
+					if err != nil {
+						return err
+					}
+					if validFile(info) {
+						tasks = append(tasks, NewTask(input, path, output))
+					} else if info.Mode().IsDir() && !validDir(info) && info.Name() != "." && info.Name() != ".." { // check for IsDir, so we don't skip the rest of the directory when we have an invalid file
+						return filepath.SkipDir
+					}
+					return nil
+				})
+				if err != nil {
+					Error.Fatalln(err)
+				}
+			}
 		} else {
-			Error.Println("not a file or directory", input)
-			ok = false
+			Error.Fatalln("not a file or directory", input)
 		}
 	}
-
-	if len(tasks) > 1 && !dirDst {
-		// concatenate
-		tasks[0].srcDir = ""
-		for _, task := range tasks[1:] {
-			tasks[0].srcs = append(tasks[0].srcs, task.srcs[0])
-		}
-		tasks = tasks[:1]
-	}
-
-	if verbose && ok && len(inputs) == 0 {
-		Info.Println("minify from stdin")
-	}
-	return tasks, ok
-}
-
-func expandDir(input string, tasks *[]Task, ok *bool) {
-	if !recursive {
-		if verbose {
-			Info.Println("expanding directory", input)
-		}
-
-		infos, err := ioutil.ReadDir(input)
-		if err != nil {
-			Error.Println(err)
-			*ok = false
-		}
-		for _, info := range infos {
-			if validFile(info) {
-				*tasks = append(*tasks, Task{[]string{path.Join(input, info.Name())}, input, ""})
-			}
-		}
-	} else {
-		if verbose {
-			Info.Println("expanding directory", input, "recursively")
-		}
-
-		err := filepath.Walk(input, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if validFile(info) {
-				*tasks = append(*tasks, Task{[]string{filepath.ToSlash(path)}, input, ""})
-			} else if info.Mode().IsDir() && !validDir(info) && info.Name() != "." && info.Name() != ".." { // check for IsDir, so we don't skip the rest of the directory when we have an invalid file
-				return filepath.SkipDir
-			}
-			return nil
-		})
-		if err != nil {
-			Error.Println(err)
-			*ok = false
-		}
-	}
-}
-
-func expandOutputs(output string, tasks *[]Task) bool {
-	if verbose {
-		if output == "" {
-			Info.Println("minify to stdout")
-		} else if output[len(output)-1] != '/' {
-			Info.Println("minify to output file", output)
-		} else if output == "./" {
-			Info.Println("minify to current working directory")
-		} else {
-			Info.Println("minify to output directory", output)
-		}
-	}
-
-	if output == "" {
-		return true
-	}
-
-	ok := true
-	for i, t := range *tasks {
-		var err error
-		(*tasks)[i].dst, err = getOutputFilename(output, t)
-		if err != nil {
-			Error.Println(err)
-			ok = false
-		}
-	}
-	return ok
-}
-
-func getOutputFilename(output string, t Task) (string, error) {
-	if len(output) > 0 && output[len(output)-1] == '/' {
-		rel, err := filepath.Rel(t.srcDir, t.srcs[0])
-		if err != nil {
-			return "", err
-		}
-		return path.Clean(filepath.ToSlash(path.Join(output, rel))), nil
-	}
-	return output, nil
+	return tasks, roots
 }
 
 func openInputFile(input string) (io.ReadCloser, error) {
@@ -610,7 +563,7 @@ func minify(mimetype string, t Task) bool {
 			Error.Println(err)
 			return false
 		}
-		Info.Println("copy ", srcName, "to", dstName)
+		Info.Println("copy", srcName, "to", dstName)
 		return true
 	}
 
@@ -631,7 +584,7 @@ func minify(mimetype string, t Task) bool {
 			ratio = float64(w.N) / float64(r.N)
 		}
 
-		stats := fmt.Sprintf("(%9v, %6v, %5.1f%%, %6v/s)", dur, humanize.Bytes(uint64(w.N)), ratio*100, speed)
+		stats := fmt.Sprintf("(%9v, %6v, %6v, %5.1f%%, %6v/s)", dur, humanize.Bytes(uint64(r.N)), humanize.Bytes(uint64(w.N)), ratio*100, speed)
 		if srcName != dstName {
 			Info.Println(stats, "-", srcName, "to", dstName)
 		} else {
