@@ -285,24 +285,34 @@ func main() {
 		go minifyWorker(mimetype, chanTasks, chanFails)
 	}
 
-	for _, task := range tasks {
-		chanTasks <- task
-	}
-
-	if watch {
+	if !watch {
+		for _, task := range tasks {
+			chanTasks <- task
+		}
+	} else {
 		watcher, err := NewWatcher(recursive)
 		if err != nil {
 			Error.Fatalln(err)
 		}
 		defer watcher.Close()
 
+		changes := watcher.Run()
+		for _, task := range tasks {
+			chanTasks <- task
+		}
+
+		autoDir := false
 		for _, root := range roots {
 			watcher.AddPath(root)
+			if root == output {
+				autoDir = true
+			}
 		}
+		skip := map[string]bool{}
 
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
-		for changes := watcher.Run(); changes != nil; {
+		for changes != nil {
 			select {
 			case <-c:
 				watcher.Close()
@@ -320,6 +330,15 @@ func main() {
 					rootRel, err2 := filepath.Rel(root, file)
 					if err2 != nil || err1 == nil && len(pathRel) < len(rootRel) {
 						root = path
+					}
+				}
+
+				// skip files in output directory (which is also an input directory) for the first change
+				// skips files that are not minified and stay put, as they are not explicitly copied, but that's ok
+				if autoDir && root == output {
+					if _, ok := skip[file]; !ok {
+						skip[file] = true
+						break
 					}
 				}
 
