@@ -57,7 +57,7 @@ func TestCSS(t *testing.T) {
 		// go-fuzz
 		{"input[type=\"\x00\"] {  a: b\n}.a{}", "input[type=\"\x00\"]{a:b}.a{}"},
 		{"a{a:)'''", "a{a:)'''}"},
-		{"{T:l(", "{t:l(}"},
+		{"{T:l(", "{t:l()}"},
 		{"{background:0 0 0", "{background:0 0}"},
 		{"{d:url( \n  \n\t0", "{d:url()}"},
 		{"{d:urL(     '0", `{d:url("'")}`},
@@ -76,7 +76,7 @@ func TestCSS(t *testing.T) {
 
 	// coverage
 	test.T(t, Token{css.IdentToken, []byte("data"), nil}.String(), "Ident(data)")
-	test.T(t, Token{css.FunctionToken, nil, []css.Token{{css.IdentToken, []byte("data")}}}.String(), "[Ident('data')]")
+	test.T(t, Token{css.FunctionToken, nil, []Token{{css.IdentToken, []byte("data"), nil}}}.String(), "[Ident(data)]")
 }
 
 func TestCSSInline(t *testing.T) {
@@ -101,19 +101,31 @@ func TestCSSInline(t *testing.T) {
 		{"color: rgb(100%,100%,100%);", "color:#fff"},
 		{"color: rgba(255,0,0,1);", "color:red"},
 		{"color: rgba(255,0,0,2);", "color:red"},
-		{"color: rgba(255,0,0,0.5);", "color:rgba(255,0,0,.5)"}, // {"color: rgba(255,0,0,0.5);", "color:#ff000080"},
-		{"color: rgba(255,0,0,-1);", "color:transparent"},       // {"color: rgba(255,0,0,-1);", "color:#0000"},
-		// {"color: rgba(0%,15%,25%,0.2);", "color:rgba(0,15%,25%,.2)"}, TODO: zero percentage to zero // {"color: rgba(0%,15%,25%,0.2);", "color:#00264033"},
+		{"color: rgba(255,0,0,0.5);", "color:rgba(255,0,0,.5)"},             // {"color: rgba(255,0,0,0.5);", "color:#ff000080"},
+		{"color: rgba(255,0,0,-1);", "color:transparent"},                   // {"color: rgba(255,0,0,-1);", "color:#0000"},
+		{"color: rgba(0%,0%,0%,0.2);", "color:rgba(0,0,0,.2)"},              // {"color: rgba(0%,15%,25%,0.2);", "color:#00264033"},
 		{"color: rgba(0,0,0,0.5);", "color:rgba(0,0,0,.5)"},                 // {"color: rgba(0,0,0,0.5);", "color:#00000080"},
 		{"color: rgba(0,0,0,0.264705882);", "color:rgba(0,0,0,.264705882)"}, // {"color: rgba(0,0,0,0.264705882);", "color:#0004"},
-		{"color: rgb(255 0 0 / 1);", "color:red"},
+		{"color: rgba(255 0 0 / 1);", "color:red"},
+		{"color: rgba(0 100% 50% / 100%);", "color:#00ff80"},
+		{"color: rgba(0 100% 50% / 60%);", "color:rgba(0 100% 50%/.6)"},
+		{"color: rgb(20%,40%,60%,50%);", "color:rgb(51,102,153,.5)"},
+		{"color: rgb(0%,80%,100%,50%);", "color:rgb(0,204,255,.5)"},
+		{"color: rgb(1,2,3,90%);", "color:rgb(1,2,3,.9)"},
+		{"color: rgb(1,2,3,.01);", "color:rgb(1,2,3,1%)"},
+		{"color: rgb(1,2,3,.0099);", "color:rgb(1,2,3,.99%)"},
 		{"color: hsla(5,0%,10%,0.75);", "color:hsla(5,0%,10%,.75)"}, // {"color: hsla(5,0%,10%,0.75);", "color:#1a1a1abf"},
 		{"color: hsl(0,100%,50%);", "color:red"},
+		{"color: hsl(-360,100%,50%);", "color:red"},
 		{"color: hsla(1,2%,3%,1);", "color:#080807"},
 		{"color: hsla(1,2%,3%,0);", "color:transparent"}, // {"color: hsla(1,2%,3%,0);", "color:#0000"},
 		{"color: hsl(48,100%,50%);", "color:#fc0"},
-		{"color: hsl(0 100% 50% / 1);", "color:red"},
-		{"color: hsl(400, 150%, 150%, 2);", "color:#fff"},
+		{"color: hsla(0 100% 50% / 1);", "color:red"},
+		{"color: hsla(0 100% 50% / 60%);", "color:hsla(0 100% 50%/.6)"},
+		{"color: hsla(400, 150%, 150%, 2);", "color:#fff"},
+		//{"color: hwb(0 0% 0%);", "color:red"}, TODO
+		//{"color: hwb(120 20% 20%/50%);", "color:"}, TODO
+		{"background-color:transparent", "background-color:initial"},
 		{"background-position:top", "background-position:top"},
 		{"background-position:bottom", "background-position:bottom"},
 		{"background-position:center", "background-position:50%"},
@@ -148,7 +160,7 @@ func TestCSSInline(t *testing.T) {
 		{"background:red", "background:red"},
 		{"background:red none", "background:red"},
 		{"background:red none 0 0", "background:red"},
-		{"background:red none 1 1", "background:red 1 1"},
+		{"background:#ff0000 none 1 1", "background:red 1 1"},
 		{"background:#0000 1 1", "background:1 1"},
 		{"background:transparent", "background:0 0"},
 		{"background:transparent no-repeat", "background:no-repeat"},
@@ -185,6 +197,15 @@ func TestCSSInline(t *testing.T) {
 		{"border-left: none 0;", "border-left:0"},
 		{"border-left: none medium currentcolor;", "border-left:none"},
 		{"border-left: 0 dashed red;", "border-left:0 dashed red"},
+		{"border-color: currentcolor red currentcolor;", "border-color:initial red initial"},
+		{"border-color: currentcolor currentcolor currentcolor;", "border-color:initial"},
+		{"border-color: red red red;", "border-color:red"},
+		{"border-left-color: currentcolor;", "border-left-color:initial"},
+		{"outline-color: white;", "outline-color:#fff"},
+		{"column-rule: medium currentcolor none;", "column-rule:none"},
+		{"text-shadow: white 5px 5px;", "text-shadow:#fff 5px 5px"},
+		{"text-decoration: currentcolor none solid", "text-decoration:none"},
+		{"text-emphasis: none currentcolor", "text-emphasis:none"},
 		{"margin: 1 1 1 1;", "margin:1"},
 		{"margin: 1 2 1 2;", "margin:1 2"},
 		{"margin: 1 2 3 2;", "margin:1 2 3"},
@@ -198,7 +219,6 @@ func TestCSSInline(t *testing.T) {
 		{"content: \"a\\\nb\";", "content:\"ab\""},
 		{"content: \"a\\\r\nb\\\r\nc\";", "content:\"abc\""},
 		{"content: \"\";", "content:\"\""},
-		{"x: white , white", "x:#fff,#fff"},
 
 		{"text-decoration: none !important", "text-decoration:none!important"},
 		{"color:#fff", "color:#fff"},
@@ -215,7 +235,7 @@ func TestCSSInline(t *testing.T) {
 		{"-ms-filter: \"progid:DXImageTransform.Microsoft.Alpha(Opacity=80)\";", "-ms-filter:\"alpha(opacity=80)\""},
 		{"filter: progid:DXImageTransform.Microsoft.Alpha(Opacity = 80);", "filter:alpha(opacity=80)"},
 		{"MARGIN:1EM", "margin:1em"},
-		//{"color:CYAN", "color:cyan"}, // TODO
+		{"color:CYAN", "color:cyan"},
 		{"width:attr(Name em)", "width:attr(Name em)"},
 		{"content:CounterName", "content:CounterName"},
 		{"background:url('http://domain.com/image.png');", "background:url(http://domain.com/image.png)"},
@@ -234,13 +254,31 @@ func TestCSSInline(t *testing.T) {
 		{"url:local('abc def') , url('abc def') format('truetype')", "url:local('abc def'),url('abc def')format('truetype')"},
 
 		{"any:0deg 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz", "any:0 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz"},
-		{"width:calc(0%-0px)", "width:calc(0%-0px)"},
 		{"margin:calc(10px) calc(20px)", "margin:calc(10px)calc(20px)"},
 		{"border-left:0 none", "border-left:0"},
 		{"--custom-variable:0px;", "--custom-variable:0px"},
 		{"--foo: if(x > 5) this.width = 10", "--foo: if(x > 5) this.width = 10"},
 		{"--foo: ;", "--foo: "},
 		{"color=blue;", "color=blue"},
+		{"x: white , white", "x:white,white"},
+
+		// TODO: functions
+		{"width:calc(0%-0px)", "width:calc(0%0)"}, // invalid
+		{"width:calc(0% - 0px)", "width:calc(0% - 0)"},
+		{"width:calc(calc(0% - 0px) + 1em)", "width:calc(calc(0% - 0) + 1em)"},
+		//{"width:calc(5px);", "width:5px"},
+		//{"width:calc(5px - 3px);", "width:2px"},
+		//{"width:calc(5px + -3px);", "width:2px"},
+		//{"width:calc(5px - 3%);", "width:calc(5px - 3%)"},
+		//{"width:calc(2*5px);", "width:10px"},
+		//{"width:calc(10px/2);", "width:5px"},
+		//{"width:calc(calc(5px));", "width:5px"},
+		//{"width:calc(calc(5px - 1em)*3);", "width:calc((5px - 1em)*3)"},
+		//{"width:calc(calc(5px - 1em) - 3%);", "width:calc(5px - 1em - 3%)"},
+		//{"width:calc(3% - calc(5px - 1em));", "width:calc(3% - 5px + 1em)"},
+		//{"width:calc(5px-3px);", "width:calc(5px-3px)"}, // invalid
+		//{"width:calc(5px*3px);", "width:calc(5px*3px)"}, // invalid
+		//{"width:calc(5px/3px);", "width:calc(5px/3px)"}, // invalid
 
 		// case sensitivity
 		{"animation:Ident", "animation:Ident"},
