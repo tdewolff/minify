@@ -282,6 +282,17 @@ func TestCSSInline(t *testing.T) {
 		//{"width:calc(5px*3px);", "width:calc(5px*3px)"}, // invalid
 		//{"width:calc(5px/3px);", "width:calc(5px/3px)"}, // invalid
 
+		// dimensions
+		{"width:96px", "width:1in"},
+		{"width:72pt", "width:1in"},
+		{"width:12pc", "width:2in"},
+		{"width:0.1666667in", "width:1pc"},
+		{"width:0.0625pc", "width:1px"},
+		{"width:40Q", "width:40q"},
+		{"width:120Q", "width:3cm"},
+		{"width:10mm", "width:1cm"},
+		{"width:120Q", "width:3cm"},
+
 		// case sensitivity
 		{"animation:Ident", "animation:Ident"},
 		{"animation-name:Ident", "animation-name:Ident"},

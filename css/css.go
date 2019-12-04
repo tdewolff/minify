@@ -1146,15 +1146,62 @@ func (c *cssMinifier) minifyDimension(value Token) (Token, []byte) {
 	var dim []byte
 	if value.TokenType == css.DimensionToken {
 		n := parse.Number(value.Data)
+		num := value.Data[:n]
 		dim = value.Data[n:]
 		parse.ToLower(dim)
 
 		if c.o.KeepCSS2 {
-			value.Data = minify.Decimal(value.Data[:n], c.o.Decimals) // don't use exponents
+			num = minify.Decimal(num, c.o.Decimals) // don't use exponents
 		} else {
-			value.Data = minify.Number(value.Data[:n], c.o.Decimals)
+			num = minify.Number(num, c.o.Decimals)
 		}
-		value.Data = append(value.Data, dim...)
+
+		// change dimension to compress number
+		h := css.ToHash(dim)
+		if h == css.Px || h == css.Pt || h == css.Pc || h == css.In || h == css.Mm || h == css.Cm || h == css.Q {
+			d, _ := strconv.ParseFloat(string(num), 64) // can never fail
+			dimensions := []css.Hash{}
+			multipliers := []float64{}
+			switch h {
+			case css.Px:
+				dimensions = []css.Hash{css.In, css.Pc, css.Pt, css.Px}
+				multipliers = []float64{0.010416667, 0.0625, 0.75, 1.0}
+			case css.Pt:
+				dimensions = []css.Hash{css.In, css.Pc, css.Pt, css.Px}
+				multipliers = []float64{0.013888889, 0.083333333, 1.0, 1.3333333, 1.0}
+			case css.Pc:
+				dimensions = []css.Hash{css.In, css.Pc, css.Pt, css.Px}
+				multipliers = []float64{0.16666667, 1.0, 12.0, 16.0}
+			case css.In:
+				dimensions = []css.Hash{css.In, css.Pc, css.Pt, css.Px}
+				multipliers = []float64{1.0, 6.0, 72.0, 96.0}
+			case css.Cm:
+				dimensions = []css.Hash{css.Cm, css.Mm, css.Q}
+				multipliers = []float64{1.0, 10.0, 40.0}
+			case css.Mm:
+				dimensions = []css.Hash{css.Cm, css.Mm, css.Q}
+				multipliers = []float64{0.1, 1.0, 4.0}
+			case css.Q:
+				dimensions = []css.Hash{css.Cm, css.Mm, css.Q}
+				multipliers = []float64{0.025, 0.25, 1.0}
+			}
+			// TODO: investigate if switch Q and mm ever results in something smaller
+			for i := range dimensions {
+				if dimensions[i] != h {
+					b := strconv.AppendFloat([]byte{}, d*multipliers[i], 'f', -1, 64)
+					if c.o.KeepCSS2 {
+						b = minify.Decimal(b, 6) // don't use exponents
+					} else {
+						b = minify.Number(b, 6)
+					}
+					if len(b) < len(num) && dim[0] != 'q' || len(b)+1 < len(num) {
+						num = b
+						dim = []byte(dimensions[i].String())
+					}
+				}
+			}
+		}
+		value.Data = append(num, dim...)
 	}
 	return value, dim
 }
