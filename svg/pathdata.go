@@ -147,6 +147,7 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 	} else if (cmd == 'A' || cmd == 'a') && n%7 == 0 {
 		di = 7
 	} else {
+		p.state.cmd = 0
 		return len(b)
 	}
 
