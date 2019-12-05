@@ -89,7 +89,7 @@ func (p *PathData) ShortenPathData(b []byte) []byte {
 			cmd = c
 			p.coords = p.coords[:0]
 			p.coordFloats = p.coordFloats[:0]
-		} else if (cmd == 'A' || cmd == 'a') && (len(p.coordFloats) == 3 || len(p.coordFloats) == 4) {
+		} else if (cmd == 'A' || cmd == 'a') && (len(p.coordFloats)%7 == 3 || len(p.coordFloats)%7 == 4) {
 			// boolean flags for arc command
 			if c == '1' {
 				p.coords = append(p.coords, b[i:i+1])
