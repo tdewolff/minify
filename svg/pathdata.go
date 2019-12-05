@@ -82,9 +82,7 @@ func (p *PathData) ShortenPathData(b []byte) []byte {
 			continue
 		} else if pathCmds[c] && (cmd == 0 || cmd != c || c == 'M' || c == 'm') { // any command
 			if cmd != 0 {
-				j += p.copyInstruction(b[j:i], cmd)
-			} else {
-				j = i
+				j += p.copyInstruction(b[j:], cmd)
 			}
 			cmd = c
 			p.coords = p.coords[:0]
@@ -147,8 +145,7 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 	} else if (cmd == 'A' || cmd == 'a') && n%7 == 0 {
 		di = 7
 	} else {
-		p.state.cmd = 0
-		return len(b)
+		return 0
 	}
 
 	j := 0
