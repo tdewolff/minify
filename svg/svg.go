@@ -43,6 +43,10 @@ func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) err
 
 // Minify minifies SVG data, it reads from r and writes to w.
 func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
+	if o.Decimals < 0 || 15 < o.Decimals {
+		o.Decimals = 15
+	}
+
 	var tag svg.Hash
 	defaultStyleType := cssMimeBytes
 	defaultStyleParams := map[string]string(nil)
