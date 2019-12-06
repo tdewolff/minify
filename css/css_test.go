@@ -250,12 +250,12 @@ func TestCSSInline(t *testing.T) {
 		{"margin:0 0 18px 0;", "margin:0 0 18px"},
 		{"z-index:1000", "z-index:1000"},
 		{"box-shadow:0 0 0 0", "box-shadow:0 0"},
-		{"flex:0px", "flex:0px"},
+		{"flex:0px", "flex:0q"},
 		{"g:url('abc\\\ndef')", "g:url(abcdef)"},
 		{"url:local('abc\\\ndef')", "url:local(abcdef)"},
 		{"url:local('abc def') , url('abc def') format('truetype')", "url:local('abc def'),url('abc def')format('truetype')"},
 
-		{"any:0deg 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz", "any:0 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz"},
+		{"any:0deg 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz", "any:0 0s 0s 0dpi 0dpi 0dpi 0hz 0hz"},
 		{"margin:calc(10px) calc(20px)", "margin:calc(10px)calc(20px)"},
 		{"border-left:0 none", "border-left:0"},
 		{"--custom-variable:0px;", "--custom-variable:0px"},
@@ -292,6 +292,11 @@ func TestCSSInline(t *testing.T) {
 		{"width:120Q", "width:3cm"},
 		{"width:10mm", "width:1cm"},
 		{"width:120Q", "width:3cm"},
+		{"transform:rotate(360deg)", "transform:rotate(1turn)"},
+		{"transform:rotate(180deg)", "transform:rotate(180deg)"},
+		{"transform:rotate(100grad)", "transform:rotate(90deg)"},
+		{"transform:rotate(.25turn)", "transform:rotate(90deg)"},
+		{"transform:rotate(6.28318530717959rad)", "transform:rotate(1turn)"},
 
 		// case sensitivity
 		{"animation:Ident", "animation:Ident"},

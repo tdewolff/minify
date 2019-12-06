@@ -1171,32 +1171,65 @@ func (c *cssMinifier) minifyDimension(value Token) (Token, []byte) {
 
 		// change dimension to compress number
 		h := css.ToHash(dim)
-		if h == css.Px || h == css.Pt || h == css.Pc || h == css.In || h == css.Mm || h == css.Cm || h == css.Q {
+		if h == css.Px || h == css.Pt || h == css.Pc || h == css.In || h == css.Mm || h == css.Cm || h == css.Q || h == css.Deg || h == css.Grad || h == css.Rad || h == css.Turn || h == css.S || h == css.Ms || h == css.Hz || h == css.Khz || h == css.Dpi || h == css.Dpcm || h == css.Dppx {
 			d, _ := strconv.ParseFloat(string(num), 64) // can never fail
-			dimensions := []css.Hash{}
-			multipliers := []float64{}
+			var dimensions []css.Hash
+			var multipliers []float64
 			switch h {
 			case css.Px:
-				dimensions = []css.Hash{css.In, css.Pc, css.Pt}
-				multipliers = []float64{0.010416666666666667, 0.0625, 0.75}
+				dimensions = []css.Hash{css.In, css.Cm, css.Pc, css.Mm, css.Pt, css.Q}
+				multipliers = []float64{0.010416666666666667, 0.026458333333333333, 0.0625, 0.26458333333333333, 0.75, 1.0583333333333333}
 			case css.Pt:
-				dimensions = []css.Hash{css.In, css.Pc, css.Px}
-				multipliers = []float64{0.013888888888888889, 0.083333333333333333, 1.3333333333333333}
+				dimensions = []css.Hash{css.In, css.Cm, css.Pc, css.Mm, css.Px, css.Q}
+				multipliers = []float64{0.013888888888888889, 0.035277777777777778, 0.083333333333333333, 0.35277777777777778, 1.3333333333333333, 1.4111111111111111}
 			case css.Pc:
-				dimensions = []css.Hash{css.In, css.Pt, css.Px}
-				multipliers = []float64{0.16666666666666667, 12.0, 16.0}
+				dimensions = []css.Hash{css.In, css.Cm, css.Mm, css.Pt, css.Px, css.Q}
+				multipliers = []float64{0.16666666666666667, 0.42333333333333333, 4.2333333333333333, 12.0, 16.0, 16.933333333333333}
 			case css.In:
-				dimensions = []css.Hash{css.Pc, css.Pt, css.Px}
-				multipliers = []float64{6.0, 72.0, 96.0}
+				dimensions = []css.Hash{css.Cm, css.Pc, css.Mm, css.Pt, css.Px, css.Q}
+				multipliers = []float64{2.54, 6.0, 25.4, 72.0, 96.0, 101.6}
 			case css.Cm:
-				dimensions = []css.Hash{css.Mm, css.Q}
-				multipliers = []float64{10.0, 40.0}
+				dimensions = []css.Hash{css.In, css.Pc, css.Mm, css.Pt, css.Px, css.Q}
+				multipliers = []float64{0.39370078740157480, 2.3622047244094488, 10.0, 28.346456692913386, 37.795275590551181, 40.0}
 			case css.Mm:
-				dimensions = []css.Hash{css.Cm, css.Q}
-				multipliers = []float64{0.1, 4.0}
+				dimensions = []css.Hash{css.In, css.Cm, css.Pc, css.Pt, css.Px, css.Q}
+				multipliers = []float64{0.039370078740157480, 0.1, 0.23622047244094488, 2.8346456692913386, 3.7795275590551181, 4.0}
 			case css.Q:
-				dimensions = []css.Hash{css.Cm} // Q to mm is never smaller
-				multipliers = []float64{0.025}
+				dimensions = []css.Hash{css.In, css.Cm, css.Pc, css.Pt, css.Px} // Q to mm is never smaller
+				multipliers = []float64{0.0098425196850393701, 0.025, 0.059055118110236220, 0.70866141732283465, 0.94488188976377953}
+			case css.Deg:
+				dimensions = []css.Hash{css.Turn, css.Rad, css.Grad}
+				multipliers = []float64{0.0027777777777777778, 0.017453292519943296, 1.1111111111111111}
+			case css.Grad:
+				dimensions = []css.Hash{css.Turn, css.Rad, css.Deg}
+				multipliers = []float64{0.0025, 0.015707963267948966, 0.9}
+			case css.Turn:
+				dimensions = []css.Hash{css.Rad, css.Deg, css.Grad}
+				multipliers = []float64{6.2831853071795865, 360.0, 400.0}
+			case css.Rad:
+				dimensions = []css.Hash{css.Turn, css.Deg, css.Grad}
+				multipliers = []float64{0.15915494309189534, 57.295779513082321, 63.661977236758134}
+			case css.S:
+				dimensions = []css.Hash{css.Ms}
+				multipliers = []float64{1000.0}
+			case css.Ms:
+				dimensions = []css.Hash{css.S}
+				multipliers = []float64{0.001}
+			case css.Hz:
+				dimensions = []css.Hash{css.Khz}
+				multipliers = []float64{0.001}
+			case css.Khz:
+				dimensions = []css.Hash{css.Hz}
+				multipliers = []float64{1000.0}
+			case css.Dpi:
+				dimensions = []css.Hash{css.Dppx, css.Dpcm}
+				multipliers = []float64{0.010416666666666667, 0.39370078740157480}
+			case css.Dpcm:
+				dimensions = []css.Hash{css.Dppx, css.Dpi}
+				multipliers = []float64{0.026458333333333333, 2.54}
+			case css.Dppx:
+				dimensions = []css.Hash{css.Dpcm, css.Dpi}
+				multipliers = []float64{37.795275590551181, 96.0}
 			}
 			for i := range dimensions {
 				if dimensions[i] != h {
@@ -1206,9 +1239,10 @@ func (c *cssMinifier) minifyDimension(value Token) (Token, []byte) {
 					} else {
 						b = minify.Number(b, c.o.newPrecision)
 					}
-					if len(b) < len(num) && dim[0] != 'q' || len(b)+1 < len(num) {
+					newDim := []byte(dimensions[i].String())
+					if len(b)+len(newDim) < len(num)+len(dim) {
 						num = b
-						dim = []byte(dimensions[i].String())
+						dim = newDim
 					}
 				}
 			}
