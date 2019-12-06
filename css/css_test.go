@@ -286,7 +286,7 @@ func TestCSSInline(t *testing.T) {
 		{"width:96px", "width:1in"},
 		{"width:72pt", "width:1in"},
 		{"width:12pc", "width:2in"},
-		{"width:0.1666667in", "width:1pc"},
+		{"width:0.166666666666667in", "width:1pc"},
 		{"width:0.0625pc", "width:1px"},
 		{"width:40Q", "width:40q"},
 		{"width:120Q", "width:3cm"},
@@ -345,7 +345,7 @@ func TestCSSKeepCSS2(t *testing.T) {
 
 	m := minify.New()
 	params := map[string]string{"inline": "1"}
-	cssMinifier := &Minifier{Decimals: -1, KeepCSS2: true}
+	cssMinifier := &Minifier{KeepCSS2: true}
 	for _, tt := range tests {
 		t.Run(tt.css, func(t *testing.T) {
 			r := bytes.NewBufferString(tt.css)

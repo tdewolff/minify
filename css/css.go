@@ -38,18 +38,20 @@ type cssMinifier struct {
 
 ////////////////////////////////////////////////////////////////
 
-// DefaultMinifier is the default minifier.
-var DefaultMinifier = &Minifier{Decimals: -1, KeepCSS2: false}
+// DEPRECATED: DefaultMinifier is the default minifier.
+var DefaultMinifier = &Minifier{}
 
 // Minifier is a CSS minifier.
 type Minifier struct {
-	Decimals int
-	KeepCSS2 bool
+	KeepCSS2     bool
+	Decimals     int // DEPRECATED
+	Precision    int // number of significant digits
+	newPrecision int // precision for new numbers
 }
 
 // Minify minifies CSS data, it reads from r and writes to w.
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
-	return DefaultMinifier.Minify(m, w, r, params)
+	return (&Minifier{}).Minify(m, w, r, params)
 }
 
 type Token struct {
@@ -91,6 +93,17 @@ func (t Token) IsLengthPercentage() bool {
 
 // Minify minifies CSS data, it reads from r and writes to w.
 func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
+	if o.Decimals != 0 {
+		minify.Warning.Println("CSS option `Decimals` is deprecated, using as `Precision` instead. Be aware that `Decimals` meant the number of digits behind the dot while `Precision` means the number of significant digits. Example: 1.23 with `Decimals=1` would give 1.2 but with `Pecision=1` gives 1. The default `Decimals=-1` is now `Precision=0` which prints the whole number.")
+	}
+	if o.Precision == 0 {
+		o.Precision = o.Decimals
+	}
+	o.newPrecision = o.Precision
+	if o.newPrecision <= 0 || 15 < o.newPrecision {
+		o.newPrecision = 15 // minimum number of digits a double can represent exactly
+	}
+
 	isInline := params != nil && params["inline"] == "1"
 	c := &cssMinifier{
 		m: m,
@@ -453,16 +466,16 @@ func (c *cssMinifier) minifyTokens(prop css.Hash, values []Token) []Token {
 				break // integers
 			}
 			if c.o.KeepCSS2 {
-				values[i].Data = minify.Decimal(values[i].Data, c.o.Decimals) // don't use exponents
+				values[i].Data = minify.Decimal(values[i].Data, c.o.Precision) // don't use exponents
 			} else {
-				values[i].Data = minify.Number(values[i].Data, c.o.Decimals)
+				values[i].Data = minify.Number(values[i].Data, c.o.Precision)
 			}
 		case css.PercentageToken:
 			n := len(values[i].Data) - 1
 			if c.o.KeepCSS2 {
-				values[i].Data = minify.Decimal(values[i].Data[:n], c.o.Decimals) // don't use exponents
+				values[i].Data = minify.Decimal(values[i].Data[:n], c.o.Precision) // don't use exponents
 			} else {
-				values[i].Data = minify.Number(values[i].Data[:n], c.o.Decimals)
+				values[i].Data = minify.Number(values[i].Data[:n], c.o.Precision)
 			}
 			values[i].Data = append(values[i].Data, '%') // TODO: drop percentage for properties that accept <percentage> and <length>, merge this with decision to upgrade/downgrade dimensions, finally remove `prop`
 		case css.DimensionToken:
@@ -1151,9 +1164,9 @@ func (c *cssMinifier) minifyDimension(value Token) (Token, []byte) {
 		parse.ToLower(dim)
 
 		if c.o.KeepCSS2 {
-			num = minify.Decimal(num, c.o.Decimals) // don't use exponents
+			num = minify.Decimal(num, c.o.Precision) // don't use exponents
 		} else {
-			num = minify.Number(num, c.o.Decimals)
+			num = minify.Number(num, c.o.Precision)
 		}
 
 		// change dimension to compress number
@@ -1165,13 +1178,13 @@ func (c *cssMinifier) minifyDimension(value Token) (Token, []byte) {
 			switch h {
 			case css.Px:
 				dimensions = []css.Hash{css.In, css.Pc, css.Pt, css.Px}
-				multipliers = []float64{0.010416667, 0.0625, 0.75, 1.0}
+				multipliers = []float64{0.010416666666666667, 0.0625, 0.75, 1.0}
 			case css.Pt:
 				dimensions = []css.Hash{css.In, css.Pc, css.Pt, css.Px}
-				multipliers = []float64{0.013888889, 0.083333333, 1.0, 1.3333333, 1.0}
+				multipliers = []float64{0.013888888888888889, 0.083333333333333333, 1.0, 1.3333333333333333, 1.0}
 			case css.Pc:
 				dimensions = []css.Hash{css.In, css.Pc, css.Pt, css.Px}
-				multipliers = []float64{0.16666667, 1.0, 12.0, 16.0}
+				multipliers = []float64{0.16666666666666667, 1.0, 12.0, 16.0}
 			case css.In:
 				dimensions = []css.Hash{css.In, css.Pc, css.Pt, css.Px}
 				multipliers = []float64{1.0, 6.0, 72.0, 96.0}
@@ -1190,9 +1203,9 @@ func (c *cssMinifier) minifyDimension(value Token) (Token, []byte) {
 				if dimensions[i] != h {
 					b := strconv.AppendFloat([]byte{}, d*multipliers[i], 'f', -1, 64)
 					if c.o.KeepCSS2 {
-						b = minify.Decimal(b, 6) // don't use exponents
+						b = minify.Decimal(b, c.o.newPrecision) // don't use exponents
 					} else {
-						b = minify.Number(b, 6)
+						b = minify.Number(b, c.o.newPrecision)
 					}
 					if len(b) < len(num) && dim[0] != 'q' || len(b)+1 < len(num) {
 						num = b

@@ -217,8 +217,8 @@ There are a couple of comparison tables online, such as [CSS Minifier Comparison
 
 Options:
 
-- `Decimals` number of decimals to preserve for numbers, `-1` means no trimming
 - `KeepCSS2` prohibits using CSS3 syntax (such as exponents in numbers, or `rgba(` &#8594; `rgb(`), might be incomplete
+- `Precision` number of significant digits to preserve for numbers, `0` means no trimming
 
 ## JS
 
@@ -257,7 +257,7 @@ TODO:
 
 Options:
 
-- `Decimals` number of decimals to preserve for numbers, `-1` means no trimming
+- `Precision` number of significant digits to preserve for numbers, `0` means no trimming
 
 ## XML
 

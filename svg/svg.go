@@ -28,23 +28,32 @@ var (
 
 ////////////////////////////////////////////////////////////////
 
-// DefaultMinifier is the default minifier.
-var DefaultMinifier = &Minifier{Decimals: -1}
+// DEPRECATED: DefaultMinifier is the default minifier.
+var DefaultMinifier = &Minifier{}
 
 // Minifier is an SVG minifier.
 type Minifier struct {
-	Decimals int
+	Decimals     int // DEPRECATED
+	Precision    int // number of significant digits
+	newPrecision int // precision for new numbers
 }
 
 // Minify minifies SVG data, it reads from r and writes to w.
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
-	return DefaultMinifier.Minify(m, w, r, params)
+	return (&Minifier{}).Minify(m, w, r, params)
 }
 
 // Minify minifies SVG data, it reads from r and writes to w.
 func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
-	if o.Decimals < 0 || 15 < o.Decimals {
-		o.Decimals = 15
+	if o.Decimals != 0 {
+		minify.Warning.Println("SVG option `Decimals` is deprecated, using as `Precision` instead. Be aware that `Decimals` meant the number of digits behind the dot while `Precision` means the number of significant digits. Example: 1.23 with `Decimals=1` would give 1.2 but with `Pecision=1` gives 1. The default `Decimals=-1` is now `Precision=0` which prints the whole number.")
+	}
+	if o.Precision == 0 {
+		o.Precision = o.Decimals
+	}
+	o.newPrecision = o.Precision
+	if o.newPrecision <= 0 || 15 < o.newPrecision {
+		o.newPrecision = 15 // minimum number of digits a double can represent exactly
 	}
 
 	var tag svg.Hash
@@ -261,7 +270,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 func (o *Minifier) shortenDimension(b []byte) ([]byte, int) {
 	if n, m := parse.Dimension(b); n > 0 {
 		unit := b[n : n+m]
-		b = minify.Number(b[:n], o.Decimals)
+		b = minify.Number(b[:n], o.Precision)
 		if len(b) != 1 || b[0] != '0' {
 			if m == 2 && unit[0] == 'p' && unit[1] == 'x' {
 				unit = nil
@@ -280,11 +289,11 @@ func (o *Minifier) shortenRect(tb *TokenBuffer, t *Token) {
 	attrs := tb.Attributes(svg.Width, svg.Height)
 	if attrs[0] != nil {
 		n, _ := parse.Dimension(attrs[0].AttrVal)
-		w = minify.Number(attrs[0].AttrVal[:n], o.Decimals)
+		w = minify.Number(attrs[0].AttrVal[:n], o.Precision)
 	}
 	if attrs[1] != nil {
 		n, _ := parse.Dimension(attrs[1].AttrVal)
-		h = minify.Number(attrs[1].AttrVal[:n], o.Decimals)
+		h = minify.Number(attrs[1].AttrVal[:n], o.Precision)
 	}
 	if len(w) == 0 || w[0] == '0' || len(h) == 0 || h[0] == '0' {
 		t.Data = nil

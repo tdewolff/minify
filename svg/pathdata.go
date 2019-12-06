@@ -348,7 +348,7 @@ func (p *PathData) shortenCurPosInstruction(cmd byte, coords [][]byte) PathDataS
 			continue
 		}
 
-		coord = minify.Number(coord, p.o.Decimals)
+		coord = minify.Number(coord, p.o.Precision)
 		state.copyNumber(&p.curBuffer, coord)
 	}
 	return state
@@ -387,7 +387,7 @@ func (p *PathData) shortenAltPosInstruction(cmd byte, coordFloats []float64, x, 
 		}
 
 		p.coordBuffer = strconvStdlib.AppendFloat(p.coordBuffer[:0], f, 'g', -1, 64)
-		coord := minify.Number(p.coordBuffer, p.o.Decimals)
+		coord := minify.Number(p.coordBuffer, p.o.newPrecision)
 		state.copyNumber(&p.altBuffer, coord)
 	}
 	return state

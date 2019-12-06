@@ -105,16 +105,16 @@ func TestSVGStyle(t *testing.T) {
 	}
 }
 
-func TestSVGDecimals(t *testing.T) {
+func TestSVGPrecision(t *testing.T) {
 	var svgTests = []struct {
 		svg      string
 		expected string
 	}{
-		{`<svg x="1.234" y="0.001" width="1.001"><path/></svg>`, `<svg x="1.2" width="1"><path/></svg>`},
+		{`<svg x="1.234" y="0.001" width="1.001"><path/></svg>`, `<svg x="1" y=".001" width="1"><path/></svg>`},
 	}
 
 	m := minify.New()
-	o := &Minifier{Decimals: 1}
+	o := &Minifier{Precision: 1}
 	for _, tt := range svgTests {
 		t.Run(tt.svg, func(t *testing.T) {
 			r := bytes.NewBufferString(tt.svg)

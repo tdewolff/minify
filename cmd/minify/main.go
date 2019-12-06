@@ -113,13 +113,15 @@ func main() {
 	flag.BoolVarP(&version, "version", "", false, "Version")
 
 	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
-	flag.IntVar(&cssMinifier.Decimals, "css-decimals", -1, "Number of decimals to preserve in numbers, -1 is all")
+	flag.IntVar(&cssMinifier.Decimals, "css-decimals", 0, "Number of significant digits to preserve in numbers, 0 is all (DEPRECATED")
+	flag.IntVar(&cssMinifier.Precision, "css-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
 	flag.BoolVar(&htmlMinifier.KeepConditionalComments, "html-keep-conditional-comments", false, "Preserve all IE conditional comments")
 	flag.BoolVar(&htmlMinifier.KeepDefaultAttrVals, "html-keep-default-attrvals", false, "Preserve default attribute values")
 	flag.BoolVar(&htmlMinifier.KeepDocumentTags, "html-keep-document-tags", false, "Preserve html, head and body tags")
 	flag.BoolVar(&htmlMinifier.KeepEndTags, "html-keep-end-tags", false, "Preserve all end tags")
 	flag.BoolVar(&htmlMinifier.KeepWhitespace, "html-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
-	flag.IntVar(&svgMinifier.Decimals, "svg-decimals", -1, "Number of decimals to preserve in numbers, -1 is all")
+	flag.IntVar(&svgMinifier.Decimals, "svg-decimals", 0, "Number of significant digits to preserve in numbers, 0 is all (DEPRECATED")
+	flag.IntVar(&svgMinifier.Precision, "svg-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
 	flag.BoolVar(&xmlMinifier.KeepWhitespace, "xml-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
 	if err := flag.Parse(os.Args[1:]); err != nil {
 		fmt.Printf("Error: %v\n\n", err)

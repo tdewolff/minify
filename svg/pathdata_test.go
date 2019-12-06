@@ -75,7 +75,7 @@ func TestPathData(t *testing.T) {
 		{"0a0z", "z"},
 	}
 
-	p := NewPathData(&Minifier{Decimals: -1})
+	p := NewPathData(&Minifier{})
 	for _, tt := range pathDataTests {
 		t.Run(tt.pathData, func(t *testing.T) {
 			path := p.ShortenPathData([]byte(tt.pathData))
@@ -90,10 +90,12 @@ func TestPathDataTruncated(t *testing.T) {
 		expected string
 	}{
 		{"m100 0 50 50zM100 0z", "m1e2.0 50 50zm0 0z"},
-		{"M194.4 16.4C194.4 7.4 187 0 177.9 0 168.8 0 161.5 7.4 161.5 16.4", "M194.4 16.4c0-9-7.4-16.4-16.5-16.4s-16.4 7.4-16.4 16.4"}, // #233
+		{"M194.4 16.4C194.4 7.4 187 0 177.9 0 168.8 0 161.5 7.4 161.5 16.4", "M194 16.4C194 7.4 187 0 178 0S162 7.4 162 16.4"}, // #233
+		//{"M100 100L200.4 200.4l100.2 100.2", "M100 100L200 200L301 301"},                                                       // remember rounding error
+		//{"M100 100L200.4 200.4L300.6 300.6", "M100 100L200 200L301 301"},
 	}
 
-	p := NewPathData(&Minifier{Decimals: 3})
+	p := NewPathData(&Minifier{Precision: 3})
 	for _, tt := range pathDataTests {
 		t.Run(tt.pathData, func(t *testing.T) {
 			path := p.ShortenPathData([]byte(tt.pathData))
