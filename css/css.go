@@ -1145,12 +1145,15 @@ func minifyNumberPercentage(value Token) Token {
 		if value.Data[2] == '0' {
 			value.Data[0] = '.'
 			copy(value.Data[1:], value.Data[3:])
+			value.Data[len(value.Data)-2] = '%'
+			value.Data = value.Data[:len(value.Data)-1]
+			value.TokenType = css.PercentageToken
 		} else if len(value.Data) == 3 {
 			value.Data[0] = value.Data[2]
+			value.Data[1] = '%'
+			value.Data = value.Data[:2]
+			value.TokenType = css.PercentageToken
 		}
-		value.Data[len(value.Data)-2] = '%'
-		value.Data = value.Data[:len(value.Data)-1]
-		value.TokenType = css.PercentageToken
 	}
 	return value
 }
