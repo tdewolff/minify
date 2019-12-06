@@ -339,10 +339,13 @@ func Number(num []byte, prec int) []byte {
 	if n <= normExp {
 		// case 1: print number with positive exponent
 		if dot < end {
+			// remove dot, either from the front or copy the smallest part
 			if dot == start {
 				start = end - n
+			} else if dot-start < end-dot-1 {
+				copy(num[start+1:], num[start:dot])
+				start++
 			} else {
-				// TODO: copy the other part if shorter?
 				copy(num[dot:], num[dot+1:end])
 				end--
 			}
@@ -415,12 +418,10 @@ func Number(num []byte, prec int) []byte {
 		} else {
 			// placed in the middle
 			if dot == start {
-				// TODO: try if placing at the end reduces copying
 				// when there are zeroes after the dot
 				dot = end - n - 1
 				start = dot
 			} else if end <= dot {
-				// TODO: try if placing at the start reduces copying
 				// when input has no dot in it
 				dot = end
 				end++
