@@ -1177,31 +1177,30 @@ func (c *cssMinifier) minifyDimension(value Token) (Token, []byte) {
 			multipliers := []float64{}
 			switch h {
 			case css.Px:
-				dimensions = []css.Hash{css.In, css.Pc, css.Pt, css.Px}
-				multipliers = []float64{0.010416666666666667, 0.0625, 0.75, 1.0}
+				dimensions = []css.Hash{css.In, css.Pc, css.Pt}
+				multipliers = []float64{0.010416666666666667, 0.0625, 0.75}
 			case css.Pt:
-				dimensions = []css.Hash{css.In, css.Pc, css.Pt, css.Px}
-				multipliers = []float64{0.013888888888888889, 0.083333333333333333, 1.0, 1.3333333333333333, 1.0}
+				dimensions = []css.Hash{css.In, css.Pc, css.Px}
+				multipliers = []float64{0.013888888888888889, 0.083333333333333333, 1.3333333333333333}
 			case css.Pc:
-				dimensions = []css.Hash{css.In, css.Pc, css.Pt, css.Px}
-				multipliers = []float64{0.16666666666666667, 1.0, 12.0, 16.0}
+				dimensions = []css.Hash{css.In, css.Pt, css.Px}
+				multipliers = []float64{0.16666666666666667, 12.0, 16.0}
 			case css.In:
-				dimensions = []css.Hash{css.In, css.Pc, css.Pt, css.Px}
-				multipliers = []float64{1.0, 6.0, 72.0, 96.0}
+				dimensions = []css.Hash{css.Pc, css.Pt, css.Px}
+				multipliers = []float64{6.0, 72.0, 96.0}
 			case css.Cm:
-				dimensions = []css.Hash{css.Cm, css.Mm, css.Q}
-				multipliers = []float64{1.0, 10.0, 40.0}
+				dimensions = []css.Hash{css.Mm, css.Q}
+				multipliers = []float64{10.0, 40.0}
 			case css.Mm:
-				dimensions = []css.Hash{css.Cm, css.Mm, css.Q}
-				multipliers = []float64{0.1, 1.0, 4.0}
+				dimensions = []css.Hash{css.Cm, css.Q}
+				multipliers = []float64{0.1, 4.0}
 			case css.Q:
-				dimensions = []css.Hash{css.Cm, css.Mm, css.Q}
-				multipliers = []float64{0.025, 0.25, 1.0}
+				dimensions = []css.Hash{css.Cm} // Q to mm is never smaller
+				multipliers = []float64{0.025}
 			}
-			// TODO: investigate if switch Q and mm ever results in something smaller
 			for i := range dimensions {
 				if dimensions[i] != h {
-					b := strconv.AppendFloat([]byte{}, d*multipliers[i], 'f', -1, 64)
+					b, _ := strconvParse.AppendFloat([]byte{}, d*multipliers[i], -1)
 					if c.o.KeepCSS2 {
 						b = minify.Decimal(b, c.o.newPrecision) // don't use exponents
 					} else {
