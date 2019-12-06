@@ -387,22 +387,21 @@ func Number(num []byte, prec int) []byte {
 	} else if -lenIntExp-1 <= normExp {
 		// case 3: print number without exponent
 		zeroes := -normExp
-		newDot := 0
 		if 0 < zeroes {
-			// dot placed at the front and add zeroes
-			newDot = end - n - zeroes - 1
+			// dot placed at the front and negative exponent, adding zeroes
+			newDot := end - n - zeroes - 1
 			if newDot != dot {
 				d := start - newDot
 				if 0 < d {
 					if dot < end {
-						// copy original digits behind the dot backwards
+						// copy original digits after the dot towards the end
 						copy(num[dot+1+d:], num[dot+1:end])
 						if start < dot {
-							// copy original digits before the dot backwards
+							// copy original digits before the dot towards the end
 							copy(num[start+d+1:], num[start:dot])
 						}
 					} else if start < dot {
-						// copy original digits before the dot backwards
+						// copy original digits before the dot towards the end
 						copy(num[start+d:], num[start:dot])
 					}
 					newDot = start
@@ -416,7 +415,7 @@ func Number(num []byte, prec int) []byte {
 				}
 			}
 		} else {
-			// placed in the middle
+			// dot placed in the middle of the number
 			if dot == start {
 				// when there are zeroes after the dot
 				dot = end - n - 1
@@ -426,7 +425,7 @@ func Number(num []byte, prec int) []byte {
 				dot = end
 				end++
 			}
-			newDot = start + normExp
+			newDot := start + normExp
 			// move digits between dot and newDot towards the end
 			if dot < newDot {
 				copy(num[dot:], num[dot+1:newDot+1])
@@ -435,7 +434,6 @@ func Number(num []byte, prec int) []byte {
 			}
 			num[newDot] = '.'
 		}
-		dot = newDot
 	} else {
 		// case 4: print number with negative exponent
 		// find new end, considering moving numbers to the front, removing the dot and increasing the length of the exponent
