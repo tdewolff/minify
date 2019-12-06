@@ -157,14 +157,10 @@ func Decimal(num []byte, prec int) []byte {
 			}
 			end = i + 1
 
-			if dot == start && end == start+1 {
-				if inc {
+			if inc {
+				if dot == start && end == start+1 {
 					num[start] = '1'
-				} else {
-					num[start] = '0'
-				}
-			} else if inc {
-				if num[start] == '9' {
+				} else if num[start] == '9' {
 					num[start] = '1'
 					num[start+1] = '0'
 					end++
@@ -285,14 +281,11 @@ func Number(num []byte, prec int) []byte {
 				origExp += dot - end
 				dot = end
 			}
-			if start == dot && start+1 == end {
-				if inc {
+			if inc { // single digit left
+				if dot == start {
 					num[start] = '1'
-				} else {
-					num[start] = '0'
-				}
-			} else if inc { // end <= dot, this is an integer
-				if num[start] == '9' {
+					dot = start + 1
+				} else if num[start] == '9' {
 					num[start] = '1'
 					origExp++
 				} else {
