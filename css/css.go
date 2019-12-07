@@ -1090,6 +1090,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 		for i := 0; i < len(values); i++ {
 			values[i] = minifyColor(values[i])
 			if values[i].TokenType == css.IdentToken {
+				parse.ToLower(values[i].Data)
 				val := css.ToHash(values[i].Data)
 				if val == css.Currentcolor || val == css.None || val == css.Solid {
 					values = append(values[:i], values[i+1:]...)
@@ -1114,6 +1115,40 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 		}
 		if len(values) == 0 {
 			values = []Token{{css.IdentToken, []byte("none"), nil}}
+		}
+	case css.Flex:
+		if len(values) == 1 && values[0].TokenType == css.IdentToken {
+			parse.ToLower(values[0].Data)
+			h := css.ToHash(values[0].Data)
+			if h == css.None {
+				values = []Token{{css.NumberToken, []byte("0"), nil}, {css.NumberToken, []byte("0"), nil}}
+			} else if h == css.Auto {
+				values = []Token{{css.NumberToken, []byte("1"), nil}, {css.NumberToken, []byte("1"), nil}}
+			} else if h == css.Initial {
+				values = []Token{{css.NumberToken, []byte("0"), nil}, {css.NumberToken, []byte("1"), nil}}
+			}
+		} else if len(values) == 2 && values[0].TokenType == css.NumberToken {
+			if (values[1].TokenType == css.PercentageToken || values[1].TokenType == css.DimensionToken) && values[1].Data[0] == '0' {
+				values = values[:1] // remove <flex-basis> if it is zero
+			} else if values[1].TokenType == css.IdentToken {
+				parse.ToLower(values[1].Data)
+				if h := css.ToHash(values[1].Data); h == css.Auto {
+					values[1].TokenType = css.NumberToken
+					values[1].Data = []byte("1") // replace <flex-basis> if it is auto by <flex-shrink>
+				}
+			}
+		} else if len(values) == 3 && values[0].TokenType == css.NumberToken && values[1].TokenType == css.NumberToken {
+			parse.ToLower(values[2].Data)
+			if len(values[1].Data) == 1 && values[1].Data[0] == '1' && (values[2].TokenType == css.NumberToken || values[2].TokenType == css.PercentageToken || values[2].TokenType == css.DimensionToken) && values[2].Data[0] == '0' {
+				values = values[:1] // remove <flex-shrink> and <flex-basis> if they are 1 and 0 respectively
+			} else if values[2].TokenType == css.IdentToken {
+				if h := css.ToHash(values[2].Data); h == css.Auto {
+					values = values[:2] // remove auto to write 2-value syntax of <flex-grow> <flex-shrink>
+				}
+			} else if (values[2].TokenType == css.NumberToken || values[2].TokenType == css.PercentageToken || values[2].TokenType == css.DimensionToken) && values[2].Data[0] == '0' {
+				values[2].TokenType = css.NumberToken
+				values[2].Data = values[2].Data[:1] // remove dimension of <flex-basis> for zero value
+			}
 		}
 	}
 	return values
