@@ -340,11 +340,11 @@ func (c *cssMinifier) parseDeclaration(values []css.Token) []Token {
 		} else if tt == css.FunctionToken {
 			args, di := c.parseFunction(values[i:])
 			tokens = append(tokens, Token{values[i].TokenType, values[i].Data, args})
-			prevSep = false
+			prevSep = true
 			i += di - 1
 		} else {
 			tokens = append(tokens, Token{values[i].TokenType, values[i].Data, nil})
-			prevSep = false
+			prevSep = tt == css.URLToken
 		}
 	}
 	c.tokenBuffer = tokens // update buffer size for memory reuse
