@@ -136,7 +136,6 @@ func (c *cssMinifier) minifyGrammar() error {
 	declProps := [][]byte{}
 	declHashes := []css.Hash{}
 	declValues := [][]css.Token{}
-	declOverwrites := []css.Hash{0}
 	for {
 		gt, _, data := c.p.Next()
 		if gt != css.DeclarationGrammar && 0 < len(declProps) {
@@ -253,47 +252,25 @@ func (c *cssMinifier) minifyGrammar() error {
 			h := css.ToHash(data)
 			values := append([]css.Token{}, c.p.Values()...) // copy
 
-			declOverwrites = declOverwrites[:1]
-			declOverwrites[0] = h
-			if h == css.Background {
-				declOverwrites = append(declOverwrites, css.Background_Image, css.Background_Position, css.Background_Size, css.Background_Repeat, css.Background_Origin, css.Background_Clip, css.Background_Attachment, css.Background_Color)
-			} else if h == css.Font {
-				declOverwrites = append(declOverwrites, css.Font_Style, css.Font_Variant, css.Font_Weight, css.Font_Stretch, css.Font_Size, css.Font_Family, css.Line_Height)
-			} else if h == css.Border {
-				declOverwrites = append(declOverwrites, css.Border_Width, css.Border_Top_Width, css.Border_Right_Width, css.Border_Bottom_Width, css.Border_Left_Width, css.Border_Style, css.Border_Top_Style, css.Border_Right_Style, css.Border_Bottom_Style, css.Border_Left_Style, css.Border_Color, css.Border_Top_Color, css.Border_Right_Color, css.Border_Bottom_Color, css.Border_Left_Color)
-			} else if h == css.Border_Width {
-				declOverwrites = append(declOverwrites, css.Border_Top_Width, css.Border_Right_Width, css.Border_Bottom_Width, css.Border_Left_Width)
-			} else if h == css.Border_Style {
-				declOverwrites = append(declOverwrites, css.Border_Top_Style, css.Border_Right_Style, css.Border_Bottom_Style, css.Border_Left_Style)
-			} else if h == css.Border_Color {
-				declOverwrites = append(declOverwrites, css.Border_Top_Color, css.Border_Right_Color, css.Border_Bottom_Color, css.Border_Left_Color)
-			} else if h == css.Border_Top {
-				declOverwrites = append(declOverwrites, css.Border_Top_Width, css.Border_Top_Style, css.Border_Top_Color)
-			} else if h == css.Border_Right {
-				declOverwrites = append(declOverwrites, css.Border_Right_Width, css.Border_Right_Style, css.Border_Right_Color)
-			} else if h == css.Border_Bottom {
-				declOverwrites = append(declOverwrites, css.Border_Bottom_Width, css.Border_Bottom_Style, css.Border_Bottom_Color)
-			} else if h == css.Border_Left {
-				declOverwrites = append(declOverwrites, css.Border_Left_Width, css.Border_Left_Style, css.Border_Left_Color)
-			} else if h == css.Margin {
-				declOverwrites = append(declOverwrites, css.Margin_Top, css.Margin_Right, css.Margin_Bottom, css.Margin_Left)
-			} else if h == css.Padding {
-				declOverwrites = append(declOverwrites, css.Padding_Top, css.Padding_Right, css.Padding_Bottom, css.Padding_Left)
-			} else if h == css.All {
-				// overwrites all properties
+			// remove overwritten properties
+			if h == css.All {
+				// overrides all properties
 				declProps = declProps[:0]
 				declHashes = declHashes[:0]
 				declValues = declValues[:0]
-			}
-
-			// remove overwritten properties
-			for i := 0; i < len(declHashes); i++ {
-				for _, hash := range declOverwrites {
-					if hash == declHashes[i] && (hash != 0 || bytes.Equal(declProps[i], data)) {
-						declProps = append(declProps[:i], declProps[i+1:]...)
-						declHashes = append(declHashes[:i], declHashes[i+1:]...)
-						declValues = append(declValues[:i], declValues[i+1:]...)
-						break
+			} else {
+				overrides := PropertyOverrides[h]
+				if overrides == nil {
+					overrides = []css.Hash{h}
+				}
+				for i := 0; i < len(declHashes); i++ {
+					for _, hash := range overrides {
+						if hash == declHashes[i] && (hash != 0 || bytes.Equal(declProps[i], data)) {
+							declProps = append(declProps[:i], declProps[i+1:]...)
+							declHashes = append(declHashes[:i], declHashes[i+1:]...)
+							declValues = append(declValues[:i], declValues[i+1:]...)
+							break
+						}
 					}
 				}
 			}
@@ -576,12 +553,12 @@ func (c *cssMinifier) minifyTokens(prop css.Hash, values []Token) []Token {
 			} else {
 				values[i].Data = minify.Number(values[i].Data[:n], c.o.Precision)
 			}
-			values[i].Data = append(values[i].Data, '%') // TODO: drop percentage for properties that accept <percentage> and <length>, merge this with decision to upgrade/downgrade dimensions, finally remove `prop`
+			values[i].Data = append(values[i].Data, '%')
 		case css.DimensionToken:
 			var dim []byte
 			values[i], dim = c.minifyDimension(values[i])
 			if 1 < len(values[i].Data) && values[i].Data[0] == '0' && optionalZeroDimension[string(dim)] && prop != css.Flex {
-				// cut dimension for zero value
+				// cut dimension for zero value, TODO: don't hardcode check for css.Flex and remove the dimension in minifyDimension
 				values[i].Data = values[i].Data[:1]
 			}
 		case css.StringToken:
@@ -1306,7 +1283,7 @@ func (c *cssMinifier) minifyDimension(value Token) (Token, []byte) {
 		n := parse.Number(value.Data)
 		num := value.Data[:n]
 		dim = value.Data[n:]
-		parse.ToLower(dim) // TODO: use Token.Dim (a css.Hash) for `h` and get dimension length from map[css.Hash]int?
+		parse.ToLower(dim)
 
 		if c.o.KeepCSS2 {
 			num = minify.Decimal(num, c.o.Precision) // don't use exponents
