@@ -1145,9 +1145,33 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 				if h := css.ToHash(values[2].Data); h == css.Auto {
 					values = values[:2] // remove auto to write 2-value syntax of <flex-grow> <flex-shrink>
 				}
-			} else if (values[2].TokenType == css.NumberToken || values[2].TokenType == css.PercentageToken || values[2].TokenType == css.DimensionToken) && values[2].Data[0] == '0' {
-				values[2].TokenType = css.NumberToken
-				values[2].Data = values[2].Data[:1] // remove dimension of <flex-basis> for zero value
+			} else {
+				values[2] = minifyLengthPercentage(values[2])
+			}
+		}
+	case css.Flex_Basis:
+		if values[0].TokenType == css.IdentToken {
+			parse.ToLower(values[0].Data)
+			if h := css.ToHash(values[0].Data); h == css.Initial {
+				values[0].Data = []byte("auto")
+			}
+		} else {
+			values[0] = minifyLengthPercentage(values[0])
+		}
+	case css.Order, css.Flex_Grow:
+		if values[0].TokenType == css.IdentToken {
+			parse.ToLower(values[0].Data)
+			if h := css.ToHash(values[0].Data); h == css.Initial {
+				values[0].TokenType = css.NumberToken
+				values[0].Data = []byte("0")
+			}
+		}
+	case css.Flex_Shrink:
+		if values[0].TokenType == css.IdentToken {
+			parse.ToLower(values[0].Data)
+			if h := css.ToHash(values[0].Data); h == css.Initial {
+				values[0].TokenType = css.NumberToken
+				values[0].Data = []byte("1")
 			}
 		}
 	}
@@ -1218,6 +1242,14 @@ func minifyNumberPercentage(value Token) Token {
 			value.Data = value.Data[:2]
 			value.TokenType = css.PercentageToken
 		}
+	}
+	return value
+}
+
+func minifyLengthPercentage(value Token) Token {
+	if (value.TokenType == css.PercentageToken || value.TokenType == css.DimensionToken) && value.Data[0] == '0' {
+		value.TokenType = css.NumberToken
+		value.Data = value.Data[:1] // remove dimension for zero value
 	}
 	return value
 }
