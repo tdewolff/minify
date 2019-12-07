@@ -40,8 +40,14 @@ func TestCSS(t *testing.T) {
 		{"html{line-height:1;}html{line-height:1;}", "html{line-height:1}html{line-height:1}"},
 		{"a { b: 1", "a{b:1}"},
 		{"@unknown { border:1px solid #000 }", "@unknown{border:1px solid #000 }"},
-
 		{":root { --custom-variable:0px; }", ":root{--custom-variable:0px}"},
+
+		// recurring property overwrites previous
+		{"a{color:blue;color:red}", "a{color:red}"},
+		{"a{unknownprop:blue;unknownprop:red}", "a{unknownprop:red}"},
+		{"a{unknownprop:blue;otherunknownprop:red}", "a{unknownprop:blue;otherunknownprop:red}"},
+		{"a{background-color:blue;background:0 0}", "a{background:0 0}"},
+		{"a{color:blue}a{color:red}", "a{color:blue}a{color:red}"}, // not supported
 
 		// case sensitivity
 		{"@counter-style Ident{}", "@counter-style Ident{}"},
@@ -52,7 +58,7 @@ func TestCSS(t *testing.T) {
 		// bad declaration
 		{".clearfix { *zoom: 1px; }", ".clearfix{*zoom:1px}"},
 		{".clearfix { *zoom: 1px }", ".clearfix{*zoom:1px}"},
-		{".clearfix { color:green; *zoom: 1px; color:red; }", ".clearfix{color:green;*zoom:1px;color:red}"},
+		{".clearfix { order:4; *zoom: 1px; color:red; }", ".clearfix{order:4;*zoom:1px;color:red}"},
 
 		// go-fuzz
 		{"input[type=\"\x00\"] {  a: b\n}.a{}", "input[type=\"\x00\"]{a:b}.a{}"},
@@ -182,7 +188,8 @@ func TestCSSInline(t *testing.T) {
 		{"background:#fff / auto 5%", "background:#fff/auto 5%"},
 		{"background:calc(5%-2%) center", "background:calc(5%-2%)"},
 		{"background:0 0 / 80% no-repeat url('firefox-logo.svg'), white 0 0 url('lizard.png');", "background:0 0/80% no-repeat url(firefox-logo.svg),#fff url(lizard.png)"},
-		{"font-weight: bold; font-weight: normal;", "font-weight:700;font-weight:400"},
+		{"font-weight: normal;", "font-weight:400"},
+		{"font-weight: bold;", "font-weight:700"},
 		{"font: ;", "font:"},
 		{"font: 2em;", "font:2em"},
 		{"font: caption;", "font:caption"},

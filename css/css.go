@@ -127,8 +127,35 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 
 func (c *cssMinifier) minifyGrammar() error {
 	semicolonQueued := false
+	declProps := [][]byte{}
+	declHashes := []css.Hash{}
+	declValues := [][]css.Token{}
+	declOverwrites := []css.Hash{0}
 	for {
 		gt, _, data := c.p.Next()
+		if gt != css.DeclarationGrammar && 0 < len(declProps) {
+			if semicolonQueued {
+				if _, err := c.w.Write(semicolonBytes); err != nil {
+					return err
+				}
+				semicolonQueued = false
+			}
+			for i := 0; i < len(declProps); i++ {
+				if 0 < i {
+					if _, err := c.w.Write(semicolonBytes); err != nil {
+						return err
+					}
+				}
+				if err := c.minifyDeclaration(declProps[i], declHashes[i], declValues[i]); err != nil {
+					return err
+				}
+			}
+			declProps = declProps[:0]
+			declHashes = declHashes[:0]
+			declValues = declValues[:0]
+			semicolonQueued = true
+		}
+
 		switch gt {
 		case css.ErrorGrammar:
 			if _, ok := c.p.Err().(*parse.Error); ok {
@@ -217,16 +244,57 @@ func (c *cssMinifier) minifyGrammar() error {
 				return err
 			}
 		case css.DeclarationGrammar:
-			if _, err := c.w.Write(data); err != nil {
-				return err
+			h := css.ToHash(data)
+			values := append([]css.Token{}, c.p.Values()...) // copy
+
+			declOverwrites = declOverwrites[:1]
+			declOverwrites[0] = h
+			if h == css.Background {
+				declOverwrites = append(declOverwrites, css.Background_Image, css.Background_Position, css.Background_Size, css.Background_Repeat, css.Background_Origin, css.Background_Clip, css.Background_Attachment, css.Background_Color)
+			} else if h == css.Font {
+				declOverwrites = append(declOverwrites, css.Font_Style, css.Font_Variant, css.Font_Weight, css.Font_Stretch, css.Font_Size, css.Font_Family, css.Line_Height)
+			} else if h == css.Border {
+				declOverwrites = append(declOverwrites, css.Border_Width, css.Border_Top_Width, css.Border_Right_Width, css.Border_Bottom_Width, css.Border_Left_Width, css.Border_Style, css.Border_Top_Style, css.Border_Right_Style, css.Border_Bottom_Style, css.Border_Left_Style, css.Border_Color, css.Border_Top_Color, css.Border_Right_Color, css.Border_Bottom_Color, css.Border_Left_Color)
+			} else if h == css.Border_Width {
+				declOverwrites = append(declOverwrites, css.Border_Top_Width, css.Border_Right_Width, css.Border_Bottom_Width, css.Border_Left_Width)
+			} else if h == css.Border_Style {
+				declOverwrites = append(declOverwrites, css.Border_Top_Style, css.Border_Right_Style, css.Border_Bottom_Style, css.Border_Left_Style)
+			} else if h == css.Border_Color {
+				declOverwrites = append(declOverwrites, css.Border_Top_Color, css.Border_Right_Color, css.Border_Bottom_Color, css.Border_Left_Color)
+			} else if h == css.Border_Top {
+				declOverwrites = append(declOverwrites, css.Border_Top_Width, css.Border_Top_Style, css.Border_Top_Color)
+			} else if h == css.Border_Right {
+				declOverwrites = append(declOverwrites, css.Border_Right_Width, css.Border_Right_Style, css.Border_Right_Color)
+			} else if h == css.Border_Bottom {
+				declOverwrites = append(declOverwrites, css.Border_Bottom_Width, css.Border_Bottom_Style, css.Border_Bottom_Color)
+			} else if h == css.Border_Left {
+				declOverwrites = append(declOverwrites, css.Border_Left_Width, css.Border_Left_Style, css.Border_Left_Color)
+			} else if h == css.Margin {
+				declOverwrites = append(declOverwrites, css.Margin_Top, css.Margin_Right, css.Margin_Bottom, css.Margin_Left)
+			} else if h == css.Padding {
+				declOverwrites = append(declOverwrites, css.Padding_Top, css.Padding_Right, css.Padding_Bottom, css.Padding_Left)
+			} else if h == css.All {
+				// overwrites all properties
+				declProps = declProps[:0]
+				declHashes = declHashes[:0]
+				declValues = declValues[:0]
 			}
-			if _, err := c.w.Write(colonBytes); err != nil {
-				return err
+
+			// remove overwritten properties
+			for i := 0; i < len(declHashes); i++ {
+				for _, hash := range declOverwrites {
+					if hash == declHashes[i] && (hash != 0 || bytes.Equal(declProps[i], data)) {
+						declProps = append(declProps[:i], declProps[i+1:]...)
+						declHashes = append(declHashes[:i], declHashes[i+1:]...)
+						declValues = append(declValues[:i], declValues[i+1:]...)
+						break
+					}
+				}
 			}
-			if err := c.minifyDeclaration(data, c.p.Values()); err != nil {
-				return err
-			}
-			semicolonQueued = true
+
+			declProps = append(declProps, data)
+			declHashes = append(declHashes, h)
+			declValues = append(declValues, values)
 		case css.CustomPropertyGrammar:
 			if _, err := c.w.Write(data); err != nil {
 				return err
@@ -370,7 +438,14 @@ func (c *cssMinifier) parseDeclaration(values []css.Token) []Token {
 	return tokens
 }
 
-func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token) error {
+func (c *cssMinifier) minifyDeclaration(property []byte, prop css.Hash, components []css.Token) error {
+	if _, err := c.w.Write(property); err != nil {
+		return err
+	}
+	if _, err := c.w.Write(colonBytes); err != nil {
+		return err
+	}
+
 	if len(components) == 0 {
 		return nil
 	}
@@ -382,7 +457,6 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 		important = true
 	}
 
-	prop := css.ToHash(property)
 	values := c.parseDeclaration(components)
 
 	// Do not process complex values (eg. containing blocks or is not alternated between whitespace/commas and flat values
