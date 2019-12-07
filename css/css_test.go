@@ -75,8 +75,8 @@ func TestCSS(t *testing.T) {
 	}
 
 	// coverage
-	test.T(t, Token{css.IdentToken, []byte("data"), nil}.String(), "Ident(data)")
-	test.T(t, Token{css.FunctionToken, nil, []Token{{css.IdentToken, []byte("data"), nil}}}.String(), "[Ident(data)]")
+	test.T(t, Token{css.IdentToken, []byte("data"), nil, 0, 0}.String(), "Ident(data)")
+	test.T(t, Token{css.FunctionToken, nil, []Token{{css.IdentToken, []byte("data"), nil, 0, 0}}, 0, 0}.String(), "[Ident(data)]")
 }
 
 func TestCSSInline(t *testing.T) {
@@ -150,6 +150,7 @@ func TestCSSInline(t *testing.T) {
 		{"background-position:left 1% center", "background-position:1%"},
 		{"background-position:center top 1%", "background-position:50% 1%"},
 		{"background-position:right 0 top 0", "background-position:100% 0"},
+		{"background-position:center 0px center 0%", "background-position:50%"},
 		{"background-repeat:space space", "background-repeat:space"},
 		{"background-repeat:round round", "background-repeat:round"},
 		{"background-repeat:repeat repeat", "background-repeat:repeat"},
@@ -158,6 +159,7 @@ func TestCSSInline(t *testing.T) {
 		{"background-repeat:no-repeat repeat", "background-repeat:repeat-y"},
 		{"background-size:auto auto", "background-size:auto"},
 		{"background-size:30% auto", "background-size:30%"},
+		{"background-size:200px auto", "background-size:200px"},
 		{"background:red", "background:red"},
 		{"background:red none", "background:red"},
 		{"background:red none 0 0", "background:red"},
@@ -168,6 +170,7 @@ func TestCSSInline(t *testing.T) {
 		{"background:#0000 none padding-box 0 0 / auto auto scroll border-box repeat repeat", "background:0 0"},
 		{"background:0 0 / auto", "background:0 0"},
 		{"background:0 0 / auto 10%", "background:0 0/auto 10%"},
+		{"background:0 0/200px auto", "background:0 0/200px"},
 		{"background:0 0 no-repeat", "background:no-repeat"},
 		{"background:0% 0%", "background:0 0"},
 		{"background:left top", "background:0 0"},
@@ -257,13 +260,10 @@ func TestCSSInline(t *testing.T) {
 		{"color:#c0c0c0", "color:silver"},
 		{"-ms-filter: \"progid:DXImageTransform.Microsoft.Alpha(Opacity=80)\";", "-ms-filter:\"alpha(opacity=80)\""},
 		{"filter: progid:DXImageTransform.Microsoft.Alpha(Opacity = 80);", "filter:alpha(opacity=80)"},
-		{"MARGIN:1EM", "margin:1em"},
-		{"color:CYAN", "color:cyan"},
 		{"width:attr(Name em)", "width:attr(Name em)"},
 		{"content:CounterName", "content:CounterName"},
 		{"background:url('http://domain.com/image.png');", "background:url(http://domain.com/image.png)"},
 		{"background:url( 'http://domain.com/image.png' );", "background:url(http://domain.com/image.png)"},
-		{"background:URL(x.PNG);", "background:url(x.PNG)"},
 		{"background:url(/*nocomment*/)", "background:url(/*nocomment*/)"},
 		{"background:url(data:,text)", "background:url(data:,text)"},
 		{"background:url('data:text/xml; version = 2.0,content')", "background:url(data:text/xml;version=2.0,content)"},
@@ -275,8 +275,13 @@ func TestCSSInline(t *testing.T) {
 		{"g:url('abc\\\ndef')", "g:url(abcdef)"},
 		{"url:local('abc\\\ndef')", "url:local(abcdef)"},
 		{"url:local('abc def') , url('abc def') format('truetype')", "url:local('abc def'),url('abc def')format('truetype')"},
-		{"background:url(url) TOP RIGHT REPEAT-Y", "background:url(url)100% 0 repeat-y"},
-		{"background:url(url)TOP RIGHT REPEAT-Y", "background:url(url)100% 0 repeat-y"},
+
+		// case
+		{"MARGIN:1EM", "margin:1em"},
+		{"color:CYAN", "color:CYAN"},
+		{"background:URL(x.PNG);", "background:URL(x.PNG)"},
+		{"background:url(url) TOP RIGHT REPEAT-Y", "background:url(url)100% 0 REPEAT-Y"},
+		{"background:url(url)TOP RIGHT REPEAT-Y", "background:url(url)100% 0 REPEAT-Y"},
 
 		{"any:0deg 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz", "any:0 0s 0s 0dpi 0dpi 0dpi 0hz 0hz"},
 		{"margin:calc(10px) calc(20px)", "margin:calc(10px)calc(20px)"},

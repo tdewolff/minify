@@ -43,7 +43,7 @@ func rgbToToken(r, g, b float64) Token {
 	hex.Encode(val[1:], rgb)
 	parse.ToLower(val)
 	if s, ok := ShortenColorHex[string(val[:7])]; ok {
-		return Token{css.IdentToken, s, nil}
+		return Token{css.IdentToken, s, nil, 0, 0}
 	} else if val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
 		val[2] = val[3]
 		val[3] = val[5]
@@ -51,5 +51,5 @@ func rgbToToken(r, g, b float64) Token {
 	} else {
 		val = val[:7]
 	}
-	return Token{css.HashToken, val, nil}
+	return Token{css.HashToken, val, nil, 0, 0}
 }
