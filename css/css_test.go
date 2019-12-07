@@ -255,6 +255,8 @@ func TestCSSInline(t *testing.T) {
 		{"g:url('abc\\\ndef')", "g:url(abcdef)"},
 		{"url:local('abc\\\ndef')", "url:local(abcdef)"},
 		{"url:local('abc def') , url('abc def') format('truetype')", "url:local('abc def'),url('abc def')format('truetype')"},
+		{"background:url(url) TOP RIGHT REPEAT-Y", "background:url(url)100% 0 repeat-y"},
+		{"background:url(url)TOP RIGHT REPEAT-Y", "background:url(url)100% 0 repeat-y"},
 
 		{"any:0deg 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz", "any:0 0s 0s 0dpi 0dpi 0dpi 0hz 0hz"},
 		{"margin:calc(10px) calc(20px)", "margin:calc(10px)calc(20px)"},

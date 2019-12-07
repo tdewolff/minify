@@ -507,6 +507,7 @@ func (c *cssMinifier) minifyTokens(prop css.Hash, values []Token) []Token {
 		case css.FunctionToken:
 			values[i].Args = c.minifyTokens(prop, values[i].Args)
 
+			parse.ToLower(values[i].Data)
 			fun := css.ToHash(values[i].Data[0 : len(values[i].Data)-1])
 			args := values[i].Args
 			if fun == css.Rgb || fun == css.Rgba || fun == css.Hsl || fun == css.Hsla {
@@ -641,6 +642,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 				} else if values[i].TokenType != css.IdentToken && values[i].TokenType != css.StringToken {
 					break
 				} else if values[i].TokenType == css.IdentToken {
+					parse.ToLower(values[i].Data)
 					h := css.ToHash(values[i].Data)
 					// inherit, initial and unset are followed by an IdentToken/StringToken, so must be for font-size
 					if h == css.Xx_Small || h == css.X_Small || h == css.Small || h == css.Medium || h == css.Large || h == css.X_Large || h == css.Xx_Large || h == css.Smaller || h == css.Larger || h == css.Inherit || h == css.Initial || h == css.Unset {
@@ -664,8 +666,11 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 			if i > 0 {
 				// line-height
 				if i > 1 && values[i-1].TokenType == css.DelimToken && values[i-1].Data[0] == '/' {
-					if values[i].TokenType == css.IdentToken && bytes.Equal(values[i].Data, []byte("normal")) {
-						values = append(values[:i-1], values[i+1:]...)
+					if values[i].TokenType == css.IdentToken {
+						parse.ToLower(values[i].Data)
+						if bytes.Equal(values[i].Data, []byte("normal")) {
+							values = append(values[:i-1], values[i+1:]...)
+						}
 					}
 					i -= 2
 				}
@@ -675,6 +680,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 
 				for ; i > -1; i-- {
 					if values[i].TokenType == css.IdentToken {
+						parse.ToLower(values[i].Data)
 						val := css.ToHash(values[i].Data)
 						if val == css.Normal {
 							values = append(values[:i], values[i+1:]...)
@@ -710,6 +716,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 		}
 	case css.Font_Weight:
 		if len(values) == 1 && values[0].TokenType == css.IdentToken {
+			parse.ToLower(values[0].Data)
 			val := css.ToHash(values[0].Data)
 			if val == css.Normal {
 				values[0].TokenType = css.NumberToken
@@ -757,6 +764,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 		for i := 0; i < len(values); i++ {
 			values[i] = minifyColor(values[i])
 			if values[i].TokenType == css.IdentToken {
+				parse.ToLower(values[i].Data)
 				val := css.ToHash(values[i].Data)
 				if val == css.None || val == css.Currentcolor || val == css.Medium {
 					values = append(values[:i], values[i+1:]...)
@@ -771,6 +779,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 		for i := 0; i < len(values); i++ {
 			values[i] = minifyColor(values[i])
 			if values[i].TokenType == css.IdentToken {
+				parse.ToLower(values[i].Data)
 				val := css.ToHash(values[i].Data)
 				if val == css.Invert || val == css.None || val == css.Medium {
 					values = append(values[:i], values[i+1:]...)
@@ -782,7 +791,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 			values = []Token{{css.IdentToken, []byte("none"), nil}}
 		}
 	case css.Background:
-		// minify background-size
+		// minify background-size and lowercase all identifiers
 		for i := 0; i < len(values); i++ {
 			if values[i].TokenType == css.DelimToken && values[i].Data[0] == '/' {
 				// background-size consists of either [<length-percentage> | auto | cover | contain] or [<length-percentage> | auto]{2}
@@ -804,6 +813,8 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 						i--
 					}
 				}
+			} else if values[i].TokenType == css.IdentToken {
+				parse.ToLower(values[i].Data)
 			}
 		}
 
@@ -882,6 +893,8 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 		}
 	case css.Background_Repeat:
 		if len(values) == 2 && values[0].TokenType == css.IdentToken && values[1].TokenType == css.IdentToken {
+			parse.ToLower(values[0].Data)
+			parse.ToLower(values[1].Data)
 			h0 := css.ToHash(values[0].Data)
 			h1 := css.ToHash(values[1].Data)
 			if h0 == h1 {
@@ -895,6 +908,11 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 			}
 		}
 	case css.Background_Position:
+		for i := 0; i < len(values); i++ {
+			if values[i].TokenType == css.IdentToken {
+				parse.ToLower(values[i].Data)
+			}
+		}
 		if len(values) == 3 || len(values) == 4 {
 			// remove zero offsets
 			for _, i := range []int{len(values) - 1, 1} {
@@ -1016,15 +1034,21 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 		values[0] = minifyColor(values[0])
 	case css.Background_Color:
 		values[0] = minifyColor(values[0])
-		if bytes.Equal(values[0].Data, transparentBytes) {
-			values[0].Data = initialBytes
+		if values[0].TokenType == css.IdentToken {
+			parse.ToLower(values[0].Data)
+			if bytes.Equal(values[0].Data, transparentBytes) {
+				values[0].Data = initialBytes
+			}
 		}
 	case css.Border_Color:
 		sameValues := true
 		for i := range values {
 			values[i] = minifyColor(values[i])
-			if bytes.Equal(values[i].Data, []byte("currentcolor")) {
-				values[i].Data = initialBytes
+			if values[i].TokenType == css.IdentToken {
+				parse.ToLower(values[i].Data)
+				if bytes.Equal(values[i].Data, []byte("currentcolor")) {
+					values[i].Data = initialBytes
+				}
 			}
 			if 0 < i && sameValues && !bytes.Equal(values[0].Data, values[i].Data) {
 				sameValues = false
@@ -1035,8 +1059,11 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 		}
 	case css.Border_Left_Color, css.Border_Right_Color, css.Border_Top_Color, css.Border_Bottom_Color, css.Text_Decoration_Color, css.Text_Emphasis_Color:
 		values[0] = minifyColor(values[0])
-		if bytes.Equal(values[0].Data, []byte("currentcolor")) {
-			values[0].Data = initialBytes
+		if values[0].TokenType == css.IdentToken {
+			parse.ToLower(values[0].Data)
+			if bytes.Equal(values[0].Data, []byte("currentcolor")) {
+				values[0].Data = initialBytes
+			}
 		}
 	case css.Caret_Color, css.Outline_Color, css.Fill, css.Stroke:
 		values[0] = minifyColor(values[0])
@@ -1044,6 +1071,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 		for i := 0; i < len(values); i++ {
 			values[i] = minifyColor(values[i])
 			if values[i].TokenType == css.IdentToken {
+				parse.ToLower(values[i].Data)
 				val := css.ToHash(values[i].Data)
 				if val == css.Currentcolor || val == css.None || val == css.Medium {
 					values = append(values[:i], values[i+1:]...)
@@ -1076,6 +1104,7 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 		for i := 0; i < len(values); i++ {
 			values[i] = minifyColor(values[i])
 			if values[i].TokenType == css.IdentToken {
+				parse.ToLower(values[i].Data)
 				val := css.ToHash(values[i].Data)
 				if val == css.Currentcolor || val == css.None {
 					values = append(values[:i], values[i+1:]...)
