@@ -278,6 +278,7 @@ func TestCSSInline(t *testing.T) {
 		{"margin:0 0 18px 0;", "margin:0 0 18px"},
 		{"z-index:1000", "z-index:1000"},
 		{"box-shadow:0 0 0 0", "box-shadow:0 0"},
+		{"box-shadow:0 inset 0 0 blue 0", "box-shadow:0 inset 0 blue"},
 		{"flex:0px", "flex:0q"},
 		{"g:url('abc\\\ndef')", "g:url(abcdef)"},
 		{"url:local('abc\\\ndef')", "url:local(abcdef)"},

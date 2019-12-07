@@ -85,8 +85,10 @@ func (t Token) IsZero() bool {
 	return (t.TokenType == css.DimensionToken || t.TokenType == css.PercentageToken || t.TokenType == css.NumberToken) && t.Data[0] == '0'
 }
 
-func (t Token) IsLengthPercentage() bool {
-	if t.TokenType == css.DimensionToken || t.TokenType == css.PercentageToken {
+func (t Token) IsLength() bool {
+	if t.TokenType == css.DimensionToken {
+		return true
+	} else if t.TokenType == css.NumberToken && t.Data[0] == '0' {
 		return true
 	} else if t.TokenType == css.FunctionToken {
 		fun := css.ToHash(t.Data[:len(t.Data)-1])
@@ -95,6 +97,10 @@ func (t Token) IsLengthPercentage() bool {
 		}
 	}
 	return false
+}
+
+func (t Token) IsLengthPercentage() bool {
+	return t.TokenType == css.PercentageToken || t.IsLength()
 }
 
 // Minify minifies CSS data, it reads from r and writes to w.
@@ -1076,9 +1082,22 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 			}
 		}
 	case css.Box_Shadow:
-		// TODO: more minification possible
-		if len(values) == 4 && values[0].IsZero() && values[1].IsZero() && values[2].IsZero() && values[3].IsZero() {
-			values = values[:2]
+		if len(values) == 1 && (values[0].Ident == css.None || values[0].Ident == css.Initial) {
+			values = []Token{{css.NumberToken, []byte("0"), nil, 0, 0}, {css.NumberToken, []byte("0"), nil, 0, 0}}
+		} else {
+			numbers := []int{}
+			for i := 0; i < len(values); i++ {
+				if values[i].IsLength() {
+					numbers = append(numbers, i)
+				}
+			}
+			if len(numbers) == 4 && values[numbers[3]].IsZero() {
+				values = append(values[:numbers[3]], values[numbers[3]+1:]...)
+				numbers = numbers[:3]
+			}
+			if len(numbers) == 3 && values[numbers[2]].IsZero() {
+				values = append(values[:numbers[2]], values[numbers[2]+1:]...)
+			}
 		}
 	case css.Ms_Filter:
 		alpha := []byte("progid:DXImageTransform.Microsoft.Alpha(Opacity=")
