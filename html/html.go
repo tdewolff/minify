@@ -38,6 +38,7 @@ type Minifier struct {
 	KeepDefaultAttrVals     bool
 	KeepDocumentTags        bool
 	KeepEndTags             bool
+	KeepQuotes              bool
 	KeepWhitespace          bool
 }
 
@@ -459,7 +460,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						isXML := attr.Hash == html.Vocab || attr.Hash == html.Typeof || attr.Hash == html.Property || attr.Hash == html.Resource || attr.Hash == html.Prefix || attr.Hash == html.Content || attr.Hash == html.About || attr.Hash == html.Rev || attr.Hash == html.Datatype || attr.Hash == html.Inlist
 
 						// no quotes if possible, else prefer single or double depending on which occurs more often in value
-						val = html.EscapeAttrVal(&attrByteBuffer, attr.AttrVal, val, isXML)
+						val = html.EscapeAttrVal(&attrByteBuffer, attr.AttrVal, val, o.KeepQuotes || isXML)
 						if _, err := w.Write(val); err != nil {
 							return err
 						}

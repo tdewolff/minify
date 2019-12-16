@@ -271,6 +271,26 @@ func TestHTMLKeepWhitespace(t *testing.T) {
 	}
 }
 
+func TestHTMLKeepQuotes(t *testing.T) {
+	htmlTests := []struct {
+		html     string
+		expected string
+	}{
+		{`<p attr="test">`, `<p attr="test">`},
+	}
+
+	m := minify.New()
+	htmlMinifier := &Minifier{KeepQuotes: true}
+	for _, tt := range htmlTests {
+		t.Run(tt.html, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.html)
+			w := &bytes.Buffer{}
+			err := htmlMinifier.Minify(m, w, r, nil)
+			test.Minify(t, tt.html, err, w.String(), tt.expected)
+		})
+	}
+}
+
 func TestHTMLURL(t *testing.T) {
 	htmlTests := []struct {
 		url      string

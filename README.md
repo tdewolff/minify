@@ -172,6 +172,7 @@ Options:
 - `KeepDefaultAttrVals` preserve default attribute values such as `<script type="application/javascript">`
 - `KeepDocumentTags` preserve `html`, `head` and `body` tags
 - `KeepEndTags` preserve all end tags
+- `KeepQuotes` preserve quotes around attribute values
 - `KeepWhitespace` preserve whitespace between inline tags but still collapse multiple whitespace characters into one
 
 After recent benchmarking and profiling it became really fast and minifies pages in the 10ms range, making it viable for on-the-fly minification.

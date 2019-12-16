@@ -28,6 +28,7 @@ You can enable bash tab completion by using
           --html-keep-default-attrvals       Preserve default attribute values
           --html-keep-document-tags          Preserve html, head and body tags
           --html-keep-end-tags               Preserve all end tags
+          --html-keep-quotes                 Preserve quotes around attribute values
           --html-keep-whitespace             Preserve whitespace characters but still collapse multiple into one
       -l, --list                             List all accepted filetypes
           --match string                     Filename pattern matching using regular expressions
