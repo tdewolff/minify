@@ -209,6 +209,13 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 					rawTagHash = t.Hash
 					rawTagMediatype = nil
+
+					// do not minify content of <style amp-boilerplate>
+					if hasAttributes && t.Hash == html.Style {
+						if attrs := tb.Attributes(html.Amp_Boilerplate); attrs[0] != nil {
+							rawTagHash = 0
+						}
+					}
 				}
 			} else if t.Hash == html.Template {
 				omitSpace = true // EndTagToken
