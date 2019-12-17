@@ -69,7 +69,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				omitSpace = true
 			}
 		case xml.TextToken:
-			t.Data = parse.ReplaceMultipleWhitespaceAndEntities(t.Data, xml.EntitiesMap, nil)
+			t.Data = parse.ReplaceMultipleWhitespaceAndEntities(t.Data, EntitiesMap, nil)
 
 			// whitespace removal; trim left
 			if omitSpace && parse.IsWhitespace(t.Data[0]) {
@@ -146,7 +146,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				}
 			} else {
 				val := t.AttrVal[1 : len(t.AttrVal)-1]
-				val = parse.ReplaceEntities(val, xml.EntitiesMap, nil)
+				val = parse.ReplaceEntities(val, EntitiesMap, nil)
 				val = xml.EscapeAttrVal(&attrByteBuffer, val) // prefer single or double quotes depending on what occurs more often in value
 				if _, err := w.Write(val); err != nil {
 					return err
