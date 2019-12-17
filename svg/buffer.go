@@ -2,14 +2,13 @@ package svg
 
 import (
 	"github.com/tdewolff/parse/v2"
-	"github.com/tdewolff/parse/v2/svg"
 	"github.com/tdewolff/parse/v2/xml"
 )
 
 // Token is a single token unit with an attribute value (if given) and hash of the data.
 type Token struct {
 	xml.TokenType
-	Hash    svg.Hash
+	Hash    Hash
 	Data    []byte
 	Text    []byte
 	AttrVal []byte
@@ -43,10 +42,10 @@ func (z *TokenBuffer) read(t *Token) {
 			t.AttrVal = parse.ReplaceMultipleWhitespaceAndEntities(t.AttrVal, xml.EntitiesMap, nil)
 			t.AttrVal = parse.TrimWhitespace(t.AttrVal)
 		}
-		t.Hash = svg.ToHash(t.Text)
+		t.Hash = ToHash(t.Text)
 	} else if t.TokenType == xml.StartTagToken || t.TokenType == xml.EndTagToken {
 		t.AttrVal = nil
-		t.Hash = svg.ToHash(t.Text)
+		t.Hash = ToHash(t.Text)
 	} else {
 		t.AttrVal = nil
 		t.Hash = 0
@@ -102,7 +101,7 @@ func (z *TokenBuffer) Shift() *Token {
 
 // Attributes extracts the gives attribute hashes from a tag.
 // It returns in the same order pointers to the requested token data or nil.
-func (z *TokenBuffer) Attributes(hashes ...svg.Hash) []*Token {
+func (z *TokenBuffer) Attributes(hashes ...Hash) []*Token {
 	n := 0
 	for {
 		if t := z.Peek(n); t.TokenType != xml.AttributeToken {

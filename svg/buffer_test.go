@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/tdewolff/parse/v2/svg"
 	"github.com/tdewolff/parse/v2/xml"
 	"github.com/tdewolff/test"
 )
@@ -16,15 +15,15 @@ func TestBuffer(t *testing.T) {
 	z := NewTokenBuffer(xml.NewLexer(bytes.NewBufferString(s)))
 
 	tok := z.Shift()
-	test.That(t, tok.Hash == svg.Svg, "first token is <svg>")
+	test.That(t, tok.Hash == Svg, "first token is <svg>")
 	test.That(t, z.pos == 0, "shift first token and restore position")
 	test.That(t, len(z.buf) == 0, "shift first token and restore length")
 
-	test.That(t, z.Peek(2).Hash == svg.D, "third token is d")
+	test.That(t, z.Peek(2).Hash == D, "third token is d")
 	test.That(t, z.pos == 0, "don't change position after peeking")
 	test.That(t, len(z.buf) == 3, "mtwo tokens after peeking")
 
-	test.That(t, z.Peek(8).Hash == svg.Svg, "ninth token is <svg>")
+	test.That(t, z.Peek(8).Hash == Svg, "ninth token is <svg>")
 	test.That(t, z.pos == 0, "don't change position after peeking")
 	test.That(t, len(z.buf) == 9, "nine tokens after peeking")
 
@@ -34,7 +33,7 @@ func TestBuffer(t *testing.T) {
 
 	_ = z.Shift()
 	tok = z.Shift()
-	test.That(t, tok.Hash == svg.Path, "third token is <path>")
+	test.That(t, tok.Hash == Path, "third token is <path>")
 	test.That(t, z.pos == 2, "don't change position after peeking")
 }
 
@@ -44,7 +43,7 @@ func TestAttributes(t *testing.T) {
 	tb := NewTokenBuffer(l)
 	tb.Shift()
 	for k := 0; k < 2; k++ { // run twice to ensure similar results
-		attrs := tb.Attributes(svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
+		attrs := tb.Attributes(X, Y, Width, Height, Rx, Ry)
 		for i := 0; i < 6; i++ {
 			test.That(t, attrs[i] != nil, "attr must not be nil")
 			val := string(attrs[i].AttrVal)
@@ -63,6 +62,6 @@ func BenchmarkAttributes(b *testing.B) {
 	tb.Shift()
 	tb.Peek(6)
 	for i := 0; i < b.N; i++ {
-		tb.Attributes(svg.X, svg.Y, svg.Width, svg.Height, svg.Rx, svg.Ry)
+		tb.Attributes(X, Y, Width, Height, Rx, Ry)
 	}
 }

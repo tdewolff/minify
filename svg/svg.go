@@ -6,11 +6,9 @@ import (
 	"io"
 
 	"github.com/tdewolff/minify/v2"
-	minifyCSS "github.com/tdewolff/minify/v2/css"
+	"github.com/tdewolff/minify/v2/css"
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/buffer"
-	"github.com/tdewolff/parse/v2/css"
-	"github.com/tdewolff/parse/v2/svg"
 	"github.com/tdewolff/parse/v2/xml"
 )
 
@@ -56,7 +54,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		o.newPrecision = 15 // minimum number of digits a double can represent exactly
 	}
 
-	var tag svg.Hash
+	var tag Hash
 	defaultStyleType := cssMimeBytes
 	defaultStyleParams := map[string]string(nil)
 	defaultInlineStyleParams := map[string]string{"inline": "1"}
@@ -87,7 +85,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			t.Data = parse.ReplaceMultipleWhitespaceAndEntities(t.Data, xml.EntitiesMap, nil)
 			t.Data = parse.TrimWhitespace(t.Data)
 
-			if tag == svg.Style && len(t.Data) > 0 {
+			if tag == Style && len(t.Data) > 0 {
 				if err := m.MinifyMimetype(defaultStyleType, w, buffer.NewReader(t.Data), defaultStyleParams); err != nil {
 					if err != minify.ErrNotExist {
 						return err
@@ -99,7 +97,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				return err
 			}
 		case xml.CDATAToken:
-			if tag == svg.Style {
+			if tag == Style {
 				minifyBuffer.Reset()
 				if err := m.MinifyMimetype(defaultStyleType, minifyBuffer, buffer.NewReader(t.Text), defaultStyleParams); err == nil {
 					t.Data = append(t.Data[:9], minifyBuffer.Bytes()...)
@@ -128,9 +126,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 		case xml.StartTagToken:
 			tag = t.Hash
-			if tag == svg.Metadata {
+			if tag == Metadata {
 				t.Data = nil
-			} else if tag == svg.Rect {
+			} else if tag == Rect {
 				o.shortenRect(tb, &t)
 			}
 
@@ -146,20 +144,20 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 			attr := t.Hash
 			val := t.AttrVal
-			if n, m := parse.Dimension(val); n+m == len(val) && attr != svg.Version { // TODO: inefficient, temporary measure
+			if n, m := parse.Dimension(val); n+m == len(val) && attr != Version { // TODO: inefficient, temporary measure
 				val, _ = o.shortenDimension(val)
 			}
-			if attr == svg.Xml_Space && bytes.Equal(val, []byte("preserve")) ||
-				tag == svg.Svg && (attr == svg.Version && bytes.Equal(val, []byte("1.1")) ||
-					attr == svg.X && bytes.Equal(val, []byte("0")) ||
-					attr == svg.Y && bytes.Equal(val, []byte("0")) ||
-					attr == svg.Width && bytes.Equal(val, []byte("100%")) ||
-					attr == svg.Height && bytes.Equal(val, []byte("100%")) ||
-					attr == svg.PreserveAspectRatio && bytes.Equal(val, []byte("xMidYMid meet")) ||
-					attr == svg.BaseProfile && bytes.Equal(val, []byte("none")) ||
-					attr == svg.ContentScriptType && bytes.Equal(val, []byte("application/ecmascript")) ||
-					attr == svg.ContentStyleType && bytes.Equal(val, []byte("text/css"))) ||
-				tag == svg.Style && attr == svg.Type && bytes.Equal(val, []byte("text/css")) {
+			if attr == Xml_Space && bytes.Equal(val, []byte("preserve")) ||
+				tag == Svg && (attr == Version && bytes.Equal(val, []byte("1.1")) ||
+					attr == X && bytes.Equal(val, []byte("0")) ||
+					attr == Y && bytes.Equal(val, []byte("0")) ||
+					attr == Width && bytes.Equal(val, []byte("100%")) ||
+					attr == Height && bytes.Equal(val, []byte("100%")) ||
+					attr == PreserveAspectRatio && bytes.Equal(val, []byte("xMidYMid meet")) ||
+					attr == BaseProfile && bytes.Equal(val, []byte("none")) ||
+					attr == ContentScriptType && bytes.Equal(val, []byte("application/ecmascript")) ||
+					attr == ContentStyleType && bytes.Equal(val, []byte("text/css"))) ||
+				tag == Style && attr == Type && bytes.Equal(val, []byte("text/css")) {
 				continue
 			}
 
@@ -173,19 +171,19 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				return err
 			}
 
-			if tag == svg.Svg && attr == svg.ContentStyleType {
+			if tag == Svg && attr == ContentStyleType {
 				val = minify.Mediatype(val)
 				defaultStyleType = val
-			} else if attr == svg.Style {
+			} else if attr == Style {
 				minifyBuffer.Reset()
 				if err := m.MinifyMimetype(defaultStyleType, minifyBuffer, buffer.NewReader(val), defaultInlineStyleParams); err == nil {
 					val = minifyBuffer.Bytes()
 				} else if err != minify.ErrNotExist {
 					return err
 				}
-			} else if attr == svg.D {
+			} else if attr == D {
 				val = p.ShortenPathData(val)
-			} else if attr == svg.ViewBox {
+			} else if attr == ViewBox {
 				j := 0
 				newVal := val[:0]
 				for i := 0; i < 4; i++ {
@@ -209,14 +207,14 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			} else if colorAttrMap[attr] && len(val) > 0 && (len(val) < 5 || !parse.EqualFold(val[:4], urlBytes)) {
 				parse.ToLower(val)
 				if val[0] == '#' {
-					if name, ok := minifyCSS.ShortenColorHex[string(val)]; ok {
+					if name, ok := css.ShortenColorHex[string(val)]; ok {
 						val = name
 					} else if len(val) == 7 && val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
 						val[2] = val[3]
 						val[3] = val[5]
 						val = val[:4]
 					}
-				} else if hex, ok := minifyCSS.ShortenColorName[css.ToHash(val)]; ok {
+				} else if hex, ok := css.ShortenColorName[css.ToHash(val)]; ok {
 					val = hex
 					// } else if len(val) > 5 && bytes.Equal(val[:4], []byte("rgb(")) && val[len(val)-1] == ')' {
 					// TODO: handle rgb(x, y, z) and hsl(x, y, z)
@@ -286,7 +284,7 @@ func (o *Minifier) shortenDimension(b []byte) ([]byte, int) {
 
 func (o *Minifier) shortenRect(tb *TokenBuffer, t *Token) {
 	w, h := zeroBytes, zeroBytes
-	attrs := tb.Attributes(svg.Width, svg.Height)
+	attrs := tb.Attributes(Width, Height)
 	if attrs[0] != nil {
 		n, _ := parse.Dimension(attrs[0].AttrVal)
 		w = minify.Number(attrs[0].AttrVal[:n], o.Precision)
