@@ -38,6 +38,7 @@ type Minifier struct {
 	KeepDefaultAttrVals     bool
 	KeepDocumentTags        bool
 	KeepEndTags             bool
+	KeepQuotes              bool
 	KeepWhitespace          bool
 }
 
@@ -208,6 +209,13 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 					rawTagHash = t.Hash
 					rawTagMediatype = nil
+
+					// do not minify content of <style amp-boilerplate>
+					if hasAttributes && t.Hash == html.Style {
+						if attrs := tb.Attributes(html.Amp_Boilerplate); attrs[0] != nil {
+							rawTagHash = 0
+						}
+					}
 				}
 			} else if t.Hash == Template {
 				omitSpace = true // EndTagToken
@@ -459,7 +467,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						isXML := attr.Hash == Vocab || attr.Hash == Typeof || attr.Hash == Property || attr.Hash == Resource || attr.Hash == Prefix || attr.Hash == Content || attr.Hash == About || attr.Hash == Rev || attr.Hash == Datatype || attr.Hash == Inlist
 
 						// no quotes if possible, else prefer single or double depending on which occurs more often in value
-						val = html.EscapeAttrVal(&attrByteBuffer, attr.AttrVal, val, isXML)
+						val = html.EscapeAttrVal(&attrByteBuffer, attr.AttrVal, val, o.KeepQuotes || isXML)
 						if _, err := w.Write(val); err != nil {
 							return err
 						}

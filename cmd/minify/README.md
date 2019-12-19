@@ -67,13 +67,14 @@ sudo apt-get install minify
           --html-keep-default-attrvals       Preserve default attribute values
           --html-keep-document-tags          Preserve html, head and body tags
           --html-keep-end-tags               Preserve all end tags
+          --html-keep-quotes                 Preserve quotes around attribute values
           --html-keep-whitespace             Preserve whitespace characters but still collapse multiple into one
       -l, --list                             List all accepted filetypes
           --match string                     Filename pattern matching using regular expressions
           --mime string                      Mimetype (eg. text/css), optional for input filenames, has precedence over -type
       -o, --output string                    Output file or directory (must have trailing slash), leave blank to use stdout
       -r, --recursive                        Recursively minify directories
-          --svg-precision int                 Number of significant digits to preserve in numbers, 0 is all (default 0)
+          --svg-precision int                Number of significant digits to preserve in numbers, 0 is all (default 0)
 	  -s, --sync                             Copy all files to destination directory and minify when filetype matches
           --type string                      Filetype (eg. css), optional for input filenames
           --url string                       URL of file to enable URL minification

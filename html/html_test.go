@@ -174,6 +174,7 @@ func TestHTMLCSSJS(t *testing.T) {
 	}{
 		// bugs
 		{`<div style="font-family: Arial, &#39;sans-serif&#39;; font-size: 22px;">`, `<div style=font-family:Arial,sans-serif;font-size:22px>`}, // #272
+		{`<style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;}</style>`, `<style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;}</style>`},
 	}
 
 	m := minify.New()
@@ -262,6 +263,26 @@ func TestHTMLKeepWhitespace(t *testing.T) {
 
 	m := minify.New()
 	htmlMinifier := &Minifier{KeepWhitespace: true}
+	for _, tt := range htmlTests {
+		t.Run(tt.html, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.html)
+			w := &bytes.Buffer{}
+			err := htmlMinifier.Minify(m, w, r, nil)
+			test.Minify(t, tt.html, err, w.String(), tt.expected)
+		})
+	}
+}
+
+func TestHTMLKeepQuotes(t *testing.T) {
+	htmlTests := []struct {
+		html     string
+		expected string
+	}{
+		{`<p attr="test">`, `<p attr="test">`},
+	}
+
+	m := minify.New()
+	htmlMinifier := &Minifier{KeepQuotes: true}
 	for _, tt := range htmlTests {
 		t.Run(tt.html, func(t *testing.T) {
 			r := bytes.NewBufferString(tt.html)
