@@ -133,36 +133,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 
 func (c *cssMinifier) minifyGrammar() error {
 	semicolonQueued := false
-	declProps := [][]byte{}
-	declHashes := []Hash{}
-	declValues := [][]css.Token{}
-	valuesBuffer := []css.Token{}
 	for {
 		gt, _, data := c.p.Next()
-		if gt != css.DeclarationGrammar && 0 < len(declProps) {
-			if semicolonQueued {
-				if _, err := c.w.Write(semicolonBytes); err != nil {
-					return err
-				}
-				semicolonQueued = false
-			}
-			for i := 0; i < len(declProps); i++ {
-				if 0 < i {
-					if _, err := c.w.Write(semicolonBytes); err != nil {
-						return err
-					}
-				}
-				if err := c.minifyDeclaration(declProps[i], declHashes[i], declValues[i]); err != nil {
-					return err
-				}
-			}
-			declProps = declProps[:0]
-			declHashes = declHashes[:0]
-			declValues = declValues[:0]
-			valuesBuffer = valuesBuffer[:0]
-			semicolonQueued = true
-		}
-
 		switch gt {
 		case css.ErrorGrammar:
 			if _, ok := c.p.Err().(*parse.Error); ok {
@@ -251,36 +223,10 @@ func (c *cssMinifier) minifyGrammar() error {
 				return err
 			}
 		case css.DeclarationGrammar:
-			h := ToHash(data)
-			valuesBuffer = append(valuesBuffer, c.p.Values()...) // copy
-			values := valuesBuffer[len(valuesBuffer)-len(c.p.Values()):]
-
-			// remove overwritten properties
-			if h == All {
-				// overrides all properties
-				declProps = declProps[:0]
-				declHashes = declHashes[:0]
-				declValues = declValues[:0]
-			} else {
-				overrides := PropertyOverrides[h]
-				if overrides == nil {
-					overrides = []Hash{h}
-				}
-				for i := 0; i < len(declHashes); i++ {
-					for _, hash := range overrides {
-						if hash == declHashes[i] && (hash != 0 || bytes.Equal(declProps[i], data)) {
-							declProps = append(declProps[:i], declProps[i+1:]...)
-							declHashes = append(declHashes[:i], declHashes[i+1:]...)
-							declValues = append(declValues[:i], declValues[i+1:]...)
-							break
-						}
-					}
-				}
+			if err := c.minifyDeclaration(data, c.p.Values()); err != nil {
+				return err
 			}
-
-			declProps = append(declProps, data)
-			declHashes = append(declHashes, h)
-			declValues = append(declValues, values)
+			semicolonQueued = true
 		case css.CustomPropertyGrammar:
 			if _, err := c.w.Write(data); err != nil {
 				return err
@@ -424,7 +370,7 @@ func (c *cssMinifier) parseDeclaration(values []css.Token) []Token {
 	return tokens
 }
 
-func (c *cssMinifier) minifyDeclaration(property []byte, prop Hash, components []css.Token) error {
+func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token) error {
 	if _, err := c.w.Write(property); err != nil {
 		return err
 	}
@@ -443,6 +389,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, prop Hash, components [
 		important = true
 	}
 
+	prop := ToHash(property)
 	values := c.parseDeclaration(components)
 
 	// Do not process complex values (eg. containing blocks or is not alternated between whitespace/commas and flat values

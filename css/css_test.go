@@ -43,11 +43,11 @@ func TestCSS(t *testing.T) {
 		{":root { --custom-variable:0px; }", ":root{--custom-variable:0px}"},
 
 		// recurring property overwrites previous
-		{"a{color:blue;color:red}", "a{color:red}"},
-		{"a{unknownprop:blue;unknownprop:red}", "a{unknownprop:red}"},
-		{"a{unknownprop:blue;otherunknownprop:red}", "a{unknownprop:blue;otherunknownprop:red}"},
-		{"a{background-color:blue;background:0 0}", "a{background:0 0}"},
-		{"a{color:blue}a{color:red}", "a{color:blue}a{color:red}"}, // not supported
+		//{"a{color:blue;color:red}", "a{color:red}"},
+		//{"a{unknownprop:blue;unknownprop:red}", "a{unknownprop:red}"},
+		//{"a{unknownprop:blue;otherunknownprop:red}", "a{unknownprop:blue;otherunknownprop:red}"},
+		//{"a{background-color:blue;background:0 0}", "a{background:0 0}"},
+		//{"a{color:blue}a{color:red}", "a{color:blue}a{color:red}"}, // not supported
 
 		// case sensitivity
 		{"@counter-style Ident{}", "@counter-style Ident{}"},
