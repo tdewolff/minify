@@ -374,8 +374,10 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 			}
 		}
 
+		var funcSep bool
 		if value.TokenType == css.FunctionToken {
-			err := c.minifyFunction(value.Components)
+			var err error
+			funcSep, err = c.minifyFunction(value.Components)
 			if err != nil {
 				return err
 			}
@@ -383,7 +385,8 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 			return err
 		}
 
-		if value.TokenType == css.CommaToken || value.TokenType == css.DelimToken && value.Data[0] == '/' || value.TokenType == css.FunctionToken || value.TokenType == css.URLToken {
+		if value.TokenType == css.CommaToken || value.TokenType == css.DelimToken && value.Data[0] == '/' ||
+			value.TokenType == css.FunctionToken && funcSep || value.TokenType == css.URLToken {
 			prevSep = true
 		} else {
 			prevSep = false
@@ -812,7 +815,8 @@ func (c *cssMinifier) minifyColorAsHex(rgba [3]byte) error {
 	return err
 }
 
-func (c *cssMinifier) minifyFunction(values []css.Token) error {
+// minifyFunction returns whether the minified result is still a function like token, which can be a valid separator.
+func (c *cssMinifier) minifyFunction(values []css.Token) (bool, error) {
 	if n := len(values); n > 2 {
 		fun := css.ToHash(values[0].Data[0 : len(values[0].Data)-1])
 		if fun == css.Rgb || fun == css.Rgba || fun == css.Hsl || fun == css.Hsla {
@@ -838,7 +842,7 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 					d, _ := strconv.ParseFloat(string(values[7].Data), 32) // can never fail because if valid == true than this is a NumberToken or PercentageToken
 					if d < minify.Epsilon {                                // zero or less
 						_, err := c.w.Write(transparentBytes)
-						return err
+						return false, err
 					} else if d >= 1.0 {
 						values = values[:7]
 					} else {
@@ -869,7 +873,7 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 								rgb[j] = byte((d / 100.0 * 255.0) + 0.5)
 							}
 						}
-						return c.minifyColorAsHex(rgb)
+						return false, c.minifyColorAsHex(rgb)
 					} else if (fun == css.Hsl || fun == css.Hsla) && (len(vals) == 3 || len(vals) == 4) && vals[0].TokenType == css.NumberToken && vals[1].TokenType == css.PercentageToken && vals[2].TokenType == css.PercentageToken {
 						h, _ := strconv.ParseFloat(string(vals[0].Data), 32)
 						s, _ := strconv.ParseFloat(string(vals[1].Data[:len(vals[1].Data)-1]), 32)
@@ -890,7 +894,7 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 
 						r, g, b := css.HSL2RGB(h/360.0, s/100.0, l/100.0)
 						rgb := [3]byte{byte((r * 255.0) + 0.5), byte((g * 255.0) + 0.5), byte((b * 255.0) + 0.5)}
-						return c.minifyColorAsHex(rgb)
+						return false, c.minifyColorAsHex(rgb)
 					}
 				}
 			}
@@ -899,10 +903,10 @@ func (c *cssMinifier) minifyFunction(values []css.Token) error {
 
 	for _, value := range values {
 		if _, err := c.w.Write(value.Data); err != nil {
-			return err
+			return false, err
 		}
 	}
-	return nil
+	return true, nil
 }
 
 func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte) (css.TokenType, []byte) {
