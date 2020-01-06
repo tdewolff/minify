@@ -211,8 +211,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					rawTagMediatype = nil
 
 					// do not minify content of <style amp-boilerplate>
-					if hasAttributes && t.Hash == html.Style {
-						if attrs := tb.Attributes(html.Amp_Boilerplate); attrs[0] != nil {
+					if hasAttributes && t.Hash == Style {
+						if attrs := tb.Attributes(Amp_Boilerplate); attrs[0] != nil {
 							rawTagHash = 0
 						}
 					}
