@@ -4,9 +4,11 @@ package minify
 import (
 	"errors"
 	"io"
+	"log"
 	"mime"
 	"net/http"
 	"net/url"
+	"os"
 	"os/exec"
 	"path"
 	"regexp"
@@ -15,6 +17,9 @@ import (
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/buffer"
 )
+
+// Warning is used to report usage warnings such as using a deprecated feature
+var Warning = log.New(os.Stderr, "WARNING: ", 0)
 
 // ErrNotExist is returned when no minifier exists for a given mimetype.
 var ErrNotExist = errors.New("minifier does not exist for mimetype")

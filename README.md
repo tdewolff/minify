@@ -4,10 +4,7 @@
 
 **[Command line tool](https://github.com/tdewolff/minify/tree/master/cmd/minify) that minifies concurrently and supports watching file changes.**
 
-**[All releases](https://github.com/tdewolff/minify/releases) for various platforms.**
-
-- [Arch Linux](https://aur.archlinux.org/packages/minify/)
-- [FreeBSD](https://www.freshports.org/textproc/minify)
+**[Releases](https://github.com/tdewolff/minify/releases) of CLI for various platforms.** See [CLI](https://github.com/tdewolff/minify/tree/master/cmd/minify) for more installation instructions.
 
 ---
 
@@ -73,11 +70,7 @@ Minifiers or bindings to minifiers exist in almost all programming languages. So
 This minifier proves to be that fast and extensive minifier that can handle HTML and any other filetype it may contain (CSS, JS, ...). It is usually orders of magnitude faster than existing minifiers.
 
 ## Installation
-Run the following command
-
-	go get -u github.com/tdewolff/minify/v2
-
-or add the following imports and run the project with `go get`
+With modules enabled (`GO111MODULES=auto` or `GO111MODULES=on`), add the following imports and run the project with `go get`
 ``` go
 import (
 	"github.com/tdewolff/minify/v2"
@@ -89,6 +82,8 @@ import (
 	"github.com/tdewolff/minify/v2/xml"
 )
 ```
+
+See [CLI tool](https://github.com/tdewolff/minify/tree/master/cmd/minify) for installation instructions of the binary.
 
 ## API stability
 There is no guarantee for absolute stability, but I take issues and bugs seriously and don't take API changes lightly. The library will be maintained in a compatible way unless vital bugs prevent me from doing so. There has been one API change after v1 which added options support and I took the opportunity to push through some more API clean up as well. There are no plans whatsoever for future API changes.
@@ -223,8 +218,8 @@ There are a couple of comparison tables online, such as [CSS Minifier Comparison
 
 Options:
 
-- `Decimals` number of decimals to preserve for numbers, `-1` means no trimming
 - `KeepCSS2` prohibits using CSS3 syntax (such as exponents in numbers, or `rgba(` &#8594; `rgb(`), might be incomplete
+- `Precision` number of significant digits to preserve for numbers, `0` means no trimming
 
 ## JS
 
@@ -263,7 +258,7 @@ TODO:
 
 Options:
 
-- `Decimals` number of decimals to preserve for numbers, `-1` means no trimming
+- `Precision` number of significant digits to preserve for numbers, `0` means no trimming
 
 ## XML
 

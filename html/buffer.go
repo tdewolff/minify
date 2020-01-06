@@ -8,7 +8,7 @@ import (
 // Token is a single token unit with an attribute value (if given) and hash of the data.
 type Token struct {
 	html.TokenType
-	Hash    html.Hash
+	Hash    Hash
 	Data    []byte
 	Text    []byte
 	AttrVal []byte
@@ -41,11 +41,11 @@ func (z *TokenBuffer) read(t *Token) {
 		if len(t.AttrVal) > 1 && (t.AttrVal[0] == '"' || t.AttrVal[0] == '\'') {
 			t.AttrVal = parse.TrimWhitespace(t.AttrVal[1 : len(t.AttrVal)-1]) // quotes will be readded in attribute loop if necessary
 		}
-		t.Hash = html.ToHash(t.Text)
+		t.Hash = ToHash(t.Text)
 		t.Traits = attrMap[t.Hash]
 	} else if t.TokenType == html.StartTagToken || t.TokenType == html.EndTagToken {
 		t.AttrVal = nil
-		t.Hash = html.ToHash(t.Text)
+		t.Hash = ToHash(t.Text)
 		t.Traits = tagMap[t.Hash] // zero if not exist
 	} else {
 		t.AttrVal = nil
@@ -103,7 +103,7 @@ func (z *TokenBuffer) Shift() *Token {
 
 // Attributes extracts the gives attribute hashes from a tag.
 // It returns in the same order pointers to the requested token data or nil.
-func (z *TokenBuffer) Attributes(hashes ...html.Hash) []*Token {
+func (z *TokenBuffer) Attributes(hashes ...Hash) []*Token {
 	n := 0
 	for {
 		if t := z.Peek(n); t.TokenType != html.AttributeToken {

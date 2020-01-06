@@ -82,14 +82,12 @@ func (p *PathData) ShortenPathData(b []byte) []byte {
 			continue
 		} else if pathCmds[c] && (cmd == 0 || cmd != c || c == 'M' || c == 'm') { // any command
 			if cmd != 0 {
-				j += p.copyInstruction(b[j:i], cmd)
-			} else {
-				j = i
+				j += p.copyInstruction(b[j:], cmd)
 			}
 			cmd = c
 			p.coords = p.coords[:0]
 			p.coordFloats = p.coordFloats[:0]
-		} else if (cmd == 'A' || cmd == 'a') && (len(p.coordFloats) == 3 || len(p.coordFloats) == 4) {
+		} else if (cmd == 'A' || cmd == 'a') && (len(p.coordFloats)%7 == 3 || len(p.coordFloats)%7 == 4) {
 			// boolean flags for arc command
 			if c == '1' {
 				p.coords = append(p.coords, b[i:i+1])
@@ -147,7 +145,7 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 	} else if (cmd == 'A' || cmd == 'a') && n%7 == 0 {
 		di = 7
 	} else {
-		return len(b)
+		return 0
 	}
 
 	j := 0
@@ -350,7 +348,7 @@ func (p *PathData) shortenCurPosInstruction(cmd byte, coords [][]byte) PathDataS
 			continue
 		}
 
-		coord = minify.Number(coord, p.o.Decimals)
+		coord = minify.Number(coord, p.o.Precision)
 		state.copyNumber(&p.curBuffer, coord)
 	}
 	return state
@@ -389,7 +387,7 @@ func (p *PathData) shortenAltPosInstruction(cmd byte, coordFloats []float64, x, 
 		}
 
 		p.coordBuffer = strconvStdlib.AppendFloat(p.coordBuffer[:0], f, 'g', -1, 64)
-		coord := minify.Number(p.coordBuffer, p.o.Decimals)
+		coord := minify.Number(p.coordBuffer, p.o.newPrecision)
 		state.copyNumber(&p.altBuffer, coord)
 	}
 	return state

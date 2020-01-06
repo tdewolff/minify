@@ -56,6 +56,7 @@ func TestHTML(t *testing.T) {
 		{`<body id="main"></body>`, `<body id=main>`},
 		{`<link href="data:text/plain, data">`, `<link href=data:,+data>`},
 		{`<svg width="100" height="100"><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>`, `<svg width="100" height="100"><circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" /></svg>`},
+		{`<span ></span>`, `<span></span>`},
 		{`</span >`, `</span>`},
 		{`<meta name=viewport content="width=0.1, initial-scale=1.0 , maximum-scale=1000">`, `<meta name=viewport content="width=.1,initial-scale=1,maximum-scale=1e3">`},
 		{`<br/>`, `<br>`},

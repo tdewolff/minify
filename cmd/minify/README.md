@@ -9,20 +9,59 @@ Make sure you have [Go](http://golang.org/) and [Git](http://git-scm.com/) insta
 
 Run the following command
 
-	go get github.com/tdewolff/minify/cmd/minify
+    mkdir $HOME/src
+    cd $HOME/src
+    git clone https://github.com/tdewolff/minify.git
+    cd minify/cmd/minify
+    ./install.sh
 
-and the `minify` command will be in your `$GOPATH/bin`.
+and the `minify` command will be in `$GOPATH/bin` or `$HOME/go/bin`.
 
-You can enable bash tab completion by using
+You can enable bash tab completion by executing
 
     source minify_bash_tab_completion
+
+### Arch Linux
+Using `yay`:
+
+```
+yay -Syu minify
+```
+
+[Minify in AUR](https://aur.archlinux.org/packages/minify/)
+
+### FreeBSD
+```
+pkg install minify
+```
+
+### MacOS
+Using Homebrew:
+
+```
+brew install tdewolff/tap/minify
+```
+
+[Brew tap](https://github.com/tdewolff/homebrew-tap/)
+
+### Ubuntu
+Update the package index:
+
+```
+sudo apt-get update
+```
+
+Install minify deb package:
+```
+sudo apt-get install minify
+```
 
 ## Usage
     Usage: minify [options] [input]
 
     Options:
       -a, --all                              Minify all files, including hidden files and files in hidden directories
-          --css-decimals int                 Number of decimals to preserve in numbers, -1 is all (default -1)
+          --css-precision int                 Number of significant digits to preserve in numbers, 0 is all (default 0)
       -h, --help                             Show usage
           --html-keep-conditional-comments   Preserve all IE conditional comments
           --html-keep-default-attrvals       Preserve default attribute values
@@ -35,7 +74,8 @@ You can enable bash tab completion by using
           --mime string                      Mimetype (eg. text/css), optional for input filenames, has precedence over -type
       -o, --output string                    Output file or directory (must have trailing slash), leave blank to use stdout
       -r, --recursive                        Recursively minify directories
-          --svg-decimals int                 Number of decimals to preserve in numbers, -1 is all (default -1)
+          --svg-precision int                Number of significant digits to preserve in numbers, 0 is all (default 0)
+	  -s, --sync                             Copy all files to destination directory and minify when filetype matches
           --type string                      Filetype (eg. css), optional for input filenames
           --url string                       URL of file to enable URL minification
       -v, --verbose                          Verbose
