@@ -1231,121 +1231,146 @@ func (c *cssMinifier) minifyDimension(value Token) (Token, []byte) {
 	// TODO: add check for zero value
 	var dim []byte
 	if value.TokenType == css.DimensionToken {
-		// TODO: reverse; parse dim not number
-		n := parse.Number(value.Data)
-		num := value.Data[:n]
-		dim = value.Data[n:]
-		parse.ToLower(dim)
+		n := len(value.Data)
+		for 0 < n {
+			lower := 'a' <= value.Data[n-1] && value.Data[n-1] <= 'z'
+			upper := 'A' <= value.Data[n-1] && value.Data[n-1] <= 'Z'
+			if !lower && !upper {
+				break
+			} else if upper {
+				value.Data[n-1] = value.Data[n-1] + ('a' - 'A')
+			}
+			n--
+		}
 
+		num := value.Data[:n]
 		if c.o.KeepCSS2 {
 			num = minify.Decimal(num, c.o.Precision) // don't use exponents
 		} else {
 			num = minify.Number(num, c.o.Precision)
 		}
-
-		// change dimension to compress number
-		h := ToHash(dim)
-		if h == Px || h == Pt || h == Pc || h == In || h == Mm || h == Cm || h == Q || h == Deg || h == Grad || h == Rad || h == Turn || h == S || h == Ms || h == Hz || h == Khz || h == Dpi || h == Dpcm || h == Dppx {
-			d, _ := strconv.ParseFloat(string(num), 64) // can never fail
-			var dimensions []Hash
-			var multipliers []float64
-			switch h {
-			case Px:
-				//dimensions = []Hash{In, Cm, Pc, Mm, Pt, Q}
-				//multipliers = []float64{0.010416666666666667, 0.026458333333333333, 0.0625, 0.26458333333333333, 0.75, 1.0583333333333333}
-				dimensions = []Hash{In, Pc, Pt}
-				multipliers = []float64{0.010416666666666667, 0.0625, 0.75}
-			case Pt:
-				//dimensions = []Hash{In, Cm, Pc, Mm, Px, Q}
-				//multipliers = []float64{0.013888888888888889, 0.035277777777777778, 0.083333333333333333, 0.35277777777777778, 1.3333333333333333, 1.4111111111111111}
-				dimensions = []Hash{In, Pc, Px}
-				multipliers = []float64{0.013888888888888889, 0.083333333333333333, 1.3333333333333333}
-			case Pc:
-				//dimensions = []Hash{In, Cm, Mm, Pt, Px, Q}
-				//multipliers = []float64{0.16666666666666667, 0.42333333333333333, 4.2333333333333333, 12.0, 16.0, 16.933333333333333}
-				dimensions = []Hash{In, Pt, Px}
-				multipliers = []float64{0.16666666666666667, 12.0, 16.0}
-			case In:
-				//dimensions = []Hash{Cm, Pc, Mm, Pt, Px, Q}
-				//multipliers = []float64{2.54, 6.0, 25.4, 72.0, 96.0, 101.6}
-				dimensions = []Hash{Pc, Pt, Px}
-				multipliers = []float64{6.0, 72.0, 96.0}
-			case Cm:
-				//dimensions = []Hash{In, Pc, Mm, Pt, Px, Q}
-				//multipliers = []float64{0.39370078740157480, 2.3622047244094488, 10.0, 28.346456692913386, 37.795275590551181, 40.0}
-				dimensions = []Hash{Mm, Q}
-				multipliers = []float64{10.0, 40.0}
-			case Mm:
-				//dimensions = []Hash{In, Cm, Pc, Pt, Px, Q}
-				//multipliers = []float64{0.039370078740157480, 0.1, 0.23622047244094488, 2.8346456692913386, 3.7795275590551181, 4.0}
-				dimensions = []Hash{Cm, Q}
-				multipliers = []float64{0.1, 4.0}
-			case Q:
-				//dimensions = []Hash{In, Cm, Pc, Pt, Px} // Q to mm is never smaller
-				//multipliers = []float64{0.0098425196850393701, 0.025, 0.059055118110236220, 0.70866141732283465, 0.94488188976377953}
-				dimensions = []Hash{Cm} // Q to mm is never smaller
-				multipliers = []float64{0.025}
-			case Deg:
-				//dimensions = []Hash{Turn, Rad, Grad}
-				//multipliers = []float64{0.0027777777777777778, 0.017453292519943296, 1.1111111111111111}
-				dimensions = []Hash{Turn, Grad}
-				multipliers = []float64{0.0027777777777777778, 1.1111111111111111}
-			case Grad:
-				//dimensions = []Hash{Turn, Rad, Deg}
-				//multipliers = []float64{0.0025, 0.015707963267948966, 0.9}
-				dimensions = []Hash{Turn, Deg}
-				multipliers = []float64{0.0025, 0.9}
-			case Turn:
-				//dimensions = []Hash{Rad, Deg, Grad}
-				//multipliers = []float64{6.2831853071795865, 360.0, 400.0}
-				dimensions = []Hash{Deg, Grad}
-				multipliers = []float64{360.0, 400.0}
-			case Rad:
-				//dimensions = []Hash{Turn, Deg, Grad}
-				//multipliers = []float64{0.15915494309189534, 57.295779513082321, 63.661977236758134}
-			case S:
-				dimensions = []Hash{Ms}
-				multipliers = []float64{1000.0}
-			case Ms:
-				dimensions = []Hash{S}
-				multipliers = []float64{0.001}
-			case Hz:
-				dimensions = []Hash{Khz}
-				multipliers = []float64{0.001}
-			case Khz:
-				dimensions = []Hash{Hz}
-				multipliers = []float64{1000.0}
-			case Dpi:
-				dimensions = []Hash{Dppx, Dpcm}
-				multipliers = []float64{0.010416666666666667, 0.39370078740157480}
-			case Dpcm:
-				//dimensions = []Hash{Dppx, Dpi}
-				//multipliers = []float64{0.026458333333333333, 2.54}
-				dimensions = []Hash{Dpi}
-				multipliers = []float64{2.54}
-			case Dppx:
-				//dimensions = []Hash{Dpcm, Dpi}
-				//multipliers = []float64{37.795275590551181, 96.0}
-				dimensions = []Hash{Dpi}
-				multipliers = []float64{96.0}
-			}
-			for i := range dimensions {
-				if dimensions[i] != h { //&& (d < 1.0) == (multipliers[i] > 1.0) {
-					b, _ := strconvParse.AppendFloat([]byte{}, d*multipliers[i], -1)
-					if c.o.KeepCSS2 {
-						b = minify.Decimal(b, c.o.newPrecision) // don't use exponents
-					} else {
-						b = minify.Number(b, c.o.newPrecision)
-					}
-					newDim := []byte(dimensions[i].String())
-					if len(b)+len(newDim) < len(num)+len(dim) {
-						num = b
-						dim = newDim
-					}
-				}
-			}
-		}
+		dim = value.Data[n:]
 		value.Data = append(num, dim...)
 	}
+	return value, dim
+
+	// TODO: optimize
+	//if value.TokenType == css.DimensionToken {
+	//	// TODO: reverse; parse dim not number
+	//	n := parse.Number(value.Data)
+	//	num := value.Data[:n]
+	//	dim = value.Data[n:]
+	//	parse.ToLower(dim)
+
+	//	if c.o.KeepCSS2 {
+	//		num = minify.Decimal(num, c.o.Precision) // don't use exponents
+	//	} else {
+	//		num = minify.Number(num, c.o.Precision)
+	//	}
+
+	//	// change dimension to compress number
+	//	h := ToHash(dim)
+	//	if h == Px || h == Pt || h == Pc || h == In || h == Mm || h == Cm || h == Q || h == Deg || h == Grad || h == Rad || h == Turn || h == S || h == Ms || h == Hz || h == Khz || h == Dpi || h == Dpcm || h == Dppx {
+	//		d, _ := strconv.ParseFloat(string(num), 64) // can never fail
+	//		var dimensions []Hash
+	//		var multipliers []float64
+	//		switch h {
+	//		case Px:
+	//			//dimensions = []Hash{In, Cm, Pc, Mm, Pt, Q}
+	//			//multipliers = []float64{0.010416666666666667, 0.026458333333333333, 0.0625, 0.26458333333333333, 0.75, 1.0583333333333333}
+	//			dimensions = []Hash{In, Pc, Pt}
+	//			multipliers = []float64{0.010416666666666667, 0.0625, 0.75}
+	//		case Pt:
+	//			//dimensions = []Hash{In, Cm, Pc, Mm, Px, Q}
+	//			//multipliers = []float64{0.013888888888888889, 0.035277777777777778, 0.083333333333333333, 0.35277777777777778, 1.3333333333333333, 1.4111111111111111}
+	//			dimensions = []Hash{In, Pc, Px}
+	//			multipliers = []float64{0.013888888888888889, 0.083333333333333333, 1.3333333333333333}
+	//		case Pc:
+	//			//dimensions = []Hash{In, Cm, Mm, Pt, Px, Q}
+	//			//multipliers = []float64{0.16666666666666667, 0.42333333333333333, 4.2333333333333333, 12.0, 16.0, 16.933333333333333}
+	//			dimensions = []Hash{In, Pt, Px}
+	//			multipliers = []float64{0.16666666666666667, 12.0, 16.0}
+	//		case In:
+	//			//dimensions = []Hash{Cm, Pc, Mm, Pt, Px, Q}
+	//			//multipliers = []float64{2.54, 6.0, 25.4, 72.0, 96.0, 101.6}
+	//			dimensions = []Hash{Pc, Pt, Px}
+	//			multipliers = []float64{6.0, 72.0, 96.0}
+	//		case Cm:
+	//			//dimensions = []Hash{In, Pc, Mm, Pt, Px, Q}
+	//			//multipliers = []float64{0.39370078740157480, 2.3622047244094488, 10.0, 28.346456692913386, 37.795275590551181, 40.0}
+	//			dimensions = []Hash{Mm, Q}
+	//			multipliers = []float64{10.0, 40.0}
+	//		case Mm:
+	//			//dimensions = []Hash{In, Cm, Pc, Pt, Px, Q}
+	//			//multipliers = []float64{0.039370078740157480, 0.1, 0.23622047244094488, 2.8346456692913386, 3.7795275590551181, 4.0}
+	//			dimensions = []Hash{Cm, Q}
+	//			multipliers = []float64{0.1, 4.0}
+	//		case Q:
+	//			//dimensions = []Hash{In, Cm, Pc, Pt, Px} // Q to mm is never smaller
+	//			//multipliers = []float64{0.0098425196850393701, 0.025, 0.059055118110236220, 0.70866141732283465, 0.94488188976377953}
+	//			dimensions = []Hash{Cm} // Q to mm is never smaller
+	//			multipliers = []float64{0.025}
+	//		case Deg:
+	//			//dimensions = []Hash{Turn, Rad, Grad}
+	//			//multipliers = []float64{0.0027777777777777778, 0.017453292519943296, 1.1111111111111111}
+	//			dimensions = []Hash{Turn, Grad}
+	//			multipliers = []float64{0.0027777777777777778, 1.1111111111111111}
+	//		case Grad:
+	//			//dimensions = []Hash{Turn, Rad, Deg}
+	//			//multipliers = []float64{0.0025, 0.015707963267948966, 0.9}
+	//			dimensions = []Hash{Turn, Deg}
+	//			multipliers = []float64{0.0025, 0.9}
+	//		case Turn:
+	//			//dimensions = []Hash{Rad, Deg, Grad}
+	//			//multipliers = []float64{6.2831853071795865, 360.0, 400.0}
+	//			dimensions = []Hash{Deg, Grad}
+	//			multipliers = []float64{360.0, 400.0}
+	//		case Rad:
+	//			//dimensions = []Hash{Turn, Deg, Grad}
+	//			//multipliers = []float64{0.15915494309189534, 57.295779513082321, 63.661977236758134}
+	//		case S:
+	//			dimensions = []Hash{Ms}
+	//			multipliers = []float64{1000.0}
+	//		case Ms:
+	//			dimensions = []Hash{S}
+	//			multipliers = []float64{0.001}
+	//		case Hz:
+	//			dimensions = []Hash{Khz}
+	//			multipliers = []float64{0.001}
+	//		case Khz:
+	//			dimensions = []Hash{Hz}
+	//			multipliers = []float64{1000.0}
+	//		case Dpi:
+	//			dimensions = []Hash{Dppx, Dpcm}
+	//			multipliers = []float64{0.010416666666666667, 0.39370078740157480}
+	//		case Dpcm:
+	//			//dimensions = []Hash{Dppx, Dpi}
+	//			//multipliers = []float64{0.026458333333333333, 2.54}
+	//			dimensions = []Hash{Dpi}
+	//			multipliers = []float64{2.54}
+	//		case Dppx:
+	//			//dimensions = []Hash{Dpcm, Dpi}
+	//			//multipliers = []float64{37.795275590551181, 96.0}
+	//			dimensions = []Hash{Dpi}
+	//			multipliers = []float64{96.0}
+	//		}
+	//		for i := range dimensions {
+	//			if dimensions[i] != h { //&& (d < 1.0) == (multipliers[i] > 1.0) {
+	//				b, _ := strconvParse.AppendFloat([]byte{}, d*multipliers[i], -1)
+	//				if c.o.KeepCSS2 {
+	//					b = minify.Decimal(b, c.o.newPrecision) // don't use exponents
+	//				} else {
+	//					b = minify.Number(b, c.o.newPrecision)
+	//				}
+	//				newDim := []byte(dimensions[i].String())
+	//				if len(b)+len(newDim) < len(num)+len(dim) {
+	//					num = b
+	//					dim = newDim
+	//				}
+	//			}
+	//		}
+	//	}
+	//	value.Data = append(num, dim...)
+	//}
 	return value, dim
 }

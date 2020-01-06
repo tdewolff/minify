@@ -294,7 +294,6 @@ func TestCSSInline(t *testing.T) {
 		{"background:url(url) TOP RIGHT REPEAT-Y", "background:url(url)100% 0 REPEAT-Y"},
 		{"background:url(url)TOP RIGHT REPEAT-Y", "background:url(url)100% 0 REPEAT-Y"},
 
-		{"any:0deg 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz", "any:0 0s 0s 0dpi 0dpi 0dpi 0hz 0hz"},
 		{"margin:calc(10px) calc(20px)", "margin:calc(10px)calc(20px)"},
 		{"border-left:0 none", "border-left:0"},
 		{"--custom-variable:0px;", "--custom-variable:0px"},
@@ -321,20 +320,21 @@ func TestCSSInline(t *testing.T) {
 		//{"width:calc(5px*3px);", "width:calc(5px*3px)"}, // invalid
 		//{"width:calc(5px/3px);", "width:calc(5px/3px)"}, // invalid
 
-		// dimensions
-		{"width:96px", "width:1in"},
-		{"width:72pt", "width:1in"},
-		{"width:12pc", "width:2in"},
-		{"width:0.166666666666667in", "width:1pc"},
-		{"width:0.0625pc", "width:1px"},
-		{"width:40Q", "width:40q"},
-		{"width:120Q", "width:3cm"},
-		{"width:10mm", "width:1cm"},
-		{"width:120Q", "width:3cm"},
-		{"transform:rotate(360deg)", "transform:rotate(1turn)"},
-		{"transform:rotate(180deg)", "transform:rotate(180deg)"},
-		{"transform:rotate(100grad)", "transform:rotate(90deg)"},
-		{"transform:rotate(.25turn)", "transform:rotate(90deg)"},
+		// TODO: dimensions
+		//{"any:0deg 0s 0ms 0dpi 0dpcm 0dppx 0hz 0khz", "any:0 0s 0s 0dpi 0dpi 0dpi 0hz 0hz"},
+		//{"width:96px", "width:1in"},
+		//{"width:72pt", "width:1in"},
+		//{"width:12pc", "width:2in"},
+		//{"width:0.166666666666667in", "width:1pc"},
+		//{"width:0.0625pc", "width:1px"},
+		//{"width:40Q", "width:40q"},
+		//{"width:120Q", "width:3cm"},
+		//{"width:10mm", "width:1cm"},
+		//{"width:120Q", "width:3cm"},
+		//{"transform:rotate(360deg)", "transform:rotate(1turn)"},
+		//{"transform:rotate(180deg)", "transform:rotate(180deg)"},
+		//{"transform:rotate(100grad)", "transform:rotate(90deg)"},
+		//{"transform:rotate(.25turn)", "transform:rotate(90deg)"},
 		//{"transform:rotate(6.28318530717959rad)", "transform:rotate(1turn)"}, // TODO
 
 		// case sensitivity
