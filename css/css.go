@@ -360,7 +360,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 	}
 
 	for i := range values {
-		values[i].TokenType, values[i].Data = c.shortenToken(prop, values[i].TokenType, values[i].Data)
+		values[i] = c.shortenToken(prop, values[i])
 	}
 	if len(values) > 0 {
 		values = c.minifyProperty(prop, values)
@@ -375,9 +375,10 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 		}
 
 		if value.TokenType == css.FunctionToken {
-			err := c.minifyFunction(value.Components)
-			if err != nil {
-				return err
+			for _, component := range value.Components {
+				if _, err := c.w.Write(component.Data); err != nil {
+					return err
+				}
 			}
 		} else if _, err := c.w.Write(value.Data); err != nil {
 			return err
@@ -790,16 +791,15 @@ func (c *cssMinifier) minifyProperty(prop css.Hash, values []Token) []Token {
 	return values
 }
 
-func (c *cssMinifier) minifyColorAsHex(rgba [3]byte) error {
+func (c *cssMinifier) shortenColorAsHex(tok Token, rgba [3]byte) Token {
 	val := make([]byte, 7)
 	val[0] = '#'
 	hex.Encode(val[1:], rgba[:])
 	parse.ToLower(val)
 	if s, ok := ShortenColorHex[string(val[:7])]; ok {
-		if _, err := c.w.Write(s); err != nil {
-			return err
-		}
-		return nil
+		tok.TokenType = css.IdentToken
+		tok.Data = s
+		return tok
 	} else if val[1] == val[2] && val[3] == val[4] && val[5] == val[6] {
 		val[2] = val[3]
 		val[3] = val[5]
@@ -807,166 +807,73 @@ func (c *cssMinifier) minifyColorAsHex(rgba [3]byte) error {
 	} else {
 		val = val[:7]
 	}
-
-	_, err := c.w.Write(val)
-	return err
+	tok.TokenType = css.HashToken
+	tok.Data = val
+	return tok
 }
 
-func (c *cssMinifier) minifyFunction(values []css.Token) error {
-	if n := len(values); n > 2 {
-		fun := css.ToHash(values[0].Data[0 : len(values[0].Data)-1])
-		if fun == css.Rgb || fun == css.Rgba || fun == css.Hsl || fun == css.Hsla {
-			valid := true
-			vals := make([]*css.Token, 0, 4)
-			for i, value := range values[1 : n-1] {
-				numeric := value.TokenType == css.NumberToken || value.TokenType == css.PercentageToken
-				separator := value.TokenType == css.CommaToken || i != 5 && value.TokenType == css.WhitespaceToken || i == 5 && value.TokenType == css.DelimToken && value.Data[0] == '/'
-				if i%2 == 0 && !numeric || i%2 == 1 && !separator {
-					valid = false
-				} else if numeric {
-					vals = append(vals, &values[i+1])
-				}
-			}
-
-			if valid {
-				for _, val := range vals {
-					val.TokenType, val.Data = c.shortenToken(0, val.TokenType, val.Data)
-				}
-
-				a := byte(255)
-				if len(vals) == 4 {
-					d, _ := strconv.ParseFloat(string(values[7].Data), 32) // can never fail because if valid == true than this is a NumberToken or PercentageToken
-					if d < minify.Epsilon {                                // zero or less
-						_, err := c.w.Write(transparentBytes)
-						return err
-					} else if d >= 1.0 {
-						values = values[:7]
-					} else {
-						a = byte(d*255.0 + 0.5)
-					}
-				}
-
-				if a == 255 { // only minify color if fully opaque
-					if (fun == css.Rgb || fun == css.Rgba) && (len(vals) == 3 || len(vals) == 4) {
-						rgb := [3]byte{}
-
-						for j, val := range vals[:3] {
-							if val.TokenType == css.NumberToken {
-								d, _ := strconv.ParseInt(string(val.Data), 10, 32)
-								if d < 0 {
-									d = 0
-								} else if d > 255 {
-									d = 255
-								}
-								rgb[j] = byte(d)
-							} else if val.TokenType == css.PercentageToken {
-								d, _ := strconv.ParseFloat(string(val.Data[:len(val.Data)-1]), 32)
-								if d < 0.0 {
-									d = 0.0
-								} else if d > 100.0 {
-									d = 100.0
-								}
-								rgb[j] = byte((d / 100.0 * 255.0) + 0.5)
-							}
-						}
-						return c.minifyColorAsHex(rgb)
-					} else if (fun == css.Hsl || fun == css.Hsla) && (len(vals) == 3 || len(vals) == 4) && vals[0].TokenType == css.NumberToken && vals[1].TokenType == css.PercentageToken && vals[2].TokenType == css.PercentageToken {
-						h, _ := strconv.ParseFloat(string(vals[0].Data), 32)
-						s, _ := strconv.ParseFloat(string(vals[1].Data[:len(vals[1].Data)-1]), 32)
-						l, _ := strconv.ParseFloat(string(vals[2].Data[:len(vals[2].Data)-1]), 32)
-						for h > 360.0 {
-							h -= 360.0
-						}
-						if s < 0.0 {
-							s = 0.0
-						} else if s > 100.0 {
-							s = 100.0
-						}
-						if l < 0.0 {
-							l = 0.0
-						} else if l > 100.0 {
-							l = 100.0
-						}
-
-						r, g, b := css.HSL2RGB(h/360.0, s/100.0, l/100.0)
-						rgb := [3]byte{byte((r * 255.0) + 0.5), byte((g * 255.0) + 0.5), byte((b * 255.0) + 0.5)}
-						return c.minifyColorAsHex(rgb)
-					}
-				}
-			}
-		}
-	}
-
-	for _, value := range values {
-		if _, err := c.w.Write(value.Data); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte) (css.TokenType, []byte) {
-	switch tt {
+func (c *cssMinifier) shortenToken(prop css.Hash, tok Token) Token {
+	switch tok.TokenType {
 	case css.NumberToken, css.PercentageToken, css.DimensionToken:
-		if tt == css.NumberToken && (prop == css.Z_Index || prop == css.Counter_Increment || prop == css.Counter_Reset || prop == css.Orphans || prop == css.Widows) {
-			return tt, data // integers
+		if tok.TokenType == css.NumberToken && (prop == css.Z_Index || prop == css.Counter_Increment || prop == css.Counter_Reset || prop == css.Orphans || prop == css.Widows) {
+			return tok // integers
 		}
-		n := len(data)
-		if tt == css.PercentageToken {
+		n := len(tok.Data)
+		if tok.TokenType == css.PercentageToken {
 			n--
-		} else if tt == css.DimensionToken {
-			n = parse.Number(data)
+		} else if tok.TokenType == css.DimensionToken {
+			n = parse.Number(tok.Data)
 		}
-		dim := data[n:]
+		dim := tok.Data[n:]
 		parse.ToLower(dim)
 		if !c.o.KeepCSS2 {
-			data = minify.Number(data[:n], c.o.Decimals)
+			tok.Data = minify.Number(tok.Data[:n], c.o.Decimals)
 		} else {
-			data = minify.Decimal(data[:n], c.o.Decimals) // don't use exponents
+			tok.Data = minify.Decimal(tok.Data[:n], c.o.Decimals) // don't use exponents
 		}
-		if tt == css.DimensionToken && (len(data) != 1 || data[0] != '0' || !optionalZeroDimension[string(dim)] || prop == css.Flex) {
-			data = append(data, dim...)
-		} else if tt == css.PercentageToken {
-			data = append(data, '%') // TODO: drop percentage for properties that accept <percentage> and <length>
+		if tok.TokenType == css.DimensionToken && (len(tok.Data) != 1 || tok.Data[0] != '0' || !optionalZeroDimension[string(dim)] || prop == css.Flex) {
+			tok.Data = append(tok.Data, dim...)
+		} else if tok.TokenType == css.PercentageToken {
+			tok.Data = append(tok.Data, '%') // TODO: drop percentage for properties that accept <percentage> and <length>
 		}
 	case css.IdentToken:
-		parse.ToLower(parse.Copy(data)) // not all identifiers are case-insensitive; all <custom-ident> properties are case-sensitive
-		hash := css.ToHash(data)
+		parse.ToLower(parse.Copy(tok.Data)) // not all identifiers are case-insensitive; all <custom-ident> properties are case-sensitive
+		hash := css.ToHash(tok.Data)
 		if hexValue, ok := ShortenColorName[hash]; ok {
-			tt = css.HashToken
-			data = hexValue
+			tok.TokenType = css.HashToken
+			tok.Data = hexValue
 		}
 	case css.HashToken:
-		parse.ToLower(data)
-		if len(data) == 9 && data[7] == data[8] {
-			if data[7] == 'f' {
-				data = data[:7]
-			} else if data[7] == '0' {
-				data = []byte("#0000")
+		parse.ToLower(tok.Data)
+		if len(tok.Data) == 9 && tok.Data[7] == tok.Data[8] {
+			if tok.Data[7] == 'f' {
+				tok.Data = tok.Data[:7]
+			} else if tok.Data[7] == '0' {
+				tok.Data = []byte("#0000")
 			}
 		}
-		if ident, ok := ShortenColorHex[string(data)]; ok {
-			tt = css.IdentToken
-			data = ident
-		} else if len(data) == 7 && data[1] == data[2] && data[3] == data[4] && data[5] == data[6] {
-			tt = css.HashToken
-			data[2] = data[3]
-			data[3] = data[5]
-			data = data[:4]
-		} else if len(data) == 9 && data[1] == data[2] && data[3] == data[4] && data[5] == data[6] && data[7] == data[8] {
+		if ident, ok := ShortenColorHex[string(tok.Data)]; ok {
+			tok.TokenType = css.IdentToken
+			tok.Data = ident
+		} else if len(tok.Data) == 7 && tok.Data[1] == tok.Data[2] && tok.Data[3] == tok.Data[4] && tok.Data[5] == tok.Data[6] {
+			tok.TokenType = css.HashToken
+			tok.Data[2] = tok.Data[3]
+			tok.Data[3] = tok.Data[5]
+			tok.Data = tok.Data[:4]
+		} else if len(tok.Data) == 9 && tok.Data[1] == tok.Data[2] && tok.Data[3] == tok.Data[4] && tok.Data[5] == tok.Data[6] && tok.Data[7] == tok.Data[8] {
 			// from working draft Color Module Level 4
-			tt = css.HashToken
-			data[2] = data[3]
-			data[3] = data[5]
-			data[4] = data[7]
-			data = data[:5]
+			tok.TokenType = css.HashToken
+			tok.Data[2] = tok.Data[3]
+			tok.Data[3] = tok.Data[5]
+			tok.Data[4] = tok.Data[7]
+			tok.Data = tok.Data[:5]
 		}
 	case css.StringToken:
-		data = removeStringNewlinex(data)
+		tok.Data = removeStringNewlinex(tok.Data)
 	case css.URLToken:
-		parse.ToLower(data[:3])
-		if 10 < len(data) {
-			uri := parse.TrimWhitespace(data[4 : len(data)-1])
+		parse.ToLower(tok.Data[:3])
+		if 10 < len(tok.Data) {
+			uri := parse.TrimWhitespace(tok.Data[4 : len(tok.Data)-1])
 			delim := byte('"')
 			if 1 < len(uri) && (uri[0] == '\'' || uri[0] == '"') {
 				delim = uri[0]
@@ -975,13 +882,106 @@ func (c *cssMinifier) shortenToken(prop css.Hash, tt css.TokenType, data []byte)
 			}
 			uri = minify.DataURI(c.m, uri)
 			if css.IsURLUnquoted(uri) {
-				data = append(append([]byte("url("), uri...), ')')
+				tok.Data = append(append([]byte("url("), uri...), ')')
 			} else {
-				data = append(append(append([]byte("url("), delim), uri...), delim, ')')
+				tok.Data = append(append(append([]byte("url("), delim), uri...), delim, ')')
+			}
+		}
+	case css.FunctionToken:
+
+		values := tok.Components
+		if n := len(values); n > 2 {
+			fun := css.ToHash(values[0].Data[0 : len(values[0].Data)-1])
+			if fun == css.Rgb || fun == css.Rgba || fun == css.Hsl || fun == css.Hsla {
+				valid := true
+				vals := make([]*css.Token, 0, 4)
+				for i, value := range values[1 : n-1] {
+					numeric := value.TokenType == css.NumberToken || value.TokenType == css.PercentageToken
+					separator := value.TokenType == css.CommaToken || i != 5 && value.TokenType == css.WhitespaceToken || i == 5 && value.TokenType == css.DelimToken && value.Data[0] == '/'
+					if i%2 == 0 && !numeric || i%2 == 1 && !separator {
+						valid = false
+					} else if numeric {
+						vals = append(vals, &values[i+1])
+					}
+				}
+
+				if valid {
+					for i := range tok.Components {
+						component := Token{tok.Components[i].TokenType, tok.Components[i].Data, nil}
+						component = c.shortenToken(prop, component)
+						tok.Components[i].TokenType = component.TokenType
+						tok.Components[i].Data = component.Data
+					}
+
+					a := byte(255)
+					if len(vals) == 4 {
+						d, _ := strconv.ParseFloat(string(values[7].Data), 32) // can never fail because if valid == true than this is a NumberToken or PercentageToken
+						if d < minify.Epsilon {                                // zero or less
+							tok.TokenType = css.IdentToken
+							tok.Data = transparentBytes
+							tok.Components = nil
+							break
+						} else if d >= 1.0 {
+							values = values[:7]
+						} else {
+							a = byte(d*255.0 + 0.5)
+						}
+					}
+
+					if a == 255 { // only minify color if fully opaque
+						if (fun == css.Rgb || fun == css.Rgba) && (len(vals) == 3 || len(vals) == 4) {
+							rgb := [3]byte{}
+
+							for j, val := range vals[:3] {
+								if val.TokenType == css.NumberToken {
+									d, _ := strconv.ParseInt(string(val.Data), 10, 32)
+									if d < 0 {
+										d = 0
+									} else if d > 255 {
+										d = 255
+									}
+									rgb[j] = byte(d)
+								} else if val.TokenType == css.PercentageToken {
+									d, _ := strconv.ParseFloat(string(val.Data[:len(val.Data)-1]), 32)
+									if d < 0.0 {
+										d = 0.0
+									} else if d > 100.0 {
+										d = 100.0
+									}
+									rgb[j] = byte((d / 100.0 * 255.0) + 0.5)
+								}
+							}
+							tok = c.shortenColorAsHex(tok, rgb)
+							tok.Components = nil
+						} else if (fun == css.Hsl || fun == css.Hsla) && (len(vals) == 3 || len(vals) == 4) && vals[0].TokenType == css.NumberToken && vals[1].TokenType == css.PercentageToken && vals[2].TokenType == css.PercentageToken {
+							h, _ := strconv.ParseFloat(string(vals[0].Data), 32)
+							s, _ := strconv.ParseFloat(string(vals[1].Data[:len(vals[1].Data)-1]), 32)
+							l, _ := strconv.ParseFloat(string(vals[2].Data[:len(vals[2].Data)-1]), 32)
+							for h > 360.0 {
+								h -= 360.0
+							}
+							if s < 0.0 {
+								s = 0.0
+							} else if s > 100.0 {
+								s = 100.0
+							}
+							if l < 0.0 {
+								l = 0.0
+							} else if l > 100.0 {
+								l = 100.0
+							}
+
+							r, g, b := css.HSL2RGB(h/360.0, s/100.0, l/100.0)
+							rgb := [3]byte{byte((r * 255.0) + 0.5), byte((g * 255.0) + 0.5), byte((b * 255.0) + 0.5)}
+							tok = c.shortenColorAsHex(tok, rgb)
+							tok.Components = nil
+						}
+					}
+				}
 			}
 		}
 	}
-	return tt, data
+	return tok
 }
 
 func removeStringNewlinex(data []byte) []byte {
