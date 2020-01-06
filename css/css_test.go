@@ -186,6 +186,7 @@ func TestCSSInline(t *testing.T) {
 		{"background:#fff url(foo.svg) no-repeat right .75rem center / auto calc(100% - 1.5rem)", "background:#fff url(foo.svg)no-repeat right .75rem center/auto calc(100% - 1.5rem)"},
 		{"background:#fff / 5% auto", "background:#fff/5%"},
 		{"background:#fff / auto 5%", "background:#fff/auto 5%"},
+		{"background:#fff / auto 78px", "background:#fff/auto 78px"},
 		{"background:calc(5%-2%) center", "background:calc(5%-2%)"},
 		{"background:0 0 / 80% no-repeat url('firefox-logo.svg'), white 0 0 url('lizard.png');", "background:0 0/80% no-repeat url(firefox-logo.svg),#fff url(lizard.png)"},
 		{"background:rgba(255,0,0,1) url(foo.svg) no-repeat right .75rem center / auto calc(100% - 1.5rem)", "background:red url(foo.svg)no-repeat right .75rem center/auto calc(100% - 1.5rem)"},
