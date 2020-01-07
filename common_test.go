@@ -43,11 +43,12 @@ func TestDataURI(t *testing.T) {
 		{"data:text/svg+xml;base64,PT09PT09", "data:text/svg+xml;base64,PT09PT09"},
 		{"data:text/xml;version=2.0,content", "data:text/xml;version=2.0,content"},
 		{"data:text/xml; version = 2.0,content", "data:text/xml;version=2.0,content"},
-		{"data:,=====", "data:,%3D%3D%3D%3D%3D"},
-		{"data:,======", "data:;base64,PT09PT09"},
+		{"data:,%3D%3D%3D%3D%3D", "data:,%3D%3D%3D%3D%3D"},
+		{"data:,%3D%3D%3D%3D%3D%3D", "data:;base64,PT09PT09"},
 		{"data:text/x,<?xx?>", "data:text/x,%3C%3Fxx%3F%3E"},
 		{"data:text/other,\"<\u2318", "data:text/other,%22%3C%E2%8C%98"},
 		{"data:text/other,\"<\u2318>", "data:text/other;base64,IjzijJg+"},
+		{`data:text/svg+xml,<svg height="100" width="100"><circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red" /></svg>`, `data:text/svg+xml,<svg height="100" width="100"><circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red" /></svg>`},
 	}
 	m := New()
 	m.AddFunc("text/x", func(_ *M, w io.Writer, r io.Reader, _ map[string]string) error {

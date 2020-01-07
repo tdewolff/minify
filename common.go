@@ -36,39 +36,44 @@ func Mediatype(b []byte) []byte {
 
 // DataURI minifies a data URI and calls a minifier by the specified mediatype. Specifications: https://www.ietf.org/rfc/rfc2397.txt.
 func DataURI(m *M, dataURI []byte) []byte {
-	if mediatype, data, err := parse.DataURI(dataURI); err == nil {
-		dataURI, _ = m.Bytes(string(mediatype), data)
-		base64Len := len(";base64") + base64.StdEncoding.EncodedLen(len(dataURI))
-		asciiLen := len(dataURI)
-		for _, c := range dataURI {
-			if parse.URLEncodingTable[c] {
-				asciiLen += 2
-			}
-			if asciiLen > base64Len {
-				break
-			}
+	mediatype, data, err := parse.DataURI(dataURI)
+	if err != nil {
+		return dataURI
+	}
+
+	data, _ = m.Bytes(string(mediatype), data)
+	base64Len := len(";base64") + base64.StdEncoding.EncodedLen(len(data))
+	asciiLen := len(data)
+	for _, c := range data {
+		if parse.URLEncodingTable[c] {
+			asciiLen += 2
 		}
 		if asciiLen > base64Len {
-			encoded := make([]byte, base64Len-len(";base64"))
-			base64.StdEncoding.Encode(encoded, dataURI)
-			dataURI = encoded
-			mediatype = append(mediatype, []byte(";base64")...)
-		} else {
-			dataURI = parse.EncodeURL(dataURI, parse.URLEncodingTable)
+			break
 		}
-		if len("text/plain") <= len(mediatype) && parse.EqualFold(mediatype[:len("text/plain")], []byte("text/plain")) {
-			mediatype = mediatype[len("text/plain"):]
-		}
-		for i := 0; i+len(";charset=us-ascii") <= len(mediatype); i++ {
-			// must start with semicolon and be followed by end of mediatype or semicolon
-			if mediatype[i] == ';' && parse.EqualFold(mediatype[i+1:i+len(";charset=us-ascii")], []byte("charset=us-ascii")) && (i+len(";charset=us-ascii") >= len(mediatype) || mediatype[i+len(";charset=us-ascii")] == ';') {
-				mediatype = append(mediatype[:i], mediatype[i+len(";charset=us-ascii"):]...)
-				break
-			}
-		}
-		dataURI = append(append(append([]byte("data:"), mediatype...), ','), dataURI...)
 	}
-	return dataURI
+	if len(dataURI) < base64Len && len(dataURI) < asciiLen {
+		return dataURI
+	}
+	if base64Len < asciiLen {
+		encoded := make([]byte, base64Len-len(";base64"))
+		base64.StdEncoding.Encode(encoded, data)
+		data = encoded
+		mediatype = append(mediatype, []byte(";base64")...)
+	} else {
+		data = parse.EncodeURL(data, parse.URLEncodingTable)
+	}
+	if len("text/plain") <= len(mediatype) && parse.EqualFold(mediatype[:len("text/plain")], []byte("text/plain")) {
+		mediatype = mediatype[len("text/plain"):]
+	}
+	for i := 0; i+len(";charset=us-ascii") <= len(mediatype); i++ {
+		// must start with semicolon and be followed by end of mediatype or semicolon
+		if mediatype[i] == ';' && parse.EqualFold(mediatype[i+1:i+len(";charset=us-ascii")], []byte("charset=us-ascii")) && (i+len(";charset=us-ascii") >= len(mediatype) || mediatype[i+len(";charset=us-ascii")] == ';') {
+			mediatype = append(mediatype[:i], mediatype[i+len(";charset=us-ascii"):]...)
+			break
+		}
+	}
+	return append(append(append([]byte("data:"), mediatype...), ','), data...)
 }
 
 const MaxInt = int(^uint(0) >> 1)
