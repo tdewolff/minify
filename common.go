@@ -156,12 +156,15 @@ func Decimal(num []byte, prec int) []byte {
 					break
 				} else if inc && i < dot { // end inc for integer
 					num[i] = '0'
-					break
 				} else if !inc && (i < dot || num[i] != '0') {
 					break
 				}
 			}
-			end = i + 1
+			if i < dot {
+				end = dot
+			} else {
+				end = i + 1
+			}
 
 			if inc {
 				if dot == start && end == start+1 {
