@@ -25,6 +25,7 @@ var (
 	transparentBytes  = []byte("transparent")
 	initialBytes      = []byte("initial")
 	importantBytes    = []byte("!important")
+	dataSchemeBytes   = []byte("data:")
 )
 
 type cssMinifier struct {
@@ -522,7 +523,9 @@ func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
 					uri = removeMarkupNewlines(uri)
 					uri = uri[1 : len(uri)-1]
 				}
-				uri = minify.DataURI(c.m, uri)
+				if 4 < len(uri) && parse.EqualFold(uri[:5], dataSchemeBytes) {
+					uri = minify.DataURI(c.m, uri)
+				}
 				if css.IsURLUnquoted(uri) {
 					values[i].Data = append(append([]byte("url("), uri...), ')')
 				} else {
