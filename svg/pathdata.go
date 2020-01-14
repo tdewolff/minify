@@ -105,11 +105,10 @@ func (p *PathData) ShortenPathData(b []byte) []byte {
 			i += n - 1
 		}
 	}
-	if cmd != 0 {
-		j += p.copyInstruction(b[j:], cmd)
-	} else {
-		j = len(b)
+	if cmd == 0 {
+		return b
 	}
+	j += p.copyInstruction(b[j:], cmd)
 	return b[:j]
 }
 
@@ -219,7 +218,7 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 			// if control points overlap begin/end points, this is a straight line
 			// even though if the control points would be along the straight line, we won't minify that as the control points influence the speed along the curve (important for dashes for example)
 			// only change to a lines if we are sure no 'S' or 's' follows
-			if (cmd == 'C' || cmd == 'c' || i+di >= n) && (cp1x == p.x || cp1x == ax) && (cp1y == p.y || cp1y == ay) && (cp2x == p.x || cp2x == ax) && (cp2y == p.y || cp2y == ay) {
+			if (cmd == 'C' || cmd == 'c' || i+di >= n) && (cp1x == p.x && cp1y == p.y || cp1x == ax && cp1y == ay) && (cp2x == p.x && cp2y == p.y || cp2x == ax && cp2y == ay) {
 				if isRelCmd {
 					cmd = 'l'
 				} else {
@@ -265,7 +264,7 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 			// if control point overlaps begin/end points, this is a straight line
 			// even though if the control point would be along the straight line, we won't minify that as the control point influences the speed along the curve (important for dashes for example)
 			// only change to a lines if we are sure no 'T' or 't' follows
-			if (cmd == 'Q' || cmd == 'q' || i+di >= n) && (cpx == p.x || cpx == ax) && (cpy == p.y || cpy == ay) {
+			if (cmd == 'Q' || cmd == 'q' || i+di >= n) && (cpx == p.x && cpy == p.y || cpx == ax && cpy == ay) {
 				if isRelCmd {
 					cmd = 'l'
 				} else {
