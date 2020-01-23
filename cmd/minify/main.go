@@ -29,9 +29,9 @@ import (
 	"github.com/tdewolff/minify/v2/xml"
 )
 
-var Version = "master"
+var Version = "(from source)"
 var Commit = ""
-var Date = ""
+var Date = "" // DEPRECATED
 
 var filetypeMime = map[string]string{
 	"css":  "text/css",
@@ -146,7 +146,7 @@ func main() {
 
 	if version {
 		if Version == "devel" {
-			fmt.Printf("minify version devel+%.7s %s\n", Commit, Date)
+			fmt.Printf("minify version devel+%.7s %s\n", Commit)
 		} else {
 			fmt.Printf("minify version %s\n", Version)
 		}
