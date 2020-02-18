@@ -441,21 +441,24 @@ Below are some examples of using common external minifiers.
 See [Closure Compiler Application](https://developers.google.com/closure/compiler/docs/gettingstarted_app). Not tested.
 
 ``` go
-m.AddCmdRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), exec.Command("java", "-jar", "build/compiler.jar"))
+m.AddCmdRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"),
+    exec.Command("java", "-jar", "build/compiler.jar"))
 ```
 
 ### UglifyJS
 See [UglifyJS](https://github.com/mishoo/UglifyJS2).
 
 ``` go
-m.AddCmdRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), exec.Command("uglifyjs"))
+m.AddCmdRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"),
+    exec.Command("uglifyjs"))
 ```
 
 ### esbuild
 See [esbuild](https://github.com/evanw/esbuild).
 
 ``` go
-m.AddCmdRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), exec.Command("esbuild", "$in.js", "--minify", "--outfile=$out.js"))
+m.AddCmdRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"),
+    exec.Command("esbuild", "$in.js", "--minify", "--outfile=$out.js"))
 ```
 
 ### <a name="custom-minifier-example"></a> Custom minifier
