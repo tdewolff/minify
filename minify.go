@@ -101,7 +101,10 @@ func (c *cmdMinifier) Minify(_ *M, w io.Writer, r io.Reader, _ map[string]string
 
 	err := cmd.Run()
 	if _, ok := err.(*exec.ExitError); ok {
-		err = fmt.Errorf("command %s failed:\n%s", cmd.Path, stderr.String())
+		if stderr.Len() != 0 {
+			err = fmt.Errorf("%s", stderr.String())
+		}
+		err = fmt.Errorf("command %s failed:\n%w", cmd.Path, err)
 	}
 	return err
 }

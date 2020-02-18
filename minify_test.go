@@ -118,9 +118,15 @@ func TestAdd(t *testing.T) {
 	mAdd.AddCmdRegexp(regexp.MustCompile("err6$"), helperCommand(t, "werr6"))
 	test.T(t, mAdd.Minify("dummy/copy", w, r), nil)
 	test.String(t, w.String(), "test", "dummy/copy command returns input")
-	test.String(t, mAdd.Minify("dummy/err", w, r).Error(), "exit status 1", "command returns status 1 for dummy/err")
-	test.String(t, mAdd.Minify("werr6", w, r).Error(), "exit status 2", "command returns status 2 when minifier doesn't exist")
-	test.String(t, mAdd.Minify("stderr6", w, r).Error(), "exit status 2", "command returns status 2 when minifier doesn't exist")
+
+	s := mAdd.Minify("dummy/err", w, r).Error()
+	test.String(t, s[len(s)-13:], "exit status 1", "command returns status 1 for dummy/err")
+
+	s = mAdd.Minify("werr6", w, r).Error()
+	test.String(t, s[len(s)-13:], "exit status 2", "command returns status 2 when minifier doesn't exist")
+
+	s = mAdd.Minify("stderr6", w, r).Error()
+	test.String(t, s[len(s)-13:], "exit status 2", "command returns status 2 when minifier doesn't exist")
 }
 
 func TestMatch(t *testing.T) {
