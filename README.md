@@ -424,13 +424,34 @@ func main() {
 	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
 	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
-	// Or use the following for better minification of JS but lower speed:
-	// m.AddCmdRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), exec.Command("java", "-jar", "build/compiler.jar"))
-
 	if err := m.Minify("text/html", os.Stdout, os.Stdin); err != nil {
 		panic(err)
 	}
 }
+```
+
+### Using external minifiers
+Below are some examples of using common external minifiers.
+
+#### Closure Compiler
+See [Closure Compiler Application](https://developers.google.com/closure/compiler/docs/gettingstarted_app). Not tested.
+
+```
+m.AddCmdRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), exec.Command("java", "-jar", "build/compiler.jar"))
+```
+
+### UglifyJS
+See [UglifyJS](https://github.com/mishoo/UglifyJS2).
+
+```
+m.AddCmdRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), exec.Command("uglifyjs"))
+```
+
+### esbuild
+See [esbuild](https://github.com/evanw/esbuild).
+
+```
+m.AddCmdRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), exec.Command("esbuild", "$in.js", "--minify", "--outfile=$out.js"))
 ```
 
 ### <a name="custom-minifier-example"></a> Custom minifier
