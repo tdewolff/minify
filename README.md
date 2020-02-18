@@ -41,6 +41,10 @@ The core functionality associates mimetypes with minification functions, allowin
 		- [Mediatypes](#mediatypes)
 	- [Examples](#examples)
 		- [Common minifiers](#common-minifiers)
+		- [External minifiers](#external-minifiers)
+            - [Closure Compiler](#closure-compiler)
+            - [UglifyJS](#uglifyjs)
+            - [esbuild](#esbuild)
 		- [Custom minifier](#custom-minifier-example)
 		- [ResponseWriter](#responsewriter)
 		- [Templates](#templates)
@@ -430,7 +434,7 @@ func main() {
 }
 ```
 
-### Using external minifiers
+### External minifiers
 Below are some examples of using common external minifiers.
 
 #### Closure Compiler
