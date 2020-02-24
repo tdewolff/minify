@@ -7,6 +7,7 @@ import (
 
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/css"
+	minifyXML "github.com/tdewolff/minify/v2/xml"
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/buffer"
 	"github.com/tdewolff/parse/v2/xml"
@@ -82,7 +83,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				}
 			}
 		case xml.TextToken:
-			t.Data = parse.ReplaceMultipleWhitespaceAndEntities(t.Data, xml.EntitiesMap, nil)
+			t.Data = parse.ReplaceMultipleWhitespaceAndEntities(t.Data, minifyXML.EntitiesMap, nil)
 			t.Data = parse.TrimWhitespace(t.Data)
 
 			if tag == Style && len(t.Data) > 0 {

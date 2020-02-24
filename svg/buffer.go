@@ -1,6 +1,7 @@
 package svg
 
 import (
+	minifyXML "github.com/tdewolff/minify/v2/xml"
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/xml"
 )
@@ -39,7 +40,7 @@ func (z *TokenBuffer) read(t *Token) {
 		t.AttrVal = z.l.AttrVal()
 		if len(t.AttrVal) > 1 && (t.AttrVal[0] == '"' || t.AttrVal[0] == '\'') {
 			t.AttrVal = t.AttrVal[1 : len(t.AttrVal)-1] // quotes will be readded in attribute loop if necessary
-			t.AttrVal = parse.ReplaceMultipleWhitespaceAndEntities(t.AttrVal, xml.EntitiesMap, nil)
+			t.AttrVal = parse.ReplaceMultipleWhitespaceAndEntities(t.AttrVal, minifyXML.EntitiesMap, nil)
 			t.AttrVal = parse.TrimWhitespace(t.AttrVal)
 		}
 		t.Hash = ToHash(t.Text)
