@@ -2,10 +2,10 @@
 package js
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/js"
 )
 
@@ -29,69 +29,124 @@ func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) err
 
 // Minify minifies JS data, it reads from r and writes to w.
 func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
-	prev := js.LineTerminatorToken
-	prevLast := byte(' ')
-	lineTerminatorQueued := false
-	whitespaceQueued := false
+	ast, err := js.Parse(r)
+	fmt.Println(ast)
+	if err != nil {
+		return err
+	}
+	o.minifyNode(w, ast)
+	_, err = w.Write(nil)
+	return err
+}
 
-	l := js.NewLexer(r)
-	defer l.Restore()
-
-	for {
-		tt, data := l.Next()
-		if tt == js.ErrorToken {
-			if l.Err() != io.EOF {
-				return l.Err()
-			}
-			return nil
-		} else if tt == js.LineTerminatorToken {
-			lineTerminatorQueued = true
-		} else if tt == js.WhitespaceToken {
-			whitespaceQueued = true
-		} else if tt == js.SingleLineCommentToken || tt == js.MultiLineCommentToken {
-			if len(data) > 5 && data[1] == '*' && data[2] == '!' {
-				if _, err := w.Write(data[:3]); err != nil {
-					return err
-				}
-				comment := parse.ReplaceMultipleWhitespace(data[3 : len(data)-2])
-				if tt != js.MultiLineCommentToken {
-					// don't trim newlines in multiline comments as that might change ASI
-					// (we could do a more expensive check post-factum but it's not worth it)
-					comment = parse.TrimWhitespace(comment)
-				}
-				if _, err := w.Write(comment); err != nil {
-					return err
-				}
-				if _, err := w.Write(data[len(data)-2:]); err != nil {
-					return err
-				}
-			} else if tt == js.MultiLineCommentToken {
-				lineTerminatorQueued = true
-			} else {
-				whitespaceQueued = true
-			}
-		} else {
-			first := data[0]
-			if (prev == js.IdentifierToken || prev == js.NumericToken || prev == js.PunctuatorToken || prev == js.StringToken || prev == js.TemplateToken || prev == js.RegexpToken) &&
-				(tt == js.IdentifierToken || tt == js.NumericToken || tt == js.StringToken || tt == js.TemplateToken || tt == js.PunctuatorToken || tt == js.RegexpToken) {
-				if lineTerminatorQueued && (prev != js.PunctuatorToken || prevLast == '}' || prevLast == ']' || prevLast == ')' || prevLast == '+' || prevLast == '-' || prevLast == '"' || prevLast == '\'') &&
-					(tt != js.PunctuatorToken || first == '{' || first == '[' || first == '(' || first == '+' || first == '-' || first == '!' || first == '~') {
-					if _, err := w.Write(newlineBytes); err != nil {
-						return err
-					}
-				} else if whitespaceQueued && (prev != js.StringToken && prev != js.PunctuatorToken && tt != js.PunctuatorToken || (prevLast == '+' || prevLast == '-' || prevLast == '/') && first == prevLast) {
-					if _, err := w.Write(spaceBytes); err != nil {
-						return err
-					}
-				}
-			}
-			if _, err := w.Write(data); err != nil {
-				return err
-			}
-			prev = tt
-			prevLast = data[len(data)-1]
-			lineTerminatorQueued = false
-			whitespaceQueued = false
+func (o *Minifier) minifyNode(w io.Writer, n js.Node) {
+	semicolon := false
+	switch n.GrammarType {
+	case js.TokenGrammar:
+		w.Write(n.Data)
+	case js.ModuleGrammar:
+		for _, node := range n.Nodes {
+			o.minifyNode(w, node)
 		}
+	case js.BindingGrammar:
+		for _, node := range n.Nodes {
+			o.minifyNode(w, node)
+		}
+	case js.ClauseGrammar:
+		for _, node := range n.Nodes {
+			o.minifyNode(w, node)
+		}
+	case js.MethodGrammar:
+		for _, node := range n.Nodes {
+			o.minifyNode(w, node)
+		}
+	case js.ExprGrammar:
+		var ttPrevPrev, ttPrev, tt js.TokenType
+		for _, node := range n.Nodes {
+			if node.GrammarType == js.TokenGrammar {
+				tt = node.TokenType
+				if ((ttPrev == js.AddToken || ttPrev == js.PosToken) && (tt == js.AddToken || tt == js.PosToken || tt == js.PreIncrToken)) || ((ttPrev == js.SubToken || ttPrev == js.NegToken) && (tt == js.SubToken || tt == js.NegToken || tt == js.PreDecrToken)) || (ttPrev == js.PostDecrToken && tt == js.GtToken) || (ttPrevPrev == js.LtToken && ttPrev == js.NotToken && tt == js.PreDecrToken) {
+					w.Write([]byte(" "))
+				} else if (js.IsIdentifier(ttPrev) || ttPrev == js.RegExpToken) && js.IsIdentifier(tt) {
+					w.Write([]byte(" "))
+				}
+				w.Write(node.Data)
+			} else {
+				o.minifyNode(w, node)
+			}
+			ttPrevPrev = ttPrev
+			ttPrev = tt
+			tt = 0
+		}
+	case js.StmtGrammar:
+		if semicolon {
+			w.Write([]byte(";"))
+		}
+		switch n.Nodes[0].TokenType {
+		case js.VarToken, js.LetToken, js.ConstToken:
+			w.Write(n.Nodes[0].Data)
+			w.Write([]byte(" "))
+			for _, node := range n.Nodes[1:] {
+				o.minifyNode(w, node)
+			}
+		case js.FunctionToken:
+			w.Write(n.Nodes[0].Data)
+			d := 1
+			if n.Nodes[1].TokenType == js.MulToken {
+				w.Write(n.Nodes[1].Data)
+				d++
+				if n.Nodes[2].TokenType == js.IdentifierToken {
+					w.Write(n.Nodes[2].Data)
+					d++
+				}
+			} else if n.Nodes[1].TokenType == js.IdentifierToken {
+				w.Write([]byte(" "))
+				w.Write(n.Nodes[1].Data)
+				d++
+			}
+			w.Write([]byte("("))
+			for _, node := range n.Nodes[d : len(n.Nodes)-1] {
+				o.minifyNode(w, node)
+			}
+			w.Write([]byte(")"))
+			o.minifyNode(w, n.Nodes[len(n.Nodes)-1])
+		case js.IfToken:
+			w.Write(n.Nodes[0].Data)
+			w.Write([]byte("("))
+			o.minifyNode(w, n.Nodes[1])
+			w.Write([]byte(")"))
+			o.minifyNode(w, n.Nodes[2])
+			if 3 < len(n.Nodes) {
+				w.Write(n.Nodes[3].Data) // else
+				o.minifyNode(w, n.Nodes[4])
+			}
+		case js.ClassToken:
+			w.Write(n.Nodes[0].Data)
+			d := 1
+			if 1 < len(n.Nodes) && n.Nodes[1].GrammarType != js.MethodGrammar {
+				w.Write([]byte(" "))
+				w.Write(n.Nodes[1].Data)
+				d = 2
+				if 2 < len(n.Nodes) && n.Nodes[2].GrammarType != js.MethodGrammar {
+					w.Write([]byte(" "))
+					w.Write(n.Nodes[2].Data)
+					w.Write([]byte(" "))
+					o.minifyNode(w, n.Nodes[3])
+					d = 4
+				}
+			}
+			w.Write([]byte("{"))
+			for _, node := range n.Nodes[d:] {
+				o.minifyNode(w, node)
+			}
+			w.Write([]byte("}"))
+		default:
+			for _, node := range n.Nodes {
+				o.minifyNode(w, node)
+			}
+		}
+		semicolon = true
+	case js.ErrorGrammar:
+		panic("should not happen")
 	}
 }
