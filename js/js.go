@@ -2,7 +2,6 @@
 package js
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/tdewolff/minify/v2"
@@ -30,7 +29,6 @@ func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) err
 // Minify minifies JS data, it reads from r and writes to w.
 func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 	ast, err := js.Parse(r)
-	fmt.Println(ast)
 	if err != nil {
 		return err
 	}
@@ -40,12 +38,14 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 }
 
 func (o *Minifier) minifyNode(w io.Writer, n js.Node) {
-	semicolon := false
 	switch n.GrammarType {
 	case js.TokenGrammar:
-		w.Write(n.Data)
+		o.minifyToken(w, n)
 	case js.ModuleGrammar:
-		for _, node := range n.Nodes {
+		for i, node := range n.Nodes {
+			if i != 0 {
+				w.Write([]byte(";"))
+			}
 			o.minifyNode(w, node)
 		}
 	case js.BindingGrammar:
@@ -53,13 +53,40 @@ func (o *Minifier) minifyNode(w io.Writer, n js.Node) {
 			o.minifyNode(w, node)
 		}
 	case js.ClauseGrammar:
-		for _, node := range n.Nodes {
+		w.Write(n.Nodes[0].Data)
+		if n.Nodes[0].TokenType == js.CaseToken {
+			w.Write([]byte(" "))
+			o.minifyNode(w, n.Nodes[1])
+			w.Write([]byte(":"))
+			for _, node := range n.Nodes[2:] {
+				o.minifyNode(w, node)
+			}
+		} else {
+			w.Write([]byte(":"))
+			for _, node := range n.Nodes[1:] {
+				o.minifyNode(w, node)
+			}
+		}
+	case js.ParamsGrammar:
+		w.Write([]byte("("))
+		for i, node := range n.Nodes {
+			if i != 0 && n.Nodes[i-1].TokenType != js.EllipsisToken {
+				w.Write([]byte(","))
+			}
 			o.minifyNode(w, node)
 		}
+		w.Write([]byte(")"))
 	case js.MethodGrammar:
-		for _, node := range n.Nodes {
+		prevAsterisk := true
+		for _, node := range n.Nodes[:len(n.Nodes)-2] {
+			if !prevAsterisk && node.TokenType != js.MulToken {
+				w.Write([]byte(" "))
+			}
 			o.minifyNode(w, node)
+			prevAsterisk = node.TokenType == js.MulToken
 		}
+		o.minifyNode(w, n.Nodes[len(n.Nodes)-2])
+		o.minifyNode(w, n.Nodes[len(n.Nodes)-1])
 	case js.ExprGrammar:
 		var ttPrevPrev, ttPrev, tt js.TokenType
 		for _, node := range n.Nodes {
@@ -70,7 +97,11 @@ func (o *Minifier) minifyNode(w io.Writer, n js.Node) {
 				} else if (js.IsIdentifier(ttPrev) || ttPrev == js.RegExpToken) && js.IsIdentifier(tt) {
 					w.Write([]byte(" "))
 				}
-				w.Write(node.Data)
+				o.minifyToken(w, node)
+			} else if node.GrammarType == js.ParamsGrammar && ttPrev != js.FunctionToken && ttPrevPrev != js.FunctionToken && len(node.Nodes) == 1 && len(node.Nodes[0].Nodes) == 1 && node.Nodes[0].Nodes[0].TokenType == js.IdentifierToken {
+				w.Write(node.Nodes[0].Nodes[0].Data) // (a)=>{a++} --> a=>{a++}
+			} else if ttPrev == js.ArrowToken && node.GrammarType == js.StmtGrammar && len(node.Nodes) == 3 {
+				o.minifyNode(w, node.Nodes[1])
 			} else {
 				o.minifyNode(w, node)
 			}
@@ -79,74 +110,254 @@ func (o *Minifier) minifyNode(w io.Writer, n js.Node) {
 			tt = 0
 		}
 	case js.StmtGrammar:
-		if semicolon {
-			w.Write([]byte(";"))
-		}
-		switch n.Nodes[0].TokenType {
-		case js.VarToken, js.LetToken, js.ConstToken:
-			w.Write(n.Nodes[0].Data)
-			w.Write([]byte(" "))
-			for _, node := range n.Nodes[1:] {
-				o.minifyNode(w, node)
-			}
-		case js.FunctionToken:
-			w.Write(n.Nodes[0].Data)
-			d := 1
-			if n.Nodes[1].TokenType == js.MulToken {
-				w.Write(n.Nodes[1].Data)
-				d++
-				if n.Nodes[2].TokenType == js.IdentifierToken {
-					w.Write(n.Nodes[2].Data)
-					d++
-				}
-			} else if n.Nodes[1].TokenType == js.IdentifierToken {
-				w.Write([]byte(" "))
-				w.Write(n.Nodes[1].Data)
-				d++
-			}
-			w.Write([]byte("("))
-			for _, node := range n.Nodes[d : len(n.Nodes)-1] {
-				o.minifyNode(w, node)
-			}
-			w.Write([]byte(")"))
-			o.minifyNode(w, n.Nodes[len(n.Nodes)-1])
-		case js.IfToken:
-			w.Write(n.Nodes[0].Data)
-			w.Write([]byte("("))
-			o.minifyNode(w, n.Nodes[1])
-			w.Write([]byte(")"))
-			o.minifyNode(w, n.Nodes[2])
-			if 3 < len(n.Nodes) {
-				w.Write(n.Nodes[3].Data) // else
-				o.minifyNode(w, n.Nodes[4])
-			}
-		case js.ClassToken:
-			w.Write(n.Nodes[0].Data)
-			d := 1
-			if 1 < len(n.Nodes) && n.Nodes[1].GrammarType != js.MethodGrammar {
-				w.Write([]byte(" "))
-				w.Write(n.Nodes[1].Data)
-				d = 2
-				if 2 < len(n.Nodes) && n.Nodes[2].GrammarType != js.MethodGrammar {
-					w.Write([]byte(" "))
-					w.Write(n.Nodes[2].Data)
-					w.Write([]byte(" "))
-					o.minifyNode(w, n.Nodes[3])
-					d = 4
-				}
-			}
-			w.Write([]byte("{"))
-			for _, node := range n.Nodes[d:] {
-				o.minifyNode(w, node)
-			}
-			w.Write([]byte("}"))
-		default:
-			for _, node := range n.Nodes {
-				o.minifyNode(w, node)
-			}
-		}
-		semicolon = true
+		o.minifyStmt(w, n)
 	case js.ErrorGrammar:
 		panic("should not happen")
+	}
+}
+
+func (o *Minifier) minifyStmt(w io.Writer, n js.Node) {
+	if len(n.Nodes) == 0 {
+		return
+	}
+
+	switch n.Nodes[0].TokenType {
+	case js.OpenBraceToken:
+		w.Write([]byte("{"))
+		for i, node := range n.Nodes[1 : len(n.Nodes)-1] {
+			if i != 0 {
+				w.Write([]byte(";"))
+			}
+			o.minifyNode(w, node)
+		}
+		w.Write([]byte("}"))
+	case js.VarToken, js.LetToken, js.ConstToken:
+		w.Write(n.Nodes[0].Data)
+		w.Write([]byte(" "))
+		for i, node := range n.Nodes[1:] {
+			if i != 0 {
+				w.Write([]byte(","))
+			}
+			o.minifyNode(w, node)
+		}
+	case js.BreakToken, js.ContinueToken:
+		w.Write(n.Nodes[0].Data)
+		if 1 < len(n.Nodes) {
+			w.Write([]byte(" "))
+			w.Write(n.Nodes[1].Data)
+		}
+	case js.ReturnToken, js.ThrowToken:
+		w.Write(n.Nodes[0].Data)
+		if 1 < len(n.Nodes) {
+			if js.IsIdentifierContinue(n.Nodes[1].Nodes[0].Data) {
+				w.Write([]byte(" "))
+			}
+			o.minifyNode(w, n.Nodes[1])
+		}
+	case js.SwitchToken:
+		w.Write(n.Nodes[0].Data)
+		w.Write([]byte("("))
+		o.minifyNode(w, n.Nodes[1])
+		w.Write([]byte("){"))
+		for i, node := range n.Nodes[2:] {
+			if i != 0 {
+				w.Write([]byte(";"))
+			}
+			o.minifyNode(w, node)
+		}
+		w.Write([]byte("}"))
+	case js.FunctionToken:
+		w.Write(n.Nodes[0].Data)
+		if n.Nodes[1].TokenType == js.MulToken {
+			w.Write(n.Nodes[1].Data)
+			if n.Nodes[2].TokenType == js.IdentifierToken {
+				w.Write(n.Nodes[2].Data)
+			}
+		} else if n.Nodes[1].TokenType == js.IdentifierToken {
+			w.Write([]byte(" "))
+			w.Write(n.Nodes[1].Data)
+		}
+		o.minifyNode(w, n.Nodes[len(n.Nodes)-2])
+		o.minifyNode(w, n.Nodes[len(n.Nodes)-1])
+	case js.IfToken:
+		w.Write(n.Nodes[0].Data)
+		w.Write([]byte("("))
+		o.minifyNode(w, n.Nodes[1])
+		w.Write([]byte(")"))
+		semicolon := true
+		if 1 < len(n.Nodes[2].Nodes) && n.Nodes[2].Nodes[0].TokenType == js.OpenBraceToken {
+			if len(n.Nodes[2].Nodes) == 3 { // block with one statement
+				o.minifyNode(w, n.Nodes[2].Nodes[1])
+			} else if len(n.Nodes[2].Nodes) != 2 { // not an empty block
+				o.minifyNode(w, n.Nodes[2])
+				semicolon = false
+			}
+		} else {
+			o.minifyNode(w, n.Nodes[2])
+		}
+
+		if 3 < len(n.Nodes) && 2 < len(n.Nodes[4].Nodes) {
+			if semicolon {
+				w.Write([]byte(";"))
+			}
+			w.Write(n.Nodes[3].Data) // else
+			if 1 < len(n.Nodes[4].Nodes) && n.Nodes[4].Nodes[0].TokenType == js.OpenBraceToken {
+				if len(n.Nodes[4].Nodes) == 3 { // block with one statement
+					w.Write([]byte(" "))
+					o.minifyNode(w, n.Nodes[4].Nodes[1])
+				} else {
+					o.minifyNode(w, n.Nodes[4])
+				}
+			} else {
+				w.Write([]byte(" "))
+				o.minifyNode(w, n.Nodes[4])
+			}
+		}
+	case js.WithToken:
+		w.Write(n.Nodes[0].Data)
+		w.Write([]byte("("))
+		o.minifyNode(w, n.Nodes[1])
+		w.Write([]byte(")"))
+		if len(n.Nodes[2].Nodes) == 1 {
+			o.minifyNode(w, n.Nodes[2])
+		} else if n.Nodes[2].Nodes[0].TokenType == js.OpenBraceToken && len(n.Nodes[2].Nodes) == 3 { // block with one statement
+			o.minifyNode(w, n.Nodes[2].Nodes[1])
+		} else {
+			o.minifyNode(w, n.Nodes[2])
+		}
+	case js.ForToken:
+		w.Write(n.Nodes[0].Data)
+		d := 1
+		if n.Nodes[1].TokenType == js.AwaitToken {
+			w.Write([]byte(" "))
+			w.Write(n.Nodes[1].Data)
+			d++
+		}
+		w.Write([]byte("("))
+		for _, node := range n.Nodes[d : len(n.Nodes)-1] {
+			o.minifyNode(w, node)
+		}
+		w.Write([]byte(")"))
+		if len(n.Nodes[len(n.Nodes)-1].Nodes) == 1 {
+			o.minifyNode(w, n.Nodes[len(n.Nodes)-1])
+		} else if n.Nodes[len(n.Nodes)-1].Nodes[0].TokenType == js.OpenBraceToken && len(n.Nodes[len(n.Nodes)-1].Nodes) == 3 { // block with one statement
+			o.minifyNode(w, n.Nodes[len(n.Nodes)-1].Nodes[1])
+		} else {
+			o.minifyNode(w, n.Nodes[len(n.Nodes)-1])
+		}
+	case js.WhileToken:
+		w.Write(n.Nodes[0].Data)
+		w.Write([]byte("("))
+		o.minifyNode(w, n.Nodes[1])
+		w.Write([]byte(")"))
+		if len(n.Nodes[2].Nodes) == 1 {
+			o.minifyNode(w, n.Nodes[2])
+		} else if n.Nodes[2].Nodes[0].TokenType == js.OpenBraceToken && len(n.Nodes[2].Nodes) == 3 { // block with one statement
+			o.minifyNode(w, n.Nodes[2].Nodes[1])
+		} else {
+			o.minifyNode(w, n.Nodes[2])
+		}
+	case js.DoToken:
+		w.Write(n.Nodes[0].Data)
+		if len(n.Nodes[1].Nodes) == 1 {
+			w.Write([]byte(" "))
+			o.minifyNode(w, n.Nodes[1])
+			w.Write([]byte(" "))
+		} else if n.Nodes[1].Nodes[0].TokenType == js.OpenBraceToken && len(n.Nodes[1].Nodes) == 3 { // block with one statement
+			w.Write([]byte(" "))
+			o.minifyNode(w, n.Nodes[1].Nodes[1])
+			w.Write([]byte(" "))
+		} else {
+			o.minifyNode(w, n.Nodes[1])
+		}
+		o.minifyNode(w, n.Nodes[2])
+		w.Write([]byte("("))
+		o.minifyNode(w, n.Nodes[3])
+		w.Write([]byte(")"))
+	case js.ClassToken:
+		w.Write(n.Nodes[0].Data)
+		d := 1
+		if 1 < len(n.Nodes) && n.Nodes[1].GrammarType != js.MethodGrammar {
+			w.Write([]byte(" "))
+			w.Write(n.Nodes[1].Data)
+			d = 2
+			if 2 < len(n.Nodes) && n.Nodes[2].GrammarType != js.MethodGrammar {
+				w.Write([]byte(" "))
+				w.Write(n.Nodes[2].Data)
+				w.Write([]byte(" "))
+				o.minifyNode(w, n.Nodes[3])
+				d = 4
+			}
+		}
+		w.Write([]byte("{"))
+		for _, node := range n.Nodes[d:] {
+			o.minifyNode(w, node)
+		}
+		w.Write([]byte("}"))
+	case js.ImportToken:
+		prevIdentifier := false
+		for _, node := range n.Nodes {
+			if prevIdentifier && js.IsIdentifier(node.TokenType) {
+				w.Write([]byte(" "))
+			}
+			w.Write(node.Data)
+			prevIdentifier = js.IsIdentifier(node.TokenType)
+		}
+	case js.ExportToken:
+		if n.Nodes[1].TokenType == js.MulToken || n.Nodes[1].TokenType == js.OpenBraceToken {
+			prevIdentifier := false
+			for _, node := range n.Nodes {
+				if prevIdentifier && js.IsIdentifier(node.TokenType) {
+					w.Write([]byte(" "))
+				}
+				o.minifyNode(w, node)
+				prevIdentifier = js.IsIdentifier(node.TokenType)
+			}
+		} else {
+			w.Write(n.Nodes[0].Data)
+			w.Write([]byte(" "))
+			if n.Nodes[1].TokenType == js.DefaultToken {
+				w.Write(n.Nodes[1].Data)
+				w.Write([]byte(" "))
+				o.minifyNode(w, n.Nodes[2])
+			} else {
+				o.minifyNode(w, n.Nodes[1])
+			}
+		}
+	case js.TryToken:
+		w.Write(n.Nodes[0].Data)
+		o.minifyNode(w, n.Nodes[1])
+		if 2 < len(n.Nodes) {
+			if n.Nodes[2].TokenType == js.CatchToken {
+				w.Write(n.Nodes[2].Data)
+				if len(n.Nodes) == 4 {
+					o.minifyNode(w, n.Nodes[3])
+				} else {
+					w.Write([]byte("("))
+					o.minifyNode(w, n.Nodes[3])
+					w.Write([]byte(")"))
+					o.minifyNode(w, n.Nodes[4])
+					if 5 < len(n.Nodes) {
+						w.Write(n.Nodes[5].Data)
+						o.minifyNode(w, n.Nodes[6])
+					}
+				}
+			} else {
+				w.Write(n.Nodes[2].Data)
+				o.minifyNode(w, n.Nodes[3])
+			}
+		}
+	default:
+		for _, node := range n.Nodes {
+			o.minifyNode(w, node)
+		}
+	}
+}
+
+func (o *Minifier) minifyToken(w io.Writer, n js.Node) {
+	if n.TokenType == js.DecimalToken {
+		w.Write(minify.Number(n.Data, 0))
+	} else {
+		w.Write(n.Data)
 	}
 }
