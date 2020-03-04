@@ -117,7 +117,7 @@ func (o *Minifier) minifyNode(w io.Writer, n js.Node) {
 }
 
 func (o *Minifier) minifyStmt(w io.Writer, n js.Node) {
-	if len(n.Nodes) == 0 {
+	if len(n.Nodes) == 0 || n.Nodes[0].TokenType == js.SemicolonToken {
 		return
 	}
 
@@ -149,7 +149,7 @@ func (o *Minifier) minifyStmt(w io.Writer, n js.Node) {
 	case js.ReturnToken, js.ThrowToken:
 		w.Write(n.Nodes[0].Data)
 		if 1 < len(n.Nodes) {
-			if js.IsIdentifierContinue(n.Nodes[1].Nodes[0].Data) {
+			if o.isIdentifierStart(n.Nodes[1]) {
 				w.Write([]byte(" "))
 			}
 			o.minifyNode(w, n.Nodes[1])
@@ -184,47 +184,41 @@ func (o *Minifier) minifyStmt(w io.Writer, n js.Node) {
 		w.Write([]byte("("))
 		o.minifyNode(w, n.Nodes[1])
 		w.Write([]byte(")"))
-		semicolon := true
-		if 1 < len(n.Nodes[2].Nodes) && n.Nodes[2].Nodes[0].TokenType == js.OpenBraceToken {
-			if len(n.Nodes[2].Nodes) == 3 { // block with one statement
-				o.minifyNode(w, n.Nodes[2].Nodes[1])
-			} else if len(n.Nodes[2].Nodes) != 2 { // not an empty block
-				o.minifyNode(w, n.Nodes[2])
-				semicolon = false
-			}
-		} else {
-			o.minifyNode(w, n.Nodes[2])
-		}
 
-		if 3 < len(n.Nodes) && 2 < len(n.Nodes[4].Nodes) {
-			if semicolon {
+		ifStmt := n.Nodes[2]
+		if len(ifStmt.Nodes) == 3 && ifStmt.Nodes[0].TokenType == js.OpenBraceToken {
+			if ifStmt.Nodes[1].Nodes[0].TokenType != js.IfToken || 3 < len(ifStmt.Nodes[1].Nodes) {
+				n.Nodes[2] = n.Nodes[2].Nodes[1]
+				ifStmt = ifStmt.Nodes[1] // block with one statement, but not if statement without else
+			}
+		}
+		o.minifyNode(w, ifStmt)
+
+		if 3 < len(n.Nodes) && n.Nodes[4].Nodes[0].TokenType != js.SemicolonToken {
+			if o.needsSemicolon(ifStmt) {
 				w.Write([]byte(";"))
 			}
 			w.Write(n.Nodes[3].Data) // else
-			if 1 < len(n.Nodes[4].Nodes) && n.Nodes[4].Nodes[0].TokenType == js.OpenBraceToken {
-				if len(n.Nodes[4].Nodes) == 3 { // block with one statement
-					w.Write([]byte(" "))
-					o.minifyNode(w, n.Nodes[4].Nodes[1])
-				} else {
-					o.minifyNode(w, n.Nodes[4])
-				}
-			} else {
-				w.Write([]byte(" "))
-				o.minifyNode(w, n.Nodes[4])
+
+			elseStmt := n.Nodes[4]
+			if len(elseStmt.Nodes) == 3 && elseStmt.Nodes[0].TokenType == js.OpenBraceToken {
+				n.Nodes[4] = n.Nodes[4].Nodes[1]
+				elseStmt = elseStmt.Nodes[1] // block with one statement
 			}
+			if o.isIdentifierStart(elseStmt) {
+				w.Write([]byte(" "))
+			}
+			o.minifyNode(w, elseStmt)
 		}
 	case js.WithToken:
 		w.Write(n.Nodes[0].Data)
 		w.Write([]byte("("))
 		o.minifyNode(w, n.Nodes[1])
 		w.Write([]byte(")"))
-		if len(n.Nodes[2].Nodes) == 1 {
-			o.minifyNode(w, n.Nodes[2])
-		} else if n.Nodes[2].Nodes[0].TokenType == js.OpenBraceToken && len(n.Nodes[2].Nodes) == 3 { // block with one statement
-			o.minifyNode(w, n.Nodes[2].Nodes[1])
-		} else {
-			o.minifyNode(w, n.Nodes[2])
+		if len(n.Nodes[2].Nodes) == 3 && n.Nodes[2].Nodes[0].TokenType == js.OpenBraceToken {
+			n.Nodes[2] = n.Nodes[2].Nodes[1] // block with one statement
 		}
+		o.minifyNode(w, n.Nodes[2])
 	case js.ForToken:
 		w.Write(n.Nodes[0].Data)
 		d := 1
@@ -234,41 +228,41 @@ func (o *Minifier) minifyStmt(w io.Writer, n js.Node) {
 			d++
 		}
 		w.Write([]byte("("))
+		prevIdentifier := false
 		for _, node := range n.Nodes[d : len(n.Nodes)-1] {
+			identifier := o.isIdentifierStart(node)
+			if prevIdentifier && identifier {
+				w.Write([]byte(" "))
+			}
+			prevIdentifier = identifier
 			o.minifyNode(w, node)
 		}
 		w.Write([]byte(")"))
-		if len(n.Nodes[len(n.Nodes)-1].Nodes) == 1 {
-			o.minifyNode(w, n.Nodes[len(n.Nodes)-1])
-		} else if n.Nodes[len(n.Nodes)-1].Nodes[0].TokenType == js.OpenBraceToken && len(n.Nodes[len(n.Nodes)-1].Nodes) == 3 { // block with one statement
-			o.minifyNode(w, n.Nodes[len(n.Nodes)-1].Nodes[1])
-		} else {
-			o.minifyNode(w, n.Nodes[len(n.Nodes)-1])
+		last := len(n.Nodes) - 1
+		if len(n.Nodes[last].Nodes) == 3 && n.Nodes[last].Nodes[0].TokenType == js.OpenBraceToken {
+			n.Nodes[last] = n.Nodes[last].Nodes[1] // block with one statement
 		}
+		o.minifyNode(w, n.Nodes[last])
 	case js.WhileToken:
 		w.Write(n.Nodes[0].Data)
 		w.Write([]byte("("))
 		o.minifyNode(w, n.Nodes[1])
 		w.Write([]byte(")"))
-		if len(n.Nodes[2].Nodes) == 1 {
-			o.minifyNode(w, n.Nodes[2])
-		} else if n.Nodes[2].Nodes[0].TokenType == js.OpenBraceToken && len(n.Nodes[2].Nodes) == 3 { // block with one statement
-			o.minifyNode(w, n.Nodes[2].Nodes[1])
-		} else {
-			o.minifyNode(w, n.Nodes[2])
+		if len(n.Nodes[2].Nodes) == 3 && n.Nodes[2].Nodes[0].TokenType == js.OpenBraceToken {
+			n.Nodes[2] = n.Nodes[2].Nodes[1] // block with one statement
 		}
+		o.minifyNode(w, n.Nodes[2])
 	case js.DoToken:
 		w.Write(n.Nodes[0].Data)
-		if len(n.Nodes[1].Nodes) == 1 {
-			w.Write([]byte(" "))
+		if o.isIdentifierStart(n.Nodes[1]) {
+			w.Write([]byte("{"))
 			o.minifyNode(w, n.Nodes[1])
-			w.Write([]byte(" "))
-		} else if n.Nodes[1].Nodes[0].TokenType == js.OpenBraceToken && len(n.Nodes[1].Nodes) == 3 { // block with one statement
-			w.Write([]byte(" "))
-			o.minifyNode(w, n.Nodes[1].Nodes[1])
-			w.Write([]byte(" "))
+			w.Write([]byte("}"))
 		} else {
 			o.minifyNode(w, n.Nodes[1])
+			if o.needsSemicolon(n.Nodes[1]) {
+				w.Write([]byte(";"))
+			}
 		}
 		o.minifyNode(w, n.Nodes[2])
 		w.Write([]byte("("))
@@ -360,4 +354,23 @@ func (o *Minifier) minifyToken(w io.Writer, n js.Node) {
 	} else {
 		w.Write(n.Data)
 	}
+}
+
+func (o *Minifier) isIdentifierStart(n js.Node) bool {
+	if n.GrammarType == js.TokenGrammar {
+		return js.IsIdentifier(n.TokenType) || js.IsNumeric(n.TokenType) && n.Data[0] != '.'
+	}
+	return o.isIdentifierStart(n.Nodes[0])
+}
+
+func (o *Minifier) needsSemicolon(n js.Node) bool {
+	if n.GrammarType == js.ExprGrammar || n.TokenType == js.SemicolonToken {
+		return true
+	} else if n.GrammarType == js.StmtGrammar {
+		//if len(n.Nodes) == 3 && n.Nodes[0].TokenType == js.OpenBraceToken {
+		//		return o.needsSemicolon(n.Nodes[1])
+		//	}
+		return o.needsSemicolon(n.Nodes[len(n.Nodes)-1])
+	}
+	return false
 }
