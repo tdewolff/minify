@@ -135,7 +135,7 @@ func TestJS(t *testing.T) {
 		{`if(a) a; else [e]=4`, `if(a)a;else[e]=4`},
 		{`for (var a = 5; a < 10; a++){a}`, `for(var a=5;a<10;a++)a`},
 		{`for (a,b = 5; a < 10; a++){a}`, `for(a,b=5;a<10;a++)a`},
-		{`for await (var a = 5; a < 10; a++){a}`, `for await(var a=5;a<10;a++)a`},
+		{`for await (var a of b){a}`, `for await(var a of b)a`},
 		{`for (var a in b){a}`, `for(var a in b)a`},
 		{`for (var a of b){a}`, `for(var a of b)a`},
 		{`while(a < 10){a}`, `while(a<10)a`},
