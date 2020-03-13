@@ -72,15 +72,16 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		t := *tb.Shift()
 		switch t.TokenType {
 		case xml.ErrorToken:
+			if _, err := w.Write(nil); err != nil {
+				return err
+			}
 			if l.Err() == io.EOF {
 				return nil
 			}
 			return l.Err()
 		case xml.DOCTYPEToken:
 			if len(t.Text) > 0 && t.Text[len(t.Text)-1] == ']' {
-				if _, err := w.Write(t.Data); err != nil {
-					return err
-				}
+				w.Write(t.Data)
 			}
 		case xml.TextToken:
 			t.Data = parse.ReplaceMultipleWhitespaceAndEntities(t.Data, minifyXML.EntitiesMap, nil)
@@ -90,12 +91,11 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				if err := m.MinifyMimetype(defaultStyleType, w, buffer.NewReader(t.Data), defaultStyleParams); err != nil {
 					if err != minify.ErrNotExist {
 						return err
-					} else if _, err := w.Write(t.Data); err != nil {
-						return err
 					}
+					w.Write(t.Data)
 				}
-			} else if _, err := w.Write(t.Data); err != nil {
-				return err
+			} else {
+				w.Write(t.Data)
 			}
 		case xml.CDATAToken:
 			if tag == Style {
@@ -112,12 +112,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			if t.Text, useText = xml.EscapeCDATAVal(&attrByteBuffer, t.Text); useText {
 				t.Text = parse.ReplaceMultipleWhitespace(t.Text)
 				t.Text = parse.TrimWhitespace(t.Text)
-
-				if _, err := w.Write(t.Text); err != nil {
-					return err
-				}
-			} else if _, err := w.Write(t.Data); err != nil {
-				return err
+				w.Write(t.Text)
+			} else {
+				w.Write(t.Data)
 			}
 		case xml.StartTagPIToken:
 			for {
@@ -135,8 +132,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 			if t.Data == nil {
 				skipTag(tb)
-			} else if _, err := w.Write(t.Data); err != nil {
-				return err
+			} else {
+				w.Write(t.Data)
 			}
 		case xml.AttributeToken:
 			if len(t.AttrVal) == 0 || t.Text == nil { // data is nil when attribute has been removed
@@ -162,15 +159,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				continue
 			}
 
-			if _, err := w.Write(spaceBytes); err != nil {
-				return err
-			}
-			if _, err := w.Write(t.Text); err != nil {
-				return err
-			}
-			if _, err := w.Write(isBytes); err != nil {
-				return err
-			}
+			w.Write(spaceBytes)
+			w.Write(t.Text)
+			w.Write(isBytes)
 
 			if tag == Svg && attr == ContentStyleType {
 				val = minify.Mediatype(val)
@@ -224,9 +215,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 			// prefer single or double quotes depending on what occurs more often in value
 			val = xml.EscapeAttrVal(&attrByteBuffer, val)
-			if _, err := w.Write(val); err != nil {
-				return err
-			}
+			w.Write(val)
 		case xml.StartTagCloseToken:
 			next := tb.Peek(0)
 			skipExtra := false
@@ -240,28 +229,20 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				if skipExtra {
 					tb.Shift()
 				}
-				if _, err := w.Write(voidBytes); err != nil {
-					return err
-				}
+				w.Write(voidBytes)
 			} else {
-				if _, err := w.Write(t.Data); err != nil {
-					return err
-				}
+				w.Write(t.Data)
 			}
 		case xml.StartTagCloseVoidToken:
 			tag = 0
-			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
+			w.Write(t.Data)
 		case xml.EndTagToken:
 			tag = 0
 			if len(t.Data) > 3+len(t.Text) {
 				t.Data[2+len(t.Text)] = '>'
 				t.Data = t.Data[:3+len(t.Text)]
 			}
-			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
+			w.Write(t.Data)
 		}
 	}
 }

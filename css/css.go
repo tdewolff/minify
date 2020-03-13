@@ -126,13 +126,18 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 	}
 	defer c.p.Restore()
 
-	if err := c.minifyGrammar(); err != nil && err != io.EOF {
+	c.minifyGrammar()
+
+	if _, err := w.Write(nil); err != nil {
 		return err
 	}
-	return nil
+	if c.p.Err() == io.EOF {
+		return nil
+	}
+	return c.p.Err()
 }
 
-func (c *cssMinifier) minifyGrammar() error {
+func (c *cssMinifier) minifyGrammar() {
 	semicolonQueued := false
 	for {
 		gt, _, data := c.p.Next()
@@ -140,9 +145,7 @@ func (c *cssMinifier) minifyGrammar() error {
 		case css.ErrorGrammar:
 			if _, ok := c.p.Err().(*parse.Error); ok {
 				if semicolonQueued {
-					if _, err := c.w.Write(semicolonBytes); err != nil {
-						return err
-					}
+					c.w.Write(semicolonBytes)
 				}
 
 				// write out the offending declaration (but save the semicolon)
@@ -152,33 +155,25 @@ func (c *cssMinifier) minifyGrammar() error {
 					semicolonQueued = true
 				}
 				for _, val := range vals {
-					if _, err := c.w.Write(val.Data); err != nil {
-						return err
-					}
+					c.w.Write(val.Data)
 				}
 				continue
 			}
-			return c.p.Err()
+			return
 		case css.EndAtRuleGrammar, css.EndRulesetGrammar:
-			if _, err := c.w.Write(rightBracketBytes); err != nil {
-				return err
-			}
+			c.w.Write(rightBracketBytes)
 			semicolonQueued = false
 			continue
 		}
 
 		if semicolonQueued {
-			if _, err := c.w.Write(semicolonBytes); err != nil {
-				return err
-			}
+			c.w.Write(semicolonBytes)
 			semicolonQueued = false
 		}
 
 		switch gt {
 		case css.AtRuleGrammar:
-			if _, err := c.w.Write(data); err != nil {
-				return err
-			}
+			c.w.Write(data)
 			values := c.p.Values()
 			if ToHash(data[1:]) == Import && len(values) == 2 && values[1].TokenType == css.URLToken {
 				url := values[1].Data
@@ -192,75 +187,43 @@ func (c *cssMinifier) minifyGrammar() error {
 				values[1].Data = url
 			}
 			for _, val := range values {
-				if _, err := c.w.Write(val.Data); err != nil {
-					return err
-				}
+				c.w.Write(val.Data)
 			}
 			semicolonQueued = true
 		case css.BeginAtRuleGrammar:
-			if _, err := c.w.Write(data); err != nil {
-				return err
-			}
+			c.w.Write(data)
 			for _, val := range c.p.Values() {
-				if _, err := c.w.Write(val.Data); err != nil {
-					return err
-				}
+				c.w.Write(val.Data)
 			}
-			if _, err := c.w.Write(leftBracketBytes); err != nil {
-				return err
-			}
+			c.w.Write(leftBracketBytes)
 		case css.QualifiedRuleGrammar:
-			if err := c.minifySelectors(data, c.p.Values()); err != nil {
-				return err
-			}
-			if _, err := c.w.Write(commaBytes); err != nil {
-				return err
-			}
+			c.minifySelectors(data, c.p.Values())
+			c.w.Write(commaBytes)
 		case css.BeginRulesetGrammar:
-			if err := c.minifySelectors(data, c.p.Values()); err != nil {
-				return err
-			}
-			if _, err := c.w.Write(leftBracketBytes); err != nil {
-				return err
-			}
+			c.minifySelectors(data, c.p.Values())
+			c.w.Write(leftBracketBytes)
 		case css.DeclarationGrammar:
-			if err := c.minifyDeclaration(data, c.p.Values()); err != nil {
-				return err
-			}
+			c.minifyDeclaration(data, c.p.Values())
 			semicolonQueued = true
 		case css.CustomPropertyGrammar:
-			if _, err := c.w.Write(data); err != nil {
-				return err
-			}
-			if _, err := c.w.Write(colonBytes); err != nil {
-				return err
-			}
-			if _, err := c.w.Write(c.p.Values()[0].Data); err != nil {
-				return err
-			}
+			c.w.Write(data)
+			c.w.Write(colonBytes)
+			c.w.Write(c.p.Values()[0].Data)
 			semicolonQueued = true
 		case css.CommentGrammar:
 			if len(data) > 5 && data[1] == '*' && data[2] == '!' {
-				if _, err := c.w.Write(data[:3]); err != nil {
-					return err
-				}
+				c.w.Write(data[:3])
 				comment := parse.TrimWhitespace(parse.ReplaceMultipleWhitespace(data[3 : len(data)-2]))
-				if _, err := c.w.Write(comment); err != nil {
-					return err
-				}
-				if _, err := c.w.Write(data[len(data)-2:]); err != nil {
-					return err
-				}
+				c.w.Write(comment)
+				c.w.Write(data[len(data)-2:])
 			}
 		default:
-			if _, err := c.w.Write(data); err != nil {
-				return err
-			}
+			c.w.Write(data)
 		}
 	}
 }
 
-func (c *cssMinifier) minifySelectors(property []byte, values []css.Token) error {
+func (c *cssMinifier) minifySelectors(property []byte, values []css.Token) {
 	inAttr := false
 	isClass := false
 	for _, val := range c.p.Values() {
@@ -279,24 +242,17 @@ func (c *cssMinifier) minifySelectors(property []byte, values []css.Token) error
 			if val.TokenType == css.StringToken && len(val.Data) > 2 {
 				s := val.Data[1 : len(val.Data)-1]
 				if css.IsIdent(s) {
-					if _, err := c.w.Write(s); err != nil {
-						return err
-					}
+					c.w.Write(s)
 					continue
 				}
 			} else if val.TokenType == css.RightBracketToken {
 				inAttr = false
 			} else if val.TokenType == css.IdentToken && len(val.Data) == 1 && (val.Data[0] == 'i' || val.Data[0] == 'I') {
-				if _, err := c.w.Write(spaceBytes); err != nil {
-					return err
-				}
+				c.w.Write(spaceBytes)
 			}
 		}
-		if _, err := c.w.Write(val.Data); err != nil {
-			return err
-		}
+		c.w.Write(val.Data)
 	}
-	return nil
 }
 
 func (c *cssMinifier) parseFunction(values []css.Token) ([]Token, int) {
@@ -371,16 +327,12 @@ func (c *cssMinifier) parseDeclaration(values []css.Token) []Token {
 	return tokens
 }
 
-func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token) error {
-	if _, err := c.w.Write(property); err != nil {
-		return err
-	}
-	if _, err := c.w.Write(colonBytes); err != nil {
-		return err
-	}
+func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token) {
+	c.w.Write(property)
+	c.w.Write(colonBytes)
 
 	if len(components) == 0 {
-		return nil
+		return
 	}
 
 	// Strip !important from the component list, this will be added later separately
@@ -412,61 +364,42 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 		}
 
 		for _, component := range components {
-			if _, err := c.w.Write(component.Data); err != nil {
-				return err
-			}
+			c.w.Write(component.Data)
 		}
 		if important {
-			if _, err := c.w.Write(importantBytes); err != nil {
-				return err
-			}
+			c.w.Write(importantBytes)
 		}
-		return nil
+		return
 	}
 
 	values = c.minifyTokens(prop, values)
 	if len(values) > 0 {
 		values = c.minifyProperty(prop, values)
 	}
-	return c.writeDeclaration(values, important)
+	c.writeDeclaration(values, important)
 }
 
-func (c *cssMinifier) writeFunction(args []Token) error {
+func (c *cssMinifier) writeFunction(args []Token) {
 	for _, arg := range args {
-		if _, err := c.w.Write(arg.Data); err != nil {
-			return err
-		}
+		c.w.Write(arg.Data)
 		if arg.TokenType == css.FunctionToken {
-			if err := c.writeFunction(arg.Args); err != nil {
-				return err
-			}
-			if _, err := c.w.Write([]byte(")")); err != nil {
-				return err
-			}
+			c.writeFunction(arg.Args)
+			c.w.Write([]byte(")"))
 		}
 	}
-	return nil
 }
 
-func (c *cssMinifier) writeDeclaration(values []Token, important bool) error {
+func (c *cssMinifier) writeDeclaration(values []Token, important bool) {
 	prevSep := true
 	for _, value := range values {
 		if !prevSep && value.TokenType != css.CommaToken && (value.TokenType != css.DelimToken || value.Data[0] != '/') {
-			if _, err := c.w.Write(spaceBytes); err != nil {
-				return err
-			}
+			c.w.Write(spaceBytes)
 		}
 
-		if _, err := c.w.Write(value.Data); err != nil {
-			return err
-		}
+		c.w.Write(value.Data)
 		if value.TokenType == css.FunctionToken {
-			if err := c.writeFunction(value.Args); err != nil {
-				return err
-			}
-			if _, err := c.w.Write([]byte(")")); err != nil {
-				return err
-			}
+			c.writeFunction(value.Args)
+			c.w.Write([]byte(")"))
 		}
 
 		if value.TokenType == css.CommaToken || value.TokenType == css.DelimToken && value.Data[0] == '/' || value.TokenType == css.FunctionToken || value.TokenType == css.URLToken {
@@ -477,11 +410,8 @@ func (c *cssMinifier) writeDeclaration(values []Token, important bool) error {
 	}
 
 	if important {
-		if _, err := c.w.Write(importantBytes); err != nil {
-			return err
-		}
+		c.w.Write(importantBytes)
 	}
-	return nil
 }
 
 func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {

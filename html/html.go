@@ -67,14 +67,15 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	SWITCH:
 		switch t.TokenType {
 		case html.ErrorToken:
+			if _, err := w.Write(nil); err != nil {
+				return err
+			}
 			if l.Err() == io.EOF {
 				return nil
 			}
 			return l.Err()
 		case html.DoctypeToken:
-			if _, err := w.Write(doctypeBytes); err != nil {
-				return err
-			}
+			w.Write(doctypeBytes)
 		case html.CommentToken:
 			if o.KeepConditionalComments && len(t.Text) > 6 && (bytes.HasPrefix(t.Text, []byte("[if ")) || bytes.HasSuffix(t.Text, []byte("[endif]")) || bytes.HasSuffix(t.Text, []byte("[endif]--"))) {
 				// [if ...] is always 7 or more characters, [endif] is only encountered for downlevel-revealed
@@ -82,34 +83,28 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				if bytes.HasPrefix(t.Data, []byte("<!--[if ")) && bytes.HasSuffix(t.Data, []byte("<![endif]-->")) { // downlevel-hidden
 					begin := bytes.IndexByte(t.Data, '>') + 1
 					end := len(t.Data) - len("<![endif]-->")
-					if _, err := w.Write(t.Data[:begin]); err != nil {
-						return err
-					}
+					w.Write(t.Data[:begin])
 					if err := o.Minify(m, w, buffer.NewReader(t.Data[begin:end]), nil); err != nil {
 						return err
 					}
-					if _, err := w.Write(t.Data[end:]); err != nil {
-						return err
-					}
-				} else if _, err := w.Write(t.Data); err != nil { // downlevel-revealed or short downlevel-hidden
-					return err
+					w.Write(t.Data[end:])
+				} else {
+					w.Write(t.Data) // downlevel-revealed or short downlevel-hidden
 				}
 			}
 		case html.SvgToken:
 			if err := m.MinifyMimetype(svgMimeBytes, w, buffer.NewReader(t.Data), nil); err != nil {
 				if err != minify.ErrNotExist {
 					return err
-				} else if _, err := w.Write(t.Data); err != nil {
-					return err
 				}
+				w.Write(t.Data)
 			}
 		case html.MathToken:
 			if err := m.MinifyMimetype(mathMimeBytes, w, buffer.NewReader(t.Data), nil); err != nil {
 				if err != minify.ErrNotExist {
 					return err
-				} else if _, err := w.Write(t.Data); err != nil {
-					return err
 				}
+				w.Write(t.Data)
 			}
 		case html.TextToken:
 			// CSS and JS minifiers for inline code
@@ -129,17 +124,14 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					if err := m.MinifyMimetype(mimetype, w, buffer.NewReader(t.Data), params); err != nil {
 						if err != minify.ErrNotExist {
 							return err
-						} else if _, err := w.Write(t.Data); err != nil {
-							return err
 						}
+						w.Write(t.Data)
 					}
-				} else if _, err := w.Write(t.Data); err != nil {
-					return err
+				} else {
+					w.Write(t.Data)
 				}
 			} else if inPre {
-				if _, err := w.Write(t.Data); err != nil {
-					return err
-				}
+				w.Write(t.Data)
 			} else {
 				t.Data = parse.ReplaceMultipleWhitespaceAndEntities(t.Data, EntitiesMap, TextRevEntitiesMap)
 
@@ -187,9 +179,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 				}
 
-				if _, err := w.Write(t.Data); err != nil {
-					return err
-				}
+				w.Write(t.Data)
 			}
 		case html.StartTagToken, html.EndTagToken:
 			rawTagHash = 0
@@ -261,9 +251,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					t.Data[2+len(t.Text)] = '>'
 					t.Data = t.Data[:3+len(t.Text)]
 				}
-				if _, err := w.Write(t.Data); err != nil {
-					return err
-				}
+				w.Write(t.Data)
 				break
 			}
 
@@ -273,9 +261,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				omitSpace = true // omit spaces after block elements
 			}
 
-			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
+			w.Write(t.Data)
 
 			if hasAttributes {
 				if t.Hash == Meta {
@@ -452,31 +438,21 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						}
 					}
 
-					if _, err := w.Write(spaceBytes); err != nil {
-						return err
-					}
-					if _, err := w.Write(attr.Text); err != nil {
-						return err
-					}
+					w.Write(spaceBytes)
+					w.Write(attr.Text)
 					if len(val) > 0 && attr.Traits&booleanAttr == 0 {
-						if _, err := w.Write(isBytes); err != nil {
-							return err
-						}
+						w.Write(isBytes)
 
 						// use double quotes for RDFa attributes
 						isXML := attr.Hash == Vocab || attr.Hash == Typeof || attr.Hash == Property || attr.Hash == Resource || attr.Hash == Prefix || attr.Hash == Content || attr.Hash == About || attr.Hash == Rev || attr.Hash == Datatype || attr.Hash == Inlist
 
 						// no quotes if possible, else prefer single or double depending on which occurs more often in value
 						val = html.EscapeAttrVal(&attrByteBuffer, attr.AttrVal, val, o.KeepQuotes || isXML)
-						if _, err := w.Write(val); err != nil {
-							return err
-						}
+						w.Write(val)
 					}
 				}
 			}
-			if _, err := w.Write(gtBytes); err != nil {
-				return err
-			}
+			w.Write(gtBytes)
 		}
 	}
 }

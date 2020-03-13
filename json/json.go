@@ -37,6 +37,9 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		state := p.State()
 		gt, text := p.Next()
 		if gt == json.ErrorGrammar {
+			if _, err := w.Write(nil); err != nil {
+				return err
+			}
 			if p.Err() != io.EOF {
 				return p.Err()
 			}
@@ -45,19 +48,13 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 		if !skipComma && gt != json.EndObjectGrammar && gt != json.EndArrayGrammar {
 			if state == json.ObjectKeyState || state == json.ArrayState {
-				if _, err := w.Write(commaBytes); err != nil {
-					return err
-				}
+				w.Write(commaBytes)
 			} else if state == json.ObjectValueState {
-				if _, err := w.Write(colonBytes); err != nil {
-					return err
-				}
+				w.Write(colonBytes)
 			}
 		}
 		skipComma = gt == json.StartObjectGrammar || gt == json.StartArrayGrammar
 
-		if _, err := w.Write(text); err != nil {
-			return err
-		}
+		w.Write(text)
 	}
 }
