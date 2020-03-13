@@ -70,9 +70,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
 
-	l := html.NewLexer(r)
-	defer l.Restore()
+	z := parse.NewInput(r)
+	defer z.Restore()
 
+	l := html.NewLexer(z)
 	tb := NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()

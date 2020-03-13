@@ -66,9 +66,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	minifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
 
-	l := xml.NewLexer(r)
-	defer l.Restore()
+	z := parse.NewInput(r)
+	defer z.Restore()
 
+	l := xml.NewLexer(z)
 	tb := NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()

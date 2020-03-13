@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/json"
 )
 
@@ -30,9 +31,10 @@ func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) err
 func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 	skipComma := true
 
-	p := json.NewParser(r)
-	defer p.Restore()
+	z := parse.NewInput(r)
+	defer z.Restore()
 
+	p := json.NewParser(z)
 	for {
 		state := p.State()
 		gt, text := p.Next()

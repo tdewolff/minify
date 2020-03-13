@@ -1,9 +1,9 @@
 package html
 
 import (
-	"bytes"
 	"testing"
 
+	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/html"
 	"github.com/tdewolff/test"
 )
@@ -11,7 +11,7 @@ import (
 func TestBuffer(t *testing.T) {
 	//    0 12  3           45   6   7   8             9   0
 	s := `<p><a href="//url">text</a>text<!--comment--></p>`
-	z := NewTokenBuffer(html.NewLexer(bytes.NewBufferString(s)))
+	z := NewTokenBuffer(html.NewLexer(parse.NewInputString(s)))
 
 	tok := z.Shift()
 	test.That(t, tok.Hash == P, "first token is <p>")

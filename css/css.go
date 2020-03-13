@@ -118,6 +118,8 @@ func (t Token) IsLengthPercentage() bool {
 	return t.TokenType == css.PercentageToken || t.IsLength()
 }
 
+////////////////////////////////////////////////////////////////
+
 // Minify minifies CSS data, it reads from r and writes to w.
 func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	if o.Decimals != 0 {
@@ -131,15 +133,16 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 		o.newPrecision = 15 // minimum number of digits a double can represent exactly
 	}
 
+	z := parse.NewInput(r)
+	defer z.Restore()
+
 	isInline := params != nil && params["inline"] == "1"
 	c := &cssMinifier{
 		m: m,
 		w: w,
-		p: css.NewParser(r, isInline),
+		p: css.NewParser(z, isInline),
 		o: o,
 	}
-	defer c.p.Restore()
-
 	c.minifyGrammar()
 
 	if _, err := w.Write(nil); err != nil {
