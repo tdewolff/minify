@@ -4,6 +4,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/js"
 )
 
@@ -17,7 +18,8 @@ func BenchmarkJQueryParse(b *testing.B) {
 
 		for i := 0; i < b.N; i++ {
 			r["jquery50.js"].Reset()
-			_, _ = js.Parse(r["jquery50.js"])
+			input := parse.NewInput(r["jquery50.js"])
+			_, _ = js.Parse(input)
 		}
 	})
 }
@@ -28,7 +30,8 @@ func BenchmarkJQueryLex(b *testing.B) {
 
 		for i := 0; i < b.N; i++ {
 			r["jquery50.js"].Reset()
-			l := js.NewLexer(r["jquery50.js"])
+			input := parse.NewInput(r["jquery50.js"])
+			l := js.NewLexer(input)
 			for {
 				tt, _ := l.Next()
 				if tt == js.DivToken || tt == js.DivEqToken {
