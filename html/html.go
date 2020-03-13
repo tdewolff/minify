@@ -20,10 +20,22 @@ var (
 	cssMimeBytes    = []byte("text/css")
 	htmlMimeBytes   = []byte("text/html")
 	svgMimeBytes    = []byte("image/svg+xml")
+	formMimeBytes   = []byte("application/x-www-form-urlencoded")
 	mathMimeBytes   = []byte("application/mathml+xml")
 	dataSchemeBytes = []byte("data:")
 	jsSchemeBytes   = []byte("javascript:")
 	httpBytes       = []byte("http")
+	radioBytes      = []byte("radio")
+	onBytes         = []byte("on")
+	textBytes       = []byte("text")
+	noneBytes       = []byte("none")
+	submitBytes     = []byte("submit")
+	allBytes        = []byte("all")
+	rectBytes       = []byte("rect")
+	dataBytes       = []byte("data")
+	getBytes        = []byte("get")
+	autoBytes       = []byte("auto")
+	oneBytes        = []byte("one")
 	inlineParams    = map[string]string{"inline": "1"}
 )
 
@@ -309,10 +321,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				} else if t.Hash == Input {
 					attrs := tb.Attributes(Type, Value)
 					if t, value := attrs[0], attrs[1]; t != nil && value != nil {
-						isRadio := parse.EqualFold(t.AttrVal, []byte("radio"))
+						isRadio := parse.EqualFold(t.AttrVal, radioBytes)
 						if !isRadio && len(value.AttrVal) == 0 {
 							value.Text = nil
-						} else if isRadio && parse.EqualFold(value.AttrVal, []byte("on")) {
+						} else if isRadio && parse.EqualFold(value.AttrVal, onBytes) {
 							value.Text = nil
 						}
 					}
@@ -368,22 +380,22 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 						// default attribute values can be omitted
 						if !o.KeepDefaultAttrVals && (attr.Hash == Type && (t.Hash == Script && jsMimetypes[string(val)] ||
-							t.Hash == Style && bytes.Equal(val, []byte("text/css")) ||
-							t.Hash == Link && bytes.Equal(val, []byte("text/css")) ||
-							t.Hash == Input && bytes.Equal(val, []byte("text")) ||
-							t.Hash == Button && bytes.Equal(val, []byte("submit"))) ||
+							t.Hash == Style && bytes.Equal(val, cssMimeBytes) ||
+							t.Hash == Link && bytes.Equal(val, cssMimeBytes) ||
+							t.Hash == Input && bytes.Equal(val, textBytes) ||
+							t.Hash == Button && bytes.Equal(val, submitBytes)) ||
 							attr.Hash == Language && t.Hash == Script ||
-							attr.Hash == Method && bytes.Equal(val, []byte("get")) ||
-							attr.Hash == Enctype && bytes.Equal(val, []byte("application/x-www-form-urlencoded")) ||
-							attr.Hash == Colspan && bytes.Equal(val, []byte("1")) ||
-							attr.Hash == Rowspan && bytes.Equal(val, []byte("1")) ||
-							attr.Hash == Shape && bytes.Equal(val, []byte("rect")) ||
-							attr.Hash == Span && bytes.Equal(val, []byte("1")) ||
-							attr.Hash == Clear && bytes.Equal(val, []byte("none")) ||
-							attr.Hash == Frameborder && bytes.Equal(val, []byte("1")) ||
-							attr.Hash == Scrolling && bytes.Equal(val, []byte("auto")) ||
-							attr.Hash == Valuetype && bytes.Equal(val, []byte("data")) ||
-							attr.Hash == Media && t.Hash == Style && bytes.Equal(val, []byte("all"))) {
+							attr.Hash == Method && bytes.Equal(val, getBytes) ||
+							attr.Hash == Enctype && bytes.Equal(val, formMimeBytes) ||
+							attr.Hash == Colspan && bytes.Equal(val, oneBytes) ||
+							attr.Hash == Rowspan && bytes.Equal(val, oneBytes) ||
+							attr.Hash == Shape && bytes.Equal(val, rectBytes) ||
+							attr.Hash == Span && bytes.Equal(val, oneBytes) ||
+							attr.Hash == Clear && bytes.Equal(val, noneBytes) ||
+							attr.Hash == Frameborder && bytes.Equal(val, oneBytes) ||
+							attr.Hash == Scrolling && bytes.Equal(val, autoBytes) ||
+							attr.Hash == Valuetype && bytes.Equal(val, dataBytes) ||
+							attr.Hash == Media && t.Hash == Style && bytes.Equal(val, allBytes)) {
 							continue
 						}
 

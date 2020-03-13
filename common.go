@@ -7,6 +7,13 @@ import (
 	"github.com/tdewolff/parse/v2/strconv"
 )
 
+var (
+	textMimeBytes     = []byte("text/plain")
+	charsetAsciiBytes = []byte("charset=us-ascii")
+	dataBytes         = []byte("data:")
+	base64Bytes       = []byte(";base64")
+)
+
 // Epsilon is the closest number to zero that is not considered to be zero.
 var Epsilon = 0.00001
 
@@ -60,21 +67,21 @@ func DataURI(m *M, dataURI []byte) []byte {
 		encoded := make([]byte, base64Len-len(";base64"))
 		base64.StdEncoding.Encode(encoded, data)
 		data = encoded
-		mediatype = append(mediatype, []byte(";base64")...)
+		mediatype = append(mediatype, base64Bytes...)
 	} else {
 		data = parse.EncodeURL(data, parse.URLEncodingTable)
 	}
-	if len("text/plain") <= len(mediatype) && parse.EqualFold(mediatype[:len("text/plain")], []byte("text/plain")) {
+	if len("text/plain") <= len(mediatype) && parse.EqualFold(mediatype[:len("text/plain")], textMimeBytes) {
 		mediatype = mediatype[len("text/plain"):]
 	}
 	for i := 0; i+len(";charset=us-ascii") <= len(mediatype); i++ {
 		// must start with semicolon and be followed by end of mediatype or semicolon
-		if mediatype[i] == ';' && parse.EqualFold(mediatype[i+1:i+len(";charset=us-ascii")], []byte("charset=us-ascii")) && (i+len(";charset=us-ascii") >= len(mediatype) || mediatype[i+len(";charset=us-ascii")] == ';') {
+		if mediatype[i] == ';' && parse.EqualFold(mediatype[i+1:i+len(";charset=us-ascii")], charsetAsciiBytes) && (i+len(";charset=us-ascii") >= len(mediatype) || mediatype[i+len(";charset=us-ascii")] == ';') {
 			mediatype = append(mediatype[:i], mediatype[i+len(";charset=us-ascii"):]...)
 			break
 		}
 	}
-	return append(append(append([]byte("data:"), mediatype...), ','), data...)
+	return append(append(append(dataBytes, mediatype...), ','), data...)
 }
 
 const MaxInt = int(^uint(0) >> 1)

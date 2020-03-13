@@ -21,7 +21,9 @@ var (
 	pathBytes     = []byte("<path")
 	dBytes        = []byte("d")
 	zeroBytes     = []byte("0")
+	n100pBytes    = []byte("100%")
 	cssMimeBytes  = []byte("text/css")
+	noneBytes     = []byte("none")
 	urlBytes      = []byte("url(")
 )
 
@@ -147,15 +149,15 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 			if attr == Xml_Space && bytes.Equal(val, []byte("preserve")) ||
 				tag == Svg && (attr == Version && bytes.Equal(val, []byte("1.1")) ||
-					attr == X && bytes.Equal(val, []byte("0")) ||
-					attr == Y && bytes.Equal(val, []byte("0")) ||
-					attr == Width && bytes.Equal(val, []byte("100%")) ||
-					attr == Height && bytes.Equal(val, []byte("100%")) ||
+					attr == X && bytes.Equal(val, zeroBytes) ||
+					attr == Y && bytes.Equal(val, zeroBytes) ||
+					attr == Width && bytes.Equal(val, n100pBytes) ||
+					attr == Height && bytes.Equal(val, n100pBytes) ||
 					attr == PreserveAspectRatio && bytes.Equal(val, []byte("xMidYMid meet")) ||
-					attr == BaseProfile && bytes.Equal(val, []byte("none")) ||
+					attr == BaseProfile && bytes.Equal(val, noneBytes) ||
 					attr == ContentScriptType && bytes.Equal(val, []byte("application/ecmascript")) ||
-					attr == ContentStyleType && bytes.Equal(val, []byte("text/css"))) ||
-				tag == Style && attr == Type && bytes.Equal(val, []byte("text/css")) {
+					attr == ContentStyleType && bytes.Equal(val, cssMimeBytes)) ||
+				tag == Style && attr == Type && bytes.Equal(val, cssMimeBytes) {
 				continue
 			}
 

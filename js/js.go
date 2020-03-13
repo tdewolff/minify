@@ -10,6 +10,10 @@ import (
 	"github.com/tdewolff/parse/v2/js"
 )
 
+var (
+	starBytes = []byte("*")
+)
+
 // DefaultMinifier is the default minifier.
 var DefaultMinifier = &Minifier{}
 
@@ -259,7 +263,7 @@ func (o *Minifier) minifyStmt(w *bytes.Buffer, i js.IStmt) {
 func (o *Minifier) minifyAlias(w *bytes.Buffer, alias js.Alias) {
 	if alias.Name != nil {
 		w.Write(alias.Name)
-		if !bytes.Equal(alias.Name, []byte("*")) {
+		if !bytes.Equal(alias.Name, starBytes) {
 			w.WriteString(" ")
 		}
 		w.WriteString("as ")
@@ -627,11 +631,11 @@ func isIdentEndBindingElement(element js.BindingElement) bool {
 }
 
 func isIdentStartAlias(alias js.Alias) bool {
-	return alias.Name != nil && !bytes.Equal(alias.Name, []byte("*")) || alias.Name == nil && !bytes.Equal(alias.Binding, []byte("*"))
+	return alias.Name != nil && !bytes.Equal(alias.Name, starBytes) || alias.Name == nil && !bytes.Equal(alias.Binding, starBytes)
 }
 
 func isIdentEndAlias(alias js.Alias) bool {
-	return !bytes.Equal(alias.Binding, []byte("*"))
+	return !bytes.Equal(alias.Binding, starBytes)
 }
 
 func isIdentStartExpr(i js.IExpr) bool {
