@@ -24,6 +24,8 @@ var (
 	zeroBytes         = []byte("0")
 	transparentBytes  = []byte("transparent")
 	initialBytes      = []byte("initial")
+	noneBytes         = []byte("none")
+	autoBytes         = []byte("auto")
 	importantBytes    = []byte("!important")
 	dataSchemeBytes   = []byte("data:")
 )
@@ -1108,29 +1110,38 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			values = []Token{{css.IdentToken, []byte("none"), nil, 0, None}}
 		}
 	case Flex:
-		if len(values) == 1 && values[0].TokenType == css.IdentToken {
-			if values[0].Ident == None {
-				values = []Token{{css.NumberToken, []byte("0"), nil, 0, 0}, {css.NumberToken, []byte("0"), nil, 0, 0}}
-			} else if values[0].Ident == Auto {
-				values = []Token{{css.NumberToken, []byte("1"), nil, 0, 0}, {css.NumberToken, []byte("1"), nil, 0, 0}}
-			} else if values[0].Ident == Initial {
-				values = []Token{{css.NumberToken, []byte("0"), nil, 0, 0}, {css.NumberToken, []byte("1"), nil, 0, 0}}
-			}
-		} else if len(values) == 2 && values[0].TokenType == css.NumberToken {
+		if len(values) == 2 && values[0].TokenType == css.NumberToken {
 			if values[1].TokenType != css.NumberToken && values[1].IsZero() {
 				values = values[:1] // remove <flex-basis> if it is zero
-			} else if values[1].Ident == Auto {
-				values[1].TokenType = css.NumberToken
-				values[1].Data = []byte("1") // replace <flex-basis> if it is auto by <flex-shrink>
-				values[1].Ident = 0
 			}
 		} else if len(values) == 3 && values[0].TokenType == css.NumberToken && values[1].TokenType == css.NumberToken {
-			if len(values[1].Data) == 1 && values[1].Data[0] == '1' && values[2].IsZero() {
-				values = values[:1] // remove <flex-shrink> and <flex-basis> if they are 1 and 0 respectively
-			} else if values[2].Ident == Auto {
-				values = values[:2] // remove auto to write 2-value syntax of <flex-grow> <flex-shrink>
-			} else {
-				values[2] = minifyLengthPercentage(values[2])
+			if len(values[0].Data) == 1 && len(values[1].Data) == 1 {
+				grow := values[0].Data[0] == '1'
+				shrink := values[1].Data[0] == '1'
+				if values[2].Ident == Auto {
+					if !grow && shrink {
+						values = values[:1]
+						values[0].TokenType = css.IdentToken
+						values[0].Data = initialBytes
+						values[0].Ident = Initial
+					} else if grow && shrink {
+						values = values[:1]
+						values[0].TokenType = css.IdentToken
+						values[0].Data = autoBytes
+						values[0].Ident = Auto
+					} else if !grow && !shrink {
+						values = values[:1]
+						values[0].TokenType = css.IdentToken
+						values[0].Data = noneBytes
+						values[0].Ident = None
+					}
+				} else if shrink && values[2].IsZero() {
+					values = values[:1] // remove <flex-shrink> and <flex-basis> if they are 1 and 0 respectively
+				} else if values[2].IsZero() {
+					values = values[:2] // remove auto to write 2-value syntax of <flex-grow> <flex-shrink>
+				} else {
+					values[2] = minifyLengthPercentage(values[2])
+				}
 			}
 		}
 	case Flex_Basis:
