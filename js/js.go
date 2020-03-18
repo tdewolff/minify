@@ -53,6 +53,41 @@ type jsMinifier struct {
 
 	prev       []byte
 	needsSpace bool
+	vars       []map[string][]byte
+	varsIdx    int
+}
+
+func (m *jsMinifier) addVar(b []byte) []byte {
+	if len(m.vars) == 0 {
+		return b
+	}
+	rep := []byte{}
+	idx := m.varsIdx
+	for i := 0; i < int(idx/26)+1; i++ {
+		rep = append(rep, 'a'+byte(idx%26))
+		idx /= 26
+	}
+	m.vars[len(m.vars)-1][string(b)] = rep
+	m.varsIdx++
+	return rep
+}
+
+func (m *jsMinifier) renameVar(b []byte) []byte {
+	for i := len(m.vars) - 1; 0 <= i; i-- {
+		if rep, ok := m.vars[i][string(b)]; ok {
+			return rep
+		}
+	}
+	return b
+}
+
+func (m *jsMinifier) openVarScope() {
+	m.vars = append(m.vars, map[string][]byte{})
+}
+
+func (m *jsMinifier) closeVarScope() {
+	m.varsIdx -= len(m.vars[len(m.vars)-1])
+	m.vars = m.vars[:len(m.vars)-1]
 }
 
 func (m *jsMinifier) write(b []byte) {
@@ -370,6 +405,7 @@ func (m *jsMinifier) minifyVarDecl(decl js.VarDecl) {
 }
 
 func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl) {
+	m.openVarScope()
 	if decl.Async {
 		m.write([]byte("async"))
 	}
@@ -381,10 +417,11 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl) {
 		if !decl.Generator {
 			m.write([]byte(" "))
 		}
-		m.write(decl.Name)
+		m.write(m.addVar(decl.Name))
 	}
 	m.minifyParams(decl.Params)
 	m.minifyBlockStmt(decl.Body)
+	m.closeVarScope()
 }
 
 func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
@@ -484,7 +521,7 @@ func (m *jsMinifier) minifyBindingElement(element js.BindingElement) {
 func (m *jsMinifier) minifyBinding(i js.IBinding) {
 	switch binding := i.(type) {
 	case *js.BindingName:
-		m.write(binding.Data)
+		m.write(m.addVar(binding.Data))
 	case *js.BindingArray:
 		m.write([]byte("["))
 		for _, item := range binding.List {
@@ -518,7 +555,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr) {
 		if expr.TokenType == js.DecimalToken {
 			m.write(minify.Number(expr.Data, 0))
 		} else {
-			m.write(expr.Data)
+			m.write(m.renameVar(expr.Data))
 		}
 	case *js.BinaryExpr:
 		m.minifyExpr(expr.X)
