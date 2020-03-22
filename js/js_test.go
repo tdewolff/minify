@@ -76,10 +76,11 @@ func TestJS(t *testing.T) {
 		{`function a(b){}`, `function a(b){}`},
 		{`function a(b, c){}`, `function a(b,c){}`},
 		{`function * a(){}`, `function*a(){}`},
+		{`function a(){}; return 5`, `function a(){}return 5`},
 		{`x = function (){}`, `x=function(){}`},
 		{`x = function a(){}`, `x=function a(){}`},
-		{`x = function (b){}`, `x=function(b){}`},
-		{`x = function (b,c){}`, `x=function(b,c){}`},
+		{`x = function (a){}`, `x=function(a){}`},
+		{`x = function (a,b){}`, `x=function(a,b){}`},
 		{`() => {}`, `()=>{}`},
 		{`(a) => {}`, `a=>{}`},
 		{`(...a) => {}`, `(...a)=>{}`},
@@ -150,6 +151,14 @@ func TestJS(t *testing.T) {
 		{`try {a} catch(e) {b}`, `try{a}catch(e){b}`},
 		{`try {a} catch(e) {b} finally {c}`, `try{a}catch(e){b}finally{c}`},
 		{`try {a} finally {c}`, `try{a}finally{c}`},
+
+		// variable renaming
+		{`x=function(){var name}`, `x=function(){var a}`},
+		{`x=function(){var name; name++}`, `x=function(){var a;a++}`},
+		{`x=function(){function name(){}}`, `x=function(){function a(){}}`},
+		{`x=function(){function name(arg1, arg2){return arg1, arg2}}`, `x=function(){function a(b,c){return b,c}}`},
+		{`x=function(){function name(arg1, arg2){return arg1, arg2} return arg1}`, `x=function(){function a(b,c){return b,c}return arg1}`},
+		{`x=function(){function name(arg1, arg2){return arg1, arg2} return a}`, `x=function(){function b(c,d){return c,d}return a}`},
 	}
 
 	m := minify.New()

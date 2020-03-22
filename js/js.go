@@ -11,7 +11,9 @@ import (
 )
 
 var (
-	starBytes = []byte("*")
+	spaceBytes     = []byte(" ")
+	starBytes      = []byte("*")
+	semicolonBytes = []byte(";")
 )
 
 // DefaultMinifier is the default minifier.
@@ -33,10 +35,14 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		return err
 	}
 
-	m := &jsMinifier{o: o, w: w}
+	m := &jsMinifier{
+		o:       o,
+		w:       w,
+		renamer: newRenamer(ast.Unbound),
+	}
 	for i, item := range ast.List {
 		if i != 0 {
-			m.write([]byte(";"))
+			m.writeSemicolon()
 		}
 		m.minifyStmt(item)
 	}
@@ -53,46 +59,12 @@ type jsMinifier struct {
 
 	prev       []byte
 	needsSpace bool
-	vars       []map[string][]byte
-	varsIdx    int
-}
-
-func (m *jsMinifier) addVar(b []byte) []byte {
-	if len(m.vars) == 0 {
-		return b
-	}
-	rep := []byte{}
-	idx := m.varsIdx
-	for i := 0; i < int(idx/26)+1; i++ {
-		rep = append(rep, 'a'+byte(idx%26))
-		idx /= 26
-	}
-	m.vars[len(m.vars)-1][string(b)] = rep
-	m.varsIdx++
-	return rep
-}
-
-func (m *jsMinifier) renameVar(b []byte) []byte {
-	for i := len(m.vars) - 1; 0 <= i; i-- {
-		if rep, ok := m.vars[i][string(b)]; ok {
-			return rep
-		}
-	}
-	return b
-}
-
-func (m *jsMinifier) openVarScope() {
-	m.vars = append(m.vars, map[string][]byte{})
-}
-
-func (m *jsMinifier) closeVarScope() {
-	m.varsIdx -= len(m.vars[len(m.vars)-1])
-	m.vars = m.vars[:len(m.vars)-1]
+	*renamer
 }
 
 func (m *jsMinifier) write(b []byte) {
 	if m.needsSpace && js.IsIdentifierStart(b) {
-		m.w.Write([]byte(" "))
+		m.w.Write(spaceBytes)
 	}
 	m.w.Write(b)
 	m.prev = b
@@ -101,7 +73,7 @@ func (m *jsMinifier) write(b []byte) {
 
 func (m *jsMinifier) writeSpaceAfterIdent() {
 	if js.IsIdentifierEnd(m.prev) || 1 < len(m.prev) && m.prev[0] == '/' {
-		m.w.Write([]byte(" "))
+		m.w.Write(spaceBytes)
 	}
 }
 
@@ -111,7 +83,8 @@ func (m *jsMinifier) writeSpaceBeforeIdent() {
 
 func (m *jsMinifier) writeSemicolon() {
 	if len(m.prev) != 1 || m.prev[0] != ';' && m.prev[0] != '}' && m.prev[0] != '{' {
-		m.w.Write([]byte(";"))
+		m.w.Write(semicolonBytes)
+		m.needsSpace = false
 	}
 }
 
@@ -350,7 +323,7 @@ func (m *jsMinifier) minifyBlockStmt(stmt js.BlockStmt) {
 	m.write([]byte("{"))
 	for i, item := range stmt.List {
 		if i != 0 {
-			m.write([]byte(";"))
+			m.writeSemicolon()
 		}
 		m.minifyStmt(item)
 	}
@@ -405,7 +378,7 @@ func (m *jsMinifier) minifyVarDecl(decl js.VarDecl) {
 }
 
 func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl) {
-	m.openVarScope()
+	m.renamer.openScope()
 	if decl.Async {
 		m.write([]byte("async"))
 	}
@@ -417,11 +390,11 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl) {
 		if !decl.Generator {
 			m.write([]byte(" "))
 		}
-		m.write(m.addVar(decl.Name))
+		m.write(m.renamer.add(decl.Name))
 	}
 	m.minifyParams(decl.Params)
 	m.minifyBlockStmt(decl.Body)
-	m.closeVarScope()
+	m.renamer.closeScope()
 }
 
 func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
@@ -521,7 +494,7 @@ func (m *jsMinifier) minifyBindingElement(element js.BindingElement) {
 func (m *jsMinifier) minifyBinding(i js.IBinding) {
 	switch binding := i.(type) {
 	case *js.BindingName:
-		m.write(m.addVar(binding.Data))
+		m.write(m.renamer.add(binding.Data))
 	case *js.BindingArray:
 		m.write([]byte("["))
 		for _, item := range binding.List {
@@ -555,7 +528,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr) {
 		if expr.TokenType == js.DecimalToken {
 			m.write(minify.Number(expr.Data, 0))
 		} else {
-			m.write(m.renameVar(expr.Data))
+			m.write(m.renamer.name(expr.Data))
 		}
 	case *js.BinaryExpr:
 		m.minifyExpr(expr.X)
@@ -729,4 +702,71 @@ func isEmptyStmt(stmt js.IStmt) bool {
 		return true
 	}
 	return false
+}
+
+type renamer struct {
+	idx      int
+	scope    []map[string][]byte
+	scopeIdx []int
+	reserved map[string]bool
+}
+
+func newRenamer(used []string) *renamer {
+	reserved := map[string]bool{}
+	for name, _ := range js.Keywords {
+		reserved[name] = true
+	}
+	for _, name := range used {
+		reserved[name] = true
+	}
+	return &renamer{
+		reserved: reserved,
+	}
+}
+
+func (r *renamer) add(src []byte) []byte {
+	if len(r.scope) == 0 {
+		return src
+	}
+RETRY:
+	dst := []byte{}
+	idx := r.idx
+	for i := 0; i < int(idx/26)+1; i++ {
+		dst = append(dst, 'a'+byte(idx%26))
+		idx /= 26
+	}
+	r.idx++
+	if r.reserved[string(dst)] {
+		goto RETRY
+	}
+	r.scope[len(r.scope)-1][string(src)] = dst
+	return dst
+}
+
+func (r *renamer) name(name []byte) []byte {
+	for _, scope := range r.scope {
+		for src, dst := range scope {
+			if bytes.Equal(name, []byte(src)) {
+				return dst
+			}
+		}
+	}
+	r.reserve(name)
+	return name
+}
+
+func (r *renamer) reserve(name []byte) {
+	r.reserved[string(name)] = true
+}
+
+func (r *renamer) openScope() {
+	r.scope = append(r.scope, map[string][]byte{})
+	r.scopeIdx = append(r.scopeIdx, r.idx)
+}
+
+func (r *renamer) closeScope() {
+	last := len(r.scope) - 1
+	r.idx = r.scopeIdx[last]
+	r.scope = r.scope[:last]
+	r.scopeIdx = r.scopeIdx[:last]
 }
