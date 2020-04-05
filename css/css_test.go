@@ -217,6 +217,7 @@ func TestCSSInline(t *testing.T) {
 		{"border-color: currentcolor currentcolor currentcolor;", "border-color:initial"},
 		{"border-color: red red red;", "border-color:red"},
 		{"border-left-color: currentcolor;", "border-left-color:initial"},
+		{"border: medium none;", "border:none"}, // #294
 		{"outline-color: white;", "outline-color:#fff"},
 		{"column-rule: medium currentcolor none;", "column-rule:none"},
 		{"text-shadow: white 5px 5px;", "text-shadow:#fff 5px 5px"},
