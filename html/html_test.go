@@ -101,6 +101,10 @@ func TestHTML(t *testing.T) {
 		{`<p class="  name  ">`, `<p class=name>`},
 		{`<p onclick="  javascript:lala  ">`, `<p onclick=lala>`},
 		{`<p url="  http://test  ">`, `<p url=http://test>`},
+		{`a<span> <img> </span>b`, `a<span> <img> </span>b`},
+		{`a <span> <img> </span>b`, `a <span><img> </span>b`},
+		{`a<picture> <img> </picture>b`, `a<picture> <img> </picture>b`},
+		{`a <picture> <img> </picture>b`, `a <picture><img> </picture>b`},
 
 		// from HTML Minifier
 		{`<DIV TITLE="blah">boo</DIV>`, `<div title=blah>boo</div>`},
