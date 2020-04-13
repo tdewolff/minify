@@ -27,6 +27,8 @@ func TestCSS(t *testing.T) {
 		{"@import 'file';", "@import 'file'"},
 		{"@import url('file');", "@import 'file'"},
 		{"@import url(//url);", `@import "//url"`},
+		{"@import url(\n//url\n);", `@import "//url"`},
+		{"@import url();", `@import ""`},
 		{"@font-face { x:y; }", "@font-face{x:y}"},
 
 		{"input[type=\"radio\"]{x:y}", "input[type=radio]{x:y}"},

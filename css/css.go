@@ -185,7 +185,15 @@ func (c *cssMinifier) minifyGrammar() error {
 			if ToHash(data[1:]) == Import && len(values) == 2 && values[1].TokenType == css.URLToken {
 				url := values[1].Data
 				if url[4] != '"' && url[4] != '\'' {
-					url = url[3:]
+					a := 4
+					for parse.IsWhitespace(url[a]) || parse.IsNewline(url[a]) {
+						a++
+					}
+					b := len(url) - 2
+					for parse.IsWhitespace(url[b]) || parse.IsNewline(url[b]) {
+						b--
+					}
+					url = url[a-1 : b+2]
 					url[0] = '"'
 					url[len(url)-1] = '"'
 				} else {
