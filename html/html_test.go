@@ -120,6 +120,8 @@ func TestHTML(t *testing.T) {
 		{`<table><thead><tr><th>foo</th><th>bar</th></tr></thead><tfoot><tr><th>baz</th><th>qux</th></tr></tfoot><tbody><tr><td>boo</td><td>moo</td></tr></tbody></table>`,
 			`<table><thead><tr><th>foo<th>bar<tfoot><tr><th>baz<th>qux<tbody><tr><td>boo<td>moo</table>`},
 		{`<select><option>foo</option><option>bar</option></select>`, `<select><option>foo<option>bar</select>`},
+		{`<select><optgroup><option>foo</option></optgroup><optgroup><option>bar</option></optgroup><option>zoo</option></select>`, `<select><optgroup><option>foo<optgroup><option>bar</optgroup><option>zoo</select>`},
+		{`<select>text<option>foo</option>text<optgroup>text<option>bar</option>text</optgroup>text</select>`, `<select><option>foo<optgroup><option>bar</select>`},
 		{`<meta name="keywords" content="A, B">`, `<meta name=keywords content="A,B">`},
 		{`<iframe><html> <p> x </p> </html></iframe>`, `<iframe><p>x</iframe>`},
 		{`<math> &int;_a_^b^{f(x)<over>1+x} dx </math>`, `<math> &int;_a_^b^{f(x)<over>1+x} dx </math>`},

@@ -64,7 +64,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	tb := NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()
-	SWITCH:
 		switch t.TokenType {
 		case html.ErrorToken:
 			if l.Err() == io.EOF {
@@ -229,11 +228,12 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			if !hasAttributes && (!o.KeepDocumentTags && (t.Hash == Html || t.Hash == Head || t.Hash == Body) || t.Hash == Colgroup) {
 				break
 			} else if t.TokenType == html.EndTagToken {
+				omitEndTag := false
 				if !o.KeepEndTags {
-					if t.Hash == Thead || t.Hash == Tbody || t.Hash == Tfoot || t.Hash == Tr || t.Hash == Th || t.Hash == Td ||
-						t.Hash == Optgroup || t.Hash == Option || t.Hash == Dd || t.Hash == Dt ||
-						t.Hash == Li || t.Hash == Rb || t.Hash == Rt || t.Hash == Rtc || t.Hash == Rp {
-						break
+					if t.Hash == Thead || t.Hash == Tbody || t.Hash == Tfoot || t.Hash == Tr || t.Hash == Th ||
+						t.Hash == Td || t.Hash == Option || t.Hash == Dd || t.Hash == Dt || t.Hash == Li ||
+						t.Hash == Rb || t.Hash == Rt || t.Hash == Rtc || t.Hash == Rp {
+						omitEndTag = true // omit end tags
 					} else if t.Hash == P {
 						i := 0
 						for {
@@ -244,7 +244,21 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 								continue
 							}
 							if next.TokenType == html.ErrorToken || next.TokenType == html.EndTagToken && next.Traits&keepPTag == 0 || next.TokenType == html.StartTagToken && next.Traits&omitPTag != 0 {
-								break SWITCH // omit p end tag
+								omitEndTag = true // omit p end tag
+							}
+							break
+						}
+					} else if t.Hash == Optgroup {
+						i := 0
+						for {
+							next := tb.Peek(i)
+							i++
+							// continue if text token
+							if next.TokenType == html.TextToken {
+								continue
+							}
+							if next.TokenType == html.ErrorToken || next.Hash != Option {
+								omitEndTag = true // omit optgroup end tag
 							}
 							break
 						}
@@ -257,12 +271,21 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					omitSpace = true // omit spaces after block elements
 				}
 
-				if len(t.Data) > 3+len(t.Text) {
-					t.Data[2+len(t.Text)] = '>'
-					t.Data = t.Data[:3+len(t.Text)]
+				if !omitEndTag {
+					if len(t.Data) > 3+len(t.Text) {
+						t.Data[2+len(t.Text)] = '>'
+						t.Data = t.Data[:3+len(t.Text)]
+					}
+					if _, err := w.Write(t.Data); err != nil {
+						return err
+					}
 				}
-				if _, err := w.Write(t.Data); err != nil {
-					return err
+
+				// skip text in select and optgroup tags
+				if t.Hash == Option || t.Hash == Optgroup {
+					if next := tb.Peek(0); next.TokenType == html.TextToken {
+						tb.Shift()
+					}
 				}
 				break
 			}
@@ -473,9 +496,18 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						}
 					}
 				}
+			} else {
+				_ = *tb.Shift() // StartTagClose
 			}
 			if _, err := w.Write(gtBytes); err != nil {
 				return err
+			}
+
+			// skip text in select and optgroup tags
+			if t.Hash == Select || t.Hash == Optgroup {
+				if next := tb.Peek(0); next.TokenType == html.TextToken {
+					tb.Shift()
+				}
 			}
 		}
 	}
