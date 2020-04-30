@@ -497,7 +497,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 				}
 			} else {
-				_ = *tb.Shift() // StartTagClose
+				_ = tb.Shift() // StartTagClose
 			}
 			if _, err := w.Write(gtBytes); err != nil {
 				return err
