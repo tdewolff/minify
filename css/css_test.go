@@ -207,6 +207,7 @@ func TestCSSInline(t *testing.T) {
 		{"font:medium/normal 'Arial'", "font:medium arial"},
 		{"font-family:'Arial', 'Times New Roman';", "font-family:arial,times new roman"},
 		{"font-family:'a  b';", "font-family:'a  b'"},
+		{"font-family:' a b ';", "font-family:' a b '"},
 		{"outline: none;", "outline:none"},
 		{"outline: solid black 0;", "outline:solid #000 0"},
 		{"outline: none black medium;", "outline:#000"},
