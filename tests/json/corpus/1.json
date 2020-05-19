@@ -1,0 +1,47 @@
+[
+	{
+		"_id": "5555b27051f173f8adb4f63e",
+		"index": 0,
+		"guid": "86a53111-4aa9-4853-9970-8af194ae8801",
+		"isActive": false,
+		"balance": "$2,863.06",
+		"picture": "http://placehold.it/32x32",
+		"age": 20,
+		"eyeColor": "brown",
+		"name": "Davidson Adams",
+		"gender": "male",
+		"company": "KNEEDLES",
+		"email": "davidsonadams@kneedles.com",
+		"phone": "+1 (804) 469-2023",
+		"address": "783 Church Lane, Farmington, Missouri, 5082",
+		"about": "Tempor minim incididunt ut labore cillum. Culpa do exercitation ex excepteur excepteur culpa nisi excepteur velit exercitation do. Dolor veniam magna fugiat voluptate culpa mollit amet nostrud ipsum proident aliquip deserunt eu.\r\n",
+		"registered": "2014-09-25T05:44:06 -02:00",
+		"latitude": 1.089929,
+		"longitude": -146.479551,
+		"tags": [
+			"sunt",
+			"do",
+			"ipsum",
+			"labore",
+			"esse",
+			"proident",
+			"mollit"
+		],
+		"friends": [
+			{
+				"id": 0,
+				"name": "Savage Kidd"
+			},
+			{
+				"id": 1,
+				"name": "Wise Puckett"
+			},
+			{
+				"id": 2,
+				"name": "Dionne Molina"
+			}
+		],
+		"greeting": "Hello, Davidson Adams! You have 9 unread messages.",
+		"favoriteFruit": "strawberry"
+	}
+]

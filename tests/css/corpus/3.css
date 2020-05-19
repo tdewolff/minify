@@ -1,0 +1,18 @@
+a > span ~ div + span span[target] {
+    color:red;
+}
+
+a[href*="login"],
+a[href^="login"],
+a[href$="login"],
+a[href~="login"],
+a[href|="login"],
+a:link::selection,
+a:nth-child(2n+3):not(div),
+{
+    background: linear-gradient(-180deg, #355FFF 0%, #1F52FF 100%) 0% 0% / cover;
+    filter: progid:b().c.Alpha(rgba(x));
+    --foo: if(x > 5) this.width = 10;
+    margin:calc(10%-5px/2);
+    -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";
+}

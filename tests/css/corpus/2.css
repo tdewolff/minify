@@ -1,0 +1,19 @@
+@page {
+    @footnotes {
+        border: 1px solid black;
+    }
+
+    background-size: auto 0%;
+    background-repeat: repeat-x repeat-y;
+    background-position: 0% 5px center 5%;
+    box-shadow: 0 0 0 0;
+    outline: 1rem double #345678;
+    border: thick dashed rgba(0, 1, 2, 0.5);
+    font-weight: 300;
+    font-family: "test";
+    font: italic small-caps bold 16px/2 cursive "Fira Sans", serif;
+}
+
+@media (not (screen and (color))), print and (color) {
+    color: red;
+}

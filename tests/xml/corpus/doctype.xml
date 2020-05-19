@@ -1,0 +1,7 @@
+<!DOCTYPE tutorials [
+<!ELEMENT tutorials (tutorial)+>
+<!ELEMENT tutorial (name,url)>
+<!ELEMENT name (#PCDATA)>
+<!ELEMENT url (#PCDATA)>
+<!ATTLIST tutorials type CDATA #REQUIRED>
+]>
