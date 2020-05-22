@@ -1,7 +1,10 @@
 // +build gofuzz
 package fuzz
 
-import "github.com/tdewolff/minify/v2"
+import (
+	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/parse"
+)
 
 func Fuzz(data []byte) int {
 	prec := 0
@@ -15,6 +18,7 @@ func Fuzz(data []byte) int {
 			return 0
 		}
 	}
+	data = parse.Copy(data) // ignore const-input error for OSS-Fuzz
 	data = minify.Decimal(data, prec)
 	return 1
 }

@@ -8,6 +8,9 @@ github.com/spf13/pflag v1.0.3/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnIn
 github.com/tdewolff/minify v2.3.6+incompatible h1:2hw5/9ZvxhWLvBUnHE06gElGYz+Jv9R4Eys0XUzItYo=
 github.com/tdewolff/minify/v2 v2.5.2 h1:If/q1brvT+91oWiWnIMEGuFcwWtpB6AtLTxba78tvMs=
 github.com/tdewolff/minify/v2 v2.5.2/go.mod h1:Q6mWHrmspbdRX0ZuUUoKIT8bDjVVXpIJ73ux7p7HZGg=
+github.com/tdewolff/parse v1.1.0 h1:tMjj9GCK8zzwjWyxdZ4pabzdWO1VG+G3bvCnG6aUIyQ=
+github.com/tdewolff/parse v2.3.4+incompatible h1:x05/cnGwIMf4ceLuDMBOdQ1qGniMoxpP46ghf0Qzh38=
+github.com/tdewolff/parse v2.3.4+incompatible/go.mod h1:8oBwCsVmUkgHO8M5iCzSIDtpzXOT0WXX9cWhz+bIzJQ=
 github.com/tdewolff/parse/v2 v2.3.9 h1:d8/K6XOLy5JVpLTG9Kx+SxA72rlm5OowFmVSVgtOlmM=
 github.com/tdewolff/parse/v2 v2.3.9/go.mod h1:HansaqmN4I/U7L6/tUp0NcwT2tFO0F4EAWYGSDzkYNk=
 github.com/tdewolff/parse/v2 v2.3.11 h1:CSprCHYKUHqsa0EemAjXzVWGV/LQFAYwSsd5jlIvezE=
