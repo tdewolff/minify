@@ -8,8 +8,8 @@ function compile_fuzzer {
   $CXX $CXXFLAGS $LIB_FUZZING_ENGINE $fuzzer.a -o $OUT/$fuzzer
 }
 
-find $GOPATH/src/github.com/tdewolff/minify/tests/*/ -maxdepth 1 -type d | while read target
+find $GOPATH/src/github.com/tdewolff/minify/tests/* -maxdepth 0 -type d | while read target
 do
-    fuzz_target=`echo $target | cut -d'/' -f 9`
+    fuzz_target=`echo $target | rev | cut -d'/' -f 1 | rev`
     compile_fuzzer github.com/tdewolff/minify/tests/$fuzz_target Fuzz $fuzz_target-fuzzer
 done
