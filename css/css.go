@@ -140,7 +140,7 @@ func (c *cssMinifier) minifyGrammar() error {
 		gt, _, data := c.p.Next()
 		switch gt {
 		case css.ErrorGrammar:
-			if _, ok := c.p.Err().(*parse.Error); ok {
+			if c.p.HasParseError() {
 				if semicolonQueued {
 					if _, err := c.w.Write(semicolonBytes); err != nil {
 						return err
