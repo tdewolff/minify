@@ -28,6 +28,8 @@ func TestSVG(t *testing.T) {
 		{`<style/><![CDATA[ <<<<< ]]>`, `<style/><![CDATA[ <<<<< ]]>`},
 		{`<svg version="1.0"></svg>`, `<svg version="1.0"/>`},
 		{`<svg version="1.1" x="0" y="0px" width="100%" height="100%"><path/></svg>`, `<svg><path/></svg>`},
+		// TODO: what abour x="" y="" for viewBox?
+		//{`<svg width="24" height="24" viewBox="0 0 24 24"></svg>`, `<svg width="24" height="24"/>`},
 		{`<path x="a"> </path>`, `<path x="a"/>`},
 		{`<path x=""> </path>`, `<path/>`},
 		{`<path x=" a "/>`, `<path x="a"/>`},
