@@ -555,10 +555,16 @@ func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
 					separator := arg.TokenType == css.CommaToken || i != 5 && arg.TokenType == css.WhitespaceToken || i == 5 && arg.TokenType == css.DelimToken && arg.Data[0] == '/'
 					if i%2 == 0 && !numeric || i%2 == 1 && !separator {
 						valid = false
+						break
 					} else if numeric {
 						var d float64
 						if arg.TokenType == css.PercentageToken {
-							d, _ = strconv.ParseFloat(string(arg.Data[:len(arg.Data)-1]), 32) // can never fail
+							var err error
+							d, err = strconv.ParseFloat(string(arg.Data[:len(arg.Data)-1]), 32) // can overflow
+							if err != nil {
+								valid = false
+								break
+							}
 							d /= 100.0
 							if d < minify.Epsilon {
 								d = 0.0
@@ -566,7 +572,12 @@ func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
 								d = 1.0
 							}
 						} else {
-							d, _ = strconv.ParseFloat(string(arg.Data), 32) // can never fail
+							var err error
+							d, err = strconv.ParseFloat(string(arg.Data), 32) // can overflow
+							if err != nil {
+								valid = false
+								break
+							}
 						}
 						vals = append(vals, d)
 					}
@@ -607,14 +618,11 @@ func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
 						values[i] = rgbToToken(vals[0], vals[1], vals[2])
 						break
 					} else if fun == Hsl || fun == Hsla && args[0].TokenType == css.NumberToken && args[2].TokenType == css.PercentageToken && args[4].TokenType == css.PercentageToken {
-						for vals[0] < 0.0 {
-							vals[0] += 360.0
-						}
-						for 360.0 <= vals[0] {
-							vals[0] -= 360.0
-						}
 						vals[0] /= 360.0
-
+						_, vals[0] = math.Modf(vals[0])
+						if vals[0] < 0.0 {
+							vals[0] = 1.0 + vals[0]
+						}
 						r, g, b := css.HSL2RGB(vals[0], vals[1], vals[2])
 						values[i] = rgbToToken(r, g, b)
 						break
