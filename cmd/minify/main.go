@@ -61,16 +61,16 @@ type Task struct {
 	dst  string
 }
 
-func NewTask(root, input, output string) Task {
+func NewTask(root, input, output string) (Task, error) {
 	t := Task{[]string{input}, output}
 	if 0 < len(output) && output[len(output)-1] == '/' {
 		rel, err := filepath.Rel(root, input)
 		if err != nil {
-			Error.Fatalln(err)
+			return Task{}, err
 		}
 		t.dst = path.Clean(filepath.ToSlash(path.Join(output, rel)))
 	}
-	return t
+	return t, nil
 }
 
 var (
@@ -79,6 +79,11 @@ var (
 )
 
 func main() {
+	// os.Exit doesn't execute pending defer calls, this is fixed by encapsulating run()
+	os.Exit(run())
+}
+
+func run() int {
 	output := ""
 	mimetype := ""
 	filetype := ""
@@ -127,7 +132,7 @@ func main() {
 	if err := flag.Parse(os.Args[1:]); err != nil {
 		fmt.Printf("Error: %v\n\n", err)
 		flag.Usage()
-		os.Exit(2)
+		return 1
 	}
 	rawInputs := flag.Args()
 	useStdin := len(rawInputs) == 0
@@ -141,12 +146,12 @@ func main() {
 
 	if help {
 		flag.Usage()
-		os.Exit(0)
+		return 0
 	}
 
 	if version {
 		fmt.Printf("minify %s\n", Version)
-		os.Exit(0)
+		return 0
 	}
 
 	if list {
@@ -158,14 +163,15 @@ func main() {
 		for _, k := range keys {
 			fmt.Println(k + "\t" + filetypeMime[k])
 		}
-		os.Exit(0)
+		return 0
 	}
 
 	var err error
 	if match != "" {
 		pattern, err = regexp.Compile(match)
 		if err != nil {
-			Error.Fatalln(err)
+			Error.Println(err)
+			return 1
 		}
 	}
 
@@ -179,17 +185,19 @@ func main() {
 		if recursive {
 			Error.Println("--recursive doesn't work on stdin and stdout, specify input and output")
 		}
-		os.Exit(1)
+		return 1
 	}
 	if mimetype == "" && filetype == "" && useStdin {
-		Error.Fatalln("must specify --mime or --type for stdin")
+		Error.Println("must specify --mime or --type for stdin")
+		return 1
 	}
 
 	// detect mimetype, mimetype=="" means we'll infer mimetype from file extensions
 	if mimetype == "" && filetype != "" {
 		var ok bool
 		if mimetype, ok = filetypeMime[filetype]; !ok {
-			Error.Fatalln("cannot find mimetype for filetype", filetype)
+			Error.Println("cannot find mimetype for filetype", filetype)
+			return 1
 		}
 	}
 	if verbose {
@@ -209,7 +217,8 @@ func main() {
 		if output[len(output)-1] == '/' {
 			dirDst = true
 			if err := os.MkdirAll(output, 0777); err != nil {
-				Error.Fatalln(err)
+				Error.Println(err)
+				return 1
 			}
 		}
 	}
@@ -220,7 +229,7 @@ func main() {
 		if watch {
 			Error.Println("--watch requires destination to be a directory")
 		}
-		os.Exit(1)
+		return 1
 	}
 	if verbose {
 		if output == "" {
@@ -240,10 +249,19 @@ func main() {
 	var tasks []Task
 	var roots []string
 	if useStdin {
-		tasks = append(tasks, NewTask("", "", output))
+		task, err := NewTask("", "", output)
+		if err != nil {
+			Error.Println(err)
+			return 1
+		}
+		tasks = append(tasks, task)
 		roots = append(roots, "")
 	} else {
-		tasks, roots = createTasks(rawInputs, output)
+		tasks, roots, err = createTasks(rawInputs, output)
+		if err != nil {
+			Error.Println(err)
+			return 1
+		}
 	}
 
 	// concatenate
@@ -265,7 +283,8 @@ func main() {
 	m.AddRegexp(regexp.MustCompile("[/+]xml$"), xmlMinifier)
 
 	if m.URL, err = url.Parse(siteurl); err != nil {
-		Error.Fatalln(err)
+		Error.Println(err)
+		return 1
 	}
 
 	numWorkers := 1
@@ -291,7 +310,8 @@ func main() {
 	} else {
 		watcher, err := NewWatcher(recursive)
 		if err != nil {
-			Error.Fatalln(err)
+			Error.Println(err)
+			return 1
 		}
 		defer watcher.Close()
 
@@ -344,7 +364,12 @@ func main() {
 				if !verbose {
 					Info.Println(file, "changed")
 				}
-				chanTasks <- NewTask(root, file, output)
+				task, err := NewTask(root, file, output)
+				if err != nil {
+					Error.Println(err)
+					return 1
+				}
+				chanTasks <- task
 			}
 		}
 	}
@@ -359,9 +384,9 @@ func main() {
 		Info.Println(time.Since(start), "total")
 	}
 	if fails > 0 {
-		os.Exit(1)
+		return 1
 	}
-	os.Exit(0)
+	return 0
 }
 
 func minifyWorker(mimetype string, chanTasks <-chan Task, chanFails chan<- int) {
@@ -411,28 +436,36 @@ func validDir(info os.FileInfo) bool {
 	return info.Mode().IsDir() && len(info.Name()) > 0 && (hidden || info.Name()[0] != '.')
 }
 
-func createTasks(inputs []string, output string) ([]Task, []string) {
+func createTasks(inputs []string, output string) ([]Task, []string, error) {
 	tasks := []Task{}
 	roots := []string{}
 	for _, input := range inputs {
 		input = sanitizePath(input)
 		info, err := os.Stat(input)
 		if err != nil {
-			Error.Fatalln(err)
+			return nil, nil, err
 		}
 
 		if info.Mode().IsRegular() {
-			tasks = append(tasks, NewTask("", input, output))
+			task, err := NewTask("", input, output)
+			if err != nil {
+				return nil, nil, err
+			}
+			tasks = append(tasks, task)
 		} else if info.Mode().IsDir() {
 			roots = append(roots, input)
 			if !recursive {
 				infos, err := ioutil.ReadDir(input)
 				if err != nil {
-					Error.Fatalln(err)
+					return nil, nil, err
 				}
 				for _, info := range infos {
 					if validFile(info) {
-						tasks = append(tasks, NewTask(input, path.Join(input, info.Name()), output))
+						task, err := NewTask(input, path.Join(input, info.Name()), output)
+						if err != nil {
+							return nil, nil, err
+						}
+						tasks = append(tasks, task)
 					}
 				}
 			} else {
@@ -441,21 +474,25 @@ func createTasks(inputs []string, output string) ([]Task, []string) {
 						return err
 					}
 					if validFile(info) {
-						tasks = append(tasks, NewTask(input, path, output))
+						task, err := NewTask(input, path, output)
+						if err != nil {
+							return err
+						}
+						tasks = append(tasks, task)
 					} else if info.Mode().IsDir() && !validDir(info) && info.Name() != "." && info.Name() != ".." { // check for IsDir, so we don't skip the rest of the directory when we have an invalid file
 						return filepath.SkipDir
 					}
 					return nil
 				})
 				if err != nil {
-					Error.Fatalln(err)
+					return nil, nil, err
 				}
 			}
 		} else {
-			Error.Fatalln("not a file or directory", input)
+			return nil, nil, fmt.Errorf("not a file or directory %s", input)
 		}
 	}
-	return tasks, roots
+	return tasks, roots, nil
 }
 
 func openInputFile(input string) (io.ReadCloser, error) {
