@@ -3,6 +3,7 @@ package js
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 
 	"github.com/tdewolff/minify/v2"
@@ -35,6 +36,8 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		return err
 	}
 
+	fmt.Println("Unbound", ast.Unbound)
+
 	m := &jsMinifier{
 		o:       o,
 		w:       w,
@@ -57,8 +60,9 @@ type jsMinifier struct {
 	o *Minifier
 	w io.Writer
 
-	prev       []byte
-	needsSpace bool
+	prev           []byte
+	needsSemicolon bool
+	needsSpace     bool
 	*renamer
 }
 
@@ -81,9 +85,14 @@ func (m *jsMinifier) writeSpaceBeforeIdent() {
 	m.needsSpace = true
 }
 
+func (m *jsMinifier) requireSemicolon() {
+	m.needsSemicolon = true
+}
+
 func (m *jsMinifier) writeSemicolon() {
-	if len(m.prev) != 1 || m.prev[0] != ';' && m.prev[0] != '}' && m.prev[0] != '{' {
+	if m.needsSemicolon {
 		m.w.Write(semicolonBytes)
+		m.needsSemicolon = false
 		m.needsSpace = false
 	}
 }
@@ -92,8 +101,10 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 	switch stmt := i.(type) {
 	case *js.ExprStmt:
 		m.minifyExpr(stmt.Value)
+		m.requireSemicolon()
 	case *js.VarDecl:
 		m.minifyVarDecl(*stmt)
+		m.requireSemicolon()
 	case *js.IfStmt:
 		hasIf := !isEmptyStmt(stmt.Body)
 		hasElse := !isEmptyStmt(stmt.Else)
@@ -103,7 +114,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.write([]byte(")"))
 
 		if !hasIf && hasElse {
-			m.write([]byte(";"))
+			m.requireSemicolon()
 		} else if hasIf {
 			if block, ok := stmt.Body.(*js.BlockStmt); ok && len(block.List) == 1 {
 				stmt.Body = block.List[0]
@@ -112,11 +123,10 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 				m.write([]byte("{"))
 				m.minifyStmt(stmt.Body)
 				m.write([]byte("}"))
+				m.needsSemicolon = false
 			} else if _, ok := stmt.Body.(*js.ExprStmt); ok {
 				m.minifyStmt(stmt.Body)
-				if hasElse {
-					m.write([]byte(";"))
-				}
+				m.requireSemicolon()
 			} else {
 				m.minifyStmt(stmt.Body)
 			}
@@ -137,6 +147,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.write([]byte("return"))
 		m.writeSpaceBeforeIdent()
 		m.minifyExpr(stmt.Value)
+		m.requireSemicolon()
 	case *js.LabelledStmt:
 		m.write(stmt.Token.Data)
 		m.write([]byte(":"))
@@ -147,6 +158,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			m.write([]byte(" "))
 			m.write(stmt.Name.Data)
 		}
+		m.requireSemicolon()
 	case *js.WithStmt:
 		m.write([]byte("with("))
 		m.minifyExpr(stmt.Cond)
@@ -222,6 +234,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.write([]byte("throw"))
 		m.writeSpaceBeforeIdent()
 		m.minifyExpr(stmt.Value)
+		m.requireSemicolon()
 	case *js.TryStmt:
 		m.write([]byte("try"))
 		m.minifyBlockStmt(stmt.Body)
@@ -244,6 +257,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.minifyClassDecl(*stmt)
 	case *js.DebuggerStmt:
 		m.write([]byte("debugger"))
+		m.requireSemicolon()
 	case *js.EmptyStmt:
 	case *js.ImportStmt:
 		m.write([]byte("import"))
@@ -274,6 +288,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			m.write([]byte("from"))
 		}
 		m.write(stmt.Module)
+		m.requireSemicolon()
 	case *js.ExportStmt:
 		m.write([]byte("export"))
 		if stmt.Decl != nil {
@@ -305,6 +320,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 				m.write(stmt.Module)
 			}
 		}
+		m.requireSemicolon()
 	}
 }
 
@@ -320,6 +336,7 @@ func (m *jsMinifier) minifyAlias(alias js.Alias) {
 }
 
 func (m *jsMinifier) minifyBlockStmt(stmt js.BlockStmt) {
+	m.needsSemicolon = false
 	m.write([]byte("{"))
 	for i, item := range stmt.List {
 		if i != 0 {
@@ -328,6 +345,7 @@ func (m *jsMinifier) minifyBlockStmt(stmt js.BlockStmt) {
 		m.minifyStmt(item)
 	}
 	m.write([]byte("}"))
+	m.needsSemicolon = false
 }
 
 func (m *jsMinifier) minifyParams(params js.Params) {
@@ -566,7 +584,9 @@ func (m *jsMinifier) minifyExpr(i js.IExpr) {
 			m.write(expr.Op.Bytes())
 		} else {
 			m.write(expr.Op.Bytes())
-			if expr.Op == js.PosToken {
+			if expr.Op == js.DeleteToken || expr.Op == js.VoidToken || expr.Op == js.TypeofToken {
+				m.writeSpaceBeforeIdent()
+			} else if expr.Op == js.PosToken {
 				if unary, ok := expr.X.(*js.UnaryExpr); ok && (unary.Op == js.PosToken || unary.Op == js.PreIncrToken) {
 					m.write([]byte(" "))
 				}
@@ -633,11 +653,14 @@ func (m *jsMinifier) minifyExpr(i js.IExpr) {
 		m.write(expr.Tail)
 	case *js.NewExpr:
 		m.write([]byte("new"))
+		m.writeSpaceBeforeIdent()
 		m.minifyExpr(expr.X)
 	case *js.NewTargetExpr:
 		m.write([]byte("new.target"))
+		m.writeSpaceBeforeIdent()
 	case *js.YieldExpr:
 		m.write([]byte("yield"))
+		m.writeSpaceBeforeIdent()
 		if expr.X != nil {
 			if expr.Generator {
 				m.write([]byte("*"))
@@ -705,18 +728,18 @@ func isEmptyStmt(stmt js.IStmt) bool {
 }
 
 type renamer struct {
-	idx      int
-	scope    []map[string][]byte
-	scopeIdx []int
 	reserved map[string]bool
+	renames  [][]byte
+	idx      int
+	scopes   []map[string]int
 }
 
-func newRenamer(used []string) *renamer {
+func newRenamer(unbound []string) *renamer {
 	reserved := map[string]bool{}
 	for name, _ := range js.Keywords {
 		reserved[name] = true
 	}
-	for _, name := range used {
+	for _, name := range unbound {
 		reserved[name] = true
 	}
 	return &renamer{
@@ -724,49 +747,57 @@ func newRenamer(used []string) *renamer {
 	}
 }
 
+func (r *renamer) next(name []byte) []byte {
+	if name[len(name)-1] == 'z' {
+		name[len(name)-1] = 'A'
+	} else if name[len(name)-1] == 'Z' {
+		name = append(name, 'a')
+	} else {
+		name[len(name)-1]++
+	}
+	return name
+}
+
 func (r *renamer) add(src []byte) []byte {
-	if len(r.scope) == 0 {
+	if len(r.scopes) == 0 {
 		return src
+	} else if r.idx < len(r.renames) {
+		dst := r.renames[r.idx]
+		r.scopes[len(r.scopes)-1][string(src)] = r.idx
+		r.idx++
+		return dst
 	}
-RETRY:
-	dst := []byte{}
-	idx := r.idx
-	for i := 0; i < int(idx/26)+1; i++ {
-		dst = append(dst, 'a'+byte(idx%26))
-		idx /= 26
+	var dst []byte
+	if len(r.renames) == 0 {
+		dst = []byte("a")
+	} else {
+		dst = parse.Copy(r.renames[len(r.renames)-1])
+		dst = r.next(dst)
 	}
+	for r.reserved[string(dst)] {
+		dst = r.next(dst)
+	}
+	r.renames = append(r.renames, dst)
+	r.scopes[len(r.scopes)-1][string(src)] = r.idx
 	r.idx++
-	if r.reserved[string(dst)] {
-		goto RETRY
-	}
-	r.scope[len(r.scope)-1][string(src)] = dst
 	return dst
 }
 
 func (r *renamer) name(name []byte) []byte {
-	for _, scope := range r.scope {
-		for src, dst := range scope {
-			if bytes.Equal(name, []byte(src)) {
-				return dst
-			}
+	for j := len(r.scopes) - 1; 0 <= j; j-- {
+		if i, ok := r.scopes[j][string(name)]; ok {
+			return r.renames[i]
 		}
 	}
-	r.reserve(name)
 	return name
 }
 
-func (r *renamer) reserve(name []byte) {
-	r.reserved[string(name)] = true
-}
-
 func (r *renamer) openScope() {
-	r.scope = append(r.scope, map[string][]byte{})
-	r.scopeIdx = append(r.scopeIdx, r.idx)
+	r.scopes = append(r.scopes, map[string]int{})
 }
 
 func (r *renamer) closeScope() {
-	last := len(r.scope) - 1
-	r.idx = r.scopeIdx[last]
-	r.scope = r.scope[:last]
-	r.scopeIdx = r.scopeIdx[:last]
+	last := len(r.scopes) - 1
+	r.idx -= len(r.scopes[last])
+	r.scopes = r.scopes[:last]
 }
