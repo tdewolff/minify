@@ -3,7 +3,6 @@ package js
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 
 	"github.com/tdewolff/minify/v2"
@@ -36,17 +35,13 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		return err
 	}
 
-	fmt.Println("Unbound", ast.Unbound)
-
 	m := &jsMinifier{
 		o:       o,
 		w:       w,
 		renamer: newRenamer(ast.Unbound),
 	}
-	for i, item := range ast.List {
-		if i != 0 {
-			m.writeSemicolon()
-		}
+	for _, item := range ast.List {
+		m.writeSemicolon()
 		m.minifyStmt(item)
 	}
 
@@ -124,9 +119,6 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 				m.minifyStmt(stmt.Body)
 				m.write([]byte("}"))
 				m.needsSemicolon = false
-			} else if _, ok := stmt.Body.(*js.ExprStmt); ok {
-				m.minifyStmt(stmt.Body)
-				m.requireSemicolon()
 			} else {
 				m.minifyStmt(stmt.Body)
 			}
@@ -172,6 +164,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.write([]byte("while("))
 		m.minifyExpr(stmt.Cond)
 		m.write([]byte(")"))
+		m.requireSemicolon()
 	case *js.WhileStmt:
 		m.write([]byte("while("))
 		m.minifyExpr(stmt.Cond)
@@ -212,20 +205,17 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.write([]byte("switch("))
 		m.minifyExpr(stmt.Init)
 		m.write([]byte("){"))
-		for j, clause := range stmt.List {
-			if j != 0 {
-				m.write([]byte(";"))
-			}
+		m.needsSemicolon = false
+		for _, clause := range stmt.List {
+			m.writeSemicolon()
 			m.write(clause.TokenType.Bytes())
 			if clause.Cond != nil {
 				m.write([]byte(" "))
 				m.minifyExpr(clause.Cond)
 			}
 			m.write([]byte(":"))
-			for i, item := range clause.List {
-				if i != 0 {
-					m.write([]byte(";"))
-				}
+			for _, item := range clause.List {
+				m.writeSemicolon()
 				m.minifyStmt(item)
 			}
 		}
@@ -298,6 +288,11 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 				m.write([]byte(" "))
 			}
 			m.minifyExpr(stmt.Decl)
+			_, isHoistable := stmt.Decl.(*js.FuncDecl)
+			_, isClass := stmt.Decl.(*js.ClassDecl)
+			if !isHoistable && !isClass {
+				m.requireSemicolon()
+			}
 		} else {
 			if len(stmt.List) == 1 {
 				m.writeSpaceBeforeIdent()
@@ -319,8 +314,8 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 				m.write([]byte("from"))
 				m.write(stmt.Module)
 			}
+			m.requireSemicolon()
 		}
-		m.requireSemicolon()
 	}
 }
 
@@ -336,12 +331,10 @@ func (m *jsMinifier) minifyAlias(alias js.Alias) {
 }
 
 func (m *jsMinifier) minifyBlockStmt(stmt js.BlockStmt) {
-	m.needsSemicolon = false
 	m.write([]byte("{"))
-	for i, item := range stmt.List {
-		if i != 0 {
-			m.writeSemicolon()
-		}
+	m.needsSemicolon = false
+	for _, item := range stmt.List {
+		m.writeSemicolon()
 		m.minifyStmt(item)
 	}
 	m.write([]byte("}"))
@@ -396,7 +389,6 @@ func (m *jsMinifier) minifyVarDecl(decl js.VarDecl) {
 }
 
 func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl) {
-	m.renamer.openScope()
 	if decl.Async {
 		m.write([]byte("async"))
 	}
@@ -410,6 +402,7 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl) {
 		}
 		m.write(m.renamer.add(decl.Name))
 	}
+	m.renamer.openScope()
 	m.minifyParams(decl.Params)
 	m.minifyBlockStmt(decl.Body)
 	m.renamer.closeScope()
@@ -760,6 +753,7 @@ func (r *renamer) next(name []byte) []byte {
 
 func (r *renamer) add(src []byte) []byte {
 	if len(r.scopes) == 0 {
+		r.reserved[string(src)] = true // top-level variables
 		return src
 	} else if r.idx < len(r.renames) {
 		dst := r.renames[r.idx]

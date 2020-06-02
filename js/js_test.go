@@ -113,6 +113,8 @@ func TestJS(t *testing.T) {
 		{`export {a as b, c}`, `export{a as b,c}`},
 		{`export var a = b`, `export var a=b`},
 		{`export default a = b`, `export default a=b`},
+		{`export default a = b;c=d`, `export default a=b;c=d`},
+		{`export default function a(){};c=d`, `export default function a(){}c=d`},
 		{`class {}`, `class{}`},
 		{`class a {}`, `class a{}`},
 		{`class a extends b {}`, `class a extends b{}`},
@@ -140,6 +142,7 @@ func TestJS(t *testing.T) {
 		{`if(a)a={b};else e`, `if(a)a={b};else e`},
 		{`if(a) a; else [e]=4`, `if(a)a;else[e]=4`},
 		{`if(a){ a = b?c:function(d){f} } else e`, `if(a)a=b?c:function(d){f};else e`},
+		{`if(a)while(b){if(c)d; else e}else f`, `if(a)while(b)if(c)d;else e;else f`},
 		{`for (var a = 5; a < 10; a++){a}`, `for(var a=5;a<10;a++)a`},
 		{`for (a,b = 5; a < 10; a++){a}`, `for(a,b=5;a<10;a++)a`},
 		{`for await (var a of b){a}`, `for await(var a of b)a`},
@@ -148,6 +151,7 @@ func TestJS(t *testing.T) {
 		{`while(a < 10){a}`, `while(a<10)a`},
 		{`do {a} while(a < 10)`, `do a;while(a<10)`},
 		{`do [a]=5; while(a < 10)`, `do[a]=5;while(a<10)`},
+		{`do [a]=5; while(a < 10);return a`, `do[a]=5;while(a<10);return a`},
 		{`throw a`, `throw a`},
 		{`throw [a]`, `throw[a]`},
 		{`try {a}`, `try{a}`},
@@ -163,6 +167,8 @@ func TestJS(t *testing.T) {
 		{`x=function(){function name(arg1, arg2){return arg1, arg2}}`, `x=function(){function a(b,c){return b,c}}`},
 		{`x=function(){function name(arg1, arg2){return arg1, arg2} return arg1}`, `x=function(){function a(b,c){return b,c}return arg1}`},
 		{`x=function(){function name(arg1, arg2){return arg1, arg2} return a}`, `x=function(){function b(c,d){return c,d}return a}`},
+		{`x=function(){function add(l,r){return add(l,r)}function nadd(l,r){return-add(l,r)}}`, `x=function(){function a(b,c){return a(b,c)}function b(c,d){return-a(c,d)}}`},
+		{`function a(){var b}`, `function a(){var b}`},
 	}
 
 	m := minify.New()
