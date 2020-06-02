@@ -3,12 +3,12 @@ package html
 type traits uint16
 
 const (
-	normalTag traits = 1 << iota
-	rawTag
-	nonPhrasingTag
-	objectTag
-	omitPTag // omit p end tag if it is followed by this start tag
-	keepPTag // keep p end tag if it is followed by this end tag
+	normalTag      traits = 1 << iota
+	rawTag                // raw tags need special processing for their content
+	nonPhrasingTag        // non-phrasing elements are unaffected by whitespace, remove spaces around these tags
+	objectTag             // content tags with a few exclusions, keep spaces after these open/close tags
+	omitPTag              // omit p end tag if it is followed by this start tag
+	keepPTag              // keep p end tag if it is followed by this end tag
 )
 
 const (
@@ -25,7 +25,7 @@ var tagMap = map[Hash]traits{
 	Area:       normalTag,
 	Article:    nonPhrasingTag | omitPTag,
 	Aside:      nonPhrasingTag | omitPTag,
-	Audio:      objectTag | keepPTag,
+	Audio:      keepPTag,
 	B:          normalTag,
 	Base:       normalTag,
 	Bb:         normalTag,
@@ -95,7 +95,7 @@ var tagMap = map[Hash]traits{
 	Output:     nonPhrasingTag,
 	P:          nonPhrasingTag | omitPTag,
 	Param:      normalTag,
-	Picture:    objectTag,
+	Picture:    normalTag,
 	Pre:        nonPhrasingTag | omitPTag,
 	Progress:   objectTag,
 	Q:          objectTag,

@@ -1,0 +1,470 @@
+
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="600" height="600" onload="NewGame()">
+<title>Steps</title>
+<script type="text/ecmascript">
+<![CDATA[
+var svgNS = "http://www.w3.org/2000/svg";
+var xlinkNS = "http://www.w3.org/1999/xlink";
+
+var Objects=new Array();
+var Pos=new Array();
+var Directions=new Array();
+var Moves=new Array();
+
+var gLevel=1;
+var gIsMoving='False';
+var gMoveInterval=100;
+
+function NewGame()
+	{
+		var Object;
+		var b=Objects.length;
+		for(var a=2;a<b;a++)
+			{
+				Object=document.getElementById(a);
+				if(Object)
+					Object.parentNode.removeChild(Object);
+			}
+
+		Object=document.getElementById('Player');
+		if(Object)
+			Object.parentNode.removeChild(Object);
+
+		Object=document.getElementById('Target');
+		if(Object)
+			Object.parentNode.removeChild(Object);
+
+		Object=document.getElementById('Skull');
+		if(Object)
+			Object.parentNode.removeChild(Object);
+
+		Objects=new Array();
+		Pos=new Array();
+		Directions=new Array();
+		gLevel=1;
+		document.getElementById('Level').firstChild.nodeValue='Level: 1';
+
+		NewObject('Player');
+		NewObject('Target');
+		NewObject('Arrow');
+		NewObject('Arrow');
+	}
+
+function NewObject(Object)
+	{
+		var ArrayPos=Objects.length;
+		var a=NewPosition();
+		Pos[ArrayPos]=a;
+		var NewObject=document.createElementNS(svgNS,"use");
+		NewObject.setAttribute("x",0);
+		NewObject.setAttribute("y",0);
+
+		if(Object=='Arrow')
+			{
+				Objects[ArrayPos]='Arrow';
+				var b=Math.round(Math.random()*7);
+				Directions[ArrayPos]=b;
+				NewObject.setAttribute("id",ArrayPos);
+				NewObject.setAttributeNS(xlinkNS,"href","#arrow");
+				NewObject.setAttribute("transform", "translate("+(a%8)*50+","+Math.floor(a/8)*50+") rotate("+b*45+",25,25)");
+				Moves[ArrayPos]=CalculateMoves(a,b);
+			}
+		else if(Object=='Player')
+			{
+				Objects[ArrayPos]='Player';
+				NewObject.setAttribute("id",'Player');
+				NewObject.setAttributeNS(xlinkNS,"href","#player");
+				NewObject.setAttribute("transform", "translate("+(a%8)*50+","+Math.floor(a/8)*50+")");
+			}
+		else if (Object=='Target')
+			{
+				Objects[ArrayPos]='Target';
+				NewObject.setAttribute("id",'Target');
+				NewObject.setAttributeNS(xlinkNS,"href","#target");
+				NewObject.setAttribute("transform", "translate("+(a%8)*50+","+Math.floor(a/8)*50+")");
+				NewObject.setAttribute("onclick", "ClickTarget()");
+			}
+		else if (Object=='Skull')
+			{
+				Objects[ArrayPos]='Skull';
+				NewObject.setAttribute("id",'Skull');
+				NewObject.setAttributeNS(xlinkNS,"href","#skull");
+				NewObject.setAttribute("transform", "translate("+(Pos[0]%8)*50+","+Math.floor(Pos[0]/8)*50+")");
+			}
+
+		document.getElementById("board").appendChild(NewObject);
+	}
+
+function NewPosition()
+	{
+		var a=Math.round(Math.random()*63);
+		while(!EmptySquare(a) || a==Pos[0] || a==Pos[1])
+			{
+				a++;
+				if(a==64)
+					a=0;
+			}
+		return (a);
+	}
+
+function EmptySquare(ThisPos)
+	{
+		var EmptySquare=new Boolean(true);
+
+// Pos[0]=player, Pos[1]=target so start from Pos[2]
+		var b=Pos.length;
+		for(var a=2;a<b;a++)
+			{
+				if(Pos[a]==ThisPos)
+					EmptySquare=false;
+			}
+		return(EmptySquare);
+	}
+
+// Returns a list of available squares that this arrow will
+// move through as a comma delimmeted string
+function CalculateMoves(a,Dir)
+	{
+		var MyMoves='';
+		MyMoves+=a;
+
+		for(var b=0;b<7;b++)
+			{
+				switch(Dir)
+				{
+				case 0: // East
+					if(a%8==7)
+						a=a-7
+					else
+						a++;
+					break;
+				case 1: // South East
+					if(a==63)
+						a=0
+					else if(a>55)
+						a=a-55
+					else if(a%8==7)
+						a++
+					else
+						a=a+9;
+					break;
+				case 2: // South
+					if(a>55)
+						a=a-56
+					else
+						a=a+8;
+					break;
+				case 3: // South West
+					if(a==56)
+						a=7
+					else if(a>55)
+						a=a-57
+					else if(a%8==0)
+						a=a+15
+					else
+						a=a+7;
+					break;
+				case 4: // West
+					if(a%8==0)
+						a=a+7
+					else
+						a--;
+					break;
+				case 5: // North West
+					if(a==0)
+						a=63
+					else if(a<8)
+						a=a+55
+					else if(a%8==0)
+						a--
+					else
+						a=a-9;
+					break;
+				case 6: // North
+					if(a<8)
+						a=a+56
+					else
+						a=a-8;
+					break;
+				case 7: // North  East
+					if(a==7)
+						a=56
+					else if(a<8)
+						a=a+57
+					else if(a%8==7)
+						a=a-15
+					else
+						a=a-7;
+					break;
+				}
+
+				MyMoves+=','+a;
+			}
+
+		return (MyMoves);
+	}
+
+function ClickTarget()
+	{
+		var CurPos=Pos[0];
+		var NewPos=Pos[1];
+		if((CurPos%8!=7 && NewPos==CurPos+1) || (CurPos%8!=0 && NewPos==CurPos-1) || (CurPos>7 && NewPos==CurPos-8) || (CurPos<56 && NewPos==CurPos+8) )
+			MovePlayer(NewPos);
+	}
+
+function CheckSquare(evt)
+	{
+		var XPos=evt.clientX;
+		var YPos=evt.clientY;
+		var NewPos=(Math.floor((YPos-50)/50)*8)+(Math.floor((XPos-50)/50));
+		var CurPos=Pos[0];
+
+		if(EmptySquare(NewPos) && ((CurPos%8!=7 && NewPos==CurPos+1) || (CurPos%8!=0 && NewPos==CurPos-1) || (CurPos>7 && NewPos==CurPos-8) || (CurPos<56 && NewPos==CurPos+8)) )
+			MovePlayer(NewPos);
+	}
+
+function KeyPress(evt)
+	{
+		var CurPos=Pos[0];
+		var NewPos=-1;
+
+		if(evt.keyCode==37 && CurPos%8!=0) // West
+			{
+				evt.preventDefault();
+				NewPos=CurPos-1;
+			}
+		if(evt.keyCode==38 && CurPos>7) // North
+			{
+				evt.preventDefault();
+				NewPos=CurPos-8;
+			}
+		if(evt.keyCode==39 && CurPos%8!=7) // East
+			{
+				evt.preventDefault();
+				NewPos=CurPos+1;
+			}
+		if(evt.keyCode==40 && CurPos<56) // South
+			{
+				evt.preventDefault();
+				NewPos=CurPos+8;
+			}
+
+		if(NewPos!=-1 && EmptySquare(NewPos))
+			MovePlayer(NewPos);
+	}
+
+function MovePlayer(NewPos)
+	{
+		if(gIsMoving=='False')
+			{
+				gIsMoving='True';
+				var Object=document.getElementById('Player');
+				Pos[0]=NewPos;
+				Object.setAttribute("transform", "translate("+(NewPos%8)*50+","+Math.floor(NewPos/8)*50+")");
+				var ColResult=CheckCollision('Player',NewPos);
+				if(ColResult=='NextLevel')
+					{
+						Pos[1]=NewPosition();
+						window.setTimeout("document.getElementById('Target').setAttribute(\"transform\", \"translate(\"+(Pos[1]%8)*50+\",\"+Math.floor(Pos[1]/8)*50+\")\")",2*gMoveInterval);
+						window.setTimeout("NewObject('Arrow')",5*gMoveInterval);
+						window.setTimeout("NewObject('Arrow')",7*gMoveInterval);
+						gLevel++;
+						document.getElementById('Level').firstChild.nodeValue='Level: '+gLevel;
+						window.setTimeout("gIsMoving='False'",7*gMoveInterval);
+					}
+				else
+					Move();
+			}
+	}
+
+function Move()
+	{
+		var a=2;
+		var b=Objects.length;
+		while(a<b)
+			{
+				window.setTimeout("Animate("+a+")",a*gMoveInterval);
+				a++;
+			}
+		window.setTimeout("gIsMoving='False'",a*gMoveInterval);
+	}
+
+function Animate(a)
+	{
+		var Object=document.getElementById(a);
+		var b=Pos[a];
+		var MyMoves=Moves[a];
+		MyArray=MyMoves.split(',');
+
+		var c=0;
+		while(MyArray[c]!=b)
+			c++;
+
+		var d=1;
+		b=MyArray[(c+d)%8];
+		while(CheckCollision(Objects[a],b)=='SkipTile' && d<8)
+			{
+				d++;
+				b=MyArray[(c+d)%8];
+			}
+		Pos[a]=b;
+		Object.setAttribute("transform", "translate("+(b%8)*50+","+Math.floor(b/8)*50+") rotate("+Directions[a]*45+",25,25)");
+
+
+		if(CheckCollision(Objects[a],b)=='GameOver')
+			{
+				Object.parentNode.removeChild(Object);
+				Object=document.getElementById('Player');
+				Object.parentNode.removeChild(Object);
+				NewObject('Skull');
+				window.setTimeout("NewGame()",2000);
+			}
+	}
+
+function CheckCollision(Object,NewPos)
+	{
+		var Result='none';
+		var a=0;
+		var b=Pos.length;
+		while(a<b && Result=='none')
+			{
+				if(Pos[a]==NewPos)
+					{
+						if(Object=='Player' && Objects[a]=='Target')
+							Result='NextLevel';
+						else if(Object=='Arrow' && Objects[a]=='Player')
+							Result='GameOver'
+						else if(Object=='Arrow' && (Objects[a]=='Arrow' || Objects[a]=='Target'))
+							Result='SkipTile';
+					}
+				a++;
+			}
+		return (Result);
+	}
+
+function SetInst()
+	{
+		var Object=document.getElementById('Instructions');
+		if(Object.getAttribute('visibility')=='hidden')
+			Object.setAttribute('visibility','visible');
+		else
+			Object.setAttribute('visibility','hidden');
+	}
+
+function SetAnimate()
+	{
+		var Object=document.getElementById('AnimateCheck');
+		if(Object.getAttribute('visibility')=='hidden')
+			{
+				Object.setAttribute('visibility','visible');
+				gMoveInterval=100;
+			}
+		else
+			{
+				Object.setAttribute('visibility','hidden');
+				gMoveInterval=0;
+			}
+	}
+
+document.documentElement.addEventListener("keydown",KeyPress,false)
+
+]]>
+</script>
+
+<defs>
+	<symbol id="arrow">
+		<path d="M5,15 H25 V5 L45,25 L25,45 V35 H5 z"  fill="none" stroke="#ff6666" stroke-width="5" stroke-linejoin="round" />
+	</symbol>
+
+	<symbol id="player">
+		<circle cx="25" cy="25" r="20" stroke="black" stroke-width="2" fill="red"/>
+	</symbol>
+
+	<symbol id="target">
+		<rect x="5" y="5" r="20" width="40" height="40" stroke="black" stroke-width="2" fill="red"/>
+	</symbol>
+
+	<symbol id="skull">
+		<g stroke="#000000">
+			<g fill="#ffffff" stroke-width="1">
+				<path id="bone1" d="M 13.6,41.4 C 13.2,41.9 12.8,42.5 12.5,43.1 C 12.3,43.5 11.9,43.8 11.6,44.1 C 10.9,44.7 10.1,44.7 9.8,43.7 C 9.7,42.8 9.7,42.2 9.5,41.4 C 9,40.9 8.5,40.6 7.9,40 C 7.4,39.5 7.4,38.8 8,38.3 C 10.3,37.6 10.2,38.7 12,38.2 C 14.3,37.4 39.2,27.8 41.2,26.8 C 42.4,25.8 42.1,24.8 43.1,24.1 C 44.1,23.2 44.7,23.4 45.1,23.9 C 45.4,24.8 45.6,25.7 45.5,26.5 C 46.5,27.4 47,27.8 47.5,28.6 C 47.6,29.6 46.7,30 45.7,30 C 44.3,30.2 44.1,29.4 42.5,30 L 13.6,41.4 z " />
+				<path id="bone2" d="M 9,26.7 C 7.8,25.8 8.2,24.7 6.7,23.9 C 6.1,23.6 5.6,23.4 5.1,24.3 C 4.8,25 4.8,25.8 4.7,26.6 C 4.2,27.2 3.5,27.6 3,28.3 C 2.4,29.4 3.4,29.7 4,29.9 C 5.6,30.3 6.1,29.6 7.6,29.9 L 36.8,41.1 C 38.1,42.2 37.6,43.2 38.5,43.8 C 39.4,44.6 39.9,44.7 40.4,44 C 40.9,43.2 40.8,42.3 40.9,41.4 C 41.5,40.8 42,40.5 42.5,39.9 C 43.1,39.3 43.1,38.8 42.2,38.3 C 41.5,38.1 40.8,37.9 40,38.2 C 39.4,38.3 38.9,38.4 38.1,38.1 C 38.1,38.1 11.3,27.9 9,26.7 z " />
+				<path id="main outline" d="M 24.2,41.3 C 22.5,41.3 21.5,41.1 20,40.6 C 18.5,40 17,38.2 16.6,36.7 C 16.3,35.6 16.2,34.2 16.5,33.1 C 16.4,31.6 15.8,30.3 14.2,25.7 C 11.5,20.9 10.4,18.2 10.2,15.3 C 10,12.1 11.8,8.9 14.4,7 C 17.4,5 22.3,4.5 25.3,4.6 C 27.4,4.6 32,5.7 33.6,6.8 C 36.5,8.9 38,11.7 38.1,15 C 38.3,18.3 36.9,20.8 34.1,25.6 C 32.5,30.3 31.9,31.6 31.8,33.1 C 32.1,34.2 32,35.6 31.7,36.7 C 31.4,38.2 29.8,40 28.3,40.6 C 26.8,41.1 25.9,41.3 24.1,41.3" />
+				<path id="left side" d="M 13.3,13.3 C 12.6,13.9 12.7,14.7 12.8,16 C 12.9,17 13.5,18 13.6,18.8 C 13.8,20.7 13.2,22.6 13,24.1 C 12.8,25.9 13.3,27.4 14,28 C 14.7,28.6 15.5,28.8 16.4,29.1 C 17.3,29.3 17.7,29.6 18.3,30.1 C 19.1,30.9 19.2,31.5 19.2,32.3" />
+				<path id="right side" d="M 35.1,13.3 C 35.8,13.8 35.7,14.7 35.6,16 C 35.5,16.9 34.9,17.9 34.8,18.8 C 34.6,20.7 35.2,22.5 35.4,24.1 C 35.6,25.8 35.1,27.3 34.4,27.9 C 33.8,28.5 32.5,28.8 32,29 C 31.4,29.2 30.7,29.6 30.1,30.1 C 29.4,30.7 29.2,31.5 29.2,32.2" />
+			</g>
+
+			<g fill="none" stroke-width="0.4">
+				<path id="left jaw outline" d="M 16.7,29.5 C 17.2,30.6 17.4,31 17.7,32.2 C 18,33.2 18.1,33.8 18.3,35.3" />
+				<path id="right jaw outline" d="M 31.6,29.4 C 31.1,30.5 31,31 30.6,32.1 C 30.3,33.1 30.2,33.8 30,35.2" />
+				<path id="upper teeth outline" d="M 18.8,32.1 C 20.1,32.9 22.3,33 24.3,32.9 C 26.5,32.9 28.4,32.8 29.6,32.1" />
+				<path id="middle teeth outline" d="M 19.3,34.1 C 20.7,34.9 22.3,35.2 24.2,35.2 C 26.2,35.1 27.7,35 29.1,34.1" />
+				<path id="lower teeth outline" d="M 18.2,35.1 C 19.7,36.9 21.8,37.2 24.2,37.3 C 26.8,37.3 29.4,36.4 30,35.1" />
+				<path id="teeth vert"  d="M 19.2,32.5 L 19.2,36 M 20.4,32.9 L 20.4,36.6 M 21.7,33 L 21.7,36.9 M 22.9,33.1 L 22.9,37 M 24.2,33.1 L 24.2,37.1 M 25.5,33.1 L 25.5,37.1 M 26.6,33 L 26.6,36.9 M 27.9,32.8 L 27.9,36.5 M 29.1,32.3 L 29.1,35.8" />
+			</g>
+
+			<g fill="#000000" stroke="none">
+				<path id="left eye" d="M 16.7,19.8 C 17.9,19.6 19,19.5 20.2,19.4 C 21.7,19 22.5,20.7 22.1,22 C 21.5,23.1 20.8,24.1 19.9,25 C 19.3,25.8 18.5,25.9 17.7,25.6 C 17.1,25.5 16.6,25.1 16,24.3 C 15.7,23.5 15.5,23.2 15.1,22.3 C 14.9,21.4 15.3,20.2 16.7,19.8 z " />
+				<path id="right eye" d="M 31.6,19.8 C 30.5,19.6 29.3,19.5 28.2,19.4 C 26.6,19 25.9,20.7 26.3,22 C 26.8,23.1 27.6,24.1 28.4,25 C 29.1,25.8 29.9,25.9 30.6,25.6 C 31.2,25.5 31.8,25.1 32.4,24.3 C 32.7,23.5 32.9,23.2 33.2,22.3 C 33.5,21.4 33.1,20.2 31.6,19.8 z " />
+				<path id="left nostril" d="M 23.9,24.5 C 23,25.2 22.8,25.4 22.4,26.1 C 22.2,26.3 21.9,26.9 21.8,27.4 C 21.7,27.8 21.7,28.4 21.7,28.7 C 21.7,29.8 22,30.4 22.4,30.4 C 22.8,30.4 23.2,30 23.9,29.2" />
+				<path id="right nostril" d="M 24.5,24.6 C 25.3,25.2 25.5,25.4 26,26.1 C 26.1,26.3 26.4,27 26.5,27.4 C 26.6,27.8 26.7,28.4 26.7,28.7 C 26.7,29.8 26.3,30.5 25.9,30.4 C 25.6,30.4 25.2,30.1 24.5,29.3" />
+			</g>
+		</g>
+
+	</symbol>
+
+</defs>
+
+<g transform="translate(50,50)">
+
+<g id="board" style="fill:#99ff99;stroke:#6666cc;stroke-width:3">
+<rect id="Background" x="0" y="0" width="400" height="400" rx="10" ry="10" onclick="CheckSquare(evt)" />
+<path id="Grid" fill="none" d="M50,0 V400 M100,0 V400 M150,0 V400 M200,0 V400 M250,0 V400 M300,0 V400 M350,0 V400 M0,50 H400 M0,100 H400 M0,150 H400 M0,200 H400 M0,250 H400 M0,300 H400 M0,350 H400" />
+</g>
+
+
+<g id="text" fill="#66f" font-family="sans-serif">
+
+<g id="title" stroke="#000000" stroke-width="3" fill="#ff6666" font-weight="bold" font-size="150">
+	<text x="430" y="90">S</text>
+	<text x="440" y="190">T</text>
+	<text x="450" y="270">E</text>
+	<text x="430" y="370">P</text>
+	<text x="440" y="460">S</text>
+</g>
+
+<text id="Level" x="0" y="450" font-size="40" font-weight="bold" > </text>
+
+<text x="230" y="425" onclick="SetInst()" font-size="16" font-weight="bold" cursor="pointer">Instructions</text>
+	<g id="checkbox">
+	<text x="230" y="450" onclick="SetAnimate()" font-size="16" font-weight="bold" >Animate Arrows</text>
+	<rect x="360" y="438" onclick="SetAnimate()" width="15" height="15" rx="1" ry="1" style="fill:#ffffff;stroke:#6666cc;stroke-width:2"/>
+	<path id="AnimateCheck" onclick="SetAnimate()" fill="none" stroke="#ff6666" stroke-width="5" stroke-linejoin="round" d="M358,441 L366,450 L378,435" />
+</g>
+
+</g>
+
+<g id="Instructions" visibility="hidden" font-family="sans-serif" font-size="16" fill="#333333">
+	<rect x="0" y="0" width="400" height="400" rx="10" ry="10" fill="#ffffff"/>
+	<text x="15" y="50" font-weight="bold">Instructions:</text>
+	<text x="15" y="70">Steps is a turn based game where you must move</text>
+	<text x="15" y="90">the red circle to the red square while avoiding the</text>
+	<text x="15" y="110">arrows.</text>
+	<text x="15" y="150">You can move 1 square at a time either up, down,</text>
+	<text x="15" y="170">left or right using the mouse or the arrow keys. You</text>
+	<text x="15" y="190">move first, then each of the arrows will move in turn</text>
+	<text x="15" y="210">onto the next available square in the direction they</text>
+	<text x="15" y="230">are pointing. When an arrow reaches the edge of</text>
+	<text x="15" y="250">the board it will wrap around onto the opposite edge.</text>
+	<text x="15" y="270">With each new level the number of arrows increases.</text>
+	<text x="15" y="300">Good luck!</text>
+	<text x="100" y="300" onclick="SetInst()" fill="#66f" text-decoration="underline" cursor="pointer" font-weight="bold">Close</text>
+</g>
+
+
+
+</g>
+
+</svg>

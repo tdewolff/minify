@@ -28,6 +28,8 @@ func TestSVG(t *testing.T) {
 		{`<style/><![CDATA[ <<<<< ]]>`, `<style/><![CDATA[ <<<<< ]]>`},
 		{`<svg version="1.0"></svg>`, `<svg version="1.0"/>`},
 		{`<svg version="1.1" x="0" y="0px" width="100%" height="100%"><path/></svg>`, `<svg><path/></svg>`},
+		// TODO: what abour x="" y="" for viewBox?
+		//{`<svg width="24" height="24" viewBox="0 0 24 24"></svg>`, `<svg width="24" height="24"/>`},
 		{`<path x="a"> </path>`, `<path x="a"/>`},
 		{`<path x=""> </path>`, `<path/>`},
 		{`<path x=" a "/>`, `<path x="a"/>`},
@@ -55,6 +57,7 @@ func TestSVG(t *testing.T) {
 		{`<rect x="5" y="10" width="30%" height="100%"/>`, `<rect x="5" y="10" width="30%" height="100%"/>`},
 		{`<svg contentStyleType="text/json ; charset=iso-8859-1"><style>{a : true}</style></svg>`, `<svg contentStyleType="text/json;charset=iso-8859-1"><style>{a : true}</style></svg>`},
 		{`<metadata><dc:title /></metadata>`, ``},
+		{`<metadata><dc:title />`, ``},
 
 		// from SVGO
 		{`<!DOCTYPE bla><?xml?><!-- comment --><metadata/>`, ``},
@@ -63,7 +66,7 @@ func TestSVG(t *testing.T) {
 		{`<path stroke="url(#UPPERCASE)"/>`, `<path stroke="url(#UPPERCASE)"/>`},                                       // #117
 		{`<rect height="10"/><path/>`, `<path/>`},                                                                      // #244
 		{`<rect height="10"><path/></rect>`, ``},                                                                       // #244
-		{`<rect height="10"><path/></g>`, ``},                                                                          // #244
+		{`<foreignObject><div></div></foreignObject>`, `<foreignObject><div></div></foreignObject>`},                   // #291
 
 		// go fuzz
 		{`<0 d=09e9.6e-9e0`, `<0 d="09e9.6e-9e0"`},

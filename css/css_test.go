@@ -27,6 +27,8 @@ func TestCSS(t *testing.T) {
 		{"@import 'file';", "@import 'file'"},
 		{"@import url('file');", "@import 'file'"},
 		{"@import url(//url);", `@import "//url"`},
+		{"@import url(\n//url\n);", `@import "//url"`},
+		{"@import url();", `@import ""`},
 		{"@font-face { x:y; }", "@font-face{x:y}"},
 
 		{"input[type=\"radio\"]{x:y}", "input[type=radio]{x:y}"},
@@ -205,6 +207,7 @@ func TestCSSInline(t *testing.T) {
 		{"font:medium/normal 'Arial'", "font:medium arial"},
 		{"font-family:'Arial', 'Times New Roman';", "font-family:arial,times new roman"},
 		{"font-family:'a  b';", "font-family:'a  b'"},
+		{"font-family:' a b ';", "font-family:' a b '"},
 		{"outline: none;", "outline:none"},
 		{"outline: solid black 0;", "outline:solid #000 0"},
 		{"outline: none black medium;", "outline:#000"},
@@ -217,6 +220,7 @@ func TestCSSInline(t *testing.T) {
 		{"border-color: currentcolor currentcolor currentcolor;", "border-color:initial"},
 		{"border-color: red red red;", "border-color:red"},
 		{"border-left-color: currentcolor;", "border-left-color:initial"},
+		{"border: medium none;", "border:none"}, // #294
 		{"outline-color: white;", "outline-color:#fff"},
 		{"column-rule: medium currentcolor none;", "column-rule:none"},
 		{"text-shadow: white 5px 5px;", "text-shadow:#fff 5px 5px"},
@@ -238,14 +242,15 @@ func TestCSSInline(t *testing.T) {
 		{"flex:5 1 0", "flex:5"},
 		{"flex:5 1 0%", "flex:5"},
 		{"flex:5 1 0px", "flex:5"},
-		{"flex:5 0 0%", "flex:5 0 0"},
-		{"flex:5 0 0px", "flex:5 0 0"},
-		{"flex:0 1 auto", "flex:0 1"},
-		{"flex:none", "flex:0 0"},
-		{"flex:auto", "flex:1 1"},
-		{"flex:initial", "flex:0 1"},
-		{"flex:initial", "flex:0 1"},
-		{"flex:5 auto", "flex:5 1"},
+		{"flex:5 0 0%", "flex:5 0"},
+		{"flex:5 0 0px", "flex:5 0"},
+		{"flex:0 1 auto", "flex:initial"},
+		{"flex:1 1 auto", "flex:auto"},
+		{"flex:0 0 auto", "flex:none"},
+		{"flex:initial", "flex:initial"},
+		{"flex:auto", "flex:auto"},
+		{"flex:none", "flex:none"},
+		{"flex:5 auto", "flex:5 auto"},
 		{"flex:5 0px", "flex:5"},
 		{"flex:5 0%", "flex:5"},
 		{"flex:5 0", "flex:5 0"},
@@ -365,6 +370,9 @@ func TestCSSInline(t *testing.T) {
 
 		// go-fuzz
 		{"FONT-FAMILY: ru\"", "font-family:ru\""},
+		{`d:hsl(0033333333333333333333333333333333333333333333333333333333333333333333333333333200,040000199823736,2444)`, `d:hsl(33333333333333333333333333333333333333333333333333333333333333333333333333333200,40000199823736,2444)`},
+		{`d:hsl(-360000000000000000000000000000,50%,50%)`, `d:#bf4040`},
+		{`d:hsl(360000000000000000000000000000,50%,50%)`, `d:#bf4040`},
 	}
 
 	m := minify.New()

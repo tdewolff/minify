@@ -61,7 +61,7 @@ sudo apt-get install minify
 
     Options:
       -a, --all                              Minify all files, including hidden files and files in hidden directories
-          --css-precision int                 Number of significant digits to preserve in numbers, 0 is all (default 0)
+          --css-precision int                Number of significant digits to preserve in numbers, 0 is all (default 0)
       -h, --help                             Show usage
           --html-keep-conditional-comments   Preserve all IE conditional comments
           --html-keep-default-attrvals       Preserve default attribute values

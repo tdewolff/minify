@@ -1,0 +1,17 @@
+{
+	"scopes": [
+		"repo",
+		"user"
+	],
+	"token": "5199831f4dd3b79e7c5b7e0ebe75d67aa66e79d4",
+	"updated_at": "2012-11-14T14:04:24Z",
+	"url": "https://api.github.com/authorizations/2",
+	"app": {
+		"url": "https://developer.github.com/v3/oauth/#oauth-authorizations-api",
+		"name": "GitHub API"
+	},
+	"created_at": "2012-11-14T14:04:24Z",
+	"note_url": null,
+	"id": 2,
+	"note": "getting-started"
+}

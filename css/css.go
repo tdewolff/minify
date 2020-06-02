@@ -160,7 +160,7 @@ func (c *cssMinifier) minifyGrammar() {
 		gt, _, data := c.p.Next()
 		switch gt {
 		case css.ErrorGrammar:
-			if _, ok := c.p.Err().(*parse.Error); ok {
+			if c.p.HasParseError() {
 				if semicolonQueued {
 					c.w.Write(semicolonBytes)
 				}
@@ -195,7 +195,15 @@ func (c *cssMinifier) minifyGrammar() {
 			if ToHash(data[1:]) == Import && len(values) == 2 && values[1].TokenType == css.URLToken {
 				url := values[1].Data
 				if url[4] != '"' && url[4] != '\'' {
-					url = url[3:]
+					a := 4
+					for parse.IsWhitespace(url[a]) || parse.IsNewline(url[a]) {
+						a++
+					}
+					b := len(url) - 2
+					for parse.IsWhitespace(url[b]) || parse.IsNewline(url[b]) {
+						b--
+					}
+					url = url[a-1 : b+2]
 					url[0] = '"'
 					url[len(url)-1] = '"'
 				} else {
@@ -492,10 +500,16 @@ func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
 					separator := arg.TokenType == css.CommaToken || i != 5 && arg.TokenType == css.WhitespaceToken || i == 5 && arg.TokenType == css.DelimToken && arg.Data[0] == '/'
 					if i%2 == 0 && !numeric || i%2 == 1 && !separator {
 						valid = false
+						break
 					} else if numeric {
 						var d float64
 						if arg.TokenType == css.PercentageToken {
-							d, _ = strconv.ParseFloat(string(arg.Data[:len(arg.Data)-1]), 32) // can never fail
+							var err error
+							d, err = strconv.ParseFloat(string(arg.Data[:len(arg.Data)-1]), 32) // can overflow
+							if err != nil {
+								valid = false
+								break
+							}
 							d /= 100.0
 							if d < minify.Epsilon {
 								d = 0.0
@@ -503,7 +517,12 @@ func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
 								d = 1.0
 							}
 						} else {
-							d, _ = strconv.ParseFloat(string(arg.Data), 32) // can never fail
+							var err error
+							d, err = strconv.ParseFloat(string(arg.Data), 32) // can overflow
+							if err != nil {
+								valid = false
+								break
+							}
 						}
 						vals = append(vals, d)
 					}
@@ -544,14 +563,11 @@ func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
 						values[i] = rgbToToken(vals[0], vals[1], vals[2])
 						break
 					} else if fun == Hsl || fun == Hsla && args[0].TokenType == css.NumberToken && args[2].TokenType == css.PercentageToken && args[4].TokenType == css.PercentageToken {
-						for vals[0] < 0.0 {
-							vals[0] += 360.0
-						}
-						for 360.0 <= vals[0] {
-							vals[0] -= 360.0
-						}
 						vals[0] /= 360.0
-
+						_, vals[0] = math.Modf(vals[0])
+						if vals[0] < 0.0 {
+							vals[0] = 1.0 + vals[0]
+						}
 						r, g, b := css.HSL2RGB(vals[0], vals[1], vals[2])
 						values[i] = rgbToToken(r, g, b)
 						break
@@ -1055,29 +1071,38 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			values = []Token{{css.IdentToken, noneBytes, nil, 0, None}}
 		}
 	case Flex:
-		if len(values) == 1 && values[0].TokenType == css.IdentToken {
-			if values[0].Ident == None {
-				values = []Token{{css.NumberToken, zeroBytes, nil, 0, 0}, {css.NumberToken, zeroBytes, nil, 0, 0}}
-			} else if values[0].Ident == Auto {
-				values = []Token{{css.NumberToken, oneBytes, nil, 0, 0}, {css.NumberToken, oneBytes, nil, 0, 0}}
-			} else if values[0].Ident == Initial {
-				values = []Token{{css.NumberToken, zeroBytes, nil, 0, 0}, {css.NumberToken, oneBytes, nil, 0, 0}}
-			}
-		} else if len(values) == 2 && values[0].TokenType == css.NumberToken {
+		if len(values) == 2 && values[0].TokenType == css.NumberToken {
 			if values[1].TokenType != css.NumberToken && values[1].IsZero() {
 				values = values[:1] // remove <flex-basis> if it is zero
-			} else if values[1].Ident == Auto {
-				values[1].TokenType = css.NumberToken
-				values[1].Data = oneBytes // replace <flex-basis> if it is auto by <flex-shrink>
-				values[1].Ident = 0
 			}
 		} else if len(values) == 3 && values[0].TokenType == css.NumberToken && values[1].TokenType == css.NumberToken {
-			if len(values[1].Data) == 1 && values[1].Data[0] == '1' && values[2].IsZero() {
-				values = values[:1] // remove <flex-shrink> and <flex-basis> if they are 1 and 0 respectively
-			} else if values[2].Ident == Auto {
-				values = values[:2] // remove auto to write 2-value syntax of <flex-grow> <flex-shrink>
-			} else {
-				values[2] = minifyLengthPercentage(values[2])
+			if len(values[0].Data) == 1 && len(values[1].Data) == 1 {
+				grow := values[0].Data[0] == '1'
+				shrink := values[1].Data[0] == '1'
+				if values[2].Ident == Auto {
+					if !grow && shrink {
+						values = values[:1]
+						values[0].TokenType = css.IdentToken
+						values[0].Data = initialBytes
+						values[0].Ident = Initial
+					} else if grow && shrink {
+						values = values[:1]
+						values[0].TokenType = css.IdentToken
+						values[0].Data = autoBytes
+						values[0].Ident = Auto
+					} else if !grow && !shrink {
+						values = values[:1]
+						values[0].TokenType = css.IdentToken
+						values[0].Data = noneBytes
+						values[0].Ident = None
+					}
+				} else if shrink && values[2].IsZero() {
+					values = values[:1] // remove <flex-shrink> and <flex-basis> if they are 1 and 0 respectively
+				} else if values[2].IsZero() {
+					values = values[:2] // remove auto to write 2-value syntax of <flex-grow> <flex-shrink>
+				} else {
+					values[2] = minifyLengthPercentage(values[2])
+				}
 			}
 		}
 	case Flex_Basis:

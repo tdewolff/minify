@@ -101,6 +101,10 @@ func TestHTML(t *testing.T) {
 		{`<p class="  name  ">`, `<p class=name>`},
 		{`<p onclick="  javascript:lala  ">`, `<p onclick=lala>`},
 		{`<p url="  http://test  ">`, `<p url=http://test>`},
+		{`a<span> <img> </span>b`, `a<span> <img> </span>b`},
+		{`a <span> <img> </span>b`, `a <span><img> </span>b`},
+		{`a<picture> <img> </picture>b`, `a<picture> <img> </picture>b`},
+		{`a <picture> <img> </picture>b`, `a <picture><img> </picture>b`},
 
 		// from HTML Minifier
 		{`<DIV TITLE="blah">boo</DIV>`, `<div title=blah>boo</div>`},
@@ -116,6 +120,8 @@ func TestHTML(t *testing.T) {
 		{`<table><thead><tr><th>foo</th><th>bar</th></tr></thead><tfoot><tr><th>baz</th><th>qux</th></tr></tfoot><tbody><tr><td>boo</td><td>moo</td></tr></tbody></table>`,
 			`<table><thead><tr><th>foo<th>bar<tfoot><tr><th>baz<th>qux<tbody><tr><td>boo<td>moo</table>`},
 		{`<select><option>foo</option><option>bar</option></select>`, `<select><option>foo<option>bar</select>`},
+		{`<select><optgroup><option>foo</option></optgroup><optgroup><option>bar</option></optgroup><option>zoo</option></select>`, `<select><optgroup><option>foo<optgroup><option>bar</optgroup><option>zoo</select>`},
+		{`<select>text<option>foo</option>text<optgroup>text<option>bar</option>text</optgroup>text</select>`, `<select><option>foo<optgroup><option>bar</select>`},
 		{`<meta name="keywords" content="A, B">`, `<meta name=keywords content="A,B">`},
 		{`<iframe><html> <p> x </p> </html></iframe>`, `<iframe><p>x</iframe>`},
 		{`<math> &int;_a_^b^{f(x)<over>1+x} dx </math>`, `<math> &int;_a_^b^{f(x)<over>1+x} dx </math>`},
@@ -174,7 +180,7 @@ func TestHTMLCSSJS(t *testing.T) {
 	}{
 		// bugs
 		{`<div style="font-family: Arial, &#39;sans-serif&#39;; font-size: 22px;">`, `<div style=font-family:Arial,sans-serif;font-size:22px>`}, // #272
-		{`<style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;}</style>`, `<style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;}</style>`},
+		{`<style amp-boilerplate>body{-webkit-animation:-amp-start 8s    steps(1,end) 0s 1 normal both;}</style>`, `<style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;}</style>`},
 	}
 
 	m := minify.New()

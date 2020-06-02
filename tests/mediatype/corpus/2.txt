@@ -1,0 +1,1 @@
+text/svg+xml;base64
