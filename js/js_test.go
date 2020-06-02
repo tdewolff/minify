@@ -97,7 +97,8 @@ func TestJS(t *testing.T) {
 		{`typeof a`, `typeof a`},
 		{`new RegExp()`, `new RegExp()`},
 		{`new new a()()`, `new new a()()`},
-		{`switch (a) { case b: 5 default: 6}`, `switch(a){case b:5;default:6}`},
+		{`switch (a) { case b: 5; default: 6}`, `switch(a){case b:5;default:6}`},
+		{`switch (a) { case b: {var c;return c}; default: 6}`, `switch(a){case b:{var c;return c}default:6}`},
 		{`with (a = b) x`, `with(a=b)x`},
 		{`with (a = b) {x}`, `with(a=b)x`},
 		{`import 'path'`, `import'path'`},
@@ -169,6 +170,10 @@ func TestJS(t *testing.T) {
 		{`x=function(){function name(arg1, arg2){return arg1, arg2} return a}`, `x=function(){function b(c,d){return c,d}return a}`},
 		{`x=function(){function add(l,r){return add(l,r)}function nadd(l,r){return-add(l,r)}}`, `x=function(){function a(b,c){return a(b,c)}function b(c,d){return-a(c,d)}}`},
 		{`function a(){var b}`, `function a(){var b}`},
+		//{`import name from 'file'; name('str')`, `import a from'file';a('str')`},
+
+		// edge-cases
+		{`let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`, `let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`},
 	}
 
 	m := minify.New()
