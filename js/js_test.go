@@ -128,16 +128,17 @@ func TestJS(t *testing.T) {
 		{`if(a){b = 5;return b}`, `if(a){b=5;return b}`},
 		{`if(a);`, `a`},
 		{`if(a){}`, `a`},
-		{`if(a) b`, `if(a)b`},
+		{`if(a) b`, `a&&b`},
 		{`if(a){}else;`, `a`},
 		{`if(a){}else{}`, `a`},
 		{`if(a){}else{;}`, `a`},
-		{`if(a){}else{a}`, `if(a);else a`},
-		{`if(a){b=c}else if(d){e=f}`, `if(a)b=c;else if(d)e=f`},
-		{`if(a){b=c;y=z}else if(d){e=f}`, `if(a){b=c;y=z}else if(d)e=f`},
+		{`if(a){}else{a}`, `a||a`},
+		{`if(a){b=c}else if(d){e=f}`, `a?b=c:d&&e=f`},
+		{`if(a){b=c;y=z}else if(d){e=f}`, `if(a){b=c;y=z}else d&&e=f`},
 		{`if(a)while(b){c;d}else e`, `if(a)while(b){c;d}else e`},
 		{`if(a)while(b){c}else e`, `if(a)while(b)c;else e`},
-		{`if(a){ if(b) c } else e`, `if(a){if(b)c}else e`},
+		{`if(a){ if(b) c }`, `a&&b&&c`},
+		{`if(a){ if(b) c } else e`, `a?b&&c:e`},
 		{`if(a){ if(b) c; else d} else e`, `a?b?c:d:e`},
 		{`if(a){ if(b) c; else for(x;y;z){f=g}} else e`, `if(a)if(b)c;else for(x;y;z)f=g;else e`},
 		{`if(a){ if(b) c; else {for(x;y;z){f=g}}} else e`, `if(a)if(b)c;else for(x;y;z)f=g;else e`},
@@ -171,11 +172,19 @@ func TestJS(t *testing.T) {
 		{`var undefined=5;x=undefined`, `var undefined=5;x=undefined`},
 		{`class a extends undefined {}`, `class a extends(void 0){}`},
 
-		// minify statements to expressions
+		// statements to expressions
 		{`if(a)`, `a`},
-		{`if(a)b=c`, `if(a)b=c`},
+		{`if(a)b=c`, `a&&(b=c)`},
+		{`if(a||d)b=c`, `(a||d)&&(b=c)`},
+		{`if(a);else b=c`, `a||(b=c)`},
 		{`if(a)b=c;else e`, `a?b=c:e`},
+		{`if(a)b=c,f;else e`, `a?(b=c,f):e`},
 		{`if(a){b=c}else{if(d){e=f}else{g=h}}`, `a?b=c:d?e=f:g=h`},
+
+		// remove groups
+		{`a=()`, `a=()`},
+		{`a=(b+c)+d`, `a=b+c+d`},
+		{`a=(b+c)(d)`, `a=(b+c)(d)`},
 
 		// variable renaming
 		{`x=function(){var name}`, `x=function(){var a}`},
