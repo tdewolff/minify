@@ -202,9 +202,6 @@ func TestJS(t *testing.T) {
 		{`function*x(){a=(yield b)}`, `function*x(){a=yield b}`},
 		{`function*x(){a=yield (yield b)}`, `function*x(){a=yield yield b}`},
 
-		// TODO: test parser for yield expressions outside generator
-		// TODO: test for optional chaining
-
 		// variable renaming
 		{`x=function(){var name}`, `x=function(){var a}`},
 		{`x=function(){var name; name++}`, `x=function(){var a;a++}`},

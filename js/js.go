@@ -1,6 +1,10 @@
 // Package js minifies ECMAScript5.1 following the specifications at http://www.ecma-international.org/ecma-262/5.1/.
 package js
 
+// TODO: test optional chaining (with parenthesis removal)
+// TODO: test yield functionality outside generator in parser
+// TODO: merge sequence of expression statements possibly ending in return or throw
+
 import (
 	"bytes"
 	"io"
