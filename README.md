@@ -50,19 +50,10 @@ The core functionality associates mimetypes with minification functions, allowin
 		- [Templates](#templates)
 	- [License](#license)
 
-### Status
-
-* CSS: **fully implemented**
-* HTML: **fully implemented**
-* JS: improved JSmin implementation
-* JSON: **fully implemented**
-* SVG: partially implemented; in development
-* XML: **fully implemented**
-
 ### Roadmap
 
 - [ ] Use ASM/SSE to further speed-up core parts of the parsers/minifiers
-- [ ] Improve JS minifiers by shortening variables and proper semicolon omission
+- [x] Improve JS minifiers by shortening variables and proper semicolon omission
 - [ ] Speed-up SVG minifier, it is very slow
 - [x] Proper parser error reporting and line number + column information
 - [ ] Generation of source maps (uncertain, might slow down parsers too much if it cannot run separately nicely)
@@ -227,13 +218,16 @@ Options:
 
 ## JS
 
-The JS minifier is pretty basic. It removes comments, whitespace and line breaks whenever it can. It employs all the rules that [JSMin](http://www.crockford.com/javascript/jsmin.html) does too, but has additional improvements. For example the prefix-postfix bug is fixed.
+The JS minifier typically shaves off about 35% -- 65% of filesize depening on the file, which is a compression close to many other minifiers. Common speeds of PHP and JS implementations are about 100-300kB/s (see [Uglify2](http://lisperator.net/uglifyjs/), [Adventures in PHP web asset minimization](https://www.happyassassin.net/2014/12/29/adventures-in-php-web-asset-minimization/)). This implementation or orders of magnitude faster, around ~30MB/s.
 
-Common speeds of PHP and JS implementations are about 100-300kB/s (see [Uglify2](http://lisperator.net/uglifyjs/), [Adventures in PHP web asset minimization](https://www.happyassassin.net/2014/12/29/adventures-in-php-web-asset-minimization/)). This implementation or orders of magnitude faster, around ~80MB/s.
+The following features are implemented:
 
-TODO:
-- shorten local variables / function parameters names
-- precise semicolon and newline omission
+- remove superfluous whitespace
+- remove superfluous semicolons
+- shorten `true`, `false`, and `undefined`
+- rename variables and functions to shorter names (not in global scope)
+- collapse if/else statements to expressions
+- merge sequential expression statements to one, including into `return` and `throw`
 
 ## JSON
 
