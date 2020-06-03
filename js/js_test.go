@@ -199,6 +199,9 @@ func TestJS(t *testing.T) {
 		{`a=a&&(b||c)`, `a=a&&(b||c)`},
 		{`a=c&&(a??b)`, `a=c&&(a??b)`},
 		{`a=!(!b)`, `a=!!b`},
+		{`a=(b)?.(c,d)`, `a=b?.(c,d)`},
+		{`a=(b,c)?.(d)`, `a=(b,c)?.(d)`},
+		{`a=(b?c:e)?.(d)`, `a=(b?c:e)?.(d)`},
 		{`function*x(){a=(yield b)}`, `function*x(){a=yield b}`},
 		{`function*x(){a=yield (yield b)}`, `function*x(){a=yield yield b}`},
 
