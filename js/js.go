@@ -92,7 +92,30 @@ func (m *jsMinifier) writeSemicolon() {
 	}
 }
 
+func (m *jsMinifier) stmtToExpr(i js.IStmt) js.IStmt {
+	if stmt, ok := i.(*js.IfStmt); ok {
+		hasIf := !isEmptyStmt(stmt.Body)
+		hasElse := !isEmptyStmt(stmt.Else)
+		if !hasIf && !hasElse {
+			return &js.ExprStmt{stmt.Cond}
+		} else if hasIf && hasElse {
+			stmt.Body = m.stmtToExpr(stmt.Body)
+			stmt.Else = m.stmtToExpr(stmt.Else)
+			Y, isExprBody := stmt.Body.(*js.ExprStmt)
+			Z, isExprElse := stmt.Else.(*js.ExprStmt)
+			if isExprBody && isExprElse {
+				return &js.ExprStmt{&js.ConditionalExpr{stmt.Cond, Y.Value, Z.Value}}
+			}
+		}
+	} else if stmt, ok := i.(*js.BlockStmt); ok && len(stmt.List) == 1 {
+		return m.stmtToExpr(stmt.List[0])
+	}
+	return i
+}
+
 func (m *jsMinifier) minifyStmt(i js.IStmt) {
+	i = m.stmtToExpr(i)
+
 	switch stmt := i.(type) {
 	case *js.ExprStmt:
 		m.minifyExpr(stmt.Value, false)
