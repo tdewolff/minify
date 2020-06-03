@@ -769,7 +769,26 @@ func (r *renamer) next(name []byte) []byte {
 	if name[len(name)-1] == 'z' {
 		name[len(name)-1] = 'A'
 	} else if name[len(name)-1] == 'Z' {
-		name = append(name, 'a')
+		isLast := true
+		for i := len(name) - 2; 0 <= i; i-- {
+			if name[i] != 'Z' {
+				if name[i] == 'z' {
+					name[i] = 'A'
+				} else {
+					name[i]++
+				}
+				for j := i + 1; j < len(name); j++ {
+					name[j] = 'a'
+				}
+				isLast = false
+			}
+		}
+		if isLast {
+			for j := 0; j < len(name); j++ {
+				name[j] = 'a'
+			}
+			name = append(name, 'a')
+		}
 	} else {
 		name[len(name)-1]++
 	}
