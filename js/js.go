@@ -3,7 +3,6 @@ package js
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 
 	"github.com/tdewolff/minify/v2"
@@ -98,16 +97,16 @@ func (m *jsMinifier) stmtToExpr(i js.IStmt) js.IStmt {
 		hasIf := !isEmptyStmt(stmt.Body)
 		hasElse := !isEmptyStmt(stmt.Else)
 		if !hasIf && !hasElse {
-			return &js.ExprStmt{stmt.Cond}
+			return &js.ExprStmt{&js.GroupExpr{stmt.Cond}}
 		} else if hasIf && !hasElse {
 			stmt.Body = m.stmtToExpr(stmt.Body)
 			if Y, isExprBody := stmt.Body.(*js.ExprStmt); isExprBody {
-				return &js.ExprStmt{&js.BinaryExpr{js.AndToken, stmt.Cond, Y.Value}}
+				return &js.ExprStmt{&js.BinaryExpr{js.AndToken, &js.GroupExpr{stmt.Cond}, &js.GroupExpr{Y.Value}}}
 			}
 		} else if !hasIf && hasElse {
 			stmt.Else = m.stmtToExpr(stmt.Else)
 			if Y, isExprElse := stmt.Else.(*js.ExprStmt); isExprElse {
-				return &js.ExprStmt{&js.BinaryExpr{js.OrToken, stmt.Cond, Y.Value}}
+				return &js.ExprStmt{&js.BinaryExpr{js.OrToken, &js.GroupExpr{stmt.Cond}, &js.GroupExpr{Y.Value}}}
 			}
 		} else if hasIf && hasElse {
 			stmt.Body = m.stmtToExpr(stmt.Body)
@@ -115,7 +114,7 @@ func (m *jsMinifier) stmtToExpr(i js.IStmt) js.IStmt {
 			Y, isExprBody := stmt.Body.(*js.ExprStmt)
 			Z, isExprElse := stmt.Else.(*js.ExprStmt)
 			if isExprBody && isExprElse {
-				return &js.ExprStmt{&js.ConditionalExpr{stmt.Cond, Y.Value, Z.Value}}
+				return &js.ExprStmt{&js.ConditionalExpr{&js.GroupExpr{stmt.Cond}, &js.GroupExpr{Y.Value}, &js.GroupExpr{Z.Value}}}
 			}
 		}
 	} else if stmt, ok := i.(*js.BlockStmt); ok && len(stmt.List) == 1 {
@@ -388,7 +387,7 @@ func (m *jsMinifier) minifyParams(params js.Params) {
 			m.write([]byte(","))
 		}
 		m.write([]byte("..."))
-		m.minifyBindingElement(*params.Rest)
+		m.minifyBinding(params.Rest)
 	}
 	m.write([]byte(")"))
 }
@@ -463,7 +462,7 @@ func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
 	m.minifyBlockStmt(decl.Body)
 }
 
-func (m *jsMinifier) minifyArrowFuncDecl(decl js.ArrowFuncDecl) {
+func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
 	if decl.Async {
 		m.write([]byte("async"))
 	}
@@ -582,20 +581,20 @@ var unaryPrecMap = map[js.TokenType]js.OpPrec{
 	js.SubToken:      js.OpPrefix,
 }
 
-var binaryPrecMap = map[js.TokenType]js.OpPrec{
-	js.EqToken:         js.OpAssign,
-	js.MulEqToken:      js.OpAssign,
-	js.DivEqToken:      js.OpAssign,
-	js.ModEqToken:      js.OpAssign,
-	js.ExpEqToken:      js.OpAssign,
-	js.AddEqToken:      js.OpAssign,
-	js.SubEqToken:      js.OpAssign,
-	js.LtLtEqToken:     js.OpAssign,
-	js.GtGtEqToken:     js.OpAssign,
-	js.GtGtGtEqToken:   js.OpAssign,
-	js.BitAndEqToken:   js.OpAssign,
-	js.BitXorEqToken:   js.OpAssign,
-	js.BitOrEqToken:    js.OpAssign,
+var binaryLeftPrecMap = map[js.TokenType]js.OpPrec{
+	js.EqToken:         js.OpAssign + 1,
+	js.MulEqToken:      js.OpAssign + 1,
+	js.DivEqToken:      js.OpAssign + 1,
+	js.ModEqToken:      js.OpAssign + 1,
+	js.ExpEqToken:      js.OpAssign + 1,
+	js.AddEqToken:      js.OpAssign + 1,
+	js.SubEqToken:      js.OpAssign + 1,
+	js.LtLtEqToken:     js.OpAssign + 1,
+	js.GtGtEqToken:     js.OpAssign + 1,
+	js.GtGtGtEqToken:   js.OpAssign + 1,
+	js.BitAndEqToken:   js.OpAssign + 1,
+	js.BitXorEqToken:   js.OpAssign + 1,
+	js.BitOrEqToken:    js.OpAssign + 1,
 	js.LtToken:         js.OpCompare,
 	js.LtEqToken:       js.OpCompare,
 	js.GtToken:         js.OpCompare,
@@ -608,7 +607,49 @@ var binaryPrecMap = map[js.TokenType]js.OpPrec{
 	js.NotEqEqToken:    js.OpEquals,
 	js.AndToken:        js.OpAnd,
 	js.OrToken:         js.OpOr,
-	js.ExpToken:        js.OpExp,
+	js.ExpToken:        js.OpExp + 1,
+	js.MulToken:        js.OpMul,
+	js.DivToken:        js.OpMul,
+	js.ModToken:        js.OpMul,
+	js.AddToken:        js.OpAdd,
+	js.SubToken:        js.OpAdd,
+	js.LtLtToken:       js.OpShift,
+	js.GtGtToken:       js.OpShift,
+	js.GtGtGtToken:     js.OpShift,
+	js.BitAndToken:     js.OpBitAnd,
+	js.BitXorToken:     js.OpBitXor,
+	js.BitOrToken:      js.OpBitOr,
+	js.NullishToken:    js.OpNullish,
+	js.CommaToken:      js.OpComma,
+}
+
+var binaryRightPrecMap = map[js.TokenType]js.OpPrec{
+	js.EqToken:         js.OpAssign - 1,
+	js.MulEqToken:      js.OpAssign - 1,
+	js.DivEqToken:      js.OpAssign - 1,
+	js.ModEqToken:      js.OpAssign - 1,
+	js.ExpEqToken:      js.OpAssign - 1,
+	js.AddEqToken:      js.OpAssign - 1,
+	js.SubEqToken:      js.OpAssign - 1,
+	js.LtLtEqToken:     js.OpAssign - 1,
+	js.GtGtEqToken:     js.OpAssign - 1,
+	js.GtGtGtEqToken:   js.OpAssign - 1,
+	js.BitAndEqToken:   js.OpAssign - 1,
+	js.BitXorEqToken:   js.OpAssign - 1,
+	js.BitOrEqToken:    js.OpAssign - 1,
+	js.LtToken:         js.OpCompare,
+	js.LtEqToken:       js.OpCompare,
+	js.GtToken:         js.OpCompare,
+	js.GtEqToken:       js.OpCompare,
+	js.InToken:         js.OpCompare,
+	js.InstanceofToken: js.OpCompare,
+	js.EqEqToken:       js.OpEquals,
+	js.NotEqToken:      js.OpEquals,
+	js.EqEqEqToken:     js.OpEquals,
+	js.NotEqEqToken:    js.OpEquals,
+	js.AndToken:        js.OpAnd,
+	js.OrToken:         js.OpOr,
+	js.ExpToken:        js.OpExp - 1,
 	js.MulToken:        js.OpMul,
 	js.DivToken:        js.OpMul,
 	js.ModToken:        js.OpMul,
@@ -626,11 +667,24 @@ var binaryPrecMap = map[js.TokenType]js.OpPrec{
 
 func (m *jsMinifier) exprPrec(i js.IExpr) js.OpPrec {
 	switch expr := i.(type) {
+	case *js.LiteralExpr:
+		return js.OpLiteral
 	case *js.BinaryExpr:
-		return binaryPrecMap[expr.Op]
+		return binaryRightPrecMap[expr.Op]
 	case *js.UnaryExpr:
 		return unaryPrecMap[expr.Op]
-		// TODO: extend and test
+	case *js.NewExpr:
+		return js.OpNew
+	case *js.DotExpr, *js.CallExpr, *js.IndexExpr:
+		return js.OpCall
+	case *js.ConditionalExpr:
+		return js.OpCond
+	case *js.OptChainExpr:
+		return js.OpNullish
+	case *js.YieldExpr:
+		return js.OpYield
+	case *js.GroupExpr:
+		return js.OpGroup
 	}
 	return js.OpEnd
 }
@@ -662,8 +716,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			m.write(m.renamer.name(expr.Data))
 		}
 	case *js.BinaryExpr:
-		opPrec := binaryPrecMap[expr.Op]
-		m.minifyExpr(expr.X, opPrec)
+		m.minifyExpr(expr.X, binaryLeftPrecMap[expr.Op])
 		if expr.Op == js.InstanceofToken || expr.Op == js.InToken {
 			m.writeSpaceAfterIdent()
 			m.write(expr.Op.Bytes())
@@ -691,7 +744,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				}
 			}
 		}
-		m.minifyExpr(expr.Y, opPrec)
+		m.minifyExpr(expr.Y, binaryRightPrecMap[expr.Op])
 	case *js.UnaryExpr:
 		if expr.Op == js.PostIncrToken || expr.Op == js.PostDecrToken {
 			m.minifyExpr(expr.X, unaryPrecMap[expr.Op])
@@ -712,21 +765,17 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			m.minifyExpr(expr.X, unaryPrecMap[expr.Op])
 		}
 	case *js.DotExpr:
-		m.minifyExpr(expr.X, js.OpCall)
+		m.minifyExpr(expr.X, js.OpPostfix)
 		m.write([]byte("."))
 		m.write(expr.Y.Data)
 	case *js.GroupExpr:
-		// TODO: ensure that group list len == 1 in parser
-		if len(expr.List) == 1 {
-			inPrec := m.exprPrec(expr.List[0])
-			fmt.Println(prec, inPrec, expr.List[0])
-			if prec <= inPrec {
-				m.minifyExpr(expr.List[0], prec)
-			} else {
-				m.write([]byte("("))
-				m.minifyExpr(expr.List[0], js.OpGroup)
-				m.write([]byte(")"))
-			}
+		precInside := m.exprPrec(expr.X)
+		if prec <= precInside {
+			m.minifyExpr(expr.X, prec)
+		} else {
+			m.write([]byte("("))
+			m.minifyExpr(expr.X, js.OpGroup)
+			m.write([]byte(")"))
 		}
 	case *js.ArrayExpr:
 		m.write([]byte("["))
@@ -734,14 +783,14 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			if i != 0 {
 				m.write([]byte(","))
 			}
-			m.minifyExpr(item, js.OpAssign)
+			m.minifyExpr(item, js.OpComma)
 		}
 		if expr.Rest != nil {
 			if len(expr.List) != 0 {
 				m.write([]byte(","))
 			}
 			m.write([]byte("..."))
-			m.minifyExpr(expr.Rest, js.OpAssign)
+			m.minifyExpr(expr.Rest, js.OpComma)
 		}
 		m.write([]byte("]"))
 	case *js.ObjectExpr:
@@ -755,7 +804,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.write([]byte("}"))
 	case *js.TemplateExpr:
 		if expr.Tag != nil {
-			m.minifyExpr(expr.Tag, js.OpEnd)
+			m.minifyExpr(expr.Tag, js.OpPostfix)
 		}
 		for _, item := range expr.List {
 			m.write(item.Value)
@@ -779,19 +828,19 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			m.minifyExpr(expr.X, js.OpYield)
 		}
 	case *js.CallExpr:
-		m.minifyExpr(expr.X, js.OpCall)
+		m.minifyExpr(expr.X, js.OpPostfix)
 		m.minifyArguments(expr.Args)
 	case *js.IndexExpr:
-		m.minifyExpr(expr.X, js.OpCall)
+		m.minifyExpr(expr.X, js.OpPostfix)
 		m.write([]byte("["))
-		m.minifyExpr(expr.Index, js.OpCall)
+		m.minifyExpr(expr.Index, js.OpEnd)
 		m.write([]byte("]"))
 	case *js.ConditionalExpr:
 		m.minifyExpr(expr.X, js.OpCond)
 		m.write([]byte("?"))
-		m.minifyExpr(expr.Y, js.OpCond)
+		m.minifyExpr(expr.Y, js.OpYield)
 		m.write([]byte(":"))
-		m.minifyExpr(expr.Z, js.OpCond)
+		m.minifyExpr(expr.Z, js.OpYield)
 	case *js.OptChainExpr:
 		m.minifyExpr(expr.X, js.OpCall)
 		m.write([]byte("?."))
@@ -800,8 +849,8 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.minifyVarDecl(*expr)
 	case *js.FuncDecl:
 		m.minifyFuncDecl(*expr)
-	case *js.ArrowFuncDecl:
-		m.minifyArrowFuncDecl(*expr)
+	case *js.ArrowFunc:
+		m.minifyArrowFunc(*expr)
 	case *js.MethodDecl:
 		m.minifyMethodDecl(*expr)
 	case *js.ClassDecl:

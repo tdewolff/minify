@@ -133,8 +133,8 @@ func TestJS(t *testing.T) {
 		{`if(a){}else{}`, `a`},
 		{`if(a){}else{;}`, `a`},
 		{`if(a){}else{a}`, `a||a`},
-		{`if(a){b=c}else if(d){e=f}`, `a?b=c:d&&e=f`},
-		{`if(a){b=c;y=z}else if(d){e=f}`, `if(a){b=c;y=z}else d&&e=f`},
+		{`if(a){b=c}else if(d){e=f}`, `a?b=c:d&&(e=f)`},
+		{`if(a){b=c;y=z}else if(d){e=f}`, `if(a){b=c;y=z}else d&&(e=f)`}, // TODO: can transform if to conditional
 		{`if(a)while(b){c;d}else e`, `if(a)while(b){c;d}else e`},
 		{`if(a)while(b){c}else e`, `if(a)while(b)c;else e`},
 		{`if(a){ if(b) c }`, `a&&b&&c`},
@@ -182,9 +182,28 @@ func TestJS(t *testing.T) {
 		{`if(a){b=c}else{if(d){e=f}else{g=h}}`, `a?b=c:d?e=f:g=h`},
 
 		// remove groups
-		{`a=()`, `a=()`},
 		{`a=(b+c)+d`, `a=b+c+d`},
+		{`a=b+(c+d)`, `a=b+c+d`},
+		{`a=b*(c+d)`, `a=b*(c+d)`},
+		{`a=(b*c)+d`, `a=b*c+d`},
+		{`a=(b.c)++`, `a=b.c++`},
+		{`a=(b++).c`, `a=b++.c`},
+		{`a=!(b++)`, `a=!b++`},
 		{`a=(b+c)(d)`, `a=(b+c)(d)`},
+		{`a=b**(c**d)`, `a=b**c**d`},
+		{`a=(b**c)**d`, `a=(b**c)**d`},
+		{`a=false**2`, `a=(!1)**2`},
+		{`a=(a||b)&&c`, `a=(a||b)&&c`},
+		{`a=a||(b&&c)`, `a=a||b&&c`},
+		{`a=(a&&b)||c`, `a=a&&b||c`},
+		{`a=a&&(b||c)`, `a=a&&(b||c)`},
+		{`a=c&&(a??b)`, `a=c&&(a??b)`},
+		{`a=!(!b)`, `a=!!b`},
+		{`function*x(){a=(yield b)}`, `function*x(){a=yield b}`},
+		{`function*x(){a=yield (yield b)}`, `function*x(){a=yield yield b}`},
+
+		// TODO: test parser for yield expressions outside generator
+		// TODO: test for optional chaining
 
 		// variable renaming
 		{`x=function(){var name}`, `x=function(){var a}`},
