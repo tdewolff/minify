@@ -119,6 +119,7 @@ func TestJS(t *testing.T) {
 		{`class {}`, `class{}`},
 		{`class a {}`, `class a{}`},
 		{`class a extends b {}`, `class a extends b{}`},
+		{`class a extends(!b){}`, `class a extends(!b){}`},
 		{`class { f(a) {} }`, `class{f(a){}}`},
 		{`class { f(a) {}; static g(b) {} }`, `class{f(a){}static g(b){}}`},
 		{`return;a`, `return;a`},
@@ -160,6 +161,13 @@ func TestJS(t *testing.T) {
 		{`try {a} catch(e) {b}`, `try{a}catch(e){b}`},
 		{`try {a} catch(e) {b} finally {c}`, `try{a}catch(e){b}finally{c}`},
 		{`try {a} finally {c}`, `try{a}finally{c}`},
+		{`x=true`, `x=!0`},
+		{`x=false`, `x=!1`},
+		{`x=false()`, `x=(!1)()`},
+		{`x=undefined`, `x=void 0`},
+		{`x=undefined()`, `x=(void 0)()`},
+		{`var undefined=5;x=undefined`, `var undefined=5;x=undefined`},
+		{`class a extends undefined {}`, `class a extends(void 0){}`},
 
 		// variable renaming
 		{`x=function(){var name}`, `x=function(){var a}`},

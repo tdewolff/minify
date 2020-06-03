@@ -95,7 +95,7 @@ func (m *jsMinifier) writeSemicolon() {
 func (m *jsMinifier) minifyStmt(i js.IStmt) {
 	switch stmt := i.(type) {
 	case *js.ExprStmt:
-		m.minifyExpr(stmt.Value)
+		m.minifyExpr(stmt.Value, false)
 		m.requireSemicolon()
 	case *js.VarDecl:
 		m.minifyVarDecl(*stmt)
@@ -105,7 +105,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		hasElse := !isEmptyStmt(stmt.Else)
 
 		m.write([]byte("if("))
-		m.minifyExpr(stmt.Cond)
+		m.minifyExpr(stmt.Cond, false)
 		m.write([]byte(")"))
 
 		if !hasIf && hasElse {
@@ -138,7 +138,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 	case *js.ReturnStmt:
 		m.write([]byte("return"))
 		m.writeSpaceBeforeIdent()
-		m.minifyExpr(stmt.Value)
+		m.minifyExpr(stmt.Value, false)
 		m.requireSemicolon()
 	case *js.LabelledStmt:
 		m.write(stmt.Token.Data)
@@ -153,7 +153,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.requireSemicolon()
 	case *js.WithStmt:
 		m.write([]byte("with("))
-		m.minifyExpr(stmt.Cond)
+		m.minifyExpr(stmt.Cond, false)
 		m.write([]byte(")"))
 		m.minifyStmt(stmt.Body)
 	case *js.DoWhileStmt:
@@ -162,30 +162,30 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.minifyStmt(stmt.Body)
 		m.writeSemicolon()
 		m.write([]byte("while("))
-		m.minifyExpr(stmt.Cond)
+		m.minifyExpr(stmt.Cond, false)
 		m.write([]byte(")"))
 		m.requireSemicolon()
 	case *js.WhileStmt:
 		m.write([]byte("while("))
-		m.minifyExpr(stmt.Cond)
+		m.minifyExpr(stmt.Cond, false)
 		m.write([]byte(")"))
 		m.minifyStmt(stmt.Body)
 	case *js.ForStmt:
 		m.write([]byte("for("))
-		m.minifyExpr(stmt.Init)
+		m.minifyExpr(stmt.Init, false)
 		m.write([]byte(";"))
-		m.minifyExpr(stmt.Cond)
+		m.minifyExpr(stmt.Cond, false)
 		m.write([]byte(";"))
-		m.minifyExpr(stmt.Post)
+		m.minifyExpr(stmt.Post, false)
 		m.write([]byte(")"))
 		m.minifyStmt(stmt.Body)
 	case *js.ForInStmt:
 		m.write([]byte("for("))
-		m.minifyExpr(stmt.Init)
+		m.minifyExpr(stmt.Init, false)
 		m.writeSpaceAfterIdent()
 		m.write([]byte("in"))
 		m.writeSpaceBeforeIdent()
-		m.minifyExpr(stmt.Value)
+		m.minifyExpr(stmt.Value, false)
 		m.write([]byte(")"))
 		m.minifyStmt(stmt.Body)
 	case *js.ForOfStmt:
@@ -194,16 +194,16 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		} else {
 			m.write([]byte("for("))
 		}
-		m.minifyExpr(stmt.Init)
+		m.minifyExpr(stmt.Init, false)
 		m.writeSpaceAfterIdent()
 		m.write([]byte("of"))
 		m.writeSpaceBeforeIdent()
-		m.minifyExpr(stmt.Value)
+		m.minifyExpr(stmt.Value, false)
 		m.write([]byte(")"))
 		m.minifyStmt(stmt.Body)
 	case *js.SwitchStmt:
 		m.write([]byte("switch("))
-		m.minifyExpr(stmt.Init)
+		m.minifyExpr(stmt.Init, false)
 		m.write([]byte("){"))
 		m.needsSemicolon = false
 		for _, clause := range stmt.List {
@@ -211,7 +211,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			m.write(clause.TokenType.Bytes())
 			if clause.Cond != nil {
 				m.write([]byte(" "))
-				m.minifyExpr(clause.Cond)
+				m.minifyExpr(clause.Cond, false)
 			}
 			m.write([]byte(":"))
 			for _, item := range clause.List {
@@ -223,7 +223,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 	case *js.ThrowStmt:
 		m.write([]byte("throw"))
 		m.writeSpaceBeforeIdent()
-		m.minifyExpr(stmt.Value)
+		m.minifyExpr(stmt.Value, false)
 		m.requireSemicolon()
 	case *js.TryStmt:
 		m.write([]byte("try"))
@@ -287,7 +287,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			} else {
 				m.write([]byte(" "))
 			}
-			m.minifyExpr(stmt.Decl)
+			m.minifyExpr(stmt.Decl, false)
 			_, isHoistable := stmt.Decl.(*js.FuncDecl)
 			_, isClass := stmt.Decl.(*js.ClassDecl)
 			if !isHoistable && !isClass {
@@ -365,14 +365,14 @@ func (m *jsMinifier) minifyArguments(args js.Arguments) {
 		if i != 0 {
 			m.write([]byte(","))
 		}
-		m.minifyExpr(item)
+		m.minifyExpr(item, false)
 	}
 	if args.Rest != nil {
 		if len(args.List) != 0 {
 			m.write([]byte(","))
 		}
 		m.write([]byte("..."))
-		m.minifyExpr(args.Rest)
+		m.minifyExpr(args.Rest, false)
 	}
 	m.write([]byte(")"))
 }
@@ -444,7 +444,7 @@ func (m *jsMinifier) minifyArrowFuncDecl(decl js.ArrowFuncDecl) {
 	m.write([]byte("=>"))
 	if len(decl.Body.List) == 1 {
 		if stmt, ok := decl.Body.List[0].(*js.ExprStmt); ok {
-			m.minifyExpr(stmt.Value)
+			m.minifyExpr(stmt.Value, false)
 		} else {
 			m.minifyBlockStmt(decl.Body)
 		}
@@ -460,8 +460,9 @@ func (m *jsMinifier) minifyClassDecl(decl js.ClassDecl) {
 		m.write(decl.Name)
 	}
 	if decl.Extends != nil {
-		m.write([]byte(" extends "))
-		m.minifyExpr(decl.Extends)
+		m.write([]byte(" extends"))
+		m.writeSpaceBeforeIdent()
+		m.minifyExpr(decl.Extends, true)
 	}
 	m.write([]byte("{"))
 	for _, item := range decl.Methods {
@@ -472,7 +473,7 @@ func (m *jsMinifier) minifyClassDecl(decl js.ClassDecl) {
 
 func (m *jsMinifier) minifyPropertyName(name js.PropertyName) {
 	if name.Computed != nil {
-		m.minifyExpr(name.Computed)
+		m.minifyExpr(name.Computed, false)
 	} else {
 		m.write(name.Literal.Data)
 	}
@@ -485,10 +486,10 @@ func (m *jsMinifier) minifyProperty(property js.Property) {
 	} else if property.Spread {
 		m.write([]byte("..."))
 	}
-	m.minifyExpr(property.Value)
+	m.minifyExpr(property.Value, false)
 	if property.Init != nil {
 		m.write([]byte("="))
-		m.minifyExpr(property.Init)
+		m.minifyExpr(property.Init, false)
 	}
 }
 
@@ -497,7 +498,7 @@ func (m *jsMinifier) minifyBindingElement(element js.BindingElement) {
 		m.minifyBinding(element.Binding)
 		if element.Default != nil {
 			m.write([]byte("="))
-			m.minifyExpr(element.Default)
+			m.minifyExpr(element.Default, false)
 		}
 	}
 }
@@ -533,16 +534,34 @@ func (m *jsMinifier) minifyBinding(i js.IBinding) {
 	}
 }
 
-func (m *jsMinifier) minifyExpr(i js.IExpr) {
+func (m *jsMinifier) minifyExpr(i js.IExpr, precGtEqPrefix bool) {
 	switch expr := i.(type) {
 	case *js.LiteralExpr:
 		if expr.TokenType == js.DecimalToken {
 			m.write(minify.Number(expr.Data, 0))
+		} else if expr.TokenType == js.TrueToken {
+			if precGtEqPrefix {
+				m.write([]byte("(!0)"))
+			} else {
+				m.write([]byte("!0"))
+			}
+		} else if expr.TokenType == js.FalseToken {
+			if precGtEqPrefix {
+				m.write([]byte("(!1)"))
+			} else {
+				m.write([]byte("!1"))
+			}
+		} else if expr.TokenType == js.IdentifierToken && bytes.Equal(expr.Data, []byte("undefined")) && !m.renamer.exists(expr.Data) {
+			if precGtEqPrefix {
+				m.write([]byte("(void 0)"))
+			} else {
+				m.write([]byte("void 0"))
+			}
 		} else {
 			m.write(m.renamer.name(expr.Data))
 		}
 	case *js.BinaryExpr:
-		m.minifyExpr(expr.X)
+		m.minifyExpr(expr.X, false)
 		if expr.Op == js.InstanceofToken || expr.Op == js.InToken {
 			m.writeSpaceAfterIdent()
 			m.write(expr.Op.Bytes())
@@ -570,10 +589,10 @@ func (m *jsMinifier) minifyExpr(i js.IExpr) {
 				}
 			}
 		}
-		m.minifyExpr(expr.Y)
+		m.minifyExpr(expr.Y, false)
 	case *js.UnaryExpr:
 		if expr.Op == js.PostIncrToken || expr.Op == js.PostDecrToken {
-			m.minifyExpr(expr.X)
+			m.minifyExpr(expr.X, false)
 			m.write(expr.Op.Bytes())
 		} else {
 			m.write(expr.Op.Bytes())
@@ -588,10 +607,10 @@ func (m *jsMinifier) minifyExpr(i js.IExpr) {
 					m.write([]byte(" "))
 				}
 			}
-			m.minifyExpr(expr.X)
+			m.minifyExpr(expr.X, false)
 		}
 	case *js.DotExpr:
-		m.minifyExpr(expr.X)
+		m.minifyExpr(expr.X, false)
 		m.write([]byte("."))
 		m.write(expr.Y.Data)
 	case *js.GroupExpr:
@@ -600,7 +619,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr) {
 			if i != 0 {
 				m.write([]byte(","))
 			}
-			m.minifyExpr(item)
+			m.minifyExpr(item, false)
 		}
 		if expr.Rest != nil {
 			if len(expr.List) != 0 {
@@ -616,14 +635,14 @@ func (m *jsMinifier) minifyExpr(i js.IExpr) {
 			if i != 0 {
 				m.write([]byte(","))
 			}
-			m.minifyExpr(item)
+			m.minifyExpr(item, false)
 		}
 		if expr.Rest != nil {
 			if len(expr.List) != 0 {
 				m.write([]byte(","))
 			}
 			m.write([]byte("..."))
-			m.minifyExpr(expr.Rest)
+			m.minifyExpr(expr.Rest, false)
 		}
 		m.write([]byte("]"))
 	case *js.ObjectExpr:
@@ -637,17 +656,17 @@ func (m *jsMinifier) minifyExpr(i js.IExpr) {
 		m.write([]byte("}"))
 	case *js.TemplateExpr:
 		if expr.Tag != nil {
-			m.minifyExpr(expr.Tag)
+			m.minifyExpr(expr.Tag, false)
 		}
 		for _, item := range expr.List {
 			m.write(item.Value)
-			m.minifyExpr(item.Expr)
+			m.minifyExpr(item.Expr, false)
 		}
 		m.write(expr.Tail)
 	case *js.NewExpr:
 		m.write([]byte("new"))
 		m.writeSpaceBeforeIdent()
-		m.minifyExpr(expr.X)
+		m.minifyExpr(expr.X, true)
 	case *js.NewTargetExpr:
 		m.write([]byte("new.target"))
 		m.writeSpaceBeforeIdent()
@@ -658,26 +677,26 @@ func (m *jsMinifier) minifyExpr(i js.IExpr) {
 			if expr.Generator {
 				m.write([]byte("*"))
 			}
-			m.minifyExpr(expr.X)
+			m.minifyExpr(expr.X, false)
 		}
 	case *js.CallExpr:
-		m.minifyExpr(expr.X)
+		m.minifyExpr(expr.X, true)
 		m.minifyArguments(expr.Args)
 	case *js.IndexExpr:
-		m.minifyExpr(expr.X)
+		m.minifyExpr(expr.X, false)
 		m.write([]byte("["))
-		m.minifyExpr(expr.Index)
+		m.minifyExpr(expr.Index, false)
 		m.write([]byte("]"))
 	case *js.ConditionalExpr:
-		m.minifyExpr(expr.X)
+		m.minifyExpr(expr.X, false)
 		m.write([]byte("?"))
-		m.minifyExpr(expr.Y)
+		m.minifyExpr(expr.Y, false)
 		m.write([]byte(":"))
-		m.minifyExpr(expr.Z)
+		m.minifyExpr(expr.Z, false)
 	case *js.OptChainExpr:
-		m.minifyExpr(expr.X)
+		m.minifyExpr(expr.X, false)
 		m.write([]byte("?."))
-		m.minifyExpr(expr.Y)
+		m.minifyExpr(expr.Y, false)
 	case *js.VarDecl:
 		m.minifyVarDecl(*expr)
 	case *js.FuncDecl:
@@ -721,13 +740,18 @@ func isEmptyStmt(stmt js.IStmt) bool {
 }
 
 type renamer struct {
+	unbound  map[string]bool
 	reserved map[string]bool
-	renames  [][]byte
-	idx      int
-	scopes   []map[string]int
+	renames  [][]byte         // list of renames, only ever grows as we find new variables that do not collide
+	idx      int              // index into renames, decreases when we leave scope
+	scopes   []map[string]int // index into renames, ordered from outer scope to inner
 }
 
 func newRenamer(unbound []string) *renamer {
+	unboundMap := map[string]bool{}
+	for _, name := range unbound {
+		unboundMap[name] = true
+	}
 	reserved := map[string]bool{}
 	for name, _ := range js.Keywords {
 		reserved[name] = true
@@ -736,6 +760,7 @@ func newRenamer(unbound []string) *renamer {
 		reserved[name] = true
 	}
 	return &renamer{
+		unbound:  unboundMap,
 		reserved: reserved,
 	}
 }
@@ -784,6 +809,21 @@ func (r *renamer) name(name []byte) []byte {
 		}
 	}
 	return name
+}
+
+func (r *renamer) exists(name []byte) bool {
+	if r.unbound[string(name)] {
+		return false
+	}
+	if r.reserved[string(name)] {
+		return true
+	}
+	for j := len(r.scopes) - 1; 0 <= j; j-- {
+		if _, ok := r.scopes[j][string(name)]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *renamer) openScope() {
