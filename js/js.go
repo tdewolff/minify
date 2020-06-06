@@ -104,7 +104,13 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 	switch stmt := i.(type) {
 	case *js.ExprStmt:
 		// prefix ! to function or group to class to remain expressions
-		if group, isGroup := stmt.Value.(*js.GroupExpr); isGroup {
+		expr := stmt.Value
+		commaExpr, ok := expr.(*js.BinaryExpr)
+		for ok && commaExpr.Op == js.CommaToken {
+			expr = commaExpr.X
+			commaExpr, ok = expr.(*js.BinaryExpr)
+		}
+		if group, isGroup := expr.(*js.GroupExpr); isGroup {
 			if _, isFunc := group.X.(*js.FuncDecl); isFunc {
 				m.write([]byte("!"))
 			} else if _, isClass := group.X.(*js.ClassDecl); isClass {
@@ -114,7 +120,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 					m.write([]byte("!"))
 				}
 			}
-		} else if call, isCall := stmt.Value.(*js.CallExpr); isCall {
+		} else if call, isCall := expr.(*js.CallExpr); isCall {
 			if group, isGroup := call.X.(*js.GroupExpr); isGroup {
 				if _, isFunc := group.X.(*js.FuncDecl); isFunc {
 					m.write([]byte("!"))

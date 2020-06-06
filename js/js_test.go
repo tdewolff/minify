@@ -241,6 +241,7 @@ func TestJS(t *testing.T) {
 		{`(function(){})`, `!function(){}`},
 		{`(function(){}())`, `!function(){}()`},
 		{`(function(){})()`, `!function(){}()`},
+		{`(function(){})();x=5;f=6`, `!function(){}(),x=5,f=6`},
 		{`x=(function(){})`, `x=function(){}`},
 		{`x=(function(){}())`, `x=function(){}()`},
 		{`x=(function(){})()`, `x=function(){}()`},
