@@ -7,6 +7,7 @@ package js
 
 import (
 	"bytes"
+	"encoding/hex"
 	"io"
 
 	"github.com/tdewolff/minify/v2"
@@ -876,8 +877,12 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			} else {
 				m.write([]byte("void 0"))
 			}
-		} else {
+		} else if expr.TokenType == js.IdentifierToken {
 			m.write(m.renamer.name(expr.Data))
+		} else if expr.TokenType == js.StringToken {
+			m.write(minifyString(expr.Data))
+		} else {
+			m.write(expr.Data)
 		}
 	case *js.BinaryExpr:
 		m.minifyExpr(expr.X, binaryLeftPrecMap[expr.Op])
@@ -1128,6 +1133,104 @@ func (m *jsMinifier) isFalsy(i js.IExpr) (bool, bool) {
 		return !negated, true // false
 	}
 	return false, false // unknown
+}
+
+func isHexDigit(b byte) bool {
+	return '0' <= b && b <= '9' || 'a' <= b && b <= 'f' || 'A' <= b && b <= 'F'
+}
+
+func minifyString(b []byte) []byte {
+	if len(b) < 3 {
+		return b
+	}
+	quote := b[0]
+	j := 0
+	start := 0
+	for i := 1; i+1 < len(b)-1; i++ {
+		if c := b[i]; c == '\\' {
+			c = b[i+1]
+			if c == '0' && (i+2 == len(b)-1 || b[i+2] < '0' || '7' < b[i+2]) || c == '\\' || c == quote || c == 'n' || c == 'r' || c == 'u' {
+				// keep escape sequence
+				i++
+				continue
+			}
+			n := 1
+			if c == '\n' || c == '\r' || c == 0xE2 && i+3 < len(b)-1 && b[i+2] == 0x80 && (b[i+3] == 0xA8 || b[i+3] == 0xA9) {
+				// line continuations
+				if c == 0xE2 {
+					n = 4
+				} else if c == '\r' && i+2 < len(b)-1 && b[i+2] == '\n' {
+					n = 3
+				} else {
+					n = 2
+				}
+			} else if c == 'x' {
+				if i+3 < len(b)-1 && isHexDigit(b[i+2]) && isHexDigit(b[i+3]) {
+					// hexadecimal escapes
+					_, _ = hex.Decode(b[i+3:i+4:i+4], b[i+2:i+4])
+					n = 3
+					if b[i+3] == 0 || b[i+3] == '\\' || b[i+3] == quote || b[i+3] == '\n' || b[i+3] == '\r' {
+						if b[i+3] == 0 {
+							b[i+3] = '0'
+						} else if b[i+3] == '\n' {
+							b[i+3] = 'n'
+						} else if b[i+3] == '\r' {
+							b[i+3] = 'r'
+						}
+						n--
+						b[i+2] = '\\'
+					}
+				} else {
+					i++
+					continue
+				}
+			} else if '0' <= c && c <= '7' {
+				// octal escapes (legacy), \0 already handled
+				num := byte(c - '0')
+				if i+2 < len(b)-1 && '0' <= b[i+2] && b[i+2] <= '7' {
+					num = num*8 + byte(b[i+2]-'0')
+					n++
+					if num < 32 && i+3 < len(b)-1 && '0' <= b[i+3] && b[i+3] <= '7' {
+						num = num*8 + byte(b[i+3]-'0')
+						n++
+					}
+				}
+				b[i+n] = num
+				if num == 0 || num == '\\' || num == quote || num == '\n' || num == '\r' {
+					if num == 0 {
+						b[i+n] = '0'
+					} else if num == '\n' {
+						b[i+n] = 'n'
+					} else if num == '\r' {
+						b[i+n] = 'r'
+					}
+					n--
+					b[i+n] = '\\'
+				}
+			} else if c == 't' {
+				b[i+1] = '\t'
+			} else if c == 'f' {
+				b[i+1] = '\f'
+			} else if c == 'v' {
+				b[i+1] = '\v'
+			} else if c == 'b' {
+				b[i+1] = '\b'
+			}
+			// remove unnecessary escape character, anything but 0x00, 0x0A, 0x0D, \, ' or "
+			if start != 0 {
+				j += copy(b[j:], b[start:i])
+			} else {
+				j = i
+			}
+			start = i + n
+			i += n - 1
+		}
+	}
+	if start != 0 {
+		j += copy(b[j:], b[start:])
+		return b[:j]
+	}
+	return b
 }
 
 type renamer struct {

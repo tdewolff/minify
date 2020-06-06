@@ -14,45 +14,8 @@ func TestJS(t *testing.T) {
 		js       string
 		expected string
 	}{
-		//{"/*comment*/", ""},
-		//{"// comment\na", "a"},
-		////{"/*! bang  comment */", "/*!bang comment*/"},
-		//{"function x(){}", "function x(){}"},
-		//{"function x(a, b){}", "function x(a,b){}"},
-		//{"a  b", "a b"},
-		//{"a\n\nb", "a\nb"},
-		//{"a// comment\nb", "a\nb"},
-		//{"''\na", "''\na"},
-		//{"''\n''", "''\n''"},
-		//{"]\n0", "]\n0"},
-		//{"a\n{", "a\n{"},
-		//{";\na", ";a"},
-		//{",\na", ",a"},
-		//{"}\na", "}\na"},
-		//{"+\na", "+\na"},
-		//{"+\n(", "+\n("},
-		//{"+\n\"\"", "+\n\"\""},
-		//{"a + ++b", "a+ ++b"}, // JSMin caution
-		//{"var a=/\\s?auto?\\s?/i\nvar", "var a=/\\s?auto?\\s?/i\nvar"}, // #14
-		//{"var a=0\n!function(){}", "var a=0\n!function(){}"},           // #107
-		//{"function(){}\n\"string\"", "function(){}\n\"string\""},       // #109
-		//{"false\n\"string\"", "false\n\"string\""},                     // #109
-		//{"`\n", "`"},       // go fuzz
-		//{"a\n~b", "a\n~b"}, // #132
-		//{"x / /\\d+/.exec(s)[0]", "x/ /\\d+/.exec(s)[0]"}, // #183
-
-		//{"function(){}\n`string`", "function(){}\n`string`"}, // #181
-		//{"false\n`string`", "false\n`string`"},               // #181
-		//{"`string`\nwhatever()", "`string`\nwhatever()"},     // #181
-
-		//{"x+/**/++y", "x+ ++y"},                          // #185
-		//{"x+\n++y", "x+\n++y"},                           // #185
-		//{"f()/*!com\nment*/g()", "f()/*!com\nment*/g()"}, // #185
-		//{"f()/*com\nment*/g()", "f()\ng()"},              // #185
-		//{"f()/*!\n*/g()", "f()/*!\n*/g()"},               // #185
-
-		//// go-fuzz
-		//{`/\`, `/\`},
+		{`/*comment*/`, ``},
+		//{`/*!comment*/`, `/*!comment*/`},
 		{`1.0`, `1`},
 		{`1000`, `1e3`},
 		{`+ +x`, `+ +x`},
@@ -135,10 +98,24 @@ func TestJS(t *testing.T) {
 		{`try {a} finally {c}`, `try{a}finally{c}`},
 		{`a=b;c=d`, `a=b,c=d`},
 
+		// strings
+		{`"string\'string"`, `"string'string"`},
+		{`'string\"string'`, `'string"string'`},
+		{`'string\t\f\v\bstring'`, "'string\t\f\v\bstring'"},
+		{`"string\a\c\'string"`, `"stringac'string"`},
+		{`"string\∀string"`, `"string∀string"`},
+		{`"string\0\uFFFFstring"`, `"string\0\uFFFFstring"`},
+		{`"string\x00\x55\x0A\x0D\x22\x27string"`, `"string\0U\n\r\"'string"`},
+		{`"string\000\12\015\042\47\411string"`, `"string\0\n\r\"'!1string"`},
+		{"'string\\n\\rstring'", "'string\\n\\rstring'"},
+		{"'string\\\r\nstring\\\nstring\\\rstring\\\u2028string\\\u2029string'", "'stringstringstringstringstringstring'"},
+		//{`"string" + "string"`, `"stringstring"`},
+
 		// rename true, false, undefined
 		{`x=true`, `x=!0`},
 		{`x=false`, `x=!1`},
 		{`x=false()`, `x=(!1)()`},
+		{`false`, `!1`},
 		{`x=undefined`, `x=void 0`},
 		{`x=undefined()`, `x=(void 0)()`},
 		{`var undefined=5;x=undefined`, `var undefined=5;x=undefined`},
@@ -281,6 +258,9 @@ func TestJS(t *testing.T) {
 
 		// edge-cases
 		{`let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`, `let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`},
+		{"x / /\\d+/.exec(s)[0]", "x//\\d+/.exec(s)[0]"},              // #183
+		{"false`string`", "(!1)`string`"},                             // #181
+		{"var a=/\\s?auto?\\s?/i\nvar b", "var a=/\\s?auto?\\s?/i,b"}, // #14
 	}
 
 	m := minify.New()
