@@ -228,6 +228,9 @@ The following features are implemented:
 - rename variables and functions to shorter names (not in global scope)
 - collapse if/else statements to expressions
 - merge sequential expression statements to one, including into `return` and `throw`
+- remove superfluous grouping in expressions
+- shorten or remove string escapes
+- move var declarations into `for`
 
 ## JSON
 

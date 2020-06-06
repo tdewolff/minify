@@ -189,7 +189,9 @@ func TestJS(t *testing.T) {
 		{`let a=1;let b=2`, `let a=1,b=2`},
 		//{`var a;if(a)var b;else b`, `var a,b;a||b`},
 		//{`var a;if(a)var b=5`, `var a;if(a)var b=5`},
-		//{`var a;for(var b=0;b;b++){}`, `for(var a,b=0;b;b++){}`},
+		{`var a;for(var b=0;b;b++){}`, `for(var a,b=0;b;b++){}`},
+		{`const a=3;for(const b=0;b;b++){}`, `const a=3;for(const b=0;b;b++){}`},
+		{`var a;while(b){}`, `for(var a;b;){}`},
 
 		// function declarations
 		{`function g(){return}`, `function g(){}`},

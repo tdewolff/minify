@@ -433,6 +433,16 @@ func (m *jsMinifier) mergeStmtList(list []js.IStmt) []js.IStmt {
 			if right, ok := list[i+1].(*js.VarDecl); ok && left.TokenType == right.TokenType {
 				right.List = append(left.List, right.List...)
 				j--
+			} else if left.TokenType == js.VarToken {
+				if forStmt, ok := list[i+1].(*js.ForStmt); ok {
+					if init, ok := forStmt.Init.(*js.VarDecl); ok && init.TokenType == js.VarToken {
+						init.List = append(left.List, init.List...)
+						j--
+					}
+				} else if whileStmt, ok := list[i+1].(*js.WhileStmt); ok {
+					list[i+1] = &js.ForStmt{left, whileStmt.Cond, nil, whileStmt.Body}
+					j--
+				}
 			}
 		}
 		list[j] = list[i+1]
