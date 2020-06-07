@@ -1279,6 +1279,10 @@ func (r *renamer) next(name []byte) []byte {
 	if name[len(name)-1] == 'z' {
 		name[len(name)-1] = 'A'
 	} else if name[len(name)-1] == 'Z' {
+		name[len(name)-1] = '_'
+	} else if name[len(name)-1] == '_' {
+		name[len(name)-1] = '$'
+	} else if name[len(name)-1] == '$' {
 		isLast := true
 		for i := len(name) - 2; 0 <= i; i-- {
 			if name[i] != 'Z' {
@@ -1336,6 +1340,9 @@ func (r *renamer) name(name []byte) []byte {
 		if i, ok := r.scopes[j][string(name)]; ok {
 			return r.renames[i]
 		}
+	}
+	if !r.reserved[string(name)] {
+		return r.add(name)
 	}
 	return name
 }
