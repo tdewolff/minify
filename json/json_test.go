@@ -16,6 +16,7 @@ func TestJSON(t *testing.T) {
 		json     string
 		expected string
 	}{
+		{"", ""},
 		{"{ \"a\": [1, 2] }", "{\"a\":[1,2]}"},
 		{"[{ \"a\": [{\"x\": null}, true] }]", "[{\"a\":[{\"x\":null},true]}]"},
 		{"{ \"a\": 1, \"b\": 2 }", "{\"a\":1,\"b\":2}"},
