@@ -400,7 +400,7 @@ func minifyWorker(mimetype string, chanTasks <-chan Task, chanFails chan<- int) 
 }
 
 func sanitizePath(p string) string {
-	p = filepath.ToSlash(p)
+	p = filepath.ToSlash(p) // replace \ with / for Windows
 	isDir := p[len(p)-1] == '/'
 	p = path.Clean(p)
 	if isDir {
@@ -473,6 +473,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 					if err != nil {
 						return err
 					}
+					path = sanitizePath(path)
 					if validFile(info) {
 						task, err := NewTask(input, path, output)
 						if err != nil {
