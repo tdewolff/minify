@@ -245,7 +245,7 @@ func (c *cssMinifier) minifyGrammar() error {
 			if _, err := c.w.Write(colonBytes); err != nil {
 				return err
 			}
-			if _, err := c.w.Write(c.p.Values()[0].Data); err != nil {
+			if _, err := c.w.Write(parse.TrimWhitespace(c.p.Values()[0].Data)); err != nil {
 				return err
 			}
 			semicolonQueued = true
