@@ -69,6 +69,7 @@ sudo apt-get install minify
           --html-keep-end-tags               Preserve all end tags
           --html-keep-quotes                 Preserve quotes around attribute values
           --html-keep-whitespace             Preserve whitespace characters but still collapse multiple into one
+          --json-precision int               Number of significant digits to preserve in numbers, 0 is all (default 0)
       -l, --list                             List all accepted filetypes
           --match string                     Filename pattern matching using regular expressions
           --mime string                      Mimetype (eg. text/css), optional for input filenames, has precedence over -type

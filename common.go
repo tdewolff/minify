@@ -80,7 +80,7 @@ func DataURI(m *M, dataURI []byte) []byte {
 const MaxInt = int(^uint(0) >> 1)
 const MinInt = -MaxInt - 1
 
-// Decimal minifies a given byte slice containing a number (see parse.Number) and removes superfluous characters.
+// Decimal minifies a given byte slice containing a decimal and removes superfluous characters. It differs from Number in that it does not parse exponents.
 // It does not parse or output exponents. prec is the number of significant digits. When prec is zero it will keep all digits. Only digits after the dot can be removed to reach the number of significant digits. Very large number may thus have more significant digits.
 func Decimal(num []byte, prec int) []byte {
 	if len(num) <= 1 {
@@ -187,7 +187,7 @@ func Decimal(num []byte, prec int) []byte {
 	return num[start:end]
 }
 
-// Number minifies a given byte slice containing a number (see parse.Number) and removes superfluous characters.
+// Number minifies a given byte slice containing a number and removes superfluous characters.
 func Number(num []byte, prec int) []byte {
 	if len(num) <= 1 {
 		return num

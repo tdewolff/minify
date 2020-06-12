@@ -241,6 +241,10 @@ Minification typically shaves off about 15% of filesize for common indented JSON
 
 The JSON minifier only removes whitespace, which is the only thing that can be left out.
 
+Options:
+
+- `Precision` number of significant digits to preserve for numbers, `0` means no trimming
+
 ## SVG
 
 The SVG minifier uses these minifications:

@@ -9,8 +9,10 @@ import (
 )
 
 var (
-	commaBytes = []byte(",")
-	colonBytes = []byte(":")
+	commaBytes     = []byte(",")
+	colonBytes     = []byte(":")
+	zeroBytes      = []byte("0")
+	minusZeroBytes = []byte("-0")
 )
 
 ////////////////////////////////////////////////////////////////
@@ -19,7 +21,9 @@ var (
 var DefaultMinifier = &Minifier{}
 
 // Minifier is a JSON minifier.
-type Minifier struct{}
+type Minifier struct {
+	Precision int // number of significant digits
+}
 
 // Minify minifies JSON data, it reads from r and writes to w.
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
@@ -56,6 +60,15 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		}
 		skipComma = gt == json.StartObjectGrammar || gt == json.StartArrayGrammar
 
+		if 0 < len(text) && ('0' <= text[0] && text[0] <= '9' || text[0] == '-') {
+			text = minify.Number(text, o.Precision)
+			if text[0] == '.' {
+				w.Write(zeroBytes)
+			} else if 1 < len(text) && text[0] == '-' && text[1] == '.' {
+				text = text[1:]
+				w.Write(minusZeroBytes)
+			}
+		}
 		if _, err := w.Write(text); err != nil {
 			return err
 		}
