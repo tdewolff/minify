@@ -304,7 +304,8 @@ func TestCSSInline(t *testing.T) {
 		{"--custom-variable:0px;", "--custom-variable:0px"},
 		{"--foo: 0px ;", "--foo:0px"},
 		{"--foo: if(x > 5) this.width = 10", "--foo:if(x > 5) this.width = 10"},
-		{"--foo: ;", "--foo:"},                // empty value
+		{"--foo: ;", "--foo: "},               // whitespace value
+		{"--foo:;", "--foo:"},                 // empty value
 		{"--foo: initial ;", "--foo:initial"}, // invalid value, serializes to empty
 		{"color=blue;", "color=blue"},
 		{"x: white , white", "x:white,white"},
