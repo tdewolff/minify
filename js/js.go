@@ -42,7 +42,7 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	m := &jsMinifier{
 		o:       o,
 		w:       w,
-		renamer: newRenamer(ast.Unbound),
+		renamer: newRenamer(ast.Scope.Unbound),
 	}
 	ast.List = m.mergeStmtList(ast.List)
 	for _, item := range ast.List {
@@ -1066,20 +1066,16 @@ type renamer struct {
 	scopes   []map[string]int // index into renames, ordered from outer scope to inner
 }
 
-func newRenamer(unbound []string) *renamer {
-	unboundMap := map[string]bool{}
-	for _, name := range unbound {
-		unboundMap[name] = true
-	}
+func newRenamer(unbound map[string]bool) *renamer {
 	reserved := map[string]bool{}
 	for name, _ := range js.Keywords {
 		reserved[name] = true
 	}
-	for _, name := range unbound {
+	for name := range unbound {
 		reserved[name] = true
 	}
 	return &renamer{
-		unbound:  unboundMap,
+		unbound:  unbound,
 		reserved: reserved,
 	}
 }

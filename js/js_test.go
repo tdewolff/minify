@@ -83,7 +83,7 @@ func TestJS(t *testing.T) {
 		{`break;a`, `break;a`},
 		{`for (var a = 5; a < 10; a++){a}`, `for(var a=5;a<10;a++)a`},
 		{`for (a,b = 5; a < 10; a++){a}`, `for(a,b=5;a<10;a++)a`},
-		{`for await (var a of b){a}`, `for await(var a of b)a`},
+		{`async function f(){for await (var a of b){a}}`, `async function f(){for await(var a of b)a}`},
 		{`for (var a in b){a}`, `for(var a in b)a`},
 		{`for (var a of b){a}`, `for(var a of b)a`},
 		{`while(a < 10){a}`, `while(a<10)a`},
@@ -138,7 +138,7 @@ func TestJS(t *testing.T) {
 		{`if(a){b=c;y=z}else if(d){e=f}`, `a?(b=c,y=z):d&&(e=f)`},
 		{`if(a)while(b){c;d}else e`, `if(a)while(b)c,d;else e`},
 		{`if(a)while(b){c}else e`, `if(a)while(b)c;else e`},
-		{`if(a){ if(b) c }`, `a&&(b&&c)`}, // TODO: can remove ()?
+		{`if(a){ if(b) c }`, `a&&b&&c`}, // TODO: can remove ()?
 		{`if(a){ if(b) c } else e`, `a?b&&c:e`},
 		{`if(a){ if(b) c; else d} else e`, `a?b?c:d:e`},
 		{`if(a){ if(b) c; else for(x;y;z){f=g}} else e`, `if(a)if(b)c;else for(x;y;z)f=g;else e`},
@@ -264,7 +264,7 @@ func TestJS(t *testing.T) {
 		{`a=(a&&b)||c`, `a=a&&b||c`},
 		{`a=a&&(b||c)`, `a=a&&(b||c)`},
 		{`a=c&&(a??b)`, `a=c&&(a??b)`},
-		{`a=(a||b)||(c||d)`, `a=a||b||(c||d)`}, // TODO: can remove ()?
+		{`a=(a||b)||(c||d)`, `a=a||b||c||d`}, // TODO: can remove ()?
 		{`a=!(!b)`, `a=!!b`},
 		{`a=(b())`, `a=b()`},
 		{`a=(b)?.(c,d)`, `a=b?.(c,d)`},

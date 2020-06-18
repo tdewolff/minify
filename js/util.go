@@ -157,8 +157,8 @@ var binaryRightPrecMap = map[js.TokenType]js.OpPrec{
 	js.BitAndToken:     js.OpCompare,
 	js.BitXorToken:     js.OpBitAnd,
 	js.BitOrToken:      js.OpBitXor,
-	js.AndToken:        js.OpBitOr,
-	js.OrToken:         js.OpAnd,
+	js.AndToken:        js.OpAnd, // changes order in AST but not in execution
+	js.OrToken:         js.OpOr,  // changes order in AST but not in execution
 	js.NullishToken:    js.OpOr,
 	js.CommaToken:      js.OpAssign,
 }
