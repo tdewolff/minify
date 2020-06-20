@@ -4,6 +4,7 @@ package js
 // TODO: remove dead code, such as in if (false) or statements after return statement, difficulty with var decls
 // TODO: move var declaration or expr statement into for loop init (var only if for has var decl)
 // TODO: what are local statements? merge them
+// TODO: don't minify variable names in with statement, what todo with eval? Don't minify any variable name?
 
 import (
 	"bytes"
@@ -170,7 +171,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			}
 		}
 	case *js.BlockStmt:
-		m.minifyBlockStmt(*stmt, true)
+		m.minifyBlockStmt(*stmt)
 	case *js.ReturnStmt:
 		m.write([]byte("return"))
 		m.writeSpaceBeforeIdent()
@@ -263,7 +264,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.requireSemicolon()
 	case *js.TryStmt:
 		m.write([]byte("try"))
-		m.minifyBlockStmt(stmt.Body, false)
+		m.minifyBlockStmt(stmt.Body)
 		if len(stmt.Catch.List) != 0 || stmt.Binding != nil {
 			m.write([]byte("catch"))
 			if stmt.Binding != nil {
@@ -271,11 +272,11 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 				m.minifyBinding(stmt.Binding)
 				m.write([]byte(")"))
 			}
-			m.minifyBlockStmt(stmt.Catch, false)
+			m.minifyBlockStmt(stmt.Catch)
 		}
 		if len(stmt.Finally.List) != 0 {
 			m.write([]byte("finally"))
-			m.minifyBlockStmt(stmt.Finally, false)
+			m.minifyBlockStmt(stmt.Finally)
 		}
 	case *js.FuncDecl:
 		m.minifyFuncDecl(*stmt)
@@ -401,10 +402,13 @@ func (m *jsMinifier) stmtToExpr(i js.IStmt) js.IStmt {
 		// merge body and remove braces if possible from independent blocks
 		stmt.List = m.mergeStmtList(stmt.List)
 		if len(stmt.List) == 1 {
-			return m.stmtToExpr(stmt.List[0])
-		} else {
-			return js.IStmt(stmt)
+			varDecl, isVarDecl := stmt.List[0].(*js.VarDecl)
+			_, isClassDecl := stmt.List[0].(*js.ClassDecl)
+			if !isClassDecl && (!isVarDecl || varDecl.TokenType == js.VarToken) {
+				return m.stmtToExpr(stmt.List[0])
+			}
 		}
+		return js.IStmt(stmt)
 	}
 	return i
 }
@@ -478,12 +482,8 @@ func (m *jsMinifier) mergeStmtList(list []js.IStmt) []js.IStmt {
 	return list[:j+1]
 }
 
-func (m *jsMinifier) minifyBlockStmt(stmt js.BlockStmt, canRemoveBraces bool) {
+func (m *jsMinifier) minifyBlockStmt(stmt js.BlockStmt) {
 	stmt.List = m.mergeStmtList(stmt.List)
-	if canRemoveBraces && len(stmt.List) == 1 {
-		m.minifyStmt(stmt.List[0])
-		return
-	}
 	m.write([]byte("{"))
 	m.needsSemicolon = false
 	for _, item := range stmt.List {
@@ -660,7 +660,7 @@ func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
 		}
 	}
 	if !removeBraces {
-		m.minifyBlockStmt(decl.Body, false)
+		m.minifyBlockStmt(decl.Body)
 	}
 }
 
@@ -869,15 +869,12 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			if i != 0 {
 				m.write([]byte(","))
 			}
-			m.minifyExpr(item, js.OpAssign)
-		}
-		if expr.Rest != nil {
-			if len(expr.List) != 0 {
-				m.write([]byte(","))
+			if item.Spread {
+				m.write([]byte("..."))
 			}
-			m.write([]byte("..."))
-			m.minifyExpr(expr.Rest, js.OpAssign)
-		} else if 0 < len(expr.List) && expr.List[len(expr.List)-1] == nil {
+			m.minifyExpr(item.Value, js.OpAssign)
+		}
+		if 0 < len(expr.List) && expr.List[len(expr.List)-1].Value == nil {
 			m.write([]byte(","))
 		}
 		m.write([]byte("]"))
@@ -1066,7 +1063,13 @@ type renamer struct {
 	scopes   []map[string]int // index into renames, ordered from outer scope to inner
 }
 
-func newRenamer(unbound map[string]bool) *renamer {
+func newRenamer(unboundCount map[string]int) *renamer {
+	unbound := map[string]bool{}
+	for name, count := range unboundCount {
+		if count != 0 {
+			unbound[name] = true
+		}
+	}
 	reserved := map[string]bool{}
 	for name, _ := range js.Keywords {
 		reserved[name] = true

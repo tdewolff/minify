@@ -205,6 +205,7 @@ func TestJS(t *testing.T) {
 		{`var [a,,]=[b,,]`, `var [a,,]=[b,,]`},
 		{`var a={"property": val1, "2": val2, "3name": val3};`, `var a={property:val1,2:val2,"3name":val3}`},
 		{`var a=obj["property"], b=obj["2"], c=obj["3name"];`, `var a=obj.property,b=obj[2],c=obj["3name"]`},
+		{`{let a}`, `{let a}`}, // or remove entire block
 
 		// function and method declarations
 		{`function g(){return}`, `function g(){}`},
