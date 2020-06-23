@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"runtime/pprof"
 	"sort"
 	"strings"
 	"time"
@@ -84,6 +85,22 @@ func main() {
 }
 
 func run() int {
+	f, ferr := os.Create("cpu")
+	if ferr != nil {
+		log.Fatal(ferr)
+	}
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+
+	defer func() {
+		f, err := os.Create("mem")
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.WriteHeapProfile(f)
+		f.Close()
+	}()
+
 	output := ""
 	mimetype := ""
 	filetype := ""
