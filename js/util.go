@@ -278,6 +278,20 @@ func isEqualExpr(a, b js.IExpr) bool {
 	return false
 }
 
+func isBooleanExpr(expr js.IExpr) bool {
+	if unaryExpr, ok := expr.(*js.UnaryExpr); ok {
+		return unaryExpr.Op == js.NotToken
+	} else if binaryExpr, ok := expr.(*js.BinaryExpr); ok {
+		op := binaryOpPrecMap[binaryExpr.Op]
+		return op == js.OpCompare || op == js.OpEquals
+	} else if litExpr, ok := expr.(*js.LiteralExpr); ok {
+		return litExpr.TokenType == js.TrueToken || litExpr.TokenType == js.FalseToken
+	} else if groupExpr, ok := expr.(*js.GroupExpr); ok {
+		return isBooleanExpr(groupExpr.X)
+	}
+	return false
+}
+
 func isHexDigit(b byte) bool {
 	return '0' <= b && b <= '9' || 'a' <= b && b <= 'f' || 'A' <= b && b <= 'F'
 }
