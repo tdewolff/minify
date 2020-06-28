@@ -7,6 +7,7 @@ package js
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"sort"
 
@@ -53,6 +54,7 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		m.writeSemicolon()
 		m.minifyStmt(item)
 	}
+	fmt.Println("# scopes", fscopes, bscopes, bescopes)
 
 	if _, err := w.Write(nil); err != nil {
 		return err
@@ -1122,6 +1124,8 @@ func (m *jsMinifier) isFalsy(i js.IExpr) (bool, bool) {
 	return false, false // unknown
 }
 
+var fscopes, bscopes, bescopes int
+
 type renamer2 struct {
 	renames       []map[string][]byte
 	reserved      []map[string]bool
@@ -1154,12 +1158,17 @@ func (r *renamer2) enterScope(scope js.Scope, isBlock bool) {
 	n := len(r.renames)
 	parentRenames := r.renames[n-1]
 	if isBlock {
+		bscopes++
+		if len(scope.Bound) == 0 {
+			bescopes++
+		}
 		reserved = r.reserved[n-1]
 		rename = r.lastRename[n-1]
 		for name, rename := range parentRenames {
 			renames[name] = rename
 		}
 	} else {
+		fscopes++
 		reserved = map[string]bool{}
 		rename = []byte("`") // so that the next is 'a'
 		for name, _ := range js.Keywords {
