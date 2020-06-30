@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/hex"
 
+	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/parse/v2/js"
+	"github.com/tdewolff/parse/v2/strconv"
 )
 
 var unaryOpPrecMap = map[js.TokenType]js.OpPrec{
@@ -165,7 +167,7 @@ var binaryRightPrecMap = map[js.TokenType]js.OpPrec{
 
 func exprPrec(i js.IExpr) js.OpPrec {
 	switch expr := i.(type) {
-	case *js.LiteralExpr, *js.ObjectExpr, *js.FuncDecl, *js.ClassDecl:
+	case *js.LiteralExpr, *js.ArrayExpr, *js.ObjectExpr, *js.FuncDecl, *js.ClassDecl:
 		return js.OpPrimary
 	case *js.UnaryExpr:
 		return unaryOpPrecMap[expr.Op]
@@ -388,4 +390,42 @@ func minifyString(b []byte) []byte {
 		return b[:j]
 	}
 	return b
+}
+
+func binaryNumber(b []byte) []byte {
+	if len(b) <= 2 || len(b) > 65 {
+		return b
+	}
+	var n int64
+	for _, c := range b[2:] {
+		n *= 2
+		n += int64(c - '0')
+	}
+	i := strconv.LenInt(n) - 1
+	b = b[:i+1]
+	for 0 <= i {
+		b[i] = byte('0' + n%10)
+		n /= 10
+		i--
+	}
+	return minify.Number(b, 0)
+}
+
+func octalNumber(b []byte) []byte {
+	if len(b) <= 2 || len(b) > 23 {
+		return b
+	}
+	var n int64
+	for _, c := range b[2:] {
+		n *= 8
+		n += int64(c - '0')
+	}
+	i := strconv.LenInt(n) - 1
+	b = b[:i+1]
+	for 0 <= i {
+		b[i] = byte('0' + n%10)
+		n /= 10
+		i--
+	}
+	return minify.Number(b, 0)
 }
