@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math"
 	"sort"
 
 	"github.com/tdewolff/minify/v2"
@@ -47,14 +48,34 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	m := &jsMinifier{
 		o:       o,
 		w:       w,
-		renamer: newRenamer(ast.Scope, o.Deterministic),
+		src:     ast.Src,
+		renamer: newRenamer(ast.Undeclared, o.Deterministic),
 	}
 	ast.List = m.mergeStmtList(ast.List)
 	for _, item := range ast.List {
 		m.writeSemicolon()
 		m.minifyStmt(item)
 	}
-	fmt.Println("# scopes", fscopes, bscopes, bescopes)
+
+	definesBiggest := 0
+	definesTotal := 0
+	for _, n := range defines {
+		definesTotal += n
+		if definesBiggest < n {
+			definesBiggest = n
+		}
+	}
+	definesMean := float64(definesTotal) / float64(len(defines))
+	definesStdDev := 0.0
+	for _, n := range defines {
+		definesStdDev += (float64(n) - definesMean) * (float64(n) - definesMean)
+	}
+	definesStdDev = math.Sqrt(definesStdDev / float64(len(defines)))
+
+	fmt.Printf("# scopes: f=%d, b=%d (%d empty)\n", fscopes, bscopes, bescopes)
+	fmt.Printf("# max depth: %d\n", maxdepth)
+	fmt.Printf("# defines: %d (mean=%g, stddev=%g, biggest=%d)\n# undefines: %d\n", definesTotal, definesMean, definesStdDev, definesBiggest, len(undefines))
+	fmt.Println("undefines =", undefines)
 
 	if _, err := w.Write(nil); err != nil {
 		return err
@@ -69,7 +90,8 @@ type jsMinifier struct {
 	prev           []byte
 	needsSemicolon bool
 	needsSpace     bool
-	renamer        *renamer2
+	src            js.Src
+	renamer        *renamer
 }
 
 func (m *jsMinifier) write(b []byte) {
@@ -183,14 +205,15 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.minifyExpr(stmt.Value, js.OpExpr)
 		m.requireSemicolon()
 	case *js.LabelledStmt:
-		m.write(stmt.Token.Data)
+		m.write(stmt.Ref.Data(m.src))
 		m.write([]byte(":"))
 		m.minifyStmt(stmt.Value)
 	case *js.BranchStmt:
 		m.write(stmt.Type.Bytes())
-		if stmt.Name != nil {
+		name := stmt.Ref.Data(m.src)
+		if name != nil {
 			m.write([]byte(" "))
-			m.write(stmt.Name.Data)
+			m.write(name)
 		}
 		m.requireSemicolon()
 	case *js.WithStmt:
@@ -403,17 +426,18 @@ func (m *jsMinifier) stmtToExpr(i js.IStmt) js.IStmt {
 			if isExprBody && isExprElse {
 				return &js.ExprStmt{condExpr(stmt.Cond, XExpr.Value, YExpr.Value)}
 			}
-			XReturn, isReturnBody := stmt.Body.(*js.ReturnStmt)
-			YReturn, isReturnElse := stmt.Else.(*js.ReturnStmt)
-			if isReturnBody && isReturnElse {
-				if XReturn.Value == nil {
-					XReturn.Value = &js.UnaryExpr{js.VoidToken, &js.LiteralExpr{js.NumericToken, []byte("0")}}
-				}
-				if YReturn.Value == nil {
-					YReturn.Value = &js.UnaryExpr{js.VoidToken, &js.LiteralExpr{js.NumericToken, []byte("0")}}
-				}
-				return &js.ReturnStmt{condExpr(stmt.Cond, XReturn.Value, YReturn.Value)}
-			}
+			// TODO: enable
+			//XReturn, isReturnBody := stmt.Body.(*js.ReturnStmt)
+			//YReturn, isReturnElse := stmt.Else.(*js.ReturnStmt)
+			//if isReturnBody && isReturnElse {
+			//	if XReturn.Value == nil {
+			//		XReturn.Value = &js.UnaryExpr{js.VoidToken, &js.LiteralExpr{js.NumericToken, []byte("0")}}
+			//	}
+			//	if YReturn.Value == nil {
+			//		YReturn.Value = &js.UnaryExpr{js.VoidToken, &js.LiteralExpr{js.NumericToken, []byte("0")}}
+			//	}
+			//	return &js.ReturnStmt{condExpr(stmt.Cond, XReturn.Value, YReturn.Value)}
+			//}
 			XThrow, isThrowBody := stmt.Body.(*js.ThrowStmt)
 			YThrow, isThrowElse := stmt.Else.(*js.ThrowStmt)
 			if isThrowBody && isThrowElse {
@@ -730,15 +754,16 @@ func (m *jsMinifier) minifyPropertyName(name js.PropertyName) {
 		m.minifyExpr(name.Computed, js.OpAssign)
 		m.write([]byte("]"))
 	} else if name.Literal.TokenType == js.StringToken {
-		if _, ok := js.IsIdentifierName(name.Literal.Data[1 : len(name.Literal.Data)-1]); ok {
-			m.write(name.Literal.Data[1 : len(name.Literal.Data)-1])
-		} else if _, ok := js.IsNumericLiteral(name.Literal.Data[1 : len(name.Literal.Data)-1]); ok {
-			m.write(name.Literal.Data[1 : len(name.Literal.Data)-1])
+		data := name.Literal.Data(m.src)
+		if _, ok := js.IsIdentifierName(data[1 : len(data)-1]); ok {
+			m.write(data[1 : len(data)-1])
+		} else if _, ok := js.IsNumericLiteral(data[1 : len(data)-1]); ok {
+			m.write(data[1 : len(data)-1])
 		} else {
-			m.write(name.Literal.Data)
+			m.write(data)
 		}
 	} else {
-		m.write(name.Literal.Data)
+		m.write(name.Literal.Data(m.src))
 	}
 }
 
@@ -750,7 +775,7 @@ func (m *jsMinifier) minifyProperty(property js.Property) {
 		m.write([]byte("..."))
 	} else if lit, ok := property.Value.(*js.LiteralExpr); ok && lit.TokenType == js.IdentifierToken && !m.renamer.inGlobalScope() {
 		// add 'old-name:' before BindingName as the latter will be renamed
-		m.write(lit.Data)
+		m.write(lit.Data(m.src))
 		m.write([]byte(":"))
 	}
 	m.minifyExpr(property.Value, js.OpAssign)
@@ -773,7 +798,7 @@ func (m *jsMinifier) minifyBindingElement(element js.BindingElement) {
 func (m *jsMinifier) minifyBinding(i js.IBinding) {
 	switch binding := i.(type) {
 	case *js.BindingName:
-		m.write(m.renamer.rename(binding.Data))
+		m.write(m.renamer.rename(binding.Data(m.src)))
 	case *js.BindingArray:
 		m.write([]byte("["))
 		for i, item := range binding.List {
@@ -801,19 +826,21 @@ func (m *jsMinifier) minifyBinding(i js.IBinding) {
 			if item.Key != nil {
 				m.minifyPropertyName(*item.Key)
 				m.write([]byte(":"))
-			} else if name, ok := item.Value.Binding.(*js.BindingName); ok && !bytes.Equal(name.Data, m.renamer.rename(name.Data)) {
-				// add 'old-name:' before BindingName as the latter will be renamed
-				m.write(name.Data)
-				m.write([]byte(":"))
+			} else if name, ok := item.Value.Binding.(*js.BindingName); ok {
+				if data := name.Data(m.src); !bytes.Equal(data, m.renamer.rename(data)) {
+					// add 'old-name:' before BindingName as the latter will be renamed
+					m.write(data)
+					m.write([]byte(":"))
+				}
 			}
 			m.minifyBindingElement(item.Value)
 		}
-		if binding.Rest != nil {
+		if rest := binding.Rest.Data(m.src); rest != nil {
 			if 0 < len(binding.List) {
 				m.write([]byte(","))
 			}
 			m.write([]byte("..."))
-			m.write(binding.Rest.Data)
+			m.write(rest)
 		}
 		m.write([]byte("}"))
 	}
@@ -822,12 +849,13 @@ func (m *jsMinifier) minifyBinding(i js.IBinding) {
 func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 	switch expr := i.(type) {
 	case *js.LiteralExpr:
+		data := expr.Data(m.src)
 		if expr.TokenType == js.DecimalToken {
-			m.write(minify.Number(expr.Data, 0))
+			m.write(minify.Number(data, 0))
 		} else if expr.TokenType == js.BinaryToken {
-			m.write(binaryNumber(expr.Data))
+			m.write(binaryNumber(data))
 		} else if expr.TokenType == js.OctalToken {
-			m.write(octalNumber(expr.Data))
+			m.write(octalNumber(data))
 		} else if expr.TokenType == js.TrueToken {
 			if js.OpUnary < prec {
 				m.write([]byte("(!0)"))
@@ -840,24 +868,24 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			} else {
 				m.write([]byte("!1"))
 			}
-		} else if expr.TokenType == js.IdentifierToken && bytes.Equal(expr.Data, []byte("undefined")) && !m.renamer.exists(expr.Data) {
+		} else if expr.TokenType == js.IdentifierToken && bytes.Equal(data, []byte("undefined")) && !m.renamer.exists(data) {
 			if js.OpUnary < prec {
 				m.write([]byte("(void 0)"))
 			} else {
 				m.write([]byte("void 0"))
 			}
-		} else if expr.TokenType == js.IdentifierToken && bytes.Equal(expr.Data, []byte("Infinity")) && !m.renamer.exists(expr.Data) {
+		} else if expr.TokenType == js.IdentifierToken && bytes.Equal(data, []byte("Infinity")) && !m.renamer.exists(data) {
 			if js.OpMul < prec {
 				m.write([]byte("(1/0)"))
 			} else {
 				m.write([]byte("1/0"))
 			}
 		} else if expr.TokenType == js.IdentifierToken {
-			m.write(m.renamer.rename(expr.Data))
+			m.write(m.renamer.rename(data))
 		} else if expr.TokenType == js.StringToken {
-			m.write(minifyString(expr.Data))
+			m.write(minifyString(data))
 		} else {
-			m.write(expr.Data)
+			m.write(data)
 		}
 	case *js.BinaryExpr:
 		precLeft := binaryLeftPrecMap[expr.Op]
@@ -916,11 +944,11 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 					m.write([]byte(" "))
 				}
 			} else if expr.Op == js.NotToken {
-				if literal, ok := expr.X.(*js.LiteralExpr); ok && (literal.TokenType == js.StringToken || literal.TokenType == js.RegExpToken) {
+				if lit, ok := expr.X.(*js.LiteralExpr); ok && (lit.TokenType == js.StringToken || lit.TokenType == js.RegExpToken) {
 					m.write([]byte("1"))
 					break
-				} else if ok && literal.TokenType == js.DecimalToken {
-					if num := minify.Number(literal.Data, 0); len(num) == 1 && num[0] == '0' {
+				} else if ok && lit.TokenType == js.DecimalToken {
+					if num := minify.Number(lit.Data(m.src), 0); len(num) == 1 && num[0] == '0' {
 						m.write([]byte("0"))
 					} else {
 						m.write([]byte("1"))
@@ -932,8 +960,8 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		}
 	case *js.DotExpr:
 		if group, ok := expr.X.(*js.GroupExpr); ok {
-			if literal, ok := group.X.(*js.LiteralExpr); ok && literal.TokenType == js.DecimalToken {
-				num := minify.Number(literal.Data, 0)
+			if lit, ok := group.X.(*js.LiteralExpr); ok && lit.TokenType == js.DecimalToken {
+				num := minify.Number(lit.Data(m.src), 0)
 				isInt := true
 				for _, c := range num {
 					if c == '.' || c == 'e' || c == 'E' {
@@ -948,13 +976,13 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 					m.write(num)
 				}
 				m.write([]byte("."))
-				m.write(expr.Y.Data)
+				m.write(expr.Y.Data(m.src))
 				break
 			}
 		}
 		m.minifyExpr(expr.X, js.OpMember)
 		m.write([]byte("."))
-		m.write(expr.Y.Data)
+		m.write(expr.Y.Data(m.src))
 	case *js.GroupExpr:
 		precInside := exprPrec(expr.X)
 		if prec <= precInside {
@@ -1024,7 +1052,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			if expr.Generator {
 				m.write([]byte("*"))
 				m.minifyExpr(expr.X, js.OpAssign)
-			} else if literal, ok := expr.X.(*js.LiteralExpr); !ok || literal.TokenType != js.IdentifierToken || !bytes.Equal(literal.Data, []byte("undefined")) || m.renamer.exists(literal.Data) {
+			} else if lit, ok := expr.X.(*js.LiteralExpr); !ok || lit.TokenType != js.IdentifierToken || !bytes.Equal(lit.Data(m.src), []byte("undefined")) || m.renamer.exists(lit.Data(m.src)) {
 				m.minifyExpr(expr.X, js.OpAssign)
 			}
 		}
@@ -1034,13 +1062,16 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 	case *js.IndexExpr:
 		m.minifyExpr(expr.X, js.OpMember)
 		if lit, ok := expr.Index.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken {
-			if _, ok := js.IsIdentifierName(lit.Data[1 : len(lit.Data)-1]); ok {
+			data := lit.Data(m.src)
+			if _, ok := js.IsIdentifierName(data[1 : len(data)-1]); ok {
 				m.write([]byte("."))
-				m.write(lit.Data[1 : len(lit.Data)-1])
+				m.write(data[1 : len(data)-1])
 				break
-			} else if tt, ok := js.IsNumericLiteral(lit.Data[1 : len(lit.Data)-1]); ok {
-				lit.TokenType = tt
-				lit.Data = lit.Data[1 : len(lit.Data)-1]
+			} else if _, ok := js.IsNumericLiteral(data[1 : len(data)-1]); ok {
+				m.write([]byte("["))
+				m.write(data[1 : len(data)-1])
+				m.write([]byte("]"))
+				break
 			}
 		}
 		m.write([]byte("["))
@@ -1064,12 +1095,12 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			m.minifyExpr(expr.X, prec)
 		} else if !truthy && ok {
 			m.minifyExpr(expr.Y, prec)
-		} else if isEqualExpr(expr.Cond, expr.X) && prec <= js.OpOr && (exprPrec(expr.X) < js.OpAssign || binaryLeftPrecMap[js.OrToken] <= exprPrec(expr.X)) && (exprPrec(expr.Y) < js.OpAssign || binaryRightPrecMap[js.OrToken] <= exprPrec(expr.Y)) {
+		} else if m.isEqualExpr(expr.Cond, expr.X) && prec <= js.OpOr && (exprPrec(expr.X) < js.OpAssign || binaryLeftPrecMap[js.OrToken] <= exprPrec(expr.X)) && (exprPrec(expr.Y) < js.OpAssign || binaryRightPrecMap[js.OrToken] <= exprPrec(expr.Y)) {
 			// for higher prec we need to add group parenthesis, and for lower prec we have parenthesis anyways. This only is shorter if len(expr.X) >= 3. isEqualExpr only checks for literal variables, which is a name will be minified to a one or two character name.
 			m.minifyExpr(expr.X, binaryLeftPrecMap[js.OrToken])
 			m.write([]byte("||"))
 			m.minifyExpr(expr.Y, binaryRightPrecMap[js.OrToken])
-		} else if isEqualExpr(expr.X, expr.Y) {
+		} else if m.isEqualExpr(expr.X, expr.Y) {
 			if prec <= js.OpExpr {
 				m.minifyExpr(expr.Cond, binaryLeftPrecMap[js.CommaToken])
 				m.write([]byte(","))
@@ -1083,8 +1114,8 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			}
 		} else {
 			// shorten if cases are true and false
-			trueX, falseX := isTrue(expr.X), isFalse(expr.X)
-			trueY, falseY := isTrue(expr.Y), isFalse(expr.Y)
+			trueX, falseX := m.isTrue(expr.X), m.isFalse(expr.X)
+			trueY, falseY := m.isTrue(expr.Y), m.isFalse(expr.Y)
 			if trueX && falseY || falseX && trueY {
 				m.minifyBooleanExpr(expr.Cond, falseX, prec)
 			} else if trueX || trueY {
@@ -1160,237 +1191,152 @@ func (m *jsMinifier) minifyBooleanExpr(expr js.IExpr, invert bool, prec js.OpPre
 	}
 }
 
-func (m *jsMinifier) isUndefined(i js.IExpr) bool {
-	if lit, ok := i.(*js.LiteralExpr); ok && lit.TokenType == js.IdentifierToken && bytes.Equal(lit.Data, []byte("undefined")) && !m.renamer.exists(lit.Data) {
-		return true
-	} else if unary, ok := i.(*js.UnaryExpr); ok && unary.Op == js.VoidToken {
-		return true
+var fscopes, bscopes, bescopes int
+var defines []int
+var undefines map[string]bool = map[string]bool{}
+var depth, maxdepth int
+
+type renamerNop struct {
+}
+
+func newRenamerNop(scope js.Scope, deterministic bool) *renamerNop {
+	return &renamerNop{}
+}
+func (r *renamerNop) enterScope(scope js.Scope, isBlock bool) {
+	depth++
+	if depth > maxdepth {
+		maxdepth = depth
 	}
+	n_defines := 0
+	for name, v := range scope.Vars {
+		if 0 < v.Uses {
+			if v.Declared {
+				n_defines++
+			} else {
+				undefines[name] = true
+			}
+		}
+	}
+	if isBlock {
+		bscopes++
+		if n_defines == 0 {
+			bescopes++
+		}
+	} else {
+		fscopes++
+	}
+	defines = append(defines, n_defines)
+	return
+}
+func (r *renamerNop) exitScope() {
+	depth--
+	return
+}
+func (r *renamerNop) next(name []byte) []byte {
+	return nil
+}
+func (r *renamerNop) rename(name []byte) []byte {
+	return []byte("a")
+}
+func (r *renamerNop) exists(name []byte) bool {
 	return false
 }
-
-func (m *jsMinifier) isTruthy(i js.IExpr) (bool, bool) {
-	if falsy, ok := m.isFalsy(i); ok {
-		return !falsy, true
-	}
-	return false, false
+func (r *renamerNop) inGlobalScope() bool {
+	return true
 }
 
-func (m *jsMinifier) isFalsy(i js.IExpr) (bool, bool) {
-	negated := false
-	group, isGroup := i.(*js.GroupExpr)
-	unary, isUnary := i.(*js.UnaryExpr)
-	for isGroup || isUnary && unary.Op == js.NotToken {
-		if isGroup {
-			i = group.X
-		} else {
-			i = unary.X
-			negated = !negated
-		}
-		group, isGroup = i.(*js.GroupExpr)
-		unary, isUnary = i.(*js.UnaryExpr)
-	}
-	if lit, ok := i.(*js.LiteralExpr); ok {
-		if lit.TokenType == js.FalseToken || lit.TokenType == js.NullToken ||
-			lit.TokenType == js.StringToken && len(lit.Data) == 0 ||
-			lit.TokenType == js.DecimalToken && (len(lit.Data) == 1 && lit.Data[0] == '0' || len(lit.Data) == 2 && lit.Data[0] == '.' && lit.Data[1] == '0') ||
-			(lit.TokenType == js.BinaryToken || lit.TokenType == js.OctalToken || lit.TokenType == js.HexadecimalToken) && len(lit.Data) == 3 && lit.Data[2] == '0' ||
-			lit.TokenType == js.BigIntToken && len(lit.Data) == 2 && lit.Data[0] == '0' {
-			return !negated, true // false
-		} else if lit.TokenType == js.TrueToken || lit.TokenType == js.StringToken || lit.TokenType == js.DecimalToken || lit.TokenType == js.BinaryToken || lit.TokenType == js.OctalToken || lit.TokenType == js.HexadecimalToken || lit.TokenType == js.BigIntToken {
-			return negated, true // true
-		}
-	} else if m.isUndefined(i) {
-		return !negated, true // false
-	}
-	return false, false // unknown
-}
-
-var fscopes, bscopes, bescopes int
-
-type renamer2 struct {
+type renamer struct {
+	reserved      map[string]struct{}
+	vars          []map[string]js.Var
 	renames       []map[string][]byte
-	reserved      []map[string]bool
 	lastRename    [][]byte
-	globals       map[string]bool
 	deterministic bool
 }
 
-func newRenamer(scope js.Scope, deterministic bool) *renamer2 {
-	reserved := map[string]bool{}
-	for name, count := range scope.Unbound {
-		if 0 < count {
-			reserved[name] = true
-		}
+func newRenamer(undeclared map[string]struct{}, deterministic bool) *renamer {
+	fmt.Println("undeclared", undeclared)
+	reserved := make(map[string]struct{}, len(js.Keywords)+len(js.Globals)+len(undeclared))
+	for name, _ := range js.Keywords {
+		reserved[name] = struct{}{}
 	}
-	return &renamer2{
+	for name, _ := range js.Globals {
+		reserved[name] = struct{}{}
+	}
+	for name, _ := range undeclared {
+		reserved[name] = struct{}{}
+	}
+	return &renamer{
+		reserved:      reserved,
+		vars:          []map[string]js.Var{},
 		renames:       []map[string][]byte{map[string][]byte{}},
-		reserved:      []map[string]bool{reserved},
 		lastRename:    [][]byte{[]byte("`")},
-		globals:       scope.Bound,
 		deterministic: deterministic,
 	}
 }
 
-func (r *renamer2) enterScope(scope js.Scope, isBlock bool) {
+func (r *renamer) enterScope(scope js.Scope, isBlock bool) {
+	fmt.Println(scope.Vars)
 	renames := map[string][]byte{}
-	var reserved map[string]bool
-	var rename []byte
+	rename := []byte("`") // so that the next is 'a'
 
 	n := len(r.renames)
-	parentRenames := r.renames[n-1]
-	if isBlock {
-		bscopes++
-		if len(scope.Bound) == 0 {
-			bescopes++
-		}
-		reserved = r.reserved[n-1]
-		rename = r.lastRename[n-1]
-		for name, rename := range parentRenames {
-			renames[name] = rename
-		}
-	} else {
-		fscopes++
-		reserved = map[string]bool{}
-		rename = []byte("`") // so that the next is 'a'
-		for name, _ := range js.Keywords {
-			reserved[name] = true
-		}
-		for name, count := range scope.Unbound {
-			if 0 < count {
+	if !r.inGlobalScope() {
+		parentRenames := r.renames[n-1]
+		for name, v := range scope.Vars {
+			if 0 < v.Uses && !v.Declared {
 				if rename, ok := parentRenames[name]; ok {
 					renames[name] = rename
-					reserved[string(rename)] = true
-				} else {
-					reserved[name] = true
 				}
 			}
 		}
 	}
 	if r.deterministic {
 		bound := []string{}
-		for name, ok := range scope.Bound {
-			if ok {
+		for name, v := range scope.Vars {
+			if v.Declared && 0 < v.Uses {
 				bound = append(bound, name)
 			}
 		}
 		sort.Strings(bound)
 		for _, name := range bound {
 			rename = r.next(rename)
-			for reserved[string(rename)] {
+			for r.isReserved(rename) {
 				rename = r.next(rename)
 			}
 			renames[name] = parse.Copy(rename)
 		}
 	} else {
-		for name, ok := range scope.Bound {
-			if ok {
+		for name, v := range scope.Vars {
+			if v.Declared && 0 < v.Uses {
 				rename = r.next(rename)
-				for reserved[string(rename)] {
+				for r.isReserved(rename) {
 					rename = r.next(rename)
 				}
 				renames[name] = parse.Copy(rename)
 			}
 		}
 	}
+	r.vars = append(r.vars, scope.Vars)
 	r.renames = append(r.renames, renames)
-	r.reserved = append(r.reserved, reserved)
 	r.lastRename = append(r.lastRename, rename)
 }
 
-func (r *renamer2) exitScope() {
-	n := len(r.renames)
+func (r *renamer) exitScope() {
+	n := len(r.vars)
+	r.vars = r.vars[:n-1]
 	r.renames = r.renames[:n-1]
-	r.reserved = r.reserved[:n-1]
 	r.lastRename = r.lastRename[:n-1]
 }
 
-func (r *renamer2) next(name []byte) []byte {
-	if name[len(name)-1] == 'z' {
-		name[len(name)-1] = 'A'
-	} else if name[len(name)-1] == 'Z' {
-		name[len(name)-1] = '_'
-	} else if name[len(name)-1] == '_' {
-		name[len(name)-1] = '$'
-	} else if name[len(name)-1] == '$' {
-		isLast := true
-		for i := len(name) - 2; 0 <= i; i-- {
-			if name[i] != 'Z' {
-				if name[i] == 'z' {
-					name[i] = 'A'
-				} else {
-					name[i]++
-				}
-				for j := i + 1; j < len(name); j++ {
-					name[j] = 'a'
-				}
-				isLast = false
-			}
-		}
-		if isLast {
-			for j := 0; j < len(name); j++ {
-				name[j] = 'a'
-			}
-			name = append(name, 'a')
-		}
-	} else {
-		name[len(name)-1]++
-	}
-	return name
-}
-
-func (r *renamer2) rename(name []byte) []byte {
-	if r.inGlobalScope() {
-		return name
-	}
-	if rename, ok := r.renames[len(r.renames)-1][string(name)]; ok {
-		return rename
-	}
-	return name
-}
-
-func (r *renamer2) exists(name []byte) bool {
-	if _, ok := r.globals[string(name)]; ok {
+func (r *renamer) isReserved(name []byte) bool {
+	if _, ok := r.reserved[string(name)]; ok {
 		return true
-	}
-	for j := len(r.renames) - 1; 0 <= j; j-- {
-		if _, ok := r.renames[j][string(name)]; ok {
+	} else if !r.inGlobalScope() {
+		if v, ok := r.vars[len(r.vars)-1][string(name)]; ok && 0 < v.Uses {
 			return true
 		}
 	}
 	return false
-}
-
-func (r *renamer2) inGlobalScope() bool {
-	return len(r.renames) == 1
-}
-
-type renamer struct {
-	unbound  map[string]bool
-	reserved map[string]bool
-	renames  [][]byte         // list of renames, only ever grows as we find new variables that do not collide
-	idx      int              // index into renames, decreases when we leave scope
-	scopes   []map[string]int // index into renames, ordered from outer scope to inner
-}
-
-func newRenamerOld(unboundCount map[string]int) *renamer {
-	unbound := map[string]bool{}
-	for name, count := range unboundCount {
-		if count != 0 {
-			unbound[name] = true
-		}
-	}
-	reserved := map[string]bool{}
-	for name, _ := range js.Keywords {
-		reserved[name] = true
-	}
-	for name := range unbound {
-		reserved[name] = true
-	}
-	return &renamer{
-		unbound:  unbound,
-		reserved: reserved,
-	}
 }
 
 func (r *renamer) next(name []byte) []byte {
@@ -1427,69 +1373,30 @@ func (r *renamer) next(name []byte) []byte {
 	return name
 }
 
-func (r *renamer) add(src []byte) []byte {
-	if r.inGlobal() {
-		r.reserved[string(src)] = true // top-level variables
-		return src
-	} else if r.idx < len(r.renames) {
-		dst := r.renames[r.idx]
-		r.scopes[len(r.scopes)-1][string(src)] = r.idx
-		r.idx++
-		return dst
+func (r *renamer) rename(name []byte) []byte {
+	if r.inGlobalScope() {
+		return name
 	}
-	var dst []byte
-	if len(r.renames) == 0 {
-		dst = []byte("a")
-	} else {
-		dst = parse.Copy(r.renames[len(r.renames)-1])
-		dst = r.next(dst)
-	}
-	for r.reserved[string(dst)] {
-		dst = r.next(dst)
-	}
-	r.renames = append(r.renames, dst)
-	r.scopes[len(r.scopes)-1][string(src)] = r.idx
-	r.idx++
-	return dst
-}
-
-func (r *renamer) name(name []byte) []byte {
-	for j := len(r.scopes) - 1; 0 <= j; j-- {
-		if i, ok := r.scopes[j][string(name)]; ok {
-			return r.renames[i]
+	for i := len(r.renames) - 1; 0 <= i; i-- {
+		if rename, ok := r.renames[i][string(name)]; ok {
+			return rename
 		}
-	}
-	if !r.reserved[string(name)] {
-		return r.add(name)
 	}
 	return name
 }
 
 func (r *renamer) exists(name []byte) bool {
-	if r.unbound[string(name)] {
-		return false
-	}
-	if r.reserved[string(name)] {
-		return true
-	}
-	for j := len(r.scopes) - 1; 0 <= j; j-- {
-		if _, ok := r.scopes[j][string(name)]; ok {
-			return true
-		}
-	}
+	//if _, ok := r.globals[string(name)]; ok {
+	//	return true
+	//}
+	//for j := len(r.renames) - 1; 0 <= j; j-- {
+	//	if _, ok := r.renames[j][string(name)]; ok {
+	//		return true
+	//	}
+	//}
 	return false
 }
 
-func (r *renamer) openScope() {
-	r.scopes = append(r.scopes, map[string]int{})
-}
-
-func (r *renamer) closeScope() {
-	last := len(r.scopes) - 1
-	r.idx -= len(r.scopes[last])
-	r.scopes = r.scopes[:last]
-}
-
-func (r *renamer) inGlobal() bool {
-	return len(r.scopes) == 0
+func (r *renamer) inGlobalScope() bool {
+	return len(r.vars) == 0
 }

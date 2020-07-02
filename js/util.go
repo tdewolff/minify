@@ -242,29 +242,82 @@ func hasReturnThrowStmt(stmt js.IStmt) bool {
 	return false
 }
 
-func isTrue(i js.IExpr) bool {
+func (m *jsMinifier) isTrue(i js.IExpr) bool {
 	if lit, ok := i.(*js.LiteralExpr); ok && lit.TokenType == js.TrueToken {
 		return true
 	} else if unary, ok := i.(*js.UnaryExpr); ok && unary.Op == js.NotToken {
-		if lit, ok := unary.X.(*js.LiteralExpr); ok && lit.TokenType == js.DecimalToken && len(lit.Data) == 1 && lit.Data[0] == '0' {
-			return true
+		if lit, ok := unary.X.(*js.LiteralExpr); ok && lit.TokenType == js.DecimalToken {
+			if data := lit.Data(m.src); len(data) == 1 && data[0] == '0' {
+				return true
+			}
 		}
 	}
 	return false
 }
 
-func isFalse(i js.IExpr) bool {
+func (m *jsMinifier) isFalse(i js.IExpr) bool {
 	if lit, ok := i.(*js.LiteralExpr); ok {
 		return lit.TokenType == js.FalseToken
 	} else if unary, ok := i.(*js.UnaryExpr); ok && unary.Op == js.NotToken {
-		if lit, ok := unary.X.(*js.LiteralExpr); ok && lit.TokenType == js.DecimalToken && len(lit.Data) == 1 && lit.Data[0] != '0' {
-			return true
+		if lit, ok := unary.X.(*js.LiteralExpr); ok && lit.TokenType == js.DecimalToken {
+			if data := lit.Data(m.src); len(data) != 1 || data[0] != '0' { // TODO: what about decimal with dot?
+				return true
+			}
 		}
 	}
 	return false
 }
 
-func isEqualExpr(a, b js.IExpr) bool {
+func (m *jsMinifier) isUndefined(i js.IExpr) bool {
+	if lit, ok := i.(*js.LiteralExpr); ok && lit.TokenType == js.IdentifierToken {
+		if data := lit.Data(m.src); bytes.Equal(data, []byte("undefined")) && !m.renamer.exists(data) {
+			return true
+		}
+	} else if unary, ok := i.(*js.UnaryExpr); ok && unary.Op == js.VoidToken {
+		return true
+	}
+	return false
+}
+
+func (m *jsMinifier) isTruthy(i js.IExpr) (bool, bool) {
+	if falsy, ok := m.isFalsy(i); ok {
+		return !falsy, true
+	}
+	return false, false
+}
+
+func (m *jsMinifier) isFalsy(i js.IExpr) (bool, bool) {
+	negated := false
+	group, isGroup := i.(*js.GroupExpr)
+	unary, isUnary := i.(*js.UnaryExpr)
+	for isGroup || isUnary && unary.Op == js.NotToken {
+		if isGroup {
+			i = group.X
+		} else {
+			i = unary.X
+			negated = !negated
+		}
+		group, isGroup = i.(*js.GroupExpr)
+		unary, isUnary = i.(*js.UnaryExpr)
+	}
+	if lit, ok := i.(*js.LiteralExpr); ok {
+		data := lit.Data(m.src)
+		if lit.TokenType == js.FalseToken || lit.TokenType == js.NullToken ||
+			lit.TokenType == js.StringToken && len(data) == 0 ||
+			lit.TokenType == js.DecimalToken && (len(data) == 1 && data[0] == '0' || len(data) == 2 && data[0] == '.' && data[1] == '0') ||
+			(lit.TokenType == js.BinaryToken || lit.TokenType == js.OctalToken || lit.TokenType == js.HexadecimalToken) && len(data) == 3 && data[2] == '0' ||
+			lit.TokenType == js.BigIntToken && len(data) == 2 && data[0] == '0' {
+			return !negated, true // false
+		} else if lit.TokenType == js.TrueToken || lit.TokenType == js.StringToken || lit.TokenType == js.DecimalToken || lit.TokenType == js.BinaryToken || lit.TokenType == js.OctalToken || lit.TokenType == js.HexadecimalToken || lit.TokenType == js.BigIntToken {
+			return negated, true // true
+		}
+	} else if m.isUndefined(i) {
+		return !negated, true // false
+	}
+	return false, false // unknown
+}
+
+func (m *jsMinifier) isEqualExpr(a, b js.IExpr) bool {
 	if group, ok := a.(*js.GroupExpr); ok {
 		a = group.X
 	}
@@ -273,7 +326,7 @@ func isEqualExpr(a, b js.IExpr) bool {
 	}
 	if left, ok := a.(*js.LiteralExpr); ok {
 		if right, ok := b.(*js.LiteralExpr); ok {
-			return left.TokenType == right.TokenType && bytes.Equal(left.Data, right.Data)
+			return left.TokenType == right.TokenType && bytes.Equal(left.Data(m.src), right.Data(m.src))
 		}
 	}
 	// TODO: use reflect.DeepEqual?
