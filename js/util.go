@@ -167,7 +167,7 @@ var binaryRightPrecMap = map[js.TokenType]js.OpPrec{
 
 func exprPrec(i js.IExpr) js.OpPrec {
 	switch expr := i.(type) {
-	case *js.LiteralExpr, *js.ArrayExpr, *js.ObjectExpr, *js.FuncDecl, *js.ClassDecl:
+	case *js.VarRef, *js.LiteralExpr, *js.ArrayExpr, *js.ObjectExpr, *js.FuncDecl, *js.ClassDecl:
 		return js.OpPrimary
 	case *js.UnaryExpr:
 		return unaryOpPrecMap[expr.Op]
@@ -197,7 +197,7 @@ func exprPrec(i js.IExpr) js.OpPrec {
 
 func isIdentStartBindingElement(element js.BindingElement) bool {
 	if element.Binding != nil {
-		if _, ok := element.Binding.(*js.BindingName); ok {
+		if _, ok := element.Binding.(*js.VarRef); ok {
 			return true
 		}
 	}
@@ -247,7 +247,7 @@ func (m *jsMinifier) isTrue(i js.IExpr) bool {
 		return true
 	} else if unary, ok := i.(*js.UnaryExpr); ok && unary.Op == js.NotToken {
 		if lit, ok := unary.X.(*js.LiteralExpr); ok && lit.TokenType == js.DecimalToken {
-			if data := lit.Data(m.src); len(data) == 1 && data[0] == '0' {
+			if data := lit.Data; len(data) == 1 && data[0] == '0' {
 				return true
 			}
 		}
@@ -260,7 +260,7 @@ func (m *jsMinifier) isFalse(i js.IExpr) bool {
 		return lit.TokenType == js.FalseToken
 	} else if unary, ok := i.(*js.UnaryExpr); ok && unary.Op == js.NotToken {
 		if lit, ok := unary.X.(*js.LiteralExpr); ok && lit.TokenType == js.DecimalToken {
-			if data := lit.Data(m.src); len(data) != 1 || data[0] != '0' { // TODO: what about decimal with dot?
+			if data := lit.Data; len(data) != 1 || data[0] != '0' { // TODO: what about decimal with dot?
 				return true
 			}
 		}
@@ -269,8 +269,8 @@ func (m *jsMinifier) isFalse(i js.IExpr) bool {
 }
 
 func (m *jsMinifier) isUndefined(i js.IExpr) bool {
-	if lit, ok := i.(*js.LiteralExpr); ok && lit.TokenType == js.IdentifierToken {
-		if data := lit.Data(m.src); bytes.Equal(data, []byte("undefined")) && !m.renamer.exists(data) {
+	if ref, ok := i.(*js.VarRef); ok {
+		if bytes.Equal(ref.Data(m.ctx), []byte("undefined")) { // TODO: only if not defined
 			return true
 		}
 	} else if unary, ok := i.(*js.UnaryExpr); ok && unary.Op == js.VoidToken {
@@ -301,14 +301,15 @@ func (m *jsMinifier) isFalsy(i js.IExpr) (bool, bool) {
 		unary, isUnary = i.(*js.UnaryExpr)
 	}
 	if lit, ok := i.(*js.LiteralExpr); ok {
-		data := lit.Data(m.src)
-		if lit.TokenType == js.FalseToken || lit.TokenType == js.NullToken ||
-			lit.TokenType == js.StringToken && len(data) == 0 ||
-			lit.TokenType == js.DecimalToken && (len(data) == 1 && data[0] == '0' || len(data) == 2 && data[0] == '.' && data[1] == '0') ||
-			(lit.TokenType == js.BinaryToken || lit.TokenType == js.OctalToken || lit.TokenType == js.HexadecimalToken) && len(data) == 3 && data[2] == '0' ||
-			lit.TokenType == js.BigIntToken && len(data) == 2 && data[0] == '0' {
+		tt := lit.TokenType
+		d := lit.Data
+		if tt == js.FalseToken || tt == js.NullToken ||
+			tt == js.StringToken && len(d) == 0 ||
+			tt == js.DecimalToken && (len(d) == 1 && d[0] == '0' || len(d) == 2 && d[0] == '.' && d[1] == '0') ||
+			(tt == js.BinaryToken || tt == js.OctalToken || tt == js.HexadecimalToken) && len(d) == 3 && d[2] == '0' ||
+			tt == js.BigIntToken && len(d) == 2 && d[0] == '0' {
 			return !negated, true // false
-		} else if lit.TokenType == js.TrueToken || lit.TokenType == js.StringToken || lit.TokenType == js.DecimalToken || lit.TokenType == js.BinaryToken || lit.TokenType == js.OctalToken || lit.TokenType == js.HexadecimalToken || lit.TokenType == js.BigIntToken {
+		} else if tt == js.TrueToken || tt == js.StringToken || tt == js.DecimalToken || tt == js.BinaryToken || tt == js.OctalToken || tt == js.HexadecimalToken || tt == js.BigIntToken {
 			return negated, true // true
 		}
 	} else if m.isUndefined(i) {
@@ -324,9 +325,9 @@ func (m *jsMinifier) isEqualExpr(a, b js.IExpr) bool {
 	if group, ok := b.(*js.GroupExpr); ok {
 		b = group.X
 	}
-	if left, ok := a.(*js.LiteralExpr); ok {
-		if right, ok := b.(*js.LiteralExpr); ok {
-			return left.TokenType == right.TokenType && bytes.Equal(left.Data(m.src), right.Data(m.src))
+	if left, ok := a.(*js.VarRef); ok {
+		if right, ok := b.(*js.VarRef); ok {
+			return bytes.Equal(left.Data(m.ctx), right.Data(m.ctx))
 		}
 	}
 	// TODO: use reflect.DeepEqual?

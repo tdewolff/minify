@@ -26,7 +26,9 @@ func BenchmarkJSON(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				r[sample].Reset()
 				w[sample].Reset()
-				json.Minify(m, w[sample], r[sample], nil)
+				if err := json.Minify(m, w[sample], r[sample], nil); err != nil {
+					b.Fatal(err)
+				}
 			}
 		})
 	}

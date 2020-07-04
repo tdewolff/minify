@@ -27,7 +27,9 @@ func BenchmarkCSS(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				r[sample].Reset()
 				w[sample].Reset()
-				css.Minify(m, w[sample], r[sample], nil)
+				if err := css.Minify(m, w[sample], r[sample], nil); err != nil {
+					b.Fatal(err)
+				}
 			}
 		})
 	}
