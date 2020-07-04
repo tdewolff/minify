@@ -306,6 +306,27 @@ func TestHTMLKeepQuotes(t *testing.T) {
 	}
 }
 
+func TestHTMLDontLowercaseAttributes(t *testing.T) {
+	htmlTests := []struct {
+		html     string
+		expected string
+	}{
+		{`<p attr="Test">`, `<p attr=Test>`},
+		{`<html lang="{{.Lang}}">`, `<html lang={{.Lang}}>`},
+	}
+
+	m := minify.New()
+	htmlMinifier := &Minifier{DontLowercaseAttributes: true}
+	for _, tt := range htmlTests {
+		t.Run(tt.html, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.html)
+			w := &bytes.Buffer{}
+			err := htmlMinifier.Minify(m, w, r, nil)
+			test.Minify(t, tt.html, err, w.String(), tt.expected)
+		})
+	}
+}
+
 func TestHTMLURL(t *testing.T) {
 	htmlTests := []struct {
 		url      string
