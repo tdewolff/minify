@@ -173,6 +173,7 @@ Options:
 - `KeepEndTags` preserve all end tags
 - `KeepQuotes` preserve quotes around attribute values
 - `KeepWhitespace` preserve whitespace between inline tags but still collapse multiple whitespace characters into one
+- `DontLowercaseAttributes` prevent attributes lower case
 
 After recent benchmarking and profiling it became really fast and minifies pages in the 10ms range, making it viable for on-the-fly minification.
 
