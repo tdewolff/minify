@@ -147,7 +147,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 					m.write([]byte("!"))
 				}
 			} else if index, ok := prefix.(*js.IndexExpr); ok {
-				if ref, ok := index.X.(*js.VarRef); ok && bytes.Equal(ref.Data(m.ctx), []byte("let")) {
+				if ref, ok := index.X.(*js.VarRef); ok && bytes.Equal(ref.Get(m.ctx).Data, []byte("let")) {
 					// could be AssignmentTarget
 					m.write([]byte("("))
 					//grouped = true
@@ -653,7 +653,7 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 		if !decl.Generator {
 			m.write([]byte(" "))
 		}
-		m.write(decl.Name.Data(m.ctx))
+		m.write(decl.Name.Get(m.ctx).Data)
 	}
 	if !inExpr {
 		m.renamer.enterScope(decl.Scope)
@@ -743,7 +743,7 @@ func (m *jsMinifier) minifyClassDecl(decl js.ClassDecl) {
 	m.write([]byte("class"))
 	if decl.Name != nil {
 		m.write([]byte(" "))
-		m.write(decl.Name.Data(m.ctx))
+		m.write(decl.Name.Get(m.ctx).Data)
 	}
 	if decl.Extends != nil {
 		m.write([]byte(" extends"))
@@ -782,10 +782,10 @@ func (m *jsMinifier) minifyProperty(property js.Property) {
 		m.write([]byte(":"))
 	} else if property.Spread {
 		m.write([]byte("..."))
-	} else if ref, ok := property.Value.(*js.VarRef); ok && !m.renamer.inGlobalScope() {
+	} else if ref, ok := property.Value.(*js.VarRef); ok && ref.Get(m.ctx).IsRenamed {
 		// add 'old-name:' before BindingName as the latter will be renamed
-		m.write(ref.Data(m.ctx))
-		m.write([]byte(":")) // TODO: for all? not just if rename is diff? need global scope check?
+		m.write(ref.Get(m.ctx).Data)
+		m.write([]byte(":"))
 	}
 	m.minifyExpr(property.Value, js.OpAssign)
 	if property.Init != nil {
@@ -807,7 +807,7 @@ func (m *jsMinifier) minifyBindingElement(element js.BindingElement) {
 func (m *jsMinifier) minifyBinding(i js.IBinding) {
 	switch binding := i.(type) {
 	case *js.VarRef:
-		m.write(binding.Data(m.ctx))
+		m.write(binding.Get(m.ctx).Data)
 	case *js.BindingArray:
 		m.write([]byte("["))
 		for i, item := range binding.List {
@@ -835,9 +835,9 @@ func (m *jsMinifier) minifyBinding(i js.IBinding) {
 			if item.Key != nil {
 				m.minifyPropertyName(*item.Key)
 				m.write([]byte(":"))
-			} else if name, ok := item.Value.Binding.(*js.VarRef); ok { // TODO: only if renamed
+			} else if name, ok := item.Value.Binding.(*js.VarRef); ok && name.Get(m.ctx).IsRenamed {
 				// add 'old-name:' before BindingName as the latter will be renamed
-				m.write(name.Data(m.ctx))
+				m.write(name.Get(m.ctx).Data)
 				m.write([]byte(":"))
 			}
 			m.minifyBindingElement(item.Value)
@@ -847,7 +847,7 @@ func (m *jsMinifier) minifyBinding(i js.IBinding) {
 				m.write([]byte(","))
 			}
 			m.write([]byte("..."))
-			m.write(binding.Rest.Data(m.ctx))
+			m.write(binding.Rest.Get(m.ctx).Data)
 		}
 		m.write([]byte("}"))
 	}
@@ -856,7 +856,7 @@ func (m *jsMinifier) minifyBinding(i js.IBinding) {
 func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 	switch expr := i.(type) {
 	case *js.VarRef:
-		data := expr.Data(m.ctx)
+		data := expr.Get(m.ctx).Data
 		if bytes.Equal(data, []byte("undefined")) { // TODO: only if not defined
 			if js.OpUnary < prec {
 				m.write([]byte("(void 0)"))
@@ -871,7 +871,6 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			}
 		} else {
 			m.write(data)
-			//m.write(m.renamer.rename(m.ctx.Data(expr)))
 		}
 	case *js.LiteralExpr:
 		if expr.TokenType == js.DecimalToken {
@@ -1062,7 +1061,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			if expr.Generator {
 				m.write([]byte("*"))
 				m.minifyExpr(expr.X, js.OpAssign)
-			} else if ref, ok := expr.X.(*js.VarRef); !ok || !bytes.Equal(ref.Data(m.ctx), []byte("undefined")) { // TODO: only if not bound
+			} else if ref, ok := expr.X.(*js.VarRef); !ok || !bytes.Equal(ref.Get(m.ctx).Data, []byte("undefined")) { // TODO: only if not bound
 				m.minifyExpr(expr.X, js.OpAssign)
 			}
 		}
@@ -1211,7 +1210,7 @@ type renamer struct {
 	rename   bool
 }
 
-func newRenamer(ctx *js.VarCtx, undeclared map[string]struct{}, rename bool) *renamer {
+func newRenamer(ctx *js.VarCtx, undeclared js.VarArray, rename bool) *renamer {
 	reserved := make(map[string]struct{}, len(js.Keywords)+len(js.Globals)+len(undeclared))
 	for name, _ := range js.Keywords {
 		reserved[name] = struct{}{}
@@ -1219,9 +1218,12 @@ func newRenamer(ctx *js.VarCtx, undeclared map[string]struct{}, rename bool) *re
 	for name, _ := range js.Globals {
 		reserved[name] = struct{}{}
 	}
-	for name, _ := range undeclared {
-		reserved[name] = struct{}{}
+	for _, v := range undeclared {
+		if 0 < v.Uses {
+			reserved[string(v.Data)] = struct{}{}
+		}
 	}
+	// TODO: sort variable names on highest usage throughout the file, right now lower scopes can have high usage but are forced to use two-character names as the one-character names are depleted
 	return &renamer{
 		ctx:      ctx,
 		reserved: reserved,
@@ -1232,17 +1234,18 @@ func newRenamer(ctx *js.VarCtx, undeclared map[string]struct{}, rename bool) *re
 
 func (r *renamer) enterScope(scope js.Scope) {
 	r.depth++
-	if !r.rename || r.inGlobalScope() {
+	if !r.rename || r.depth == 0 {
 		return
 	}
 
 	rename := []byte("`") // so that the next is 'a'
-	sort.Sort(scope.Vars)
-	for _, v := range scope.Vars {
+	sort.Sort(scope.Declared)
+	for _, v := range scope.Declared {
 		rename = r.next(rename)
 		for r.isReserved(rename) {
 			rename = r.next(rename)
 		}
+		v.IsRenamed = true
 		v.Data = parse.Copy(rename)
 	}
 }
@@ -1288,8 +1291,4 @@ func (r *renamer) next(name []byte) []byte {
 		name[len(name)-1]++
 	}
 	return name
-}
-
-func (r *renamer) inGlobalScope() bool {
-	return r.depth == 0
 }

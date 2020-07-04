@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/buffer"
 	"github.com/tdewolff/test"
 )
@@ -221,10 +222,10 @@ func TestJS(t *testing.T) {
 		{`var [a,]=[b,]`, `var[a]=[b]`},
 		{`var [a,z]=[b,c]`, `var[a,z]=[b,c]`},
 		{`var [a,,]=[b,,]`, `var[a,,]=[b,,]`},
-		//{`var {a,}=b`, `var{a}=b`},
+		{`var {a,}=b`, `var{a}=b`},
 		{`{let a}`, `{let a}`}, // TODO: remove entire block
 		{`for(var [a] in b){}`, `for(var[a]in b){}`},
-		//{`for(var {a} of b){}`, `for(var{a}of b){}`},
+		{`for(var {a} of b){}`, `for(var{a}of b){}`},
 
 		// function and method declarations
 		//{`function g(){return}`, `function g(){}`},
@@ -459,16 +460,17 @@ func TestJSVarRenaming(t *testing.T) {
 
 func BenchmarkJQuery(b *testing.B) {
 	m := minify.New()
+	buf, err := ioutil.ReadFile("../benchmarks/sample_jquery.js")
+	if err != nil {
+		panic(err)
+	}
 	for j := 0; j < 10; j++ {
 		b.Run(fmt.Sprintf("%d", j), func(b *testing.B) {
+			b.SetBytes(int64(len(buf)))
 			for i := 0; i < b.N; i++ {
 				b.StopTimer()
-				sample, err := ioutil.ReadFile("../benchmarks/sample_jquery.js")
-				if err != nil {
-					panic(err)
-				}
-				r := buffer.NewReader(sample)
-				w := buffer.NewWriter(make([]byte, 0, len(sample)))
+				r := buffer.NewReader(parse.Copy(buf))
+				w := buffer.NewWriter(make([]byte, 0, len(buf)))
 				b.StartTimer()
 
 				if err := Minify(m, w, r, nil); err != nil {
