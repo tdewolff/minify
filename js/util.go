@@ -270,7 +270,7 @@ func (m *jsMinifier) isFalse(i js.IExpr) bool {
 
 func (m *jsMinifier) isUndefined(i js.IExpr) bool {
 	if ref, ok := i.(*js.VarRef); ok {
-		if bytes.Equal(ref.Get(m.ctx).Name, []byte("undefined")) { // TODO: only if not defined
+		if bytes.Equal(ref.Get(m.ctx).Name, undefinedBytes) { // TODO: only if not defined
 			return true
 		}
 	} else if unary, ok := i.(*js.UnaryExpr); ok && unary.Op == js.VoidToken {
