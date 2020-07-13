@@ -601,7 +601,7 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 		if !decl.Generator {
 			m.write([]byte(" "))
 		}
-		m.write(decl.Name.Get(m.ctx).Data)
+		m.write(decl.Name.Get(m.ctx).Name)
 	}
 	if !inExpr {
 		m.renamer.enterScope(decl.Scope)
@@ -691,7 +691,7 @@ func (m *jsMinifier) minifyClassDecl(decl js.ClassDecl) {
 	m.write([]byte("class"))
 	if decl.Name != nil {
 		m.write([]byte(" "))
-		m.write(decl.Name.Get(m.ctx).Data)
+		m.write(decl.Name.Get(m.ctx).Name)
 	}
 	if decl.Extends != nil {
 		m.write([]byte(" extends"))
@@ -732,7 +732,7 @@ func (m *jsMinifier) minifyProperty(property js.Property) {
 		m.write([]byte("..."))
 	} else if ref, ok := property.Value.(*js.VarRef); ok && ref.Get(m.ctx).IsRenamed {
 		// add 'old-name:' before BindingName as the latter will be renamed
-		m.write(ref.Get(m.ctx).OrigData)
+		m.write(ref.Get(m.ctx).OrigName)
 		m.write([]byte(":"))
 	}
 	m.minifyExpr(property.Value, js.OpAssign)
@@ -755,7 +755,7 @@ func (m *jsMinifier) minifyBindingElement(element js.BindingElement) {
 func (m *jsMinifier) minifyBinding(i js.IBinding) {
 	switch binding := i.(type) {
 	case *js.VarRef:
-		m.write(binding.Get(m.ctx).Data)
+		m.write(binding.Get(m.ctx).Name)
 	case *js.BindingArray:
 		m.write([]byte("["))
 		for i, item := range binding.List {
@@ -785,7 +785,7 @@ func (m *jsMinifier) minifyBinding(i js.IBinding) {
 				m.write([]byte(":"))
 			} else if name, ok := item.Value.Binding.(*js.VarRef); ok && name.Get(m.ctx).IsRenamed {
 				// add 'old-name:' before BindingName as the latter will be renamed
-				m.write(name.Get(m.ctx).OrigData)
+				m.write(name.Get(m.ctx).OrigName)
 				m.write([]byte(":"))
 			}
 			m.minifyBindingElement(item.Value)
@@ -795,7 +795,7 @@ func (m *jsMinifier) minifyBinding(i js.IBinding) {
 				m.write([]byte(","))
 			}
 			m.write([]byte("..."))
-			m.write(binding.Rest.Get(m.ctx).Data)
+			m.write(binding.Rest.Get(m.ctx).Name)
 		}
 		m.write([]byte("}"))
 	}
@@ -804,7 +804,7 @@ func (m *jsMinifier) minifyBinding(i js.IBinding) {
 func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 	switch expr := i.(type) {
 	case *js.VarRef:
-		data := expr.Get(m.ctx).Data
+		data := expr.Get(m.ctx).Name
 		if bytes.Equal(data, []byte("undefined")) { // TODO: only if not defined
 			if js.OpUnary < prec {
 				m.write([]byte("(void 0)"))
@@ -1016,7 +1016,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			if expr.Generator {
 				m.write([]byte("*"))
 				m.minifyExpr(expr.X, js.OpAssign)
-			} else if ref, ok := expr.X.(*js.VarRef); !ok || !bytes.Equal(ref.Get(m.ctx).Data, []byte("undefined")) { // TODO: only if not bound
+			} else if ref, ok := expr.X.(*js.VarRef); !ok || !bytes.Equal(ref.Get(m.ctx).Name, []byte("undefined")) { // TODO: only if not bound
 				m.minifyExpr(expr.X, js.OpAssign)
 			}
 		}
@@ -1025,7 +1025,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.minifyArguments(expr.Args)
 	case *js.IndexExpr:
 		if m.expectStmt {
-			if ref, ok := expr.X.(*js.VarRef); ok && bytes.Equal(ref.Get(m.ctx).Data, letBytes) {
+			if ref, ok := expr.X.(*js.VarRef); ok && bytes.Equal(ref.Get(m.ctx).Name, letBytes) {
 				m.write([]byte("!"))
 			}
 		}
@@ -1186,7 +1186,7 @@ func newRenamer(ctx *js.VarCtx, undeclared js.VarArray, rename bool) *renamer {
 	}
 	for _, v := range undeclared {
 		if 0 < v.Uses {
-			reserved[string(v.Data)] = struct{}{}
+			reserved[string(v.Name)] = struct{}{}
 		}
 	}
 	// TODO: sort variable names on highest usage throughout the file, right now lower scopes can have high usage but are forced to use two-character names as the one-character names are depleted
@@ -1212,7 +1212,7 @@ func (r *renamer) enterScope(scope js.Scope) {
 			rename = r.next(rename)
 		}
 		v.IsRenamed = true
-		v.Data = parse.Copy(rename)
+		v.Name = parse.Copy(rename)
 	}
 }
 
@@ -1225,7 +1225,7 @@ func (r *renamer) isReserved(name []byte, undeclared js.VarArray) bool {
 		return true
 	}
 	for _, v := range undeclared {
-		if bytes.Equal(name, v.Data) {
+		if bytes.Equal(name, v.Name) {
 			return true
 		}
 	}
