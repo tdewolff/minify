@@ -19,6 +19,7 @@ var (
 	spaceBytes     = []byte(" ")
 	starBytes      = []byte("*")
 	semicolonBytes = []byte(";")
+	letBytes       = []byte("let")
 )
 
 // DefaultMinifier is the default minifier.
@@ -55,31 +56,6 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		m.minifyStmt(item)
 	}
 
-	//definesTotal := 0
-	//definesNonZero := 0
-	//definesArray := []int{}
-	//for _, n := range defines {
-	//	if n != 0 {
-	//		definesNonZero++
-	//		definesTotal += n
-	//		definesArray = append(definesArray, n)
-	//	}
-	//}
-	//sort.Sort(sort.Reverse(sort.IntSlice(definesArray)))
-	//definesMean := float64(definesTotal) / float64(definesNonZero)
-	//definesStdDev := 0.0
-	//for _, n := range defines {
-	//	if n != 0 {
-	//		definesStdDev += (float64(n) - definesMean) * (float64(n) - definesMean)
-	//	}
-	//}
-	//definesStdDev = math.Sqrt(definesStdDev / float64(definesNonZero))
-
-	//fmt.Printf("# scopes: f=%d, b=%d (%d empty)\n", fscopes, bscopes, bescopes)
-	//fmt.Printf("# max depth: %d\n", maxdepth)
-	//fmt.Printf("# defines: %d (mean=%g, stddev=%g)\n", definesTotal, definesMean, definesStdDev)
-	//fmt.Println("undefines =", ast.Undeclared)
-
 	if _, err := w.Write(nil); err != nil {
 		return err
 	}
@@ -93,6 +69,7 @@ type jsMinifier struct {
 	prev           []byte
 	needsSemicolon bool
 	needsSpace     bool
+	expectStmt     bool
 	ctx            *js.VarCtx
 	renamer        *renamer
 }
@@ -104,6 +81,7 @@ func (m *jsMinifier) write(b []byte) {
 	m.w.Write(b)
 	m.prev = b
 	m.needsSpace = false
+	m.expectStmt = false
 }
 
 func (m *jsMinifier) writeSpaceAfterIdent() {
@@ -133,37 +111,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 
 	switch stmt := i.(type) {
 	case *js.ExprStmt:
-		// TODO: ensure that expression is not interpreted as statement, group or prefix by !
-		// {, function, async function, class, let [
-
-		prefix := stmt.Value
-		if group, ok := prefix.(*js.GroupExpr); ok {
-			if _, ok := group.X.(*js.FuncDecl); ok {
-				m.write([]byte("!"))
-			} else if _, ok := group.X.(*js.ClassDecl); ok {
-				m.write([]byte("!"))
-			} else if call, ok := group.X.(*js.CallExpr); ok {
-				if _, ok := call.X.(*js.FuncDecl); ok {
-					m.write([]byte("!"))
-				}
-			} else if index, ok := prefix.(*js.IndexExpr); ok {
-				if ref, ok := index.X.(*js.VarRef); ok && bytes.Equal(ref.Get(m.ctx).Data, []byte("let")) {
-					// could be AssignmentTarget
-					m.write([]byte("("))
-					//grouped = true
-				}
-			} else if _, ok := prefix.(*js.ObjectExpr); ok {
-				// could be AssignmentTarget
-				m.write([]byte("("))
-				//grouped = true
-			}
-		} else if call, ok := prefix.(*js.CallExpr); ok {
-			if group, ok := call.X.(*js.GroupExpr); ok {
-				if _, ok := group.X.(*js.FuncDecl); ok {
-					m.write([]byte("!"))
-				}
-			}
-		}
+		m.expectStmt = true
 		m.minifyExpr(stmt.Value, js.OpExpr)
 		m.requireSemicolon()
 	case *js.VarDecl:
@@ -784,7 +732,7 @@ func (m *jsMinifier) minifyProperty(property js.Property) {
 		m.write([]byte("..."))
 	} else if ref, ok := property.Value.(*js.VarRef); ok && ref.Get(m.ctx).IsRenamed {
 		// add 'old-name:' before BindingName as the latter will be renamed
-		m.write(ref.Get(m.ctx).Data)
+		m.write(ref.Get(m.ctx).OrigData)
 		m.write([]byte(":"))
 	}
 	m.minifyExpr(property.Value, js.OpAssign)
@@ -837,7 +785,7 @@ func (m *jsMinifier) minifyBinding(i js.IBinding) {
 				m.write([]byte(":"))
 			} else if name, ok := item.Value.Binding.(*js.VarRef); ok && name.Get(m.ctx).IsRenamed {
 				// add 'old-name:' before BindingName as the latter will be renamed
-				m.write(name.Get(m.ctx).Data)
+				m.write(name.Get(m.ctx).OrigData)
 				m.write([]byte(":"))
 			}
 			m.minifyBindingElement(item.Value)
@@ -1017,6 +965,10 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		}
 		m.write([]byte("]"))
 	case *js.ObjectExpr:
+		expectStmt := m.expectStmt
+		if expectStmt {
+			m.write([]byte("("))
+		}
 		m.write([]byte("{"))
 		for i, item := range expr.List {
 			if i != 0 {
@@ -1025,6 +977,9 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			m.minifyProperty(item)
 		}
 		m.write([]byte("}"))
+		if expectStmt {
+			m.write([]byte(")"))
+		}
 	case *js.TemplateExpr:
 		if expr.Tag != nil {
 			m.minifyExpr(expr.Tag, js.OpLHS)
@@ -1069,6 +1024,11 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.minifyExpr(expr.X, js.OpMember)
 		m.minifyArguments(expr.Args)
 	case *js.IndexExpr:
+		if m.expectStmt {
+			if ref, ok := expr.X.(*js.VarRef); ok && bytes.Equal(ref.Get(m.ctx).Data, letBytes) {
+				m.write([]byte("!"))
+			}
+		}
 		m.minifyExpr(expr.X, js.OpMember)
 		if lit, ok := expr.Index.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken {
 			if _, ok := js.ParseIdentifierName(lit.Data[1 : len(lit.Data)-1]); ok {
@@ -1160,12 +1120,18 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 	case *js.VarDecl:
 		m.minifyVarDecl(*expr) // only happens for init in for statement
 	case *js.FuncDecl:
+		if m.expectStmt {
+			m.write([]byte("!"))
+		}
 		m.minifyFuncDecl(*expr, true)
 	case *js.ArrowFunc:
 		m.minifyArrowFunc(*expr)
 	case *js.MethodDecl:
 		m.minifyMethodDecl(*expr)
 	case *js.ClassDecl:
+		if m.expectStmt {
+			m.write([]byte("!"))
+		}
 		m.minifyClassDecl(*expr)
 	}
 }
@@ -1242,7 +1208,7 @@ func (r *renamer) enterScope(scope js.Scope) {
 	sort.Sort(scope.Declared)
 	for _, v := range scope.Declared {
 		rename = r.next(rename)
-		for r.isReserved(rename) {
+		for r.isReserved(rename, scope.Undeclared) {
 			rename = r.next(rename)
 		}
 		v.IsRenamed = true
@@ -1254,9 +1220,16 @@ func (r *renamer) exitScope() {
 	r.depth--
 }
 
-func (r *renamer) isReserved(name []byte) bool {
-	_, ok := r.reserved[string(name)]
-	return ok
+func (r *renamer) isReserved(name []byte, undeclared js.VarArray) bool {
+	if _, ok := r.reserved[string(name)]; ok {
+		return true
+	}
+	for _, v := range undeclared {
+		if bytes.Equal(name, v.Data) {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *renamer) next(name []byte) []byte {

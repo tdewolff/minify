@@ -312,14 +312,14 @@ func TestJS(t *testing.T) {
 		{`function*x(){a=(yield b)}`, `function*x(){a=yield b}`},
 		{`function*x(){a=yield (yield b)}`, `function*x(){a=yield yield b}`},
 		{`if((a))while((b)){}`, `if(a)while(b){}`},
-		//{`({a}=5)`, `({a}=5)`},
+		{`({a}=5)`, `({a})=5`},
 		{`(function(){})`, `!function(){}`},
 		{`(function(){}())`, `!function(){}()`},
 		{`(function(){})()`, `!function(){}()`},
-		//{`(function(){})();x=5;f=6`, `!function(){}(),x=5,f=6`},
+		{`(function(){})();x=5;f=6`, `!function(){}(),x=5,f=6`},
 		{`(async function(){})`, `!async function(){}`},
 		{`(class a{})`, `!class a{}`},
-		//{`(let [a])`, `!let[a]`},
+		{`(let [a])`, `!let[a]`},
 		{`x=(function(){})`, `x=function(){}`},
 		{`x=(function(){}())`, `x=function(){}()`},
 		{`x=(function(){})()`, `x=function(){}()`},
@@ -390,7 +390,7 @@ func TestJS(t *testing.T) {
 		{`a=5;for(var b=4;b;)c()`, `a=5;for(var b=4;b;)c()`},
 		{`a=5;switch(b=4){}`, `switch(a=5,b=4){}`},
 		{`a=5;with(b=4){}`, `with(a=5,b=4){}`},
-		//{`(function(){})();(function(){})()`, `!function(){}(),function(){}()`},
+		{`(function(){})();(function(){})()`, `!function(){}(),function(){}()`},
 
 		// edge-cases
 		{`let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`, `let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`},
@@ -419,30 +419,32 @@ func TestJSVarRenaming(t *testing.T) {
 		{`x=function(){var name}`, `x=function(){var a}`},
 		{`x=function(){var name; name++}`, `x=function(){var a;a++}`},
 		{`x=function(){try{var x}catch(y){x}}`, `x=function(){try{var a}catch(b){a}}`},
-		{`x=function(){try{var x}catch(x){x}}`, `x=function(){try{var a}catch(b){b}}`},
+		{`x=function(){try{var x}catch(x){x}}`, `x=function(){try{var a}catch(a){a}}`},
 		{`x=function(){function name(){}}`, `x=function(){function a(){}}`},
 		//{`x=function name(){}`, `x=function(){}`},
-		{`x=function({foo, bar}){}`, `x=function({foo:b,bar:a}){}`},
+		{`x=function(){let a;{let b;a}}`, `x=function(){let a;{let b;a}}`},
+		{`x=function({foo, bar}){}`, `x=function({foo:a,bar:b}){}`},
 		{`x=function(){class Wheel{}}`, `x=function(){class a{}}`},
 		{`x=function(){function name(arg1, arg2){return arg1, arg2}}`, `x=function(){function a(a,b){return a,b}}`},
 		{`x=function(){function name(arg1, arg2){return arg1, arg2} return arg1}`, `x=function(){function a(a,b){return a,b}return arg1}`},
 		{`x=function(){function name(arg1, arg2){return arg1, arg2} return a}`, `x=function(){function b(b,c){return b,c}return a}`},
-		{`x=function(){function add(l,r){return add(l,r)}function nadd(l,r){return-add(l,r)}}`, `x=function(){function a(b,c){return a(b,c)}function b(b,c){return-a(b,c)}}`},
+		{`x=function(){function add(l,r){return add(l,r)}function nadd(l,r){return-add(l,r)}}`, `x=function(){function b(a,c){return b(a,c)}function a(a,c){return-b(a,c)}}`},
 		{`function a(){var b}`, `function a(){var a}`},
 		{`!function(){x=function(){return fun()};var fun=function(){return 0}}`, `!function(){x=function(){return a()};var a=function(){return 0}}`},
 		{`!function(){var x=function(){return y};const y=5}`, `!function(){var a=function(){return b};const b=5}`},
-		{`!function(){if(1)const x=5;var y=function(){return x}}`, `!function(){if(1)const a=5;var b=function(){return a}}`},
-		{`!function(){if(1){const x=5;5}var y=function(){return x}}`, `!function(){if(1){const b=5;5}var a=function(){return x}}`},
+		{`!function(){if(1)const x=5;var y=function(){return x}}`, `!function(){if(1)const b=5;var a=function(){return b}}`},
+		{`!function(){if(1){const x=5;5}var y=function(){return x}}`, `!function(){if(1){const a=5;5}var a=function(){return x}}`},
 		{`!function(){var x=function(){return y};if(1)const y=5}`, `!function(){var a=function(){return b};if(1)const b=5}`},
-		{`!function(){var x=function(){return y};if(1){const y=5;5}}`, `!function(){var a=function(){return y};if(1){const b=5;5}}`},
+		{`!function(){var x=function(){return y};if(1){const y=5;5}}`, `!function(){var a=function(){return y};if(1){const a=5;5}}`},
 		{`!function(){var x=function(){return y};if(1)var y=5}`, `!function(){var a=function(){return b};if(1)var b=5}`},
 		{`!function(){var x=function(){return y};if(1){var y=5;5}}`, `!function(){var a=function(){return b};if(1){var b=5;5}}`},
 		{`!function(){var x,y,z=(x,y)=>x+y}`, `!function(){var a,b,c=(a,b)=>a+b}`},
 		{`!function(){var await;print({await});}`, `!function(){var a;print({await:a})}`},
 		{`function a(){var name; return {name}}`, `function a(){var a;return{name:a}}`},
-		{`function a(){var name;try{}catch(name){var name}}`, `function a(){var b;try{}catch(a){var a}}`},
-		{`function a(){var name;try{}catch(arg){var name}}`, `function a(){var b;try{}catch(a){var b}}`},
-		{`name=function(){var a001,a002,a003,a004,a005,a006,a007,a008,a009,a010,a011,a012,a013,a014,a015,a016,a017,a018,a019,a020,a021,a022,a023,a024,a025,a026,a027,a028,a029,a030,a031,a032,a033,a034,a035,a036,a037,a038,a039,a040,a041,a042,a043,a044,a045,a046,a047,a048,a049,a050,a051,a052,a053,a054,a055,a056,a057,a058,a059,a060,a061,a062,a063,a064,a065,a066,a067,a068,a069,a070,a071,a072,a073,a074,a075,a076,a077,a078,a079,a080,a081,a082,a083,a084,a085,a086,a087,a088,a089,a090,a091,a092,a093,a094,a095,a096,a097,a098,a099,a100,a101,a102,a103,a104,a105,a106,a107,a108,a109}`, `name=function(){var a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,_,$,aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak,al,am,an,ao,ap,aq,ar,as,at,au,av,aw,ax,ay,az,aA,aB,aC,aD,aE,aF,aG,aH,aI,aJ,aK,aL,aM,aN,aO,aP,aQ,aR,aS,aT,aU,aV,aW,aX,aY,aZ,a_,a$,ba}`},
+		{`function a(){try{}catch(arg){arg}}`, `function a(){try{}catch(a){a}}`},
+		{`function a(){var name;try{}catch(name){var name}}`, `function a(){var a;try{}catch(b){var a}}`},
+		{`function a(){var name;try{}catch(arg){var name}}`, `function a(){var a;try{}catch(b){var a}}`},
+		{`name=function(){var a001,a002,a003,a004,a005,a006,a007,a008,a009,a010,a011,a012,a013,a014,a015,a016,a017,a018,a019,a020,a021,a022,a023,a024,a025,a026,a027,a028,a029,a030,a031,a032,a033,a034,a035,a036,a037,a038,a039,a040,a041,a042,a043,a044,a045,a046,a047,a048,a049,a050,a051,a052,a053,a054,a055,a056,a057,a058,a059,a060,a061,a062,a063,a064,a065,a066,a067,a068,a069,a070,a071,a072,a073,a074,a075,a076,a077,a078,a079,a080,a081,a082,a083,a084,a085,a086,a087,a088,a089,a090,a091,a092,a093,a094,a095,a096,a097,a098,a099,a100,a101,a102,a103,a104,a105,a106,a107,a108,a109}`, `name=function(){var a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,_,$,aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak,al,am,an,ao,ap,aq,ar,at,au,av,aw,ax,ay,az,aA,aB,aC,aD,aE,aF,aG,aH,aI,aJ,aK,aL,aM,aN,aO,aP,aQ,aR,aS,aT,aU,aV,aW,aX,aY,aZ,a_,a$,ba,bb}`}, // 'as' is a keyword
 	}
 
 	m := minify.New()
@@ -452,8 +454,7 @@ func TestJSVarRenaming(t *testing.T) {
 			r := bytes.NewBufferString(tt.js)
 			w := &bytes.Buffer{}
 			err := o.Minify(m, w, r, nil)
-			_ = err
-			//test.Minify(t, tt.js, err, w.String(), tt.expected)
+			test.Minify(t, tt.js, err, w.String(), tt.expected)
 		})
 	}
 }
