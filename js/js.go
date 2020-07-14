@@ -765,22 +765,24 @@ func (m *jsMinifier) minifyClassDecl(decl js.ClassDecl) {
 }
 
 func (m *jsMinifier) minifyPropertyName(name js.PropertyName) {
-	if name.Computed {
+	if name.IsComputed() {
 		m.write(openBracketBytes)
-		m.minifyExpr(name.Value, js.OpAssign)
+		m.minifyExpr(name.Computed, js.OpAssign)
 		m.write(closeBracketBytes)
 	} else {
-		m.write(name.Value.(*js.LiteralExpr).Data)
+		m.write(name.Literal.Data)
 	}
 }
 
 func (m *jsMinifier) minifyProperty(property js.Property) {
 	if property.Spread {
 		m.write(ellipsisBytes)
-	} else if ref, ok := property.Value.(*js.VarRef); !ok || !property.Name.IsIdent(m.ctx, ref.Get(m.ctx).Name) {
-		// add 'old-name:' before BindingName as the latter will be renamed
-		m.minifyPropertyName(property.Name)
-		m.write(colonBytes)
+	} else if property.Name.IsSet() {
+		if ref, ok := property.Value.(*js.VarRef); !ok || !property.Name.IsIdent(ref.Get(m.ctx).Name) {
+			// add 'old-name:' before BindingName as the latter will be renamed
+			m.minifyPropertyName(property.Name)
+			m.write(colonBytes)
+		}
 	}
 	m.minifyExpr(property.Value, js.OpAssign)
 	if property.Init != nil {
@@ -827,13 +829,15 @@ func (m *jsMinifier) minifyBinding(i js.IBinding) {
 			if i != 0 {
 				m.write(commaBytes)
 			}
-			if item.Key.Computed {
-				m.minifyPropertyName(item.Key)
-				m.write(colonBytes)
-			} else if ref, ok := item.Value.Binding.(*js.VarRef); !ok || !item.Key.IsIdent(m.ctx, ref.Get(m.ctx).Name) {
-				// add 'old-name:' before BindingName as the latter will be renamed
-				m.minifyPropertyName(item.Key)
-				m.write(colonBytes)
+			if item.Key.IsSet() {
+				if item.Key.IsComputed() {
+					m.minifyPropertyName(item.Key)
+					m.write(colonBytes)
+				} else if ref, ok := item.Value.Binding.(*js.VarRef); !ok || !item.Key.IsIdent(ref.Get(m.ctx).Name) {
+					// add 'old-name:' before BindingName as the latter will be renamed
+					m.minifyPropertyName(item.Key)
+					m.write(colonBytes)
+				}
 			}
 			m.minifyBindingElement(item.Value)
 		}
