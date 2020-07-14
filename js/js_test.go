@@ -313,6 +313,8 @@ func TestJS(t *testing.T) {
 		{`function*x(){a=yield (yield b)}`, `function*x(){a=yield yield b}`},
 		{`if((a))while((b)){}`, `if(a)while(b){}`},
 		{`({a}=5)`, `({a})=5`},
+		{`({a:a}=5)`, `({a})=5`},
+		{`({a:"a"}=5)`, `({a:"a"})=5`},
 		{`(function(){})`, `!function(){}`},
 		{`(function(){}())`, `!function(){}()`},
 		{`(function(){})()`, `!function(){}()`},

@@ -133,9 +133,9 @@ type jsMinifier struct {
 	w io.Writer
 
 	prev           []byte
-	needsSemicolon bool
-	needsSpace     bool
-	expectStmt     bool
+	needsSemicolon bool // write a semicolon if required
+	needsSpace     bool // write a space if next token is an identifier
+	expectStmt     bool // avoid ambiguous syntax such as an expression starting with function
 	ctx            *js.VarCtx
 	renamer        *renamer
 }
@@ -318,14 +318,13 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.minifyBlockStmt(stmt.Body, true)
 		if len(stmt.Catch.List) != 0 || stmt.Binding != nil {
 			m.write(catchBytes)
-			m.renamer.enterScope(stmt.Catch.Scope)
+			m.renamer.renameScope(stmt.Catch.Scope)
 			if stmt.Binding != nil {
 				m.write(openParenBytes)
 				m.minifyBinding(stmt.Binding)
 				m.write(closeParenBytes)
 			}
 			m.minifyBlockStmt(stmt.Catch, false)
-			m.renamer.exitScope()
 		}
 		if len(stmt.Finally.List) != 0 {
 			m.write(finallyBytes)
@@ -575,7 +574,7 @@ func (m *jsMinifier) minifyBlockStmt(stmt js.BlockStmt, enterScope bool) {
 	m.write(openBraceBytes)
 	m.needsSemicolon = false
 	if enterScope {
-		m.renamer.enterScope(stmt.Scope)
+		m.renamer.renameScope(stmt.Scope)
 	}
 	for _, item := range stmt.List {
 		m.writeSemicolon()
@@ -586,9 +585,6 @@ func (m *jsMinifier) minifyBlockStmt(stmt js.BlockStmt, enterScope bool) {
 		//} else if _, ok := item.(*js.BranchStmt); ok {
 		//	break
 		//}
-	}
-	if enterScope {
-		m.renamer.exitScope()
 	}
 	m.write(closeBraceBytes)
 	m.needsSemicolon = false
@@ -661,7 +657,7 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 		m.write(starBytes)
 	}
 	if inExpr {
-		m.renamer.enterScope(decl.Scope)
+		m.renamer.renameScope(decl.Scope)
 	}
 	if decl.Name != nil {
 		if !decl.Generator {
@@ -670,11 +666,10 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 		m.write(decl.Name.Get(m.ctx).Name)
 	}
 	if !inExpr {
-		m.renamer.enterScope(decl.Scope)
+		m.renamer.renameScope(decl.Scope)
 	}
 	m.minifyParams(decl.Params)
 	m.minifyBlockStmt(decl.Body, false)
-	m.renamer.exitScope()
 }
 
 func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
@@ -699,14 +694,13 @@ func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
 		m.writeSpaceBeforeIdent()
 	}
 	m.minifyPropertyName(decl.Name)
-	m.renamer.enterScope(decl.Scope)
+	m.renamer.renameScope(decl.Scope)
 	m.minifyParams(decl.Params)
 	m.minifyBlockStmt(decl.Body, false)
-	m.renamer.exitScope()
 }
 
 func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
-	m.renamer.enterScope(decl.Scope)
+	m.renamer.renameScope(decl.Scope)
 	if decl.Async {
 		m.write(asyncBytes)
 	}
@@ -750,7 +744,6 @@ func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
 	if !removeBraces {
 		m.minifyBlockStmt(decl.Body, false)
 	}
-	m.renamer.exitScope()
 }
 
 func (m *jsMinifier) minifyClassDecl(decl js.ClassDecl) {
@@ -772,33 +765,21 @@ func (m *jsMinifier) minifyClassDecl(decl js.ClassDecl) {
 }
 
 func (m *jsMinifier) minifyPropertyName(name js.PropertyName) {
-	if name.Computed != nil {
+	if name.Computed {
 		m.write(openBracketBytes)
-		m.minifyExpr(name.Computed, js.OpAssign)
+		m.minifyExpr(name.Value, js.OpAssign)
 		m.write(closeBracketBytes)
-	} else if name.Literal.TokenType == js.StringToken {
-		data := name.Literal.Data
-		if _, ok := js.ParseIdentifierName(data[1 : len(data)-1]); ok {
-			m.write(data[1 : len(data)-1])
-		} else if _, ok := js.ParseNumericLiteral(data[1 : len(data)-1]); ok {
-			m.write(data[1 : len(data)-1])
-		} else {
-			m.write(data)
-		}
 	} else {
-		m.write(name.Literal.Data)
+		m.write(name.Value.(*js.LiteralExpr).Data)
 	}
 }
 
 func (m *jsMinifier) minifyProperty(property js.Property) {
-	if property.Key != nil {
-		m.minifyPropertyName(*property.Key)
-		m.write(colonBytes)
-	} else if property.Spread {
+	if property.Spread {
 		m.write(ellipsisBytes)
-	} else if ref, ok := property.Value.(*js.VarRef); ok && ref.Get(m.ctx).IsRenamed {
+	} else if ref, ok := property.Value.(*js.VarRef); !ok || !property.Name.IsIdent(m.ctx, ref.Get(m.ctx).Name) {
 		// add 'old-name:' before BindingName as the latter will be renamed
-		m.write(ref.Get(m.ctx).OrigName)
+		m.minifyPropertyName(property.Name)
 		m.write(colonBytes)
 	}
 	m.minifyExpr(property.Value, js.OpAssign)
@@ -846,12 +827,12 @@ func (m *jsMinifier) minifyBinding(i js.IBinding) {
 			if i != 0 {
 				m.write(commaBytes)
 			}
-			if item.Key != nil {
-				m.minifyPropertyName(*item.Key)
+			if item.Key.Computed {
+				m.minifyPropertyName(item.Key)
 				m.write(colonBytes)
-			} else if name, ok := item.Value.Binding.(*js.VarRef); ok && name.Get(m.ctx).IsRenamed {
+			} else if ref, ok := item.Value.Binding.(*js.VarRef); !ok || !item.Key.IsIdent(m.ctx, ref.Get(m.ctx).Name) {
 				// add 'old-name:' before BindingName as the latter will be renamed
-				m.write(name.Get(m.ctx).OrigName)
+				m.minifyPropertyName(item.Key)
 				m.write(colonBytes)
 			}
 			m.minifyBindingElement(item.Value)
@@ -1240,7 +1221,6 @@ type renaming struct {
 type renamer struct {
 	ctx      *js.VarCtx
 	reserved map[string]struct{}
-	depth    int
 	rename   bool
 }
 
@@ -1261,14 +1241,12 @@ func newRenamer(ctx *js.VarCtx, undeclared js.VarArray, rename bool) *renamer {
 	return &renamer{
 		ctx:      ctx,
 		reserved: reserved,
-		depth:    0,
 		rename:   rename,
 	}
 }
 
-func (r *renamer) enterScope(scope js.Scope) {
-	r.depth++
-	if !r.rename || r.depth == 0 {
+func (r *renamer) renameScope(scope js.Scope) {
+	if !r.rename {
 		return
 	}
 
@@ -1284,16 +1262,12 @@ func (r *renamer) enterScope(scope js.Scope) {
 	}
 }
 
-func (r *renamer) exitScope() {
-	r.depth--
-}
-
 func (r *renamer) isReserved(name []byte, undeclared js.VarArray) bool {
 	if _, ok := r.reserved[string(name)]; ok {
 		return true
 	}
 	for _, v := range undeclared {
-		if bytes.Equal(name, v.Name) {
+		if bytes.Equal(name, v.Name) { // TODO: check if decl != NoDecl (already in r.reserved)
 			return true
 		}
 	}
