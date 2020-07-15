@@ -113,8 +113,8 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	m := &jsMinifier{
 		o:       o,
 		w:       w,
-		ctx:     ast.Ctx,
-		renamer: newRenamer(ast.Ctx, ast.Undeclared, !o.KeepVarNames),
+		ast:     ast,
+		renamer: newRenamer(ast, ast.Undeclared, !o.KeepVarNames),
 	}
 	ast.List = m.mergeStmtList(ast.List)
 	for _, item := range ast.List {
@@ -136,8 +136,9 @@ type jsMinifier struct {
 	needsSemicolon bool // write a semicolon if required
 	needsSpace     bool // write a space if next token is an identifier
 	expectStmt     bool // avoid ambiguous syntax such as an expression starting with function
-	ctx            *js.VarCtx
-	renamer        *renamer
+
+	ast     *js.AST
+	renamer *renamer
 }
 
 func (m *jsMinifier) write(b []byte) {
@@ -663,7 +664,7 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 		if !decl.Generator {
 			m.write(spaceBytes)
 		}
-		m.write(decl.Name.Get(m.ctx).Name)
+		m.write(decl.Name.Name(m.ast))
 	}
 	if !inExpr {
 		m.renamer.renameScope(decl.Scope)
@@ -750,7 +751,7 @@ func (m *jsMinifier) minifyClassDecl(decl js.ClassDecl) {
 	m.write(classBytes)
 	if decl.Name != 0 {
 		m.write(spaceBytes)
-		m.write(decl.Name.Get(m.ctx).Name)
+		m.write(decl.Name.Name(m.ast))
 	}
 	if decl.Extends != nil {
 		m.write(spaceExtendsBytes)
@@ -778,7 +779,7 @@ func (m *jsMinifier) minifyProperty(property js.Property) {
 	// property.Name is always set in ObjectLiteral
 	if property.Spread {
 		m.write(ellipsisBytes)
-	} else if ref, ok := property.Value.(js.VarRef); !ok || !property.Name.IsIdent(ref.Get(m.ctx).Name) {
+	} else if ref, ok := property.Value.(js.VarRef); !ok || !property.Name.IsIdent(ref.Name(m.ast)) {
 		// add 'old-name:' before BindingName as the latter will be renamed
 		m.minifyPropertyName(property.Name)
 		m.write(colonBytes)
@@ -803,7 +804,7 @@ func (m *jsMinifier) minifyBindingElement(element js.BindingElement) {
 func (m *jsMinifier) minifyBinding(i js.IBinding) {
 	switch binding := i.(type) {
 	case js.VarRef:
-		m.write(binding.Get(m.ctx).Name)
+		m.write(binding.Name(m.ast))
 	case *js.BindingArray:
 		m.write(openBracketBytes)
 		for i, item := range binding.List {
@@ -832,7 +833,7 @@ func (m *jsMinifier) minifyBinding(i js.IBinding) {
 			if item.Key.IsComputed() {
 				m.minifyPropertyName(item.Key)
 				m.write(colonBytes)
-			} else if ref, ok := item.Value.Binding.(js.VarRef); !ok || !item.Key.IsIdent(ref.Get(m.ctx).Name) {
+			} else if ref, ok := item.Value.Binding.(js.VarRef); !ok || !item.Key.IsIdent(ref.Name(m.ast)) {
 				// add 'old-name:' before BindingName as the latter will be renamed
 				m.minifyPropertyName(item.Key)
 				m.write(colonBytes)
@@ -844,7 +845,7 @@ func (m *jsMinifier) minifyBinding(i js.IBinding) {
 				m.write(commaBytes)
 			}
 			m.write(ellipsisBytes)
-			m.write(binding.Rest.Get(m.ctx).Name)
+			m.write(binding.Rest.Name(m.ast))
 		}
 		m.write(closeBraceBytes)
 	}
@@ -853,7 +854,7 @@ func (m *jsMinifier) minifyBinding(i js.IBinding) {
 func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 	switch expr := i.(type) {
 	case js.VarRef:
-		data := expr.Get(m.ctx).Name
+		data := expr.Name(m.ast)
 		if bytes.Equal(data, undefinedBytes) { // TODO: only if not defined
 			if js.OpUnary < prec {
 				m.write(groupedVoidZeroBytes)
@@ -1067,7 +1068,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			if expr.Generator {
 				m.write(starBytes)
 				m.minifyExpr(expr.X, js.OpAssign)
-			} else if ref, ok := expr.X.(js.VarRef); !ok || !bytes.Equal(ref.Get(m.ctx).Name, undefinedBytes) { // TODO: only if not bound
+			} else if ref, ok := expr.X.(js.VarRef); !ok || !bytes.Equal(ref.Name(m.ast), undefinedBytes) { // TODO: only if not bound
 				m.minifyExpr(expr.X, js.OpAssign)
 			}
 		}
@@ -1076,7 +1077,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.minifyArguments(expr.Args)
 	case *js.IndexExpr:
 		if m.expectStmt {
-			if ref, ok := expr.X.(js.VarRef); ok && bytes.Equal(ref.Get(m.ctx).Name, letBytes) {
+			if ref, ok := expr.X.(js.VarRef); ok && bytes.Equal(ref.Name(m.ast), letBytes) {
 				m.write(notBytes)
 			}
 		}
@@ -1221,12 +1222,12 @@ type renaming struct {
 }
 
 type renamer struct {
-	ctx      *js.VarCtx
+	ast      *js.AST
 	reserved map[string]struct{}
 	rename   bool
 }
 
-func newRenamer(ctx *js.VarCtx, undeclared js.VarArray, rename bool) *renamer {
+func newRenamer(ast *js.AST, undeclared js.VarArray, rename bool) *renamer {
 	reserved := make(map[string]struct{}, len(js.Keywords)+len(js.Globals)+len(undeclared))
 	for name, _ := range js.Keywords {
 		reserved[name] = struct{}{}
@@ -1241,7 +1242,7 @@ func newRenamer(ctx *js.VarCtx, undeclared js.VarArray, rename bool) *renamer {
 	}
 	// TODO: sort variable names on highest usage throughout the file, right now lower scopes can have high usage but are forced to use two-character names as the one-character names are depleted
 	return &renamer{
-		ctx:      ctx,
+		ast:      ast,
 		reserved: reserved,
 		rename:   rename,
 	}
