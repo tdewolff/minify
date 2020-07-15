@@ -167,7 +167,7 @@ var binaryRightPrecMap = map[js.TokenType]js.OpPrec{
 
 func exprPrec(i js.IExpr) js.OpPrec {
 	switch expr := i.(type) {
-	case *js.VarRef, *js.LiteralExpr, *js.ArrayExpr, *js.ObjectExpr, *js.FuncDecl, *js.ClassDecl:
+	case js.VarRef, *js.LiteralExpr, *js.ArrayExpr, *js.ObjectExpr, *js.FuncDecl, *js.ClassDecl:
 		return js.OpPrimary
 	case *js.UnaryExpr:
 		return unaryOpPrecMap[expr.Op]
@@ -197,7 +197,7 @@ func exprPrec(i js.IExpr) js.OpPrec {
 
 func isIdentStartBindingElement(element js.BindingElement) bool {
 	if element.Binding != nil {
-		if _, ok := element.Binding.(*js.VarRef); ok {
+		if _, ok := element.Binding.(js.VarRef); ok {
 			return true
 		}
 	}
@@ -269,7 +269,7 @@ func (m *jsMinifier) isFalse(i js.IExpr) bool {
 }
 
 func (m *jsMinifier) isUndefined(i js.IExpr) bool {
-	if ref, ok := i.(*js.VarRef); ok {
+	if ref, ok := i.(js.VarRef); ok {
 		if bytes.Equal(ref.Get(m.ctx).Name, undefinedBytes) { // TODO: only if not defined
 			return true
 		}
@@ -325,8 +325,8 @@ func (m *jsMinifier) isEqualExpr(a, b js.IExpr) bool {
 	if group, ok := b.(*js.GroupExpr); ok {
 		b = group.X
 	}
-	if left, ok := a.(*js.VarRef); ok {
-		if right, ok := b.(*js.VarRef); ok {
+	if left, ok := a.(js.VarRef); ok {
+		if right, ok := b.(js.VarRef); ok {
 			return bytes.Equal(left.Get(m.ctx).Name, right.Get(m.ctx).Name)
 		}
 	}

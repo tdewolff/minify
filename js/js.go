@@ -659,7 +659,7 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 	if inExpr {
 		m.renamer.renameScope(decl.Scope)
 	}
-	if decl.Name != nil {
+	if decl.Name != 0 {
 		if !decl.Generator {
 			m.write(spaceBytes)
 		}
@@ -748,7 +748,7 @@ func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
 
 func (m *jsMinifier) minifyClassDecl(decl js.ClassDecl) {
 	m.write(classBytes)
-	if decl.Name != nil {
+	if decl.Name != 0 {
 		m.write(spaceBytes)
 		m.write(decl.Name.Get(m.ctx).Name)
 	}
@@ -778,7 +778,7 @@ func (m *jsMinifier) minifyProperty(property js.Property) {
 	// property.Name is always set in ObjectLiteral
 	if property.Spread {
 		m.write(ellipsisBytes)
-	} else if ref, ok := property.Value.(*js.VarRef); !ok || !property.Name.IsIdent(ref.Get(m.ctx).Name) {
+	} else if ref, ok := property.Value.(js.VarRef); !ok || !property.Name.IsIdent(ref.Get(m.ctx).Name) {
 		// add 'old-name:' before BindingName as the latter will be renamed
 		m.minifyPropertyName(property.Name)
 		m.write(colonBytes)
@@ -802,7 +802,7 @@ func (m *jsMinifier) minifyBindingElement(element js.BindingElement) {
 
 func (m *jsMinifier) minifyBinding(i js.IBinding) {
 	switch binding := i.(type) {
-	case *js.VarRef:
+	case js.VarRef:
 		m.write(binding.Get(m.ctx).Name)
 	case *js.BindingArray:
 		m.write(openBracketBytes)
@@ -832,14 +832,14 @@ func (m *jsMinifier) minifyBinding(i js.IBinding) {
 			if item.Key.IsComputed() {
 				m.minifyPropertyName(item.Key)
 				m.write(colonBytes)
-			} else if ref, ok := item.Value.Binding.(*js.VarRef); !ok || !item.Key.IsIdent(ref.Get(m.ctx).Name) {
+			} else if ref, ok := item.Value.Binding.(js.VarRef); !ok || !item.Key.IsIdent(ref.Get(m.ctx).Name) {
 				// add 'old-name:' before BindingName as the latter will be renamed
 				m.minifyPropertyName(item.Key)
 				m.write(colonBytes)
 			}
 			m.minifyBindingElement(item.Value)
 		}
-		if binding.Rest != nil {
+		if binding.Rest != 0 {
 			if 0 < len(binding.List) {
 				m.write(commaBytes)
 			}
@@ -852,7 +852,7 @@ func (m *jsMinifier) minifyBinding(i js.IBinding) {
 
 func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 	switch expr := i.(type) {
-	case *js.VarRef:
+	case js.VarRef:
 		data := expr.Get(m.ctx).Name
 		if bytes.Equal(data, undefinedBytes) { // TODO: only if not defined
 			if js.OpUnary < prec {
@@ -1067,7 +1067,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			if expr.Generator {
 				m.write(starBytes)
 				m.minifyExpr(expr.X, js.OpAssign)
-			} else if ref, ok := expr.X.(*js.VarRef); !ok || !bytes.Equal(ref.Get(m.ctx).Name, undefinedBytes) { // TODO: only if not bound
+			} else if ref, ok := expr.X.(js.VarRef); !ok || !bytes.Equal(ref.Get(m.ctx).Name, undefinedBytes) { // TODO: only if not bound
 				m.minifyExpr(expr.X, js.OpAssign)
 			}
 		}
@@ -1076,7 +1076,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.minifyArguments(expr.Args)
 	case *js.IndexExpr:
 		if m.expectStmt {
-			if ref, ok := expr.X.(*js.VarRef); ok && bytes.Equal(ref.Get(m.ctx).Name, letBytes) {
+			if ref, ok := expr.X.(js.VarRef); ok && bytes.Equal(ref.Get(m.ctx).Name, letBytes) {
 				m.write(notBytes)
 			}
 		}
