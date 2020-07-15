@@ -7,7 +7,9 @@ package js
 
 import (
 	"bytes"
+	"fmt"
 	"io"
+	"math"
 	"sort"
 
 	"github.com/tdewolff/minify/v2"
@@ -15,78 +17,30 @@ import (
 	"github.com/tdewolff/parse/v2/js"
 )
 
-var (
-	spaceBytes                 = []byte(" ")
-	starBytes                  = []byte("*")
-	colonBytes                 = []byte(":")
-	semicolonBytes             = []byte(";")
-	commaBytes                 = []byte(",")
-	dotBytes                   = []byte(".")
-	ellipsisBytes              = []byte("...")
-	openBraceBytes             = []byte("{")
-	closeBraceBytes            = []byte("}")
-	openParenBytes             = []byte("(")
-	closeParenBytes            = []byte(")")
-	openBracketBytes           = []byte("[")
-	closeBracketBytes          = []byte("]")
-	openParenBracketBytes      = []byte("({")
-	closeBracketParenBytes     = []byte("})")
-	closeParenOpenBracketBytes = []byte("){")
-	notBytes                   = []byte("!")
-	questionBytes              = []byte("?")
-	equalBytes                 = []byte("=")
-	notNotBytes                = []byte("!!")
-	andBytes                   = []byte("&&")
-	orBytes                    = []byte("||")
-	optChainBytes              = []byte("?.")
-	arrowBytes                 = []byte("=>")
-	zeroBytes                  = []byte("0")
-	oneBytes                   = []byte("1")
-	letBytes                   = []byte("let")
-	getBytes                   = []byte("get")
-	setBytes                   = []byte("set")
-	asyncBytes                 = []byte("async")
-	functionBytes              = []byte("function")
-	staticBytes                = []byte("static")
-	ifOpenBytes                = []byte("if(")
-	elseBytes                  = []byte("else")
-	withOpenBytes              = []byte("with(")
-	doBytes                    = []byte("do")
-	whileOpenBytes             = []byte("while(")
-	forOpenBytes               = []byte("for(")
-	forAwaitOpenBytes          = []byte("for await(")
-	inBytes                    = []byte("in")
-	ofBytes                    = []byte("of")
-	switchOpenBytes            = []byte("switch(")
-	throwBytes                 = []byte("throw")
-	tryBytes                   = []byte("try")
-	catchBytes                 = []byte("catch")
-	finallyBytes               = []byte("finally")
-	importBytes                = []byte("import")
-	exportBytes                = []byte("export")
-	fromBytes                  = []byte("from")
-	returnBytes                = []byte("return")
-	classBytes                 = []byte("class")
-	asSpaceBytes               = []byte("as ")
-	asyncSpaceBytes            = []byte("async ")
-	spaceDefaultBytes          = []byte(" default")
-	spaceExtendsBytes          = []byte(" extends")
-	yieldBytes                 = []byte("yield")
-	newBytes                   = []byte("new")
-	openNewBytes               = []byte("(new")
-	newTargetBytes             = []byte("new.target")
-	importMetaBytes            = []byte("import.meta")
-	undefinedBytes             = []byte("undefined")
-	infinityBytes              = []byte("Infinity")
-	voidZeroBytes              = []byte("void 0")
-	groupedVoidZeroBytes       = []byte("(void 0)")
-	oneDivZeroBytes            = []byte("1/0")
-	groupedOneDivZeroBytes     = []byte("(1/0)")
-	notZeroBytes               = []byte("!0")
-	groupedNotZeroBytes        = []byte("(!0)")
-	notOneBytes                = []byte("!1")
-	groupedNotOneBytes         = []byte("(!1)")
-)
+var ratioNodecl []float64
+var numDeclared []float64
+var numUndeclared []float64
+
+func printStat(name string, array []float64) {
+	n := float64(len(array))
+
+	min := 0.0
+	max := 0.0
+	mean := 0.0
+	for _, v := range array {
+		mean += v
+		min = math.Min(min, v)
+		max = math.Max(max, v)
+	}
+	mean /= n
+
+	stddev := 0.0
+	for _, v := range array {
+		stddev += (v - mean) * (v - mean)
+	}
+	stddev = math.Sqrt(stddev / n)
+	fmt.Printf("%s[%g]: mean=%g±%g  min=%g  max=%g\n", name, n, mean, stddev, min, max)
+}
 
 // DefaultMinifier is the default minifier.
 var DefaultMinifier = &Minifier{}
@@ -121,6 +75,9 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		m.writeSemicolon()
 		m.minifyStmt(item)
 	}
+	//printStat("ratioNoDecl", ratioNodecl)
+	//printStat("numDeclared", numDeclared)
+	//printStat("numUndeclared", numUndeclared)
 
 	if _, err := w.Write(nil); err != nil {
 		return err
@@ -1252,6 +1209,18 @@ func (r *renamer) renameScope(scope js.Scope) {
 	if !r.rename {
 		return
 	}
+
+	//nodecl := 0
+	//for _, v := range scope.Undeclared {
+	//	if v.Decl == js.NoDecl {
+	//		nodecl++
+	//	}
+	//}
+	//if 0 < len(scope.Undeclared) {
+	//	ratioNodecl = append(ratioNodecl, float64(nodecl)/float64(len(scope.Undeclared)))
+	//}
+	//numDeclared = append(numDeclared, float64(len(scope.Declared)))
+	//numUndeclared = append(numUndeclared, float64(len(scope.Undeclared)))
 
 	rename := []byte("`") // so that the next is 'a'
 	sort.Sort(scope.Declared)
