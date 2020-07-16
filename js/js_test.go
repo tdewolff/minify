@@ -429,7 +429,7 @@ func TestJSVarRenaming(t *testing.T) {
 		{`x=function(){class Wheel{}}`, `x=function(){class a{}}`},
 		{`x=function(){function name(arg1, arg2){return arg1, arg2}}`, `x=function(){function a(a,b){return a,b}}`},
 		{`x=function(){function name(arg1, arg2){return arg1, arg2} return arg1}`, `x=function(){function a(a,b){return a,b}return arg1}`},
-		{`x=function(){function name(arg1, arg2){return arg1, arg2} return a}`, `x=function(){function b(b,c){return b,c}return a}`},
+		{`x=function(){function name(arg1, arg2){return arg1, arg2} return a}`, `x=function(){function b(a,b){return a,b}return a}`},
 		{`x=function(){function add(l,r){return add(l,r)}function nadd(l,r){return-add(l,r)}}`, `x=function(){function b(a,c){return b(a,c)}function a(a,c){return-b(a,c)}}`},
 		{`function a(){var b}`, `function a(){var a}`},
 		{`!function(){x=function(){return fun()};var fun=function(){return 0}}`, `!function(){x=function(){return a()};var a=function(){return 0}}`},

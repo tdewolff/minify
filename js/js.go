@@ -17,10 +17,7 @@ import (
 	"github.com/tdewolff/parse/v2/js"
 )
 
-var ratioNodecl []float64
-var numDeclared []float64
-var numUndeclared []float64
-
+// TODO; remove
 func printStat(name string, array []float64) {
 	n := float64(len(array))
 
@@ -75,9 +72,6 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		m.writeSemicolon()
 		m.minifyStmt(item)
 	}
-	//printStat("ratioNoDecl", ratioNodecl)
-	//printStat("numDeclared", numDeclared)
-	//printStat("numUndeclared", numUndeclared)
 
 	if _, err := w.Write(nil); err != nil {
 		return err
@@ -1185,17 +1179,12 @@ type renamer struct {
 }
 
 func newRenamer(ast *js.AST, undeclared js.VarArray, rename bool) *renamer {
-	reserved := make(map[string]struct{}, len(js.Keywords)+len(js.Globals)+len(undeclared))
+	reserved := make(map[string]struct{}, len(js.Keywords)+len(js.Globals))
 	for name, _ := range js.Keywords {
 		reserved[name] = struct{}{}
 	}
 	for name, _ := range js.Globals {
 		reserved[name] = struct{}{}
-	}
-	for _, v := range undeclared {
-		if 0 < v.Uses {
-			reserved[string(v.Name)] = struct{}{}
-		}
 	}
 	// TODO: sort variable names on highest usage throughout the file, right now lower scopes can have high usage but are forced to use two-character names as the one-character names are depleted
 	return &renamer{
@@ -1210,18 +1199,6 @@ func (r *renamer) renameScope(scope js.Scope) {
 		return
 	}
 
-	//nodecl := 0
-	//for _, v := range scope.Undeclared {
-	//	if v.Decl == js.NoDecl {
-	//		nodecl++
-	//	}
-	//}
-	//if 0 < len(scope.Undeclared) {
-	//	ratioNodecl = append(ratioNodecl, float64(nodecl)/float64(len(scope.Undeclared)))
-	//}
-	//numDeclared = append(numDeclared, float64(len(scope.Declared)))
-	//numUndeclared = append(numUndeclared, float64(len(scope.Undeclared)))
-
 	rename := []byte("`") // so that the next is 'a'
 	sort.Sort(scope.Declared)
 	for _, v := range scope.Declared {
@@ -1234,11 +1211,13 @@ func (r *renamer) renameScope(scope js.Scope) {
 }
 
 func (r *renamer) isReserved(name []byte, undeclared js.VarArray) bool {
-	if _, ok := r.reserved[string(name)]; ok {
-		return true
+	if 1 < len(name) { // there are no keywords or known globals that are one character long
+		if _, ok := r.reserved[string(name)]; ok {
+			return true
+		}
 	}
 	for _, v := range undeclared {
-		if bytes.Equal(name, v.Name) { // TODO: check if decl != NoDecl (already in r.reserved)
+		if bytes.Equal(name, v.Name) {
 			return true
 		}
 	}
