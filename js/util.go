@@ -70,6 +70,7 @@ var (
 	openNewBytes               = []byte("(new")
 	newTargetBytes             = []byte("new.target")
 	importMetaBytes            = []byte("import.meta")
+	varSpaceBytes              = []byte("var ")
 	undefinedBytes             = []byte("undefined")
 	infinityBytes              = []byte("Infinity")
 	voidZeroBytes              = []byte("void 0")
