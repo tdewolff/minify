@@ -46,7 +46,7 @@ func DataURI(m *M, dataURI []byte) []byte {
 	base64Len := len(";base64") + base64.StdEncoding.EncodedLen(len(data))
 	asciiLen := len(data)
 	for _, c := range data {
-		if parse.URLEncodingTable[c] {
+		if parse.DataURIEncodingTable[c] {
 			asciiLen += 2
 		}
 		if asciiLen > base64Len {
@@ -62,7 +62,7 @@ func DataURI(m *M, dataURI []byte) []byte {
 		data = encoded
 		mediatype = append(mediatype, []byte(";base64")...)
 	} else {
-		data = parse.EncodeURL(data, parse.URLEncodingTable)
+		data = parse.EncodeURL(data, parse.DataURIEncodingTable)
 	}
 	if len("text/plain") <= len(mediatype) && parse.EqualFold(mediatype[:len("text/plain")], []byte("text/plain")) {
 		mediatype = mediatype[len("text/plain"):]
