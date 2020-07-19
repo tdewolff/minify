@@ -739,7 +739,7 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 	m.minifyParams(decl.Params)
 
 	parentHoistVariables, parentScope := m.hoistVariables, m.scope
-	m.hoistVariables, m.scope = 1 < decl.Body.Scope.Count(js.VariableDecl), &decl.Body.Scope
+	m.hoistVariables, m.scope = false, &decl.Body.Scope
 	decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
 	m.minifyBlockStmt(decl.Body)
 	m.hoistVariables, m.scope = parentHoistVariables, parentScope
@@ -771,7 +771,7 @@ func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
 	m.minifyParams(decl.Params)
 
 	parentHoistVariables, parentScope := m.hoistVariables, m.scope
-	m.hoistVariables, m.scope = 1 < decl.Body.Scope.Count(js.VariableDecl), &decl.Body.Scope
+	m.hoistVariables, m.scope = false, &decl.Body.Scope
 	decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
 	m.minifyBlockStmt(decl.Body)
 	m.hoistVariables, m.scope = parentHoistVariables, parentScope
@@ -821,7 +821,7 @@ func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
 	}
 	if !removeBraces {
 		parentHoistVariables, parentScope := m.hoistVariables, m.scope
-		m.hoistVariables, m.scope = 1 < decl.Body.Scope.Count(js.VariableDecl), &decl.Body.Scope
+		m.hoistVariables, m.scope = false, &decl.Body.Scope
 		decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
 		m.minifyBlockStmt(decl.Body)
 		m.hoistVariables, m.scope = parentHoistVariables, parentScope
