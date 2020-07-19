@@ -262,10 +262,10 @@ func TestJS(t *testing.T) {
 		//{`var a;if(false)var b`, `var a,b`},
 		//{`var a;if(false)var b=5`, `var a,b`},
 		//{`var a;if(false){const b}`, `var a`},
-		//{`var a;if(false){function b(){}}`, `var a,b`},
+		{`var a;if(false){function b(){}}`, `var a;if(!1)function b(){}`},
 		//{`function f(){if(a){a=5;return}a=6;return a}`, `function f(){if(!a){a=6;return a}a=5}`},
 		//{`function g(){return;var a;a=b}`, `function g(){var a;}`},
-		//{`function g(){return 5;function f(){}}`, `function g(){return 5;function f(){}}`},
+		{`function g(){return 5;function f(){}}`, `function g(){return 5;function f(){}}`},
 		//{`function g(){if(a)return a;else return b;var c;c=d}`, `function g(){var c;return a||b}`},
 
 		// arrow functions

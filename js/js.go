@@ -455,8 +455,6 @@ func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 				return &js.ThrowStmt{condExpr(ifStmt.Cond, XThrow.Value, YThrow.Value)}
 			}
 		}
-	} else if varDecl, ok := i.(*js.VarDecl); ok {
-		_ = varDecl
 	} else if blockStmt, ok := i.(*js.BlockStmt); ok {
 		// merge body and remove braces if possible from independent blocks
 		blockStmt.List = m.optimizeStmtList(blockStmt.List, defaultBlock)
@@ -487,6 +485,10 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 			break
 		} else if _, ok := list[i].(*js.BranchStmt); ok {
 			break
+		} else if _, ok := list[i].(*js.EmptyStmt); ok {
+			continue
+		} else if _, ok := list[i].(*js.DebuggerStmt); ok {
+			continue
 		}
 
 		// probe at every i which allows one lookahead to i+1, write to position j <= i
@@ -495,7 +497,6 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 
 		// merge expression statements with expression, return, and throw statements
 		if left, ok := list[i].(*js.ExprStmt); ok {
-			// TODO: use switch?
 			if right, ok := list[i+1].(*js.ExprStmt); ok {
 				right.Value = &js.BinaryExpr{js.CommaToken, left.Value, right.Value}
 				j--
@@ -591,6 +592,14 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 			j--
 		}
 	}
+
+	// keep dead code function declarations
+	for _, item := range list[j+1:] {
+		if _, ok := item.(*js.FuncDecl); ok {
+			j++
+			list[j] = item
+		}
+	}
 	return list[:j+1]
 }
 
@@ -601,23 +610,6 @@ func (m *jsMinifier) minifyBlockStmt(stmt js.BlockStmt) {
 		m.writeSemicolon()
 		m.minifyStmt(item)
 	}
-
-	// write all dead variable and function declarations in scope as empty vars
-	//if blockType == functionBlock {
-	//	first := true
-	//	for _, v := range stmt.Scope.Declared {
-	//		if v.Uses == 0 && (v.Decl == js.VariableDecl || v.Decl == js.FunctionDecl) {
-	//			if first {
-	//				m.writeSemicolon()
-	//				m.write(varSpaceBytes)
-	//				first = false
-	//			} else {
-	//				m.write(commaBytes)
-	//			}
-	//			m.write(v.Name)
-	//		}
-	//	}
-	//}
 
 	m.write(closeBraceBytes)
 	m.needsSemicolon = false
@@ -670,8 +662,9 @@ func (m *jsMinifier) minifyArguments(args js.Arguments) {
 	m.write(closeParenBytes)
 }
 
-func (m *jsMinifier) minifyVarDecl(decl js.VarDecl, inFor bool) {
-	//if inFor && decl.TokenType == js.VarToken && m.hoistVariables {
+func (m *jsMinifier) minifyVarDecl(decl js.VarDecl, inExpr bool) {
+	//fmt.Println(decl.String(m.ast))
+	//if inExpr && decl.TokenType == js.VarToken { //&& m.hoistVariables {
 	//	// remove 'var' when hoisting variables
 	//	first := true
 	//	for _, item := range decl.List {
