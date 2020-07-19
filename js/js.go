@@ -17,7 +17,15 @@ import (
 	"github.com/tdewolff/parse/v2/js"
 )
 
-// TODO; remove
+type blockType int
+
+const (
+	defaultBlock blockType = iota
+	functionBlock
+	iterationBlock
+)
+
+// TODO; remove;but first determine preallocation size of blockstmt, declared, undeclared etc
 func printStat(name string, array []float64) {
 	n := float64(len(array))
 
@@ -62,17 +70,17 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	}
 
 	if 3 < len(ast.Comment) && ast.Comment[1] == '*' && ast.Comment[2] == '!' {
-		// license comment
-		w.Write(ast.Comment)
+		w.Write(ast.Comment) // license comment
 	}
 
 	m := &jsMinifier{
 		o:       o,
 		w:       w,
+		scope:   &ast.Scope,
 		ast:     ast,
 		renamer: newRenamer(ast, ast.Undeclared, !o.KeepVarNames),
 	}
-	ast.List = m.mergeStmtList(ast.List)
+	ast.List = m.optimizeStmtList(ast.List, defaultBlock)
 	for _, item := range ast.List {
 		m.writeSemicolon()
 		m.minifyStmt(item)
@@ -92,6 +100,8 @@ type jsMinifier struct {
 	needsSemicolon bool // write a semicolon if required
 	needsSpace     bool // write a space if next token is an identifier
 	expectStmt     bool // avoid ambiguous syntax such as an expression starting with function
+	hoistVariables bool // whether var declarations will be hoisted (to the end) in the current function scope
+	scope          *js.Scope
 
 	ast     *js.AST
 	renamer *renamer
@@ -129,16 +139,31 @@ func (m *jsMinifier) writeSemicolon() {
 	}
 }
 
-func (m *jsMinifier) minifyStmt(i js.IStmt) {
-	i = m.stmtToExpr(i)
+func (m *jsMinifier) minifyStmtOrBlock(i js.IStmt, blockType blockType) {
+	if blockStmt, ok := i.(*js.BlockStmt); ok {
+		blockStmt.List = m.optimizeStmtList(blockStmt.List, blockType)
+		if 1 < len(blockStmt.List) {
+			m.minifyBlockStmt(*blockStmt)
+		} else if len(blockStmt.List) == 1 {
+			m.minifyStmt(blockStmt.List[0])
+		} else {
+			m.write(semicolonBytes)
+		}
+	} else if _, ok := i.(*js.EmptyStmt); ok {
+		m.write(semicolonBytes)
+	} else {
+		m.minifyStmt(i)
+	}
+}
 
+func (m *jsMinifier) minifyStmt(i js.IStmt) {
 	switch stmt := i.(type) {
 	case *js.ExprStmt:
 		m.expectStmt = true
 		m.minifyExpr(stmt.Value, js.OpExpr)
 		m.requireSemicolon()
 	case *js.VarDecl:
-		m.minifyVarDecl(*stmt)
+		m.minifyVarDecl(*stmt, false)
 		m.requireSemicolon()
 	case *js.IfStmt:
 		hasIf := !isEmptyStmt(stmt.Body)
@@ -179,7 +204,8 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			}
 		}
 	case *js.BlockStmt:
-		m.minifyBlockStmt(*stmt, true)
+		m.renamer.renameScope(stmt.Scope)
+		m.minifyBlockStmt(*stmt)
 	case *js.ReturnStmt:
 		m.write(returnBytes)
 		m.writeSpaceBeforeIdent()
@@ -190,7 +216,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.write(colonBytes)
 		m.minifyStmt(stmt.Value)
 	case *js.BranchStmt:
-		m.write(stmt.Type.Bytes()) // TODO: optimize Bytes
+		m.write(stmt.Type.Bytes())
 		if stmt.Label != nil {
 			m.write(spaceBytes)
 			m.write(stmt.Label)
@@ -200,11 +226,11 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.write(withOpenBytes)
 		m.minifyExpr(stmt.Cond, js.OpExpr)
 		m.write(closeParenBytes)
-		m.minifyStmt(stmt.Body)
+		m.minifyStmtOrBlock(stmt.Body, defaultBlock)
 	case *js.DoWhileStmt:
 		m.write(doBytes)
 		m.writeSpaceBeforeIdent()
-		m.minifyStmt(stmt.Body)
+		m.minifyStmtOrBlock(stmt.Body, iterationBlock)
 		m.writeSemicolon()
 		m.write(whileOpenBytes)
 		m.minifyExpr(stmt.Cond, js.OpExpr)
@@ -214,7 +240,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.write(whileOpenBytes)
 		m.minifyExpr(stmt.Cond, js.OpExpr)
 		m.write(closeParenBytes)
-		m.minifyStmt(stmt.Body)
+		m.minifyStmtOrBlock(stmt.Body, iterationBlock)
 	case *js.ForStmt:
 		m.write(forOpenBytes)
 		m.minifyExpr(stmt.Init, js.OpExpr)
@@ -223,7 +249,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.write(semicolonBytes)
 		m.minifyExpr(stmt.Post, js.OpExpr)
 		m.write(closeParenBytes)
-		m.minifyStmt(stmt.Body)
+		m.minifyStmtOrBlock(stmt.Body, iterationBlock)
 	case *js.ForInStmt:
 		m.write(forOpenBytes)
 		m.minifyExpr(stmt.Init, js.OpLHS)
@@ -232,7 +258,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.writeSpaceBeforeIdent()
 		m.minifyExpr(stmt.Value, js.OpExpr)
 		m.write(closeParenBytes)
-		m.minifyStmt(stmt.Body)
+		m.minifyStmtOrBlock(stmt.Body, iterationBlock)
 	case *js.ForOfStmt:
 		if stmt.Await {
 			m.write(forAwaitOpenBytes)
@@ -245,7 +271,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.writeSpaceBeforeIdent()
 		m.minifyExpr(stmt.Value, js.OpAssign)
 		m.write(closeParenBytes)
-		m.minifyStmt(stmt.Body)
+		m.minifyStmtOrBlock(stmt.Body, iterationBlock)
 	case *js.SwitchStmt:
 		m.write(switchOpenBytes)
 		m.minifyExpr(stmt.Init, js.OpExpr)
@@ -253,12 +279,13 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.needsSemicolon = false
 		for _, clause := range stmt.List {
 			m.writeSemicolon()
-			m.write(clause.TokenType.Bytes()) // TODO: optimize Bytes
+			m.write(clause.TokenType.Bytes())
 			if clause.Cond != nil {
 				m.write(spaceBytes)
 				m.minifyExpr(clause.Cond, js.OpExpr)
 			}
 			m.write(colonBytes)
+			clause.List = m.optimizeStmtList(clause.List, defaultBlock)
 			for _, item := range clause.List {
 				m.writeSemicolon()
 				m.minifyStmt(item)
@@ -272,7 +299,9 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.requireSemicolon()
 	case *js.TryStmt:
 		m.write(tryBytes)
-		m.minifyBlockStmt(stmt.Body, true)
+		m.renamer.renameScope(stmt.Body.Scope)
+		stmt.Body.List = m.optimizeStmtList(stmt.Body.List, defaultBlock)
+		m.minifyBlockStmt(stmt.Body)
 		if len(stmt.Catch.List) != 0 || stmt.Binding != nil {
 			m.write(catchBytes)
 			m.renamer.renameScope(stmt.Catch.Scope)
@@ -281,11 +310,14 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 				m.minifyBinding(stmt.Binding)
 				m.write(closeParenBytes)
 			}
-			m.minifyBlockStmt(stmt.Catch, false)
+			stmt.Catch.List = m.optimizeStmtList(stmt.Catch.List, defaultBlock)
+			m.minifyBlockStmt(stmt.Catch)
 		}
 		if len(stmt.Finally.List) != 0 {
 			m.write(finallyBytes)
-			m.minifyBlockStmt(stmt.Finally, true)
+			m.renamer.renameScope(stmt.Finally.Scope)
+			stmt.Finally.List = m.optimizeStmtList(stmt.Finally.List, defaultBlock)
+			m.minifyBlockStmt(stmt.Finally)
 		}
 	case *js.FuncDecl:
 		m.minifyFuncDecl(*stmt, false)
@@ -373,40 +405,41 @@ func condExpr(x, y, z js.IExpr) js.IExpr {
 	return &js.CondExpr{groupExpr(x, js.OpCoalesce), groupExpr(y, js.OpAssign), groupExpr(z, js.OpAssign)}
 }
 
-func (m *jsMinifier) stmtToExpr(i js.IStmt) js.IStmt {
-	if stmt, ok := i.(*js.IfStmt); ok {
-		if unaryExpr, ok := stmt.Cond.(*js.UnaryExpr); ok && unaryExpr.Op == js.NotToken {
-			stmt.Cond = unaryExpr.X
-			stmt.Body, stmt.Else = stmt.Else, stmt.Body
+func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
+	// convert if/else into expression statement, and optimize blocks
+	if ifStmt, ok := i.(*js.IfStmt); ok {
+		if unaryExpr, ok := ifStmt.Cond.(*js.UnaryExpr); ok && unaryExpr.Op == js.NotToken {
+			ifStmt.Cond = unaryExpr.X
+			ifStmt.Body, ifStmt.Else = ifStmt.Else, ifStmt.Body
 		}
-		hasIf := !isEmptyStmt(stmt.Body)
-		hasElse := !isEmptyStmt(stmt.Else)
+		hasIf := !isEmptyStmt(ifStmt.Body)
+		hasElse := !isEmptyStmt(ifStmt.Else)
 		if !hasIf && !hasElse {
-			return &js.ExprStmt{stmt.Cond}
+			return &js.ExprStmt{ifStmt.Cond}
 		} else if hasIf && !hasElse {
-			stmt.Body = m.stmtToExpr(stmt.Body)
-			if X, isExprBody := stmt.Body.(*js.ExprStmt); isExprBody {
-				left := groupExpr(stmt.Cond, binaryLeftPrecMap[js.AndToken])
+			ifStmt.Body = m.optimizeStmt(ifStmt.Body)
+			if X, isExprBody := ifStmt.Body.(*js.ExprStmt); isExprBody {
+				left := groupExpr(ifStmt.Cond, binaryLeftPrecMap[js.AndToken])
 				right := groupExpr(X.Value, binaryRightPrecMap[js.AndToken])
 				return &js.ExprStmt{&js.BinaryExpr{js.AndToken, left, right}}
 			}
 		} else if !hasIf && hasElse {
-			stmt.Else = m.stmtToExpr(stmt.Else)
-			if X, isExprElse := stmt.Else.(*js.ExprStmt); isExprElse {
-				left := groupExpr(stmt.Cond, binaryLeftPrecMap[js.OrToken])
+			ifStmt.Else = m.optimizeStmt(ifStmt.Else)
+			if X, isExprElse := ifStmt.Else.(*js.ExprStmt); isExprElse {
+				left := groupExpr(ifStmt.Cond, binaryLeftPrecMap[js.OrToken])
 				right := groupExpr(X.Value, binaryRightPrecMap[js.OrToken])
 				return &js.ExprStmt{&js.BinaryExpr{js.OrToken, left, right}}
 			}
 		} else if hasIf && hasElse {
-			stmt.Body = m.stmtToExpr(stmt.Body)
-			stmt.Else = m.stmtToExpr(stmt.Else)
-			XExpr, isExprBody := stmt.Body.(*js.ExprStmt)
-			YExpr, isExprElse := stmt.Else.(*js.ExprStmt)
+			ifStmt.Body = m.optimizeStmt(ifStmt.Body)
+			ifStmt.Else = m.optimizeStmt(ifStmt.Else)
+			XExpr, isExprBody := ifStmt.Body.(*js.ExprStmt)
+			YExpr, isExprElse := ifStmt.Else.(*js.ExprStmt)
 			if isExprBody && isExprElse {
-				return &js.ExprStmt{condExpr(stmt.Cond, XExpr.Value, YExpr.Value)}
+				return &js.ExprStmt{condExpr(ifStmt.Cond, XExpr.Value, YExpr.Value)}
 			}
-			XReturn, isReturnBody := stmt.Body.(*js.ReturnStmt)
-			YReturn, isReturnElse := stmt.Else.(*js.ReturnStmt)
+			XReturn, isReturnBody := ifStmt.Body.(*js.ReturnStmt)
+			YReturn, isReturnElse := ifStmt.Else.(*js.ReturnStmt)
 			if isReturnBody && isReturnElse {
 				if XReturn.Value == nil {
 					XReturn.Value = &js.UnaryExpr{js.VoidToken, &js.LiteralExpr{js.NumericToken, zeroBytes}}
@@ -414,40 +447,55 @@ func (m *jsMinifier) stmtToExpr(i js.IStmt) js.IStmt {
 				if YReturn.Value == nil {
 					YReturn.Value = &js.UnaryExpr{js.VoidToken, &js.LiteralExpr{js.NumericToken, zeroBytes}}
 				}
-				return &js.ReturnStmt{condExpr(stmt.Cond, XReturn.Value, YReturn.Value)}
+				return &js.ReturnStmt{condExpr(ifStmt.Cond, XReturn.Value, YReturn.Value)}
 			}
-			XThrow, isThrowBody := stmt.Body.(*js.ThrowStmt)
-			YThrow, isThrowElse := stmt.Else.(*js.ThrowStmt)
+			XThrow, isThrowBody := ifStmt.Body.(*js.ThrowStmt)
+			YThrow, isThrowElse := ifStmt.Else.(*js.ThrowStmt)
 			if isThrowBody && isThrowElse {
-				return &js.ThrowStmt{condExpr(stmt.Cond, XThrow.Value, YThrow.Value)}
+				return &js.ThrowStmt{condExpr(ifStmt.Cond, XThrow.Value, YThrow.Value)}
 			}
 		}
-	} else if stmt, ok := i.(*js.BlockStmt); ok {
+	} else if varDecl, ok := i.(*js.VarDecl); ok {
+		_ = varDecl
+	} else if blockStmt, ok := i.(*js.BlockStmt); ok {
 		// merge body and remove braces if possible from independent blocks
-		stmt.List = m.mergeStmtList(stmt.List)
-		if len(stmt.List) == 1 {
-			varDecl, isVarDecl := stmt.List[0].(*js.VarDecl)
-			_, isClassDecl := stmt.List[0].(*js.ClassDecl)
+		blockStmt.List = m.optimizeStmtList(blockStmt.List, defaultBlock)
+		if len(blockStmt.List) == 1 {
+			varDecl, isVarDecl := blockStmt.List[0].(*js.VarDecl)
+			_, isClassDecl := blockStmt.List[0].(*js.ClassDecl)
 			if !isClassDecl && (!isVarDecl || varDecl.TokenType == js.VarToken) {
-				return m.stmtToExpr(stmt.List[0])
+				return m.optimizeStmt(blockStmt.List[0])
 			}
 		}
-		return js.IStmt(stmt)
+		return blockStmt
 	}
 	return i
 }
 
-func (m *jsMinifier) mergeStmtList(list []js.IStmt) []js.IStmt {
-	if len(list) < 2 {
+func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
+	// merge statements and dead code
+	if len(list) == 0 {
 		return list
 	}
-	list[0] = m.stmtToExpr(list[0])
 	j := 0
+	list[0] = m.optimizeStmt(list[0])
 	for i, _ := range list[:len(list)-1] {
-		list[i+1] = m.stmtToExpr(list[i+1])
+		// remove dead code
+		if _, ok := list[i].(*js.ReturnStmt); ok {
+			break
+		} else if _, ok := list[i].(*js.ThrowStmt); ok {
+			break
+		} else if _, ok := list[i].(*js.BranchStmt); ok {
+			break
+		}
+
+		// probe at every i which allows one lookahead to i+1, write to position j <= i
 		j++
+		list[i+1] = m.optimizeStmt(list[i+1])
+
+		// merge expression statements with expression, return, and throw statements
 		if left, ok := list[i].(*js.ExprStmt); ok {
-			// merge expression statements with expression, return, and throw statements
+			// TODO: use switch?
 			if right, ok := list[i+1].(*js.ExprStmt); ok {
 				right.Value = &js.BinaryExpr{js.CommaToken, left.Value, right.Value}
 				j--
@@ -496,18 +544,27 @@ func (m *jsMinifier) mergeStmtList(list []js.IStmt) []js.IStmt {
 			}
 		}
 		list[j] = list[i+1]
+
+		// merge if/else with return/throw when followed by return/throw
 		if 0 < j {
-			// merge if/else with return/throw when followed by return/throw
 			if ifStmt, ok := list[j-1].(*js.IfStmt); ok && isEmptyStmt(ifStmt.Body) != isEmptyStmt(ifStmt.Else) {
-				if returnStmt, ok := list[j].(*js.ReturnStmt); ok && returnStmt.Value != nil {
-					if left, ok := ifStmt.Body.(*js.ReturnStmt); ok && left.Value != nil {
-						returnStmt.Value = condExpr(ifStmt.Cond, left.Value, returnStmt.Value)
-						list[j-1] = returnStmt
-						j--
-					} else if left, ok := ifStmt.Else.(*js.ReturnStmt); ok && left.Value != nil {
-						returnStmt.Value = condExpr(ifStmt.Cond, returnStmt.Value, left.Value)
-						list[j-1] = returnStmt
-						j--
+				if returnStmt, ok := list[j].(*js.ReturnStmt); ok {
+					if returnStmt.Value == nil {
+						if left, ok := ifStmt.Body.(*js.ReturnStmt); ok && left.Value == nil {
+							list[j-1] = &js.ExprStmt{ifStmt.Cond}
+						} else if left, ok := ifStmt.Else.(*js.ReturnStmt); ok && left.Value == nil {
+							list[j-1] = &js.ExprStmt{ifStmt.Cond}
+						}
+					} else {
+						if left, ok := ifStmt.Body.(*js.ReturnStmt); ok && left.Value != nil {
+							returnStmt.Value = condExpr(ifStmt.Cond, left.Value, returnStmt.Value)
+							list[j-1] = returnStmt
+							j--
+						} else if left, ok := ifStmt.Else.(*js.ReturnStmt); ok && left.Value != nil {
+							returnStmt.Value = condExpr(ifStmt.Cond, returnStmt.Value, left.Value)
+							list[j-1] = returnStmt
+							j--
+						}
 					}
 				} else if throwStmt, ok := list[j].(*js.ThrowStmt); ok {
 					if left, ok := ifStmt.Body.(*js.ThrowStmt); ok {
@@ -523,20 +580,45 @@ func (m *jsMinifier) mergeStmtList(list []js.IStmt) []js.IStmt {
 			}
 		}
 	}
+
+	// remove superfluous return or continue
+	if blockType == functionBlock {
+		if returnStmt, ok := list[j].(*js.ReturnStmt); ok && (returnStmt.Value == nil || m.isUndefined(returnStmt.Value)) {
+			j--
+		}
+	} else if blockType == iterationBlock {
+		if branchStmt, ok := list[j].(*js.BranchStmt); ok && branchStmt.Type == js.ContinueToken && branchStmt.Label == nil {
+			j--
+		}
+	}
 	return list[:j+1]
 }
 
-func (m *jsMinifier) minifyBlockStmt(stmt js.BlockStmt, enterScope bool) {
-	stmt.List = m.mergeStmtList(stmt.List)
+func (m *jsMinifier) minifyBlockStmt(stmt js.BlockStmt) {
 	m.write(openBraceBytes)
 	m.needsSemicolon = false
-	if enterScope {
-		m.renamer.renameScope(stmt.Scope)
-	}
 	for _, item := range stmt.List {
 		m.writeSemicolon()
 		m.minifyStmt(item)
 	}
+
+	// write all dead variable and function declarations in scope as empty vars
+	//if blockType == functionBlock {
+	//	first := true
+	//	for _, v := range stmt.Scope.Declared {
+	//		if v.Uses == 0 && (v.Decl == js.VariableDecl || v.Decl == js.FunctionDecl) {
+	//			if first {
+	//				m.writeSemicolon()
+	//				m.write(varSpaceBytes)
+	//				first = false
+	//			} else {
+	//				m.write(commaBytes)
+	//			}
+	//			m.write(v.Name)
+	//		}
+	//	}
+	//}
+
 	m.write(closeBraceBytes)
 	m.needsSemicolon = false
 }
@@ -588,8 +670,49 @@ func (m *jsMinifier) minifyArguments(args js.Arguments) {
 	m.write(closeParenBytes)
 }
 
-func (m *jsMinifier) minifyVarDecl(decl js.VarDecl) {
-	m.write(decl.TokenType.Bytes()) // TODO: optimize Bytes
+func (m *jsMinifier) minifyVarDecl(decl js.VarDecl, inFor bool) {
+	//if inFor && decl.TokenType == js.VarToken && m.hoistVariables {
+	//	// remove 'var' when hoisting variables
+	//	first := true
+	//	for _, item := range decl.List {
+	//		if item.Default != nil {
+	//			if !first {
+	//				m.write(commaBytes)
+	//			}
+	//			m.minifyBindingElement(item)
+	//			first = false
+	//		}
+	//	}
+	//	//} else {
+	//	//	// write the original declarations
+	//	//	refs := []js.VarRef{}
+	//	//	m.write(varBytes)
+	//	//	m.writeSpaceBeforeIdent()
+	//	//	for i, item := range decl.List {
+	//	//		if i != 0 {
+	//	//			m.write(commaBytes)
+	//	//		}
+	//	//		m.minifyBindingElement(item)
+	//	//		refs = append(refs, bindingRefs(item.Binding)...)
+	//	//	}
+
+	//	//	// hoist other variable declarations in this function scope but don't initialize yet
+	//	//DeclaredLoop:
+	//	//	for _, v := range m.scope.Declared {
+	//	//		if v.Decl == js.VariableDecl {
+	//	//			for _, ref := range refs {
+	//	//				if ref == v.Ref {
+	//	//					continue DeclaredLoop
+	//	//				}
+	//	//			}
+	//	//			m.write(commaBytes)
+	//	//			m.write(v.Name)
+	//	//		}
+	//	//	}
+	//	//	m.varsDeclared = true
+	//	//}
+	//} else {
+	m.write(decl.TokenType.Bytes())
 	m.writeSpaceBeforeIdent()
 	for i, item := range decl.List {
 		if i != 0 {
@@ -597,6 +720,7 @@ func (m *jsMinifier) minifyVarDecl(decl js.VarDecl) {
 		}
 		m.minifyBindingElement(item)
 	}
+	//}
 }
 
 func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
@@ -608,7 +732,7 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 		m.write(starBytes)
 	}
 	if inExpr {
-		m.renamer.renameScope(decl.Scope)
+		m.renamer.renameScope(decl.Body.Scope)
 	}
 	if decl.Name != 0 && (!inExpr || 1 < decl.Name.Var(m.ast).Uses) {
 		if !decl.Generator {
@@ -617,46 +741,15 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 		m.write(decl.Name.Name(m.ast))
 	}
 	if !inExpr {
-		m.renamer.renameScope(decl.Scope)
+		m.renamer.renameScope(decl.Body.Scope)
 	}
 	m.minifyParams(decl.Params)
-	m.minifyFuncBody(decl.Scope, decl.Body)
-}
 
-func (m *jsMinifier) minifyFuncBody(scope js.Scope, stmt js.BlockStmt) {
-	stmt.List = m.mergeStmtList(stmt.List)
-	m.write(openBraceBytes)
-	m.needsSemicolon = false
-	for _, item := range stmt.List {
-		if returnStmt, ok := item.(*js.ReturnStmt); ok {
-			if returnStmt.Value != nil && !m.isUndefined(returnStmt.Value) {
-				m.writeSemicolon()
-				m.minifyStmt(item)
-			}
-			break
-		}
-		m.writeSemicolon()
-		m.minifyStmt(item)
-	}
-
-	// write all used vars in scope
-	first := true
-	fmt.Println(scope.Declared)
-	for _, v := range scope.Declared {
-		if 0 < v.Uses {
-			if first {
-				m.writeSemicolon()
-				m.write(varSpaceBytes)
-				first = false
-			} else {
-				m.write(commaBytes)
-			}
-			m.write(v.Name)
-		}
-	}
-
-	m.write(closeBraceBytes)
-	m.needsSemicolon = false
+	parentHoistVariables, parentScope := m.hoistVariables, m.scope
+	m.hoistVariables, m.scope = 1 < decl.Body.Scope.Count(js.VariableDecl), &decl.Body.Scope
+	decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
+	m.minifyBlockStmt(decl.Body)
+	m.hoistVariables, m.scope = parentHoistVariables, parentScope
 }
 
 func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
@@ -681,13 +774,18 @@ func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
 		m.writeSpaceBeforeIdent()
 	}
 	m.minifyPropertyName(decl.Name)
-	m.renamer.renameScope(decl.Scope)
+	m.renamer.renameScope(decl.Body.Scope)
 	m.minifyParams(decl.Params)
-	m.minifyFuncBody(decl.Scope, decl.Body)
+
+	parentHoistVariables, parentScope := m.hoistVariables, m.scope
+	m.hoistVariables, m.scope = 1 < decl.Body.Scope.Count(js.VariableDecl), &decl.Body.Scope
+	decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
+	m.minifyBlockStmt(decl.Body)
+	m.hoistVariables, m.scope = parentHoistVariables, parentScope
 }
 
 func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
-	m.renamer.renameScope(decl.Scope)
+	m.renamer.renameScope(decl.Body.Scope)
 	if decl.Async {
 		m.write(asyncBytes)
 	}
@@ -729,7 +827,11 @@ func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
 		}
 	}
 	if !removeBraces {
-		m.minifyFuncBody(decl.Scope, decl.Body)
+		parentHoistVariables, parentScope := m.hoistVariables, m.scope
+		m.hoistVariables, m.scope = 1 < decl.Body.Scope.Count(js.VariableDecl), &decl.Body.Scope
+		decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
+		m.minifyBlockStmt(decl.Body)
+		m.hoistVariables, m.scope = parentHoistVariables, parentScope
 	}
 }
 
@@ -787,8 +889,8 @@ func (m *jsMinifier) minifyBindingElement(element js.BindingElement) {
 	}
 }
 
-func (m *jsMinifier) minifyBinding(i js.IBinding) {
-	switch binding := i.(type) {
+func (m *jsMinifier) minifyBinding(ibinding js.IBinding) {
+	switch binding := ibinding.(type) {
 	case js.VarRef:
 		m.write(binding.Name(m.ast))
 	case *js.BindingArray:
@@ -863,6 +965,8 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			m.write(binaryNumber(expr.Data))
 		} else if expr.TokenType == js.OctalToken {
 			m.write(octalNumber(expr.Data))
+		} else if expr.TokenType == js.HexadecimalToken {
+			m.write(hexadecimalNumber(expr.Data))
 		} else if expr.TokenType == js.TrueToken {
 			if js.OpUnary < prec {
 				m.write(groupedNotZeroBytes)
@@ -1156,7 +1260,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.write(optChainBytes)
 		m.minifyExpr(expr.Y, js.OpMember)
 	case *js.VarDecl:
-		m.minifyVarDecl(*expr) // only happens for init in for statement
+		m.minifyVarDecl(*expr, true) // only happens for init in for statement
 	case *js.FuncDecl:
 		if m.expectStmt {
 			m.write(notBytes)
@@ -1221,7 +1325,6 @@ func newRenamer(ast *js.AST, undeclared js.VarArray, rename bool) *renamer {
 	for name, _ := range js.Globals {
 		reserved[name] = struct{}{}
 	}
-	// TODO: sort variable names on highest usage throughout the file, right now lower scopes can have high usage but are forced to use two-character names as the one-character names are depleted
 	return &renamer{
 		ast:      ast,
 		reserved: reserved,

@@ -70,6 +70,7 @@ var (
 	openNewBytes               = []byte("(new")
 	newTargetBytes             = []byte("new.target")
 	importMetaBytes            = []byte("import.meta")
+	varBytes                   = []byte("var")
 	varSpaceBytes              = []byte("var ")
 	undefinedBytes             = []byte("undefined")
 	infinityBytes              = []byte("Infinity")
@@ -520,8 +521,34 @@ func minifyString(b []byte) []byte {
 	return b
 }
 
+func bindingRefs(ibinding js.IBinding) (refs []js.VarRef) {
+	switch binding := ibinding.(type) {
+	case js.VarRef:
+		refs = append(refs, binding)
+	case *js.BindingArray:
+		for _, item := range binding.List {
+			if item.Binding != nil {
+				refs = append(refs, bindingRefs(item.Binding)...)
+			}
+		}
+		if binding.Rest != nil {
+			refs = append(refs, bindingRefs(binding.Rest)...)
+		}
+	case *js.BindingObject:
+		for _, item := range binding.List {
+			if item.Value.Binding != nil {
+				refs = append(refs, bindingRefs(item.Value.Binding)...)
+			}
+		}
+		if binding.Rest != 0 {
+			refs = append(refs, binding.Rest)
+		}
+	}
+	return
+}
+
 func binaryNumber(b []byte) []byte {
-	if len(b) <= 2 || len(b) > 65 {
+	if len(b) <= 2 || 65 < len(b) {
 		return b
 	}
 	var n int64
@@ -540,13 +567,38 @@ func binaryNumber(b []byte) []byte {
 }
 
 func octalNumber(b []byte) []byte {
-	if len(b) <= 2 || len(b) > 23 {
+	if len(b) <= 2 || 23 < len(b) {
 		return b
 	}
 	var n int64
 	for _, c := range b[2:] {
 		n *= 8
 		n += int64(c - '0')
+	}
+	i := strconv.LenInt(n) - 1
+	b = b[:i+1]
+	for 0 <= i {
+		b[i] = byte('0' + n%10)
+		n /= 10
+		i--
+	}
+	return minify.Number(b, 0)
+}
+
+func hexadecimalNumber(b []byte) []byte {
+	if len(b) <= 2 || 12 < len(b) {
+		return b
+	}
+	var n int64
+	for _, c := range b[2:] {
+		n *= 16
+		if c <= '9' {
+			n += int64(c - '0')
+		} else if c <= 'F' {
+			n += 10 + int64(c-'A')
+		} else {
+			n += 10 + int64(c-'a')
+		}
 	}
 	i := strconv.LenInt(n) - 1
 	b = b[:i+1]
