@@ -521,32 +521,6 @@ func minifyString(b []byte) []byte {
 	return b
 }
 
-func bindingRefs(ibinding js.IBinding) (refs []js.VarRef) {
-	switch binding := ibinding.(type) {
-	case js.VarRef:
-		refs = append(refs, binding)
-	case *js.BindingArray:
-		for _, item := range binding.List {
-			if item.Binding != nil {
-				refs = append(refs, bindingRefs(item.Binding)...)
-			}
-		}
-		if binding.Rest != nil {
-			refs = append(refs, bindingRefs(binding.Rest)...)
-		}
-	case *js.BindingObject:
-		for _, item := range binding.List {
-			if item.Value.Binding != nil {
-				refs = append(refs, bindingRefs(item.Value.Binding)...)
-			}
-		}
-		if binding.Rest != 0 {
-			refs = append(refs, binding.Rest)
-		}
-	}
-	return
-}
-
 func binaryNumber(b []byte) []byte {
 	if len(b) <= 2 || 65 < len(b) {
 		return b

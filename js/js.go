@@ -76,7 +76,6 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	m := &jsMinifier{
 		o:       o,
 		w:       w,
-		scope:   &ast.Scope,
 		ast:     ast,
 		renamer: newRenamer(ast, ast.Undeclared, !o.KeepVarNames),
 	}
@@ -100,8 +99,6 @@ type jsMinifier struct {
 	needsSemicolon bool // write a semicolon if required
 	needsSpace     bool // write a space if next token is an identifier
 	expectStmt     bool // avoid ambiguous syntax such as an expression starting with function
-	hoistVariables bool // whether var declarations will be hoisted (to the end) in the current function scope
-	scope          *js.Scope
 
 	ast     *js.AST
 	renamer *renamer
@@ -163,7 +160,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.minifyExpr(stmt.Value, js.OpExpr)
 		m.requireSemicolon()
 	case *js.VarDecl:
-		m.minifyVarDecl(*stmt, false)
+		m.minifyVarDecl(*stmt)
 		m.requireSemicolon()
 	case *js.IfStmt:
 		hasIf := !isEmptyStmt(stmt.Body)
@@ -485,10 +482,10 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 			break
 		} else if _, ok := list[i].(*js.BranchStmt); ok {
 			break
-		} else if _, ok := list[i].(*js.EmptyStmt); ok {
-			continue
-		} else if _, ok := list[i].(*js.DebuggerStmt); ok {
-			continue
+			//} else if _, ok := list[i].(*js.EmptyStmt); ok {
+			//	continue
+			//} else if _, ok := list[i].(*js.DebuggerStmt); ok {
+			//	continue
 		}
 
 		// probe at every i which allows one lookahead to i+1, write to position j <= i
@@ -593,13 +590,13 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 		}
 	}
 
-	// keep dead code function declarations
-	for _, item := range list[j+1:] {
-		if _, ok := item.(*js.FuncDecl); ok {
-			j++
-			list[j] = item
-		}
-	}
+	//// keep dead code function declarations
+	//for _, item := range list[j+1:] {
+	//	if _, ok := item.(*js.FuncDecl); ok {
+	//		j++
+	//		list[j] = item
+	//	}
+	//}
 	return list[:j+1]
 }
 
@@ -662,49 +659,7 @@ func (m *jsMinifier) minifyArguments(args js.Arguments) {
 	m.write(closeParenBytes)
 }
 
-func (m *jsMinifier) minifyVarDecl(decl js.VarDecl, inExpr bool) {
-	//fmt.Println(decl.String(m.ast))
-	//if inExpr && decl.TokenType == js.VarToken { //&& m.hoistVariables {
-	//	// remove 'var' when hoisting variables
-	//	first := true
-	//	for _, item := range decl.List {
-	//		if item.Default != nil {
-	//			if !first {
-	//				m.write(commaBytes)
-	//			}
-	//			m.minifyBindingElement(item)
-	//			first = false
-	//		}
-	//	}
-	//	//} else {
-	//	//	// write the original declarations
-	//	//	refs := []js.VarRef{}
-	//	//	m.write(varBytes)
-	//	//	m.writeSpaceBeforeIdent()
-	//	//	for i, item := range decl.List {
-	//	//		if i != 0 {
-	//	//			m.write(commaBytes)
-	//	//		}
-	//	//		m.minifyBindingElement(item)
-	//	//		refs = append(refs, bindingRefs(item.Binding)...)
-	//	//	}
-
-	//	//	// hoist other variable declarations in this function scope but don't initialize yet
-	//	//DeclaredLoop:
-	//	//	for _, v := range m.scope.Declared {
-	//	//		if v.Decl == js.VariableDecl {
-	//	//			for _, ref := range refs {
-	//	//				if ref == v.Ref {
-	//	//					continue DeclaredLoop
-	//	//				}
-	//	//			}
-	//	//			m.write(commaBytes)
-	//	//			m.write(v.Name)
-	//	//		}
-	//	//	}
-	//	//	m.varsDeclared = true
-	//	//}
-	//} else {
+func (m *jsMinifier) minifyVarDecl(decl js.VarDecl) {
 	m.write(decl.TokenType.Bytes())
 	m.writeSpaceBeforeIdent()
 	for i, item := range decl.List {
@@ -713,7 +668,6 @@ func (m *jsMinifier) minifyVarDecl(decl js.VarDecl, inExpr bool) {
 		}
 		m.minifyBindingElement(item)
 	}
-	//}
 }
 
 func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
@@ -738,11 +692,8 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 	}
 	m.minifyParams(decl.Params)
 
-	parentHoistVariables, parentScope := m.hoistVariables, m.scope
-	m.hoistVariables, m.scope = false, &decl.Body.Scope
 	decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
 	m.minifyBlockStmt(decl.Body)
-	m.hoistVariables, m.scope = parentHoistVariables, parentScope
 }
 
 func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
@@ -770,11 +721,8 @@ func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
 	m.renamer.renameScope(decl.Scope)
 	m.minifyParams(decl.Params)
 
-	parentHoistVariables, parentScope := m.hoistVariables, m.scope
-	m.hoistVariables, m.scope = false, &decl.Body.Scope
 	decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
 	m.minifyBlockStmt(decl.Body)
-	m.hoistVariables, m.scope = parentHoistVariables, parentScope
 }
 
 func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
@@ -820,11 +768,8 @@ func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
 		}
 	}
 	if !removeBraces {
-		parentHoistVariables, parentScope := m.hoistVariables, m.scope
-		m.hoistVariables, m.scope = false, &decl.Body.Scope
 		decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
 		m.minifyBlockStmt(decl.Body)
-		m.hoistVariables, m.scope = parentHoistVariables, parentScope
 	}
 }
 
@@ -1253,7 +1198,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.write(optChainBytes)
 		m.minifyExpr(expr.Y, js.OpMember)
 	case *js.VarDecl:
-		m.minifyVarDecl(*expr, true) // only happens for init in for statement
+		m.minifyVarDecl(*expr) // only happens for init in for statement
 	case *js.FuncDecl:
 		if m.expectStmt {
 			m.write(notBytes)
