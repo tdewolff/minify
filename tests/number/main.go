@@ -3,7 +3,7 @@ package fuzz
 
 import (
 	"github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/parse"
+	"github.com/tdewolff/parse/v2"
 )
 
 func Fuzz(data []byte) int {

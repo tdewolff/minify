@@ -70,6 +70,7 @@ func TestDecimal(t *testing.T) {
 		number   string
 		expected string
 	}{
+		{"", ""},
 		{"0", "0"},
 		{".0", "0"},
 		{"1.0", "1"},
@@ -149,6 +150,7 @@ func TestNumber(t *testing.T) {
 		number   string
 		expected string
 	}{
+		{"", ""},
 		{"0", "0"},
 		{".0", "0"},
 		{"1.0", "1"},
