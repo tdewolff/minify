@@ -452,6 +452,8 @@ func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 				return &js.ThrowStmt{condExpr(ifStmt.Cond, XThrow.Value, YThrow.Value)}
 			}
 		}
+	} else if varDecl, ok := i.(*js.VarDecl); ok {
+		return &js.ExprStmt{varDecl}
 	} else if blockStmt, ok := i.(*js.BlockStmt); ok {
 		// merge body and remove braces if possible from independent blocks
 		blockStmt.List = m.optimizeStmtList(blockStmt.List, defaultBlock)
@@ -475,19 +477,6 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 	j := 0
 	list[0] = m.optimizeStmt(list[0])
 	for i, _ := range list[:len(list)-1] {
-		// remove dead code
-		if _, ok := list[i].(*js.ReturnStmt); ok {
-			break
-		} else if _, ok := list[i].(*js.ThrowStmt); ok {
-			break
-		} else if _, ok := list[i].(*js.BranchStmt); ok {
-			break
-			//} else if _, ok := list[i].(*js.EmptyStmt); ok {
-			//	continue
-			//} else if _, ok := list[i].(*js.DebuggerStmt); ok {
-			//	continue
-		}
-
 		// probe at every i which allows one lookahead to i+1, write to position j <= i
 		j++
 		list[i+1] = m.optimizeStmt(list[i+1])
@@ -589,14 +578,6 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 			j--
 		}
 	}
-
-	//// keep dead code function declarations
-	//for _, item := range list[j+1:] {
-	//	if _, ok := item.(*js.FuncDecl); ok {
-	//		j++
-	//		list[j] = item
-	//	}
-	//}
 	return list[:j+1]
 }
 
