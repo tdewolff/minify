@@ -353,28 +353,22 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							value.Text = nil
 						}
 					}
+				} else if t.Hash == A {
+					attrs := tb.Attributes(Id, Name)
+					if id, name := attrs[0], attrs[1]; id != nil && name != nil {
+						if bytes.Equal(id.AttrVal, name.AttrVal) {
+							name.Text = nil
+						}
+					}
 				}
 
 				// write attributes
-				htmlEqualIdName := false
 				for {
 					attr := *tb.Shift()
 					if attr.TokenType != html.AttributeToken {
 						break
 					} else if attr.Text == nil {
 						continue // removed attribute
-					}
-
-					if t.Hash == A && (attr.Hash == Id || attr.Hash == Name) {
-						if attr.Hash == Id {
-							if name := tb.Attributes(Name)[0]; name != nil && bytes.Equal(attr.AttrVal, name.AttrVal) {
-								htmlEqualIdName = true
-							}
-						} else if htmlEqualIdName {
-							continue
-						} else if id := tb.Attributes(Id)[0]; id != nil && bytes.Equal(id.AttrVal, attr.AttrVal) {
-							continue
-						}
 					}
 
 					val := attr.AttrVal
