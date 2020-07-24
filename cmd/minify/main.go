@@ -60,10 +60,14 @@ var (
 type Task struct {
 	srcs []string
 	dst  string
+	sync bool
 }
 
 func NewTask(root, input, output string) (Task, error) {
-	t := Task{[]string{input}, output}
+	t := Task{[]string{input}, output, false}
+	if input != "" {
+		t.sync = !fileMatches(input)
+	}
 	if 0 < len(output) && output[len(output)-1] == '/' {
 		rel, err := filepath.Rel(root, input)
 		if err != nil {
@@ -214,6 +218,15 @@ func run() int {
 		}
 	}
 
+	// detect mimetype, mimetype=="" means we'll infer mimetype from file extensions
+	if mimetype == "" && filetype != "" {
+		var ok bool
+		if mimetype, ok = filetypeMime[filetype]; !ok {
+			Error.Println("cannot find mimetype for filetype", filetype)
+			return 1
+		}
+	}
+
 	if (useStdin || output == "") && (watch || sync || recursive) {
 		if watch {
 			Error.Println("--watch doesn't work on stdin and stdout, specify input and output")
@@ -226,18 +239,12 @@ func run() int {
 		}
 		return 1
 	}
-	if mimetype == "" && filetype == "" && useStdin {
+	if mimetype == "" && useStdin {
 		Error.Println("must specify --mime or --type for stdin")
 		return 1
-	}
-
-	// detect mimetype, mimetype=="" means we'll infer mimetype from file extensions
-	if mimetype == "" && filetype != "" {
-		var ok bool
-		if mimetype, ok = filetypeMime[filetype]; !ok {
-			Error.Println("cannot find mimetype for filetype", filetype)
-			return 1
-		}
+	} else if mimetype != "" && sync {
+		Error.Println("must specify either --sync or --mime/--type")
+		return 1
 	}
 	if verbose {
 		if mimetype == "" {
@@ -305,6 +312,7 @@ func run() int {
 
 	// concatenate
 	if 1 < len(tasks) && !dirDst {
+		// Task.sync == false because dirDst == false
 		for _, task := range tasks[1:] {
 			tasks[0].srcs = append(tasks[0].srcs, task.srcs[0])
 		}
@@ -451,28 +459,26 @@ func sanitizePath(p string) string {
 }
 
 func validFile(info os.FileInfo) bool {
-	if info.Mode().IsRegular() && len(info.Name()) > 0 && (hidden || info.Name()[0] != '.') {
-		if pattern != nil && !pattern.MatchString(info.Name()) {
-			return false
-		}
-
-		if !sync {
-			ext := path.Ext(info.Name())
-			if len(ext) > 0 {
-				ext = ext[1:]
-			}
-
-			if _, ok := filetypeMime[ext]; !ok {
-				return false
-			}
-		}
-		return true
-	}
-	return false
+	return info.Mode().IsRegular() && len(info.Name()) > 0 && (hidden || info.Name()[0] != '.')
 }
 
 func validDir(info os.FileInfo) bool {
 	return info.Mode().IsDir() && len(info.Name()) > 0 && (hidden || info.Name()[0] != '.')
+}
+
+func fileMatches(filename string) bool {
+	if pattern != nil && !pattern.MatchString(filename) {
+		return false
+	}
+
+	ext := path.Ext(filename)
+	if len(ext) > 0 {
+		ext = ext[1:]
+	}
+	if _, ok := filetypeMime[ext]; !ok {
+		return false
+	}
+	return true
 }
 
 func createTasks(inputs []string, output string) ([]Task, []string, error) {
@@ -486,11 +492,13 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 		}
 
 		if info.Mode().IsRegular() {
-			task, err := NewTask("", input, output)
-			if err != nil {
-				return nil, nil, err
+			if sync || fileMatches(info.Name()) {
+				task, err := NewTask("", input, output)
+				if err != nil {
+					return nil, nil, err
+				}
+				tasks = append(tasks, task)
 			}
-			tasks = append(tasks, task)
 		} else if info.Mode().IsDir() {
 			roots = append(roots, input)
 			if !recursive {
@@ -499,7 +507,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 					return nil, nil, err
 				}
 				for _, info := range infos {
-					if validFile(info) {
+					if validFile(info) && (sync || fileMatches(info.Name())) {
 						task, err := NewTask(input, path.Join(input, info.Name()), output)
 						if err != nil {
 							return nil, nil, err
@@ -513,7 +521,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 						return err
 					}
 					path = sanitizePath(path)
-					if validFile(info) {
+					if validFile(info) && (sync || fileMatches(info.Name())) {
 						task, err := NewTask(input, path, output)
 						if err != nil {
 							return err
@@ -573,13 +581,11 @@ func openOutputFile(output string) (*os.File, error) {
 }
 
 func minify(mimetype string, t Task) bool {
-	if mimetype == "" {
+	if mimetype == "" && !t.sync {
 		for _, src := range t.srcs {
 			if len(path.Ext(src)) > 0 {
 				srcMimetype, ok := filetypeMime[path.Ext(src)[1:]]
-				if !ok && sync {
-					break // is sync==true, then len(t.srcs)==1
-				} else if !ok {
+				if !ok {
 					Error.Println("cannot infer mimetype from extension in", src)
 					return false
 				}
@@ -594,7 +600,7 @@ func minify(mimetype string, t Task) bool {
 	}
 
 	// synchronizing files that are not minified but just copied to the same directory, no action needed
-	if sync && mimetype == "" && t.srcs[0] == t.dst {
+	if t.sync && t.srcs[0] == t.dst {
 		return true
 	}
 
@@ -634,23 +640,15 @@ func minify(mimetype string, t Task) bool {
 	if mimetype == filetypeMime["js"] {
 		fr.SetSeparator([]byte("\n"))
 	}
-	r := NewCountingReader(fr)
-
 	fw, err := openOutputFile(t.dst)
 	if err != nil {
 		Error.Println(err)
 		fr.Close()
 		return false
 	}
-	var w *countingWriter
-	if fw == os.Stdout {
-		w = NewCountingWriter(fw)
-	} else {
-		w = NewCountingWriter(bufio.NewWriter(fw))
-	}
 
 	// synchronize file
-	if sync && mimetype == "" {
+	if t.sync {
 		_, err = io.Copy(fw, fr)
 		fr.Close()
 		fw.Close()
@@ -660,6 +658,14 @@ func minify(mimetype string, t Task) bool {
 		}
 		Info.Println("copy", srcName, "to", dstName)
 		return true
+	}
+
+	r := NewCountingReader(fr)
+	var w *countingWriter
+	if fw == os.Stdout {
+		w = NewCountingWriter(fw)
+	} else {
+		w = NewCountingWriter(bufio.NewWriter(fw))
 	}
 
 	success := true
