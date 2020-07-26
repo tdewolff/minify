@@ -21,13 +21,13 @@ import (
 	humanize "github.com/dustin/go-humanize"
 	"github.com/matryer/try"
 	flag "github.com/spf13/pflag"
-	min "github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/minify/v2/css"
-	"github.com/tdewolff/minify/v2/html"
-	"github.com/tdewolff/minify/v2/js"
-	"github.com/tdewolff/minify/v2/json"
-	"github.com/tdewolff/minify/v2/svg"
-	"github.com/tdewolff/minify/v2/xml"
+	min "github.com/alex-bacart/minify/v2"
+	"github.com/alex-bacart/minify/v2/css"
+	"github.com/alex-bacart/minify/v2/html"
+	"github.com/alex-bacart/minify/v2/js"
+	"github.com/alex-bacart/minify/v2/json"
+	"github.com/alex-bacart/minify/v2/svg"
+	"github.com/alex-bacart/minify/v2/xml"
 )
 
 // Version is the current minify version.

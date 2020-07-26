@@ -75,13 +75,13 @@ This minifier proves to be that fast and extensive minifier that can handle HTML
 With modules enabled (`GO111MODULES=auto` or `GO111MODULES=on`), add the following imports and run the project with `go get`
 ``` go
 import (
-	"github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/minify/v2/css"
-	"github.com/tdewolff/minify/v2/html"
-	"github.com/tdewolff/minify/v2/js"
-	"github.com/tdewolff/minify/v2/json"
-	"github.com/tdewolff/minify/v2/svg"
-	"github.com/tdewolff/minify/v2/xml"
+	"github.com/alex-bacart/minify/v2"
+	"github.com/alex-bacart/minify/v2/css"
+	"github.com/alex-bacart/minify/v2/html"
+	"github.com/alex-bacart/minify/v2/js"
+	"github.com/alex-bacart/minify/v2/json"
+	"github.com/alex-bacart/minify/v2/svg"
+	"github.com/alex-bacart/minify/v2/xml"
 )
 ```
 
@@ -463,13 +463,13 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/minify/v2/css"
-	"github.com/tdewolff/minify/v2/html"
-	"github.com/tdewolff/minify/v2/js"
-	"github.com/tdewolff/minify/v2/json"
-	"github.com/tdewolff/minify/v2/svg"
-	"github.com/tdewolff/minify/v2/xml"
+	"github.com/alex-bacart/minify/v2"
+	"github.com/alex-bacart/minify/v2/css"
+	"github.com/alex-bacart/minify/v2/html"
+	"github.com/alex-bacart/minify/v2/js"
+	"github.com/alex-bacart/minify/v2/json"
+	"github.com/alex-bacart/minify/v2/svg"
+	"github.com/alex-bacart/minify/v2/xml"
 )
 
 func main() {
@@ -526,7 +526,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/tdewolff/minify/v2"
+	"github.com/alex-bacart/minify/v2"
 )
 
 func main() {
