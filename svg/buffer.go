@@ -1,7 +1,7 @@
 package svg
 
 import (
-	minifyXML "github.com/tdewolff/minify/v2/xml"
+	minifyXML "github.com/alex-bacart/minify/v2/xml"
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/xml"
 )
