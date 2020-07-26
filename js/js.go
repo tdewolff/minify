@@ -4,7 +4,7 @@ package js
 import (
 	"io"
 
-	"github.com/tdewolff/minify/v2"
+	"github.com/alex-bacart/minify/v2"
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/js"
 )
