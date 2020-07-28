@@ -16,11 +16,11 @@ builds:
           - amd64
 archives:
   - id: minify
-    format: tar.gz
+    format: gz
     format_overrides:
         - goos: windows
           format: zip
-    name_template: "{{.Binary}}_{{.Version}}_{{.Os}}_{{.Arch}}"
+    name_template: "{{.Binary}}_{{.Os}}_{{.Arch}}"
     files:
         - cmd/minify/README.md
         - LICENSE.md
