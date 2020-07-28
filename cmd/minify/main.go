@@ -108,7 +108,7 @@ func run() int {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [input]\n\nOptions:\n", os.Args[0])
 		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\nInput:\n  Files or directories, leave blank to use stdin\n")
+		fmt.Fprintf(os.Stderr, "\nInput:\n  Files or directories, leave blank to use stdin. Specify --mime or --type to use stdin and stdout.\n")
 	}
 
 	flag.BoolVarP(&help, "help", "h", false, "Show usage")
@@ -139,9 +139,13 @@ func run() int {
 	flag.IntVar(&svgMinifier.Decimals, "svg-decimals", 0, "Number of significant digits to preserve in numbers, 0 is all (DEPRECATED")
 	flag.IntVar(&svgMinifier.Precision, "svg-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
 	flag.BoolVar(&xmlMinifier.KeepWhitespace, "xml-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
-	if err := flag.Parse(os.Args[1:]); err != nil {
-		fmt.Printf("Error: %v\n\n", err)
-		flag.Usage()
+	if len(os.Args) == 1 {
+		fmt.Printf("minify: must specify --mime or --type in order to use stdin and stdout\n")
+		fmt.Printf("Try 'minify --help' for more information\n")
+		return 1
+	} else if err := flag.Parse(os.Args[1:]); err != nil {
+		fmt.Printf("minify: %v\n", err)
+		fmt.Printf("Try 'minify --help' for more information\n")
 		return 1
 	}
 	rawInputs := flag.Args()
