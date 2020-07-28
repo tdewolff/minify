@@ -9,11 +9,12 @@ TARGETS=linux_amd64 darwin_amd64 freebsd_amd64 netbsd_amd64 openbsd_amd64 window
 all: install
 
 install:
-	echo $VERSION
-	${ENVS} go install ${FLAGS} ./cmd/minify
-	. cmd/minify/bash_completion
+	@git pull -q --tags
+	@${ENVS} go install ${FLAGS} ./cmd/minify
+	@. cmd/minify/bash_completion
 
 release:
+	@git pull -q --tags
 	@rm -rf dist
 	@mkdir dist
 	@for t in ${TARGETS}; do \
