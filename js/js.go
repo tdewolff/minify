@@ -105,7 +105,7 @@ type jsMinifier struct {
 }
 
 func (m *jsMinifier) write(b []byte) {
-	if m.needsSpace && js.IsIdentifierStart(b) {
+	if m.needsSpace && js.IsIdentifierContinue(b) {
 		m.w.Write(spaceBytes)
 	}
 	m.w.Write(b)
@@ -452,8 +452,8 @@ func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 				return &js.ThrowStmt{condExpr(ifStmt.Cond, XThrow.Value, YThrow.Value)}
 			}
 		}
-	} else if varDecl, ok := i.(*js.VarDecl); ok {
-		return &js.ExprStmt{varDecl}
+		//} else if varDecl, ok := i.(*js.VarDecl); ok {
+		//		return &js.ExprStmt{varDecl}
 	} else if blockStmt, ok := i.(*js.BlockStmt); ok {
 		// merge body and remove braces if possible from independent blocks
 		blockStmt.List = m.optimizeStmtList(blockStmt.List, defaultBlock)
