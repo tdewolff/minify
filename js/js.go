@@ -660,7 +660,7 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 		m.write(starBytes)
 	}
 	if inExpr {
-		m.renamer.renameScope(decl.Scope)
+		m.renamer.renameScope(decl.Body.Scope)
 	}
 	if decl.Name != 0 && (!inExpr || 1 < decl.Name.Var(m.ast).Uses) {
 		if !decl.Generator {
@@ -669,7 +669,7 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 		m.write(decl.Name.Name(m.ast))
 	}
 	if !inExpr {
-		m.renamer.renameScope(decl.Scope)
+		m.renamer.renameScope(decl.Body.Scope)
 	}
 	m.minifyParams(decl.Params)
 
@@ -699,7 +699,7 @@ func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
 		m.writeSpaceBeforeIdent()
 	}
 	m.minifyPropertyName(decl.Name)
-	m.renamer.renameScope(decl.Scope)
+	m.renamer.renameScope(decl.Body.Scope)
 	m.minifyParams(decl.Params)
 
 	decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
@@ -707,7 +707,7 @@ func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
 }
 
 func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
-	m.renamer.renameScope(decl.Scope)
+	m.renamer.renameScope(decl.Body.Scope)
 	if decl.Async {
 		m.write(asyncBytes)
 	}
