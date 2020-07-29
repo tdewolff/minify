@@ -39,7 +39,8 @@ release:
 			cd ..; \
 			sha256sum ${NAME}_$$t.tar.gz >> checksums.txt; \
 			cd ..; \
-		fi \
+		fi; \
+		rm -rf dist/$$t; \
 	done
 
 .PHONY: install release
