@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/tdewolff/minify/v2"
@@ -486,6 +487,7 @@ func BenchmarkJQuery(b *testing.B) {
 			b.SetBytes(int64(len(buf)))
 			for i := 0; i < b.N; i++ {
 				b.StopTimer()
+				runtime.GC()
 				r := buffer.NewReader(parse.Copy(buf))
 				w := buffer.NewWriter(make([]byte, 0, len(buf)))
 				b.StartTimer()
