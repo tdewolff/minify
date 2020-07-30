@@ -299,7 +299,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.renamer.renameScope(stmt.Body.Scope)
 		stmt.Body.List = m.optimizeStmtList(stmt.Body.List, defaultBlock)
 		m.minifyBlockStmt(stmt.Body)
-		if len(stmt.Catch.List) != 0 || stmt.Binding != nil {
+		if stmt.Catch != nil {
 			m.write(catchBytes)
 			m.renamer.renameScope(stmt.Catch.Scope)
 			if stmt.Binding != nil {
@@ -308,13 +308,13 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 				m.write(closeParenBytes)
 			}
 			stmt.Catch.List = m.optimizeStmtList(stmt.Catch.List, defaultBlock)
-			m.minifyBlockStmt(stmt.Catch)
+			m.minifyBlockStmt(*stmt.Catch)
 		}
-		if len(stmt.Finally.List) != 0 {
+		if stmt.Finally != nil {
 			m.write(finallyBytes)
 			m.renamer.renameScope(stmt.Finally.Scope)
 			stmt.Finally.List = m.optimizeStmtList(stmt.Finally.List, defaultBlock)
-			m.minifyBlockStmt(stmt.Finally)
+			m.minifyBlockStmt(*stmt.Finally)
 		}
 	case *js.FuncDecl:
 		m.minifyFuncDecl(*stmt, false)
@@ -788,7 +788,7 @@ func (m *jsMinifier) minifyProperty(property js.Property) {
 		m.write(ellipsisBytes)
 	} else if ref, ok := property.Value.(js.VarRef); !ok || !property.Name.IsIdent(ref.Name(m.ast)) {
 		// add 'old-name:' before BindingName as the latter will be renamed
-		m.minifyPropertyName(property.Name)
+		m.minifyPropertyName(*property.Name)
 		m.write(colonBytes)
 	}
 	m.minifyExpr(property.Value, js.OpAssign)
@@ -838,11 +838,11 @@ func (m *jsMinifier) minifyBinding(ibinding js.IBinding) {
 			}
 			// item.Key is always set
 			if item.Key.IsComputed() {
-				m.minifyPropertyName(item.Key)
+				m.minifyPropertyName(*item.Key)
 				m.write(colonBytes)
 			} else if ref, ok := item.Value.Binding.(js.VarRef); !ok || !item.Key.IsIdent(ref.Name(m.ast)) {
 				// add 'old-name:' before BindingName as the latter will be renamed
-				m.minifyPropertyName(item.Key)
+				m.minifyPropertyName(*item.Key)
 				m.write(colonBytes)
 			}
 			m.minifyBindingElement(item.Value)
