@@ -84,6 +84,107 @@ var (
 	groupedNotOneBytes         = []byte("(!1)")
 )
 
+// precendence maps for the precendence inside the operation
+var unaryPrecMap = map[js.TokenType]js.OpPrec{
+	js.PostIncrToken: js.OpLHS,
+	js.PostDecrToken: js.OpLHS,
+	js.PreIncrToken:  js.OpUnary,
+	js.PreDecrToken:  js.OpUnary,
+	js.NotToken:      js.OpUnary,
+	js.BitNotToken:   js.OpUnary,
+	js.TypeofToken:   js.OpUnary,
+	js.VoidToken:     js.OpUnary,
+	js.DeleteToken:   js.OpUnary,
+	js.AddToken:      js.OpUnary,
+	js.SubToken:      js.OpUnary,
+	js.AwaitToken:    js.OpUnary,
+}
+
+var binaryLeftPrecMap = map[js.TokenType]js.OpPrec{
+	js.EqToken:         js.OpLHS,
+	js.MulEqToken:      js.OpLHS,
+	js.DivEqToken:      js.OpLHS,
+	js.ModEqToken:      js.OpLHS,
+	js.ExpEqToken:      js.OpLHS,
+	js.AddEqToken:      js.OpLHS,
+	js.SubEqToken:      js.OpLHS,
+	js.LtLtEqToken:     js.OpLHS,
+	js.GtGtEqToken:     js.OpLHS,
+	js.GtGtGtEqToken:   js.OpLHS,
+	js.BitAndEqToken:   js.OpLHS,
+	js.BitXorEqToken:   js.OpLHS,
+	js.BitOrEqToken:    js.OpLHS,
+	js.ExpToken:        js.OpUpdate,
+	js.MulToken:        js.OpMul,
+	js.DivToken:        js.OpMul,
+	js.ModToken:        js.OpMul,
+	js.AddToken:        js.OpAdd,
+	js.SubToken:        js.OpAdd,
+	js.LtLtToken:       js.OpShift,
+	js.GtGtToken:       js.OpShift,
+	js.GtGtGtToken:     js.OpShift,
+	js.LtToken:         js.OpCompare,
+	js.LtEqToken:       js.OpCompare,
+	js.GtToken:         js.OpCompare,
+	js.GtEqToken:       js.OpCompare,
+	js.InToken:         js.OpCompare,
+	js.InstanceofToken: js.OpCompare,
+	js.EqEqToken:       js.OpEquals,
+	js.NotEqToken:      js.OpEquals,
+	js.EqEqEqToken:     js.OpEquals,
+	js.NotEqEqToken:    js.OpEquals,
+	js.BitAndToken:     js.OpBitAnd,
+	js.BitXorToken:     js.OpBitXor,
+	js.BitOrToken:      js.OpBitOr,
+	js.AndToken:        js.OpAnd,
+	js.OrToken:         js.OpOr,
+	js.NullishToken:    js.OpBitOr, // or OpCoalesce
+	js.CommaToken:      js.OpExpr,
+}
+
+var binaryRightPrecMap = map[js.TokenType]js.OpPrec{
+	js.EqToken:         js.OpAssign,
+	js.MulEqToken:      js.OpAssign,
+	js.DivEqToken:      js.OpAssign,
+	js.ModEqToken:      js.OpAssign,
+	js.ExpEqToken:      js.OpAssign,
+	js.AddEqToken:      js.OpAssign,
+	js.SubEqToken:      js.OpAssign,
+	js.LtLtEqToken:     js.OpAssign,
+	js.GtGtEqToken:     js.OpAssign,
+	js.GtGtGtEqToken:   js.OpAssign,
+	js.BitAndEqToken:   js.OpAssign,
+	js.BitXorEqToken:   js.OpAssign,
+	js.BitOrEqToken:    js.OpAssign,
+	js.ExpToken:        js.OpExp,
+	js.MulToken:        js.OpExp,
+	js.DivToken:        js.OpExp,
+	js.ModToken:        js.OpExp,
+	js.AddToken:        js.OpMul,
+	js.SubToken:        js.OpMul,
+	js.LtLtToken:       js.OpAdd,
+	js.GtGtToken:       js.OpAdd,
+	js.GtGtGtToken:     js.OpAdd,
+	js.LtToken:         js.OpShift,
+	js.LtEqToken:       js.OpShift,
+	js.GtToken:         js.OpShift,
+	js.GtEqToken:       js.OpShift,
+	js.InToken:         js.OpShift,
+	js.InstanceofToken: js.OpShift,
+	js.EqEqToken:       js.OpCompare,
+	js.NotEqToken:      js.OpCompare,
+	js.EqEqEqToken:     js.OpCompare,
+	js.NotEqEqToken:    js.OpCompare,
+	js.BitAndToken:     js.OpEquals,
+	js.BitXorToken:     js.OpBitAnd,
+	js.BitOrToken:      js.OpBitXor,
+	js.AndToken:        js.OpAnd,   // changes order in AST but not in execution
+	js.OrToken:         js.OpOr,    // changes order in AST but not in execution
+	js.NullishToken:    js.OpBitOr, // or OpCoalesce
+	js.CommaToken:      js.OpAssign,
+}
+
+// precendence maps of the operation itself
 var unaryOpPrecMap = map[js.TokenType]js.OpPrec{
 	js.PostIncrToken: js.OpUpdate,
 	js.PostDecrToken: js.OpUpdate,
@@ -141,105 +242,6 @@ var binaryOpPrecMap = map[js.TokenType]js.OpPrec{
 	js.CommaToken:      js.OpExpr,
 }
 
-var unaryPrecMap = map[js.TokenType]js.OpPrec{
-	js.PostIncrToken: js.OpLHS,
-	js.PostDecrToken: js.OpLHS,
-	js.PreIncrToken:  js.OpUnary,
-	js.PreDecrToken:  js.OpUnary,
-	js.NotToken:      js.OpUnary,
-	js.BitNotToken:   js.OpUnary,
-	js.TypeofToken:   js.OpUnary,
-	js.VoidToken:     js.OpUnary,
-	js.DeleteToken:   js.OpUnary,
-	js.AddToken:      js.OpUnary,
-	js.SubToken:      js.OpUnary,
-	js.AwaitToken:    js.OpUnary,
-}
-
-var binaryLeftPrecMap = map[js.TokenType]js.OpPrec{
-	js.EqToken:         js.OpLHS,
-	js.MulEqToken:      js.OpLHS,
-	js.DivEqToken:      js.OpLHS,
-	js.ModEqToken:      js.OpLHS,
-	js.ExpEqToken:      js.OpLHS,
-	js.AddEqToken:      js.OpLHS,
-	js.SubEqToken:      js.OpLHS,
-	js.LtLtEqToken:     js.OpLHS,
-	js.GtGtEqToken:     js.OpLHS,
-	js.GtGtGtEqToken:   js.OpLHS,
-	js.BitAndEqToken:   js.OpLHS,
-	js.BitXorEqToken:   js.OpLHS,
-	js.BitOrEqToken:    js.OpLHS,
-	js.ExpToken:        js.OpUpdate,
-	js.MulToken:        js.OpMul,
-	js.DivToken:        js.OpMul,
-	js.ModToken:        js.OpMul,
-	js.AddToken:        js.OpAdd,
-	js.SubToken:        js.OpAdd,
-	js.LtLtToken:       js.OpShift,
-	js.GtGtToken:       js.OpShift,
-	js.GtGtGtToken:     js.OpShift,
-	js.LtToken:         js.OpCompare,
-	js.LtEqToken:       js.OpCompare,
-	js.GtToken:         js.OpCompare,
-	js.GtEqToken:       js.OpCompare,
-	js.InToken:         js.OpCompare,
-	js.InstanceofToken: js.OpCompare,
-	js.EqEqToken:       js.OpEquals,
-	js.NotEqToken:      js.OpEquals,
-	js.EqEqEqToken:     js.OpEquals,
-	js.NotEqEqToken:    js.OpEquals,
-	js.BitAndToken:     js.OpBitAnd,
-	js.BitXorToken:     js.OpBitXor,
-	js.BitOrToken:      js.OpBitOr,
-	js.AndToken:        js.OpAnd,
-	js.OrToken:         js.OpOr,
-	js.NullishToken:    js.OpCoalesce,
-	js.CommaToken:      js.OpExpr,
-}
-
-var binaryRightPrecMap = map[js.TokenType]js.OpPrec{
-	js.EqToken:         js.OpAssign,
-	js.MulEqToken:      js.OpAssign,
-	js.DivEqToken:      js.OpAssign,
-	js.ModEqToken:      js.OpAssign,
-	js.ExpEqToken:      js.OpAssign,
-	js.AddEqToken:      js.OpAssign,
-	js.SubEqToken:      js.OpAssign,
-	js.LtLtEqToken:     js.OpAssign,
-	js.GtGtEqToken:     js.OpAssign,
-	js.GtGtGtEqToken:   js.OpAssign,
-	js.BitAndEqToken:   js.OpAssign,
-	js.BitXorEqToken:   js.OpAssign,
-	js.BitOrEqToken:    js.OpAssign,
-	js.ExpToken:        js.OpExp,
-	js.MulToken:        js.OpExp,
-	js.DivToken:        js.OpExp,
-	js.ModToken:        js.OpExp,
-	js.AddToken:        js.OpMul,
-	js.SubToken:        js.OpMul,
-	js.LtLtToken:       js.OpAdd,
-	js.GtGtToken:       js.OpAdd,
-	js.GtGtGtToken:     js.OpAdd,
-	js.LtToken:         js.OpShift,
-	js.LtEqToken:       js.OpShift,
-	js.GtToken:         js.OpShift,
-	js.GtEqToken:       js.OpShift,
-	js.InToken:         js.OpShift,
-	js.InstanceofToken: js.OpShift,
-	js.EqEqToken:       js.OpCompare,
-	js.NotEqToken:      js.OpCompare,
-	js.EqEqEqToken:     js.OpCompare,
-	js.NotEqEqToken:    js.OpCompare,
-	js.BitAndToken:     js.OpCompare,
-	js.BitXorToken:     js.OpBitAnd,
-	js.BitOrToken:      js.OpBitXor,
-	js.AndToken:        js.OpAnd, // changes order in AST but not in execution
-	js.OrToken:         js.OpOr,  // changes order in AST but not in execution
-	js.NullishToken:    js.OpOr,
-	js.CommaToken:      js.OpAssign,
-}
-
 func exprPrec(i js.IExpr) js.OpPrec {
 	switch expr := i.(type) {
 	case js.VarRef, *js.LiteralExpr, *js.ArrayExpr, *js.ObjectExpr, *js.FuncDecl, *js.ClassDecl:
@@ -250,7 +252,7 @@ func exprPrec(i js.IExpr) js.OpPrec {
 		return binaryOpPrecMap[expr.Op]
 	case *js.NewExpr:
 		if expr.Args == nil {
-			return js.OpLHS
+			return js.OpNew
 		}
 		return js.OpMember
 	case *js.TemplateExpr:
@@ -260,8 +262,10 @@ func exprPrec(i js.IExpr) js.OpPrec {
 		return js.OpMember
 	case *js.DotExpr, *js.IndexExpr, *js.NewTargetExpr, *js.ImportMetaExpr:
 		return js.OpMember
-	case *js.CallExpr, *js.OptChainExpr:
+	case *js.OptChainExpr:
 		return js.OpLHS
+	case *js.CallExpr:
+		return js.OpCall
 	case *js.CondExpr, *js.YieldExpr, *js.ArrowFunc:
 		return js.OpAssign
 	case *js.GroupExpr:
@@ -299,19 +303,21 @@ func isEmptyStmt(stmt js.IStmt) bool {
 	return false
 }
 
-func isReturnThrowStmt(stmt js.IStmt) bool {
+func isFlowStmt(stmt js.IStmt) bool {
 	if _, ok := stmt.(*js.ReturnStmt); ok {
 		return true
 	} else if _, ok := stmt.(*js.ThrowStmt); ok {
+		return true
+	} else if _, ok := stmt.(*js.BranchStmt); ok {
 		return true
 	}
 	return false
 }
 
-func hasReturnThrowStmt(stmt js.IStmt) bool {
-	if isReturnThrowStmt(stmt) {
+func hasFlowStmt(stmt js.IStmt) bool {
+	if isFlowStmt(stmt) {
 		return true
-	} else if block, ok := stmt.(*js.BlockStmt); ok && 0 < len(block.List) && isReturnThrowStmt(block.List[len(block.List)-1]) {
+	} else if block, ok := stmt.(*js.BlockStmt); ok && 0 < len(block.List) && isFlowStmt(block.List[len(block.List)-1]) {
 		return true
 	}
 	return false

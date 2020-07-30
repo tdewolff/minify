@@ -19,8 +19,8 @@ func TestJS(t *testing.T) {
 		js       string
 		expected string
 	}{
-		{`/*comment*/`, ``},
-		{`/*!comment*/`, `/*!comment*/`},
+		{`/*comment*/a`, `a`},
+		{`/*!comment*/a`, `/*!comment*/a`},
 		{`debugger`, ``},
 		{`"use strict"`, `"use strict"`},
 		{`1.0`, `1`},
@@ -35,6 +35,7 @@ func TestJS(t *testing.T) {
 		{`a + ++b`, `a+ ++b`},
 		{`a - ++b`, `a-++b`},
 		{`a-- > b`, `a-- >b`},
+		{`(a--) > b`, `a-- >b`},
 		{`a-- < b`, `a--<b`},
 		{`a < !--b`, `a< !--b`},
 		{`a > !--b`, `a>!--b`},
@@ -60,9 +61,9 @@ func TestJS(t *testing.T) {
 		{`return-5`, `return-5`},
 		{`break a`, `break a`},
 		{`continue a`, `continue a`},
+		{`label: b`, `label:b`},
 		{`typeof a`, `typeof a`},
 		{`new RegExp()`, `new RegExp`},
-		{`new new a()()`, `new(new a)`},
 		{`switch (a) { case b: 5; default: 6}`, `switch(a){case b:5;default:6}`},
 		{`switch (a) { case b: {var c;return c}; default: 6}`, `switch(a){case b:{var c;return c}default:6}`},
 		{`with (a = b) x`, `with(a=b)x`},
@@ -93,12 +94,13 @@ func TestJS(t *testing.T) {
 		{`for (var a in b){a}`, `for(var a in b)a`},
 		{`for (var a of b){a}`, `for(var a of b)a`},
 		{`while(a < 10){a}`, `while(a<10)a`},
+		{`while(a < 10){a;b}`, `while(a<10)a,b`},
+		{`while(a < 10){while(b);c}`, `while(a<10){while(b);c}`},
 		{`do {a} while(a < 10)`, `do a;while(a<10)`},
 		{`do [a]=5; while(a < 10)`, `do[a]=5;while(a<10)`},
 		{`do [a]=5; while(a < 10);return a`, `do[a]=5;while(a<10);return a`},
 		{`throw a`, `throw a`},
 		{`throw [a]`, `throw[a]`},
-		{`try {a}`, `try{a}`},
 		{`try {a} catch {b}`, `try{a}catch{b}`},
 		{`try {a} catch(e) {b}`, `try{a}catch(e){b}`},
 		{`try {a} catch(e) {b} finally {c}`, `try{a}catch(e){b}finally{c}`},
@@ -173,19 +175,23 @@ func TestJS(t *testing.T) {
 		{`if(a){b=c}else{if(d){e=f}else{g=h}}`, `a?b=c:d?e=f:g=h`},
 		{`if(a){b=c}else if(d){e=f}else if(g){h=i}`, `a?b=c:d?e=f:g&&(h=i)`},
 		{`if(a){if(b)c;else d}else{e}`, `a?b?c:d:e`},
-		//{`if(a){if(b)c;else d}else{d}`, `a&&b?c:d`},
-		{`b=5;return a+b`, `return b=5,a+b`},
-		{`b=5;throw a+b`, `throw b=5,a+b`},
+		{`if(a){if(b)c;else d}else{d}`, `a&&b?c:d`},
+		{`if(a){if(b)c;else false}else{d}`, `a?!!b&&c:d`},
+		{`if(a){if(b)c;else d}else{false}`, `!!a&&(b?c:d)`},
+		{`if(a){if(b)c;else false}else{false}`, `!!a&&!!b&&c`},
 		{`if(a)return a;else return b`, `return a||b`},
+		{`if(a)return;else return b`, `return a?void 0:b`},
+		{`if(a)return a;else return`, `return a||void 0`},
+		{`if(a)return b;else return`, `return a?b:void 0`},
+		{`if(a)return;else return`, `a;return`},
 		{`if(a)throw a;else throw b`, `throw a||b`},
 		{`if(a)return a;else a=b`, `if(a)return a;a=b`},
 		{`if(a){a++;return a}else a=b`, `if(a)return a++,a;a=b`},
 		{`if(a){a++;return a}else if(b)a=b`, `if(a)return a++,a;b&&(a=b)`},
 		{`if(a){a++;return}else a=b`, `if(a){a++;return}a=b`},
-		//{`if(a){a++;return}else return`, `return a?void a++:void 0`},
+		{`if(a){a++;return}else return`, `return void(a?a++:0)`},
 		{`if(a){return}else {a=b;while(c){}}`, `if(a)return;for(a=b;c;);`},
 		{`if(a){a++;return a}else return`, `return a?(a++,a):void 0`},
-		{`a=b;if(a){return a}else return b`, `return a=b,a||b`},
 		{`if(a){return a}return b`, `return a||b`},
 		{`if(a);else return a;return b`, `return a?b:a`},
 		{`if(a){return a}b=c;return b`, `return a||(b=c,b)`},
@@ -193,11 +199,15 @@ func TestJS(t *testing.T) {
 		{`if(a){return a}b=c;return`, `if(a)return a;b=c;return`},
 		{`if(a){return}return`, `a;return`},
 		{`if(a);else{return}return`, `a;return`},
-		//{`if(a)b=5;else b=6`, `b=a?5:6`},          // not used by Uglify? only for non-global
-		//{`if(a)b[4]=5;else b[4]=6`, `b[4]=a?5:6`}, // not used by Uglify?
-		//{`if(a)fun(x);else fun(y)`, `fun(a?x:y)`}, // not used by Uglify? unsafe?
 		{`if(a){throw a}b=c;throw b`, `throw a||(b=c,b)`},
+		{`if(a);else{throw a}b=c;throw b`, `throw a?(b=c,b):a`},
 		{`if(a)a++;else b;if(b)b++;else c`, `a?a++:b,b?b++:c`},
+		{`if(a){while(b);}`, `if(a)while(b);`},
+		{`if(a){while(b);c}`, `if(a){while(b);c}`},
+		{`if(a){if(b){while(c);}}`, `if(a){if(b)while(c);}`},
+		{`if(a){}else{while(b);}`, `if(a);else while(b);`},
+		{`if(a){return b}else{while(c);}`, `if(a)return b;while(c);`},
+		{`if(a){return b}else{while(c);d}`, `if(a)return b;while(c);d`},
 
 		// var declarations
 		{`var a;var b`, `var a,b`},
@@ -216,7 +226,7 @@ func TestJS(t *testing.T) {
 		{`{let a}`, `{let a}`}, // TODO: remove entire block
 		{`for(var [a] in b){}`, `for(var[a]in b);`},
 		{`for(var {a} of b){}`, `for(var{a}of b);`},
-		{`for(var a in b);var c`, `for(a in b);var a,c`},
+		{`for(var a in b);var c`, `var a,c;for(a in b)`},
 		{`function a(){}var a`, `function a(){}var a`},
 		{`var a;function a(){}`, `var a;function a(){}`},
 
@@ -279,7 +289,7 @@ func TestJS(t *testing.T) {
 		{`x = (a) => {}`, `x=a=>{}`},
 		{`x = (a) => {return}`, `x=a=>{}`},
 		{`x = (a) => {return a}`, `x=a=>a`},
-		{`x = (a) => {a++;return a}`, `x=a=>a++,a`},
+		{`x = (a) => {a++;return a}`, `x=a=>(a++,a)`},
 		{`x = (a) => {a++}`, `x=a=>{a++}`},
 		{`x = (a,b) => a+b`, `x=(a,b)=>a+b`},
 		{`async a => await b`, `async a=>await b`},
@@ -311,7 +321,11 @@ func TestJS(t *testing.T) {
 		{`a=a||(b&&c)`, `a=a||b&&c`},
 		{`a=(a&&b)||c`, `a=a&&b||c`},
 		{`a=a&&(b||c)`, `a=a&&(b||c)`},
+		{`a=a&&(b&&c)`, `a=a&&b&&c`},
 		{`a=c&&(a??b)`, `a=c&&(a??b)`},
+		{`a=(a||b)??(c||d)`, `a=(a||b)??(c||d)`},
+		{`a=(a&&b)??(c&&d)`, `a=(a&&b)??(c&&d)`},
+		{`a=(a??b)??(c??d)`, `a=a??b??c??d`},
 		{`a=(a||b)||(c||d)`, `a=a||b||c||d`},
 		{`a=!(!b)`, `a=!!b`},
 		{`a=(b())`, `a=b()`},
@@ -362,12 +376,15 @@ func TestJS(t *testing.T) {
 		{`function*a(){(yield a).b}`, `function*a(){(yield a).b}`},
 		{`function*a(){yield a["-"]}`, `function*a(){yield a["-"]}`},
 		{`function*a(){(yield a)["-"]}`, `function*a(){(yield a)["-"]}`},
+		{`await((fun())())`, `await(fun()())`},
+		{`new(a(b))`, `new(a(b))`},
+		{`new(new a)`, `new new a`},
+		{`new new a()()`, `new new a`},
 
 		// other
 		//{`a=a+5`, `a+=5`},
 		//{`a=5+a`, `a+=5`},
 		{`async function g(){await x+y}`, `async function g(){await x+y}`},
-		//{`!a&&!b&&!c`, `!(a||b||c)`}, // can be unsafe if not all are truthy/falsy
 		{`a?true:false`, `!!a`},
 		{`a==b?true:false`, `a==b`},
 		{`!a?true:false`, `!a`},
@@ -401,8 +418,11 @@ func TestJS(t *testing.T) {
 		{`a=obj["3name"]`, `a=obj["3name"]`},
 
 		// merge expressions
+		{`b=5;return a+b`, `return b=5,a+b`},
+		{`b=5;throw a+b`, `throw b=5,a+b`},
 		{`a();b();return c()`, `return a(),b(),c()`},
 		{`a();b();throw c()`, `throw a(),b(),c()`},
+		{`a=b;if(a){return a}else return b`, `return a=b,a||b`},
 		{`a=5;if(b)while(c){}`, `if(a=5,b)while(c);`},
 		{`a=5;for(;b;)c()`, `for(a=5;b;)c()`},
 		{`a=5;for(b=4;b;)c()`, `for(a=5,b=4;b;)c()`},
@@ -412,10 +432,10 @@ func TestJS(t *testing.T) {
 		{`(function(){})();(function(){})()`, `!function(){}(),function(){}()`},
 
 		// edge-cases
-		{`let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`, `let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`},
+		{`let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`, `let o=null;try{o=o?.a.b||"FAIL"}catch(x){}console.log(o||"PASS")`},
 		{"var a=/\\s?auto?\\s?/i\nvar b", "var a=/\\s?auto?\\s?/i,b"}, // #14
-		{"false`string`", "(!1)`string`"},                // #181
-		{"x / /\\d+/.exec(s)[0]", "x//\\d+/.exec(s)[0]"}, // #183
+		{"false`string`", "(!1)`string`"},                 // #181
+		{"x / /\\d+/.exec(s)[0]", "x/ /\\d+/.exec(s)[0]"}, // #183
 	}
 
 	m := minify.New()
@@ -474,6 +494,22 @@ func TestJSVarRenaming(t *testing.T) {
 			test.Minify(t, tt.js, err, w.String(), tt.expected)
 		})
 	}
+}
+
+func TestReaderError(t *testing.T) {
+	r := test.NewErrorReader(0)
+	w := &bytes.Buffer{}
+	m := minify.New()
+	err := Minify(m, w, r, nil)
+	test.T(t, err, test.ErrPlain)
+}
+
+func TestWriterError(t *testing.T) {
+	r := bytes.NewBufferString("a")
+	w := test.NewErrorWriter(0)
+	m := minify.New()
+	err := Minify(m, w, r, nil)
+	test.T(t, err, test.ErrPlain)
 }
 
 func BenchmarkJQuery(b *testing.B) {
