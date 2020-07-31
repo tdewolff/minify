@@ -271,16 +271,7 @@ func exprPrec(i js.IExpr) js.OpPrec {
 	case *js.GroupExpr:
 		return exprPrec(expr.X)
 	}
-	return js.OpExpr
-}
-
-func isIdentStartBindingElement(element js.BindingElement) bool {
-	if element.Binding != nil {
-		if _, ok := element.Binding.(js.VarRef); ok {
-			return true
-		}
-	}
-	return false
+	return js.OpExpr // does not happen
 }
 
 func isIdentEndAlias(alias js.Alias) bool {
@@ -314,13 +305,11 @@ func isFlowStmt(stmt js.IStmt) bool {
 	return false
 }
 
-func hasFlowStmt(stmt js.IStmt) bool {
-	if isFlowStmt(stmt) {
-		return true
-	} else if block, ok := stmt.(*js.BlockStmt); ok && 0 < len(block.List) && isFlowStmt(block.List[len(block.List)-1]) {
-		return true
+func lastStmt(stmt js.IStmt) js.IStmt {
+	if block, ok := stmt.(*js.BlockStmt); ok && 0 < len(block.List) {
+		return block.List[len(block.List)-1]
 	}
-	return false
+	return stmt
 }
 
 func (m *jsMinifier) isTrue(i js.IExpr) bool {
@@ -427,6 +416,32 @@ func isBooleanExpr(expr js.IExpr) bool {
 		return isBooleanExpr(groupExpr.X)
 	}
 	return false
+}
+
+func (m *jsMinifier) minifyBooleanExpr(expr js.IExpr, invert bool, prec js.OpPrec) {
+	if invert {
+		// unary !(boolean) has already been handled
+		if binaryExpr, ok := expr.(*js.BinaryExpr); ok && binaryOpPrecMap[binaryExpr.Op] == js.OpEquals {
+			if binaryExpr.Op == js.EqEqToken {
+				binaryExpr.Op = js.NotEqToken
+			} else if binaryExpr.Op == js.NotEqToken {
+				binaryExpr.Op = js.EqEqToken
+			} else if binaryExpr.Op == js.EqEqEqToken {
+				binaryExpr.Op = js.NotEqEqToken
+			} else if binaryExpr.Op == js.NotEqEqToken {
+				binaryExpr.Op = js.EqEqEqToken
+			}
+			m.minifyExpr(expr, prec)
+		} else {
+			m.write(notBytes)
+			m.minifyExpr(&js.GroupExpr{expr}, js.OpUnary)
+		}
+	} else if isBooleanExpr(expr) {
+		m.minifyExpr(&js.GroupExpr{expr}, prec)
+	} else {
+		m.write(notNotBytes)
+		m.minifyExpr(&js.GroupExpr{expr}, js.OpUnary)
+	}
 }
 
 func isHexDigit(b byte) bool {
