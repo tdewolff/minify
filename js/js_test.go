@@ -235,7 +235,7 @@ func TestJS(t *testing.T) {
 		{`var [a,b=5,...c]=[d,e,...f]`, `var[a,b=5,...c]=[d,e,...f]`},
 		{`var [a,,]=[b,,]`, `var[a,,]=[b,,]`},
 		{`var {a,}=b`, `var{a}=b`},
-		{`var {a,b=5,...c}={d,e=7,...f}`, `var{a,b=5,...c}={d,e=5,...f}`},
+		{`var {a,b=5,...c}={d,e=7,...f}`, `var{a,b=5,...c}={d,e=7,...f}`},
 		{`var {[a+b]: c}=d`, `var{[a+b]:c}=d`},
 		{`{let a}`, `{let a}`}, // TODO: remove entire block
 		{`for(var [a] in b){}`, `for(var[a]in b);`},
