@@ -242,6 +242,8 @@ func TestJS(t *testing.T) {
 		{`for(var a in b);var c`, `var a,c;for(a in b);`},
 		{`function a(){}var a`, `function a(){}var a`},
 		{`var a;function a(){}`, `var a;function a(){}`},
+		{`var z;var [a,b=5,,...c]=[d,e,...f]`, `var z,a,b,c;[a,b=5,,...c]=[d,e,...f]`},
+		{`var z;var {a,b=5,[5+8]:c,...d}={d,e,...f}`, `var z,a,b,c,d;{a,b=5,[5+8]:c,...d}={d,e,...f}`},
 
 		// function and method declarations
 		{`function g(){return}`, `function g(){}`},
@@ -474,6 +476,11 @@ func TestJS(t *testing.T) {
 		{"var a=/\\s?auto?\\s?/i\nvar b", "var a=/\\s?auto?\\s?/i,b"}, // #14
 		{"false`string`", "(!1)`string`"},                 // #181
 		{"x / /\\d+/.exec(s)[0]", "x/ /\\d+/.exec(s)[0]"}, // #183
+		{`({"":a})`, `({"":a})`},                          // go-fuzz
+		{`a[""]`, `a[""]`},                                // go-fuzz
+		{`function f(){;}`, `function f(){}`},             // go-fuzz
+		{`0xeb00000000`, `0xeb00000000`},                  // go-fuzz
+		{`export{a,}`, `export{a,}`},                      // go-fuzz
 	}
 
 	m := minify.New()

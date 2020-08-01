@@ -610,7 +610,7 @@ func octalNumber(b []byte) []byte {
 }
 
 func hexadecimalNumber(b []byte) []byte {
-	if len(b) <= 2 || 12 < len(b) {
+	if len(b) <= 2 || 12 < len(b) || len(b) == 12 && ('D' < b[2] && b[2] <= 'F' || 'd' < b[2]) {
 		return b
 	}
 	var n int64

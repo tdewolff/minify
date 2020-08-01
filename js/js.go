@@ -533,7 +533,7 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 				ifStmt.Cond = &js.BinaryExpr{js.CommaToken, left.Value, ifStmt.Cond}
 				j--
 			}
-		} else if left, ok := list[i].(*js.VarDecl); ok {
+		} else if left, ok := list[i].(*js.VarDecl); ok && left.TokenType != js.VarToken {
 			// merge const, let declarations
 			if right, ok := list[i+1].(*js.VarDecl); ok && left.TokenType == right.TokenType {
 				right.List = append(left.List, right.List...)
@@ -590,18 +590,20 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 	}
 
 	// remove superfluous return or continue
-	if blockType == functionBlock {
-		if returnStmt, ok := list[j].(*js.ReturnStmt); ok {
-			if returnStmt.Value == nil || m.isUndefined(returnStmt.Value) {
-				j--
-			} else if binaryExpr, ok := returnStmt.Value.(*js.BinaryExpr); ok && binaryExpr.Op == js.CommaToken && m.isUndefined(binaryExpr.Y) {
-				// rewrite function f(){return a,void 0} => function f(){a}
-				list[j] = &js.ExprStmt{binaryExpr.X}
+	if 0 <= j {
+		if blockType == functionBlock {
+			if returnStmt, ok := list[j].(*js.ReturnStmt); ok {
+				if returnStmt.Value == nil || m.isUndefined(returnStmt.Value) {
+					j--
+				} else if binaryExpr, ok := returnStmt.Value.(*js.BinaryExpr); ok && binaryExpr.Op == js.CommaToken && m.isUndefined(binaryExpr.Y) {
+					// rewrite function f(){return a,void 0} => function f(){a}
+					list[j] = &js.ExprStmt{binaryExpr.X}
+				}
 			}
-		}
-	} else if blockType == iterationBlock {
-		if branchStmt, ok := list[j].(*js.BranchStmt); ok && branchStmt.Type == js.ContinueToken && branchStmt.Label == nil {
-			j--
+		} else if blockType == iterationBlock {
+			if branchStmt, ok := list[j].(*js.BranchStmt); ok && branchStmt.Type == js.ContinueToken && branchStmt.Label == nil {
+				j--
+			}
 		}
 	}
 	return list[:j+1]
@@ -627,7 +629,9 @@ func (m *jsMinifier) minifyAlias(alias js.Alias) {
 		}
 		m.write(asSpaceBytes)
 	}
-	m.write(alias.Binding)
+	if alias.Binding != nil {
+		m.write(alias.Binding)
+	}
 }
 
 func (m *jsMinifier) minifyParams(params js.Params) {
@@ -1183,7 +1187,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			}
 		}
 		m.minifyExpr(expr.X, js.OpLHS)
-		if lit, ok := expr.Index.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken {
+		if lit, ok := expr.Index.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken && 2 < len(lit.Data) {
 			if _, ok := js.ParseIdentifierName(lit.Data[1 : len(lit.Data)-1]); ok {
 				m.write(dotBytes)
 				m.write(lit.Data[1 : len(lit.Data)-1])

@@ -27,6 +27,8 @@ func TestHexadecimalNumber(t *testing.T) {
 	test.Bytes(t, hexadecimalNumber([]byte("0x1")), []byte("1"))
 	test.Bytes(t, hexadecimalNumber([]byte("0xFE")), []byte("254"))
 	test.Bytes(t, hexadecimalNumber([]byte("0x1000000000")), []byte("68719476736"))
-	//                     1099511627776
+	test.Bytes(t, hexadecimalNumber([]byte("0xd000000000")), []byte("893353197568"))
+	test.Bytes(t, hexadecimalNumber([]byte("0xe000000000")), []byte("0xe000000000"))
+	test.Bytes(t, hexadecimalNumber([]byte("0xE000000000")), []byte("0xE000000000"))
 	test.Bytes(t, hexadecimalNumber([]byte("0x10000000000")), []byte("0x10000000000"))
 }
