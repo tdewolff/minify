@@ -274,18 +274,47 @@ func exprPrec(i js.IExpr) js.OpPrec {
 	return js.OpExpr // does not happen
 }
 
-func isIdentEndAlias(alias js.Alias) bool {
-	return !bytes.Equal(alias.Binding, starBytes)
+func bindingRefs(ibinding js.IBinding) (refs []js.VarRef) {
+	switch binding := ibinding.(type) {
+	case js.VarRef:
+		refs = append(refs, binding)
+	case *js.BindingArray:
+		for _, item := range binding.List {
+			if item.Binding != nil {
+				refs = append(refs, bindingRefs(item.Binding)...)
+			}
+		}
+		if binding.Rest != nil {
+			refs = append(refs, bindingRefs(binding.Rest)...)
+		}
+	case *js.BindingObject:
+		for _, item := range binding.List {
+			if item.Value.Binding != nil {
+				refs = append(refs, bindingRefs(item.Value.Binding)...)
+			}
+		}
+		if binding.Rest != 0 {
+			refs = append(refs, binding.Rest)
+		}
+	}
+	return
 }
 
-func isEmptyStmt(stmt js.IStmt) bool {
+func (m *jsMinifier) isEmptyStmt(stmt js.IStmt) bool {
 	if stmt == nil {
 		return true
 	} else if _, ok := stmt.(*js.EmptyStmt); ok {
 		return true
+	} else if decl, ok := stmt.(*js.VarDecl); ok && m.varsHoisted {
+		for _, item := range decl.List {
+			if item.Default != nil {
+				return false
+			}
+		}
+		return true
 	} else if block, ok := stmt.(*js.BlockStmt); ok {
 		for _, item := range block.List {
-			if ok := isEmptyStmt(item); !ok {
+			if ok := m.isEmptyStmt(item); !ok {
 				return false
 			}
 		}
