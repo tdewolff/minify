@@ -130,9 +130,11 @@ func (m *jsMinifier) minifyStmtOrBlock(i js.IStmt, blockType blockType) {
 			m.minifyStmt(blockStmt.List[0])
 		} else {
 			m.write(semicolonBytes)
+			m.needsSemicolon = false
 		}
 	} else if _, ok := i.(*js.EmptyStmt); ok {
 		m.write(semicolonBytes)
+		m.needsSemicolon = false
 	} else {
 		m.minifyStmt(i)
 	}
@@ -278,6 +280,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			}
 		}
 		m.write(closeBraceBytes)
+		m.needsSemicolon = false
 	case *js.ThrowStmt:
 		m.write(throwBytes)
 		m.writeSpaceBeforeIdent()
@@ -394,20 +397,27 @@ func condExpr(x, y, z js.IExpr) js.IExpr {
 func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 	// convert if/else into expression statement, and optimize blocks
 	if ifStmt, ok := i.(*js.IfStmt); ok {
-		if unaryExpr, ok := ifStmt.Cond.(*js.UnaryExpr); ok && unaryExpr.Op == js.NotToken {
-			ifStmt.Cond = unaryExpr.X
-			ifStmt.Body, ifStmt.Else = ifStmt.Else, ifStmt.Body
-		}
 		hasIf := !m.isEmptyStmt(ifStmt.Body)
 		hasElse := !m.isEmptyStmt(ifStmt.Else)
+		if unaryExpr, ok := ifStmt.Cond.(*js.UnaryExpr); ok && unaryExpr.Op == js.NotToken && hasElse {
+			ifStmt.Cond = unaryExpr.X
+			ifStmt.Body, ifStmt.Else = ifStmt.Else, ifStmt.Body
+			hasIf, hasElse = hasElse, hasIf
+		}
 		if !hasIf && !hasElse {
 			return &js.ExprStmt{ifStmt.Cond}
 		} else if hasIf && !hasElse {
 			ifStmt.Body = m.optimizeStmt(ifStmt.Body)
 			if X, isExprBody := ifStmt.Body.(*js.ExprStmt); isExprBody {
-				left := groupExpr(ifStmt.Cond, binaryLeftPrecMap[js.AndToken])
-				right := groupExpr(X.Value, binaryRightPrecMap[js.AndToken])
-				return &js.ExprStmt{&js.BinaryExpr{js.AndToken, left, right}}
+				if unaryExpr, ok := ifStmt.Cond.(*js.UnaryExpr); ok && unaryExpr.Op == js.NotToken {
+					left := groupExpr(unaryExpr.X, binaryLeftPrecMap[js.OrToken])
+					right := groupExpr(X.Value, binaryRightPrecMap[js.OrToken])
+					return &js.ExprStmt{&js.BinaryExpr{js.OrToken, left, right}}
+				} else {
+					left := groupExpr(ifStmt.Cond, binaryLeftPrecMap[js.AndToken])
+					right := groupExpr(X.Value, binaryRightPrecMap[js.AndToken])
+					return &js.ExprStmt{&js.BinaryExpr{js.AndToken, left, right}}
+				}
 			}
 		} else if !hasIf && hasElse {
 			ifStmt.Else = m.optimizeStmt(ifStmt.Else)
@@ -700,7 +710,8 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) bool {
 	// If the first statement is a var declaration, expand it. Otherwise prepend a new var declaration.
 	// Except for the first var declaration, all others are converted to expressions. This is possible because an ArrayBindingPattern and ObjectBindingPattern can be converted to an ArrayLiteral or ObjectLiteral respectively, as they are supersets of the BindingPatterns.
 	parentVarsHoisted := m.varsHoisted
-	if 1 < body.Scope.Count(js.VariableDecl) {
+	m.varsHoisted = false
+	if 1 < body.Scope.NVarDecls {
 		if decl, ok := body.List[0].(*js.VarDecl); ok && decl.TokenType == js.VarToken {
 			// original declarations
 			refs := []js.VarRef{}
@@ -865,6 +876,7 @@ func (m *jsMinifier) minifyClassDecl(decl js.ClassDecl) {
 		m.minifyMethodDecl(item)
 	}
 	m.write(closeBraceBytes)
+	m.needsSemicolon = false
 }
 
 func (m *jsMinifier) minifyPropertyName(name js.PropertyName) {
@@ -1086,7 +1098,11 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				break
 			}
 		}
-		m.minifyExpr(expr.X, js.OpLHS)
+		if prec < js.OpMember {
+			m.minifyExpr(expr.X, js.OpCall)
+		} else {
+			m.minifyExpr(expr.X, js.OpMember)
+		}
 		m.write(dotBytes)
 		m.write(expr.Y.Data)
 	case *js.GroupExpr:
@@ -1133,7 +1149,11 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		}
 	case *js.TemplateExpr:
 		if expr.Tag != nil {
-			m.minifyExpr(expr.Tag, js.OpLHS)
+			if prec < js.OpMember {
+				m.minifyExpr(expr.Tag, js.OpCall)
+			} else {
+				m.minifyExpr(expr.Tag, js.OpMember)
+			}
 		}
 		for _, item := range expr.List {
 			m.write(item.Value)
@@ -1186,7 +1206,11 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				m.write(notBytes)
 			}
 		}
-		m.minifyExpr(expr.X, js.OpLHS)
+		if prec < js.OpMember {
+			m.minifyExpr(expr.X, js.OpCall)
+		} else {
+			m.minifyExpr(expr.X, js.OpMember)
+		}
 		if lit, ok := expr.Index.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken && 2 < len(lit.Data) {
 			if _, ok := js.ParseIdentifierName(lit.Data[1 : len(lit.Data)-1]); ok {
 				m.write(dotBytes)
@@ -1283,7 +1307,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			}
 		}
 	case *js.OptChainExpr:
-		m.minifyExpr(expr.X, js.OpLHS)
+		m.minifyExpr(expr.X, js.OpCall)
 		m.write(optChainBytes)
 		if callExpr, ok := expr.Y.(*js.CallExpr); ok {
 			m.minifyArguments(callExpr.Args)
@@ -1292,7 +1316,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			m.minifyExpr(indexExpr.Index, js.OpExpr)
 			m.write(closeBracketBytes)
 		} else {
-			m.minifyExpr(expr.Y, js.OpLHS)
+			m.minifyExpr(expr.Y, js.OpPrimary) // TemplateExpr or LiteralExpr
 		}
 	case *js.VarDecl:
 		m.minifyVarDecl(*expr, true, true) // happens in when vars were hoisted

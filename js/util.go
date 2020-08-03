@@ -95,8 +95,8 @@ var unaryPrecMap = map[js.TokenType]js.OpPrec{
 	js.TypeofToken:   js.OpUnary,
 	js.VoidToken:     js.OpUnary,
 	js.DeleteToken:   js.OpUnary,
-	js.AddToken:      js.OpUnary,
-	js.SubToken:      js.OpUnary,
+	js.PosToken:      js.OpUnary,
+	js.NegToken:      js.OpUnary,
 	js.AwaitToken:    js.OpUnary,
 }
 
@@ -195,8 +195,8 @@ var unaryOpPrecMap = map[js.TokenType]js.OpPrec{
 	js.TypeofToken:   js.OpUnary,
 	js.VoidToken:     js.OpUnary,
 	js.DeleteToken:   js.OpUnary,
-	js.AddToken:      js.OpUnary,
-	js.SubToken:      js.OpUnary,
+	js.PosToken:      js.OpUnary,
+	js.NegToken:      js.OpUnary,
 	js.AwaitToken:    js.OpUnary,
 }
 
@@ -260,11 +260,11 @@ func exprPrec(i js.IExpr) js.OpPrec {
 			return js.OpPrimary
 		}
 		return js.OpMember
-	case *js.DotExpr, *js.IndexExpr, *js.NewTargetExpr, *js.ImportMetaExpr:
+	case *js.DotExpr:
 		return js.OpMember
-	case *js.OptChainExpr:
-		return js.OpLHS
-	case *js.CallExpr:
+	case *js.IndexExpr, *js.NewTargetExpr, *js.ImportMetaExpr:
+		return js.OpMember
+	case *js.OptChainExpr, *js.CallExpr:
 		return js.OpCall
 	case *js.CondExpr, *js.YieldExpr, *js.ArrowFunc:
 		return js.OpAssign

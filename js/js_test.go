@@ -72,6 +72,7 @@ func TestJS(t *testing.T) {
 		{`new RegExp()`, `new RegExp`},
 		{`switch (a) { case b: 5; default: 6}`, `switch(a){case b:5;default:6}`},
 		{`switch (a) { case b: {var c;return c}; default: 6}`, `switch(a){case b:{var c;return c}default:6}`},
+		{`switch (a) { case b: 5 }while(b);`, `switch(a){case b:5}while(b);`},
 		{`with (a = b) x`, `with(a=b)x`},
 		{`with (a = b) {x}`, `with(a=b)x`},
 		{`import 'path'`, `import'path'`},
@@ -219,6 +220,7 @@ func TestJS(t *testing.T) {
 		{`if(a){}else{while(b);}`, `if(a);else while(b);`},
 		{`if(a){return b}else{while(c);}`, `if(a)return b;while(c);`},
 		{`if(a){return b}else{while(c);d}`, `if(a)return b;while(c);d`},
+		{`if(!a){while(b);c}`, `if(!a){while(b);c}`},
 
 		// var declarations
 		{`var a;var b`, `var a,b`},
@@ -240,10 +242,12 @@ func TestJS(t *testing.T) {
 		{`for(var [a] in b){}`, `for(var[a]in b);`},
 		{`for(var {a} of b){}`, `for(var{a}of b);`},
 		{`for(var a in b);var c`, `var a,c;for(a in b);`},
+		{`for(var a=5,c=6;;);`, `for(var a=5,c=6;;);`},
 		{`function a(){}var a`, `function a(){}var a`},
 		{`var a;function a(){}`, `var a;function a(){}`},
 		{`var z;var [a,b=5,,...c]=[d,e,...f]`, `var z,a,b,c;[a,b=5,,...c]=[d,e,...f]`},
 		{`var z;var {a,b=5,[5+8]:c,...d}={d,e,...f}`, `var z,a,b,c,d;{a,b=5,[5+8]:c,...d}={d,e,...f}`},
+		{`var a=5;var b=6`, `var a=5,b=6`},
 
 		// function and method declarations
 		{`function g(){return}`, `function g(){}`},
@@ -355,7 +359,7 @@ func TestJS(t *testing.T) {
 		{`a=b?b:c=f`, `a=b?b:c=f`}, // don't write as a=b||(c=f)
 		{`a=b||(c=f)`, `a=b||(c=f)`},
 		{`a=(-5)**3`, `a=(-5)**3`},
-		{`a=5**(-3)`, `a=5**(-3)`},
+		{`a=5**(-3)`, `a=5**-3`},
 		{`a=(-(+5))**3`, `a=(-+5)**3`}, // could remove +
 		{`a=(b,c)+3`, `a=(b,c)+3`},
 		{`(a,b)&&c`, `a,b&&c`},
@@ -384,7 +388,6 @@ func TestJS(t *testing.T) {
 		{`(-1)()`, `(-1)()`},
 		{`(-1)(-2)`, `(-1)(-2)`},
 		{`(+new Date).toString(32)`, `(+new Date).toString(32)`},
-		{`new(a.b)instanceof c`, `new a.b instanceof c`},
 		{`(2).toFixed(0)`, `2..toFixed(0)`},
 		{`(0.2).toFixed(0)`, `.2.toFixed(0)`},
 		{`(2e-8).toFixed(0)`, `2e-8.toFixed(0)`},
@@ -401,10 +404,30 @@ func TestJS(t *testing.T) {
 		{`new new a()()`, `new new a`},
 		{`new(new a(b))`, `new new a(b)`},
 		{`new(a(b))(c)`, `new(a(b))(c)`},
+		{`new(a(b)).c(d)`, `new(a(b)).c(d)`},
+		{`new(a(b))[5](d)`, `new(a(b))[5](d)`},
+		{"new(a(b))`tmpl`(d)", "new(a(b))`tmpl`(d)"},
+		{`new a().b(c)`, `(new a).b(c)`},
+		{`(new a).b(c)`, `(new a).b(c)`},
+		{`(new a.b).c(d)`, `(new a.b).c(d)`},
+		{`(new a(b)).c(d)`, `new a(b).c(d)`},
+		{`(new a().b).c(d)`, `(new a).b.c(d)`},
+		{`new a()`, `new a`},
+		{`new a()()`, `(new a)()`},
+		{`new(a.b)instanceof c`, `new a.b instanceof c`},
+		{`new(a[b])instanceof c`, `new a[b]instanceof c`},
+		{"new(a`tmpl`)instanceof c", "new a`tmpl`instanceof c"},
+		{`(a()).b(c)`, `a().b(c)`},
+		{`(a()[5]).b(c)`, `a()[5].b(c)`},
+		{"(a()`tmpl`).b(c)", "a()`tmpl`.b(c)"},
+		{`(a?.b).c(d)`, `a?.b.c(d)`},
+		{`(a?.(c)).d(e)`, `a?.(c).d(e)`},
+		{`class a extends (new b){}`, `class a extends new b{}`},
 		{`(new.target)`, `new.target`},
 		{`(import.meta)`, `(import.meta)`},
 		{"(`tmpl`)", "`tmpl`"},
 		{"(a`tmpl`)", "a`tmpl`"},
+		{"a=-(b=5)", "a=-(b=5)"},
 
 		// other
 		//{`a=a+5`, `a+=5`},
@@ -446,8 +469,6 @@ func TestJS(t *testing.T) {
 		{`!42`, `!1`},
 		{`!"str"`, `!1`},
 		{`!/regexp/`, `!1`},
-		{`new a()`, `new a`},
-		{`new a()()`, `(new a)()`},
 		{`a={"property": val1, "2": val2, "3name": val3};`, `a={property:val1,2:val2,"3name":val3}`},
 		{`a=obj["if"]`, `a=obj.if`},
 		{`a=obj["2"]`, `a=obj[2]`},
@@ -526,6 +547,9 @@ func TestJSVarRenaming(t *testing.T) {
 		{`function a(){try{}catch(arg){arg}}`, `function a(){try{}catch(a){a}}`},
 		{`function a(){var name,z;try{}catch(name){var name}}`, `function a(){var a,b;try{}catch(b){}}`},
 		{`function a(){var name,z;try{}catch(arg){var name}}`, `function a(){var a,b;try{}catch(b){}}`},
+		{`function a(b){function c(d){b[d]}}`, `function a(a){function b(b){a[b]}}`},
+		{`function r(o){function l(t){if(!z[t]){if(!o[t]);}}}`, `function r(a){function b(b){z[b]||!a[b]}}`},
+		{`!function(a){for(var b=0;;);};var c;var d;`, `var c,d;!function(a){for(var b=0;;);}`},
 		{`name=function(){var a001,a002,a003,a004,a005,a006,a007,a008,a009,a010,a011,a012,a013,a014,a015,a016,a017,a018,a019,a020,a021,a022,a023,a024,a025,a026,a027,a028,a029,a030,a031,a032,a033,a034,a035,a036,a037,a038,a039,a040,a041,a042,a043,a044,a045,a046,a047,a048,a049,a050,a051,a052,a053,a054,a055,a056,a057,a058,a059,a060,a061,a062,a063,a064,a065,a066,a067,a068,a069,a070,a071,a072,a073,a074,a075,a076,a077,a078,a079,a080,a081,a082,a083,a084,a085,a086,a087,a088,a089,a090,a091,a092,a093,a094,a095,a096,a097,a098,a099,a100,a101,a102,a103,a104,a105,a106,a107,a108,a109}`, `name=function(){var a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,_,$,aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak,al,am,an,ao,ap,aq,ar,at,au,av,aw,ax,ay,az,aA,aB,aC,aD,aE,aF,aG,aH,aI,aJ,aK,aL,aM,aN,aO,aP,aQ,aR,aS,aT,aU,aV,aW,aX,aY,aZ,a_,a$,ba,bb}`}, // 'as' is a keyword
 	}
 
