@@ -302,6 +302,20 @@ func bindingRefs(ibinding js.IBinding) (refs []js.VarRef) {
 	return
 }
 
+func addDefinition(decl *js.VarDecl, iDefines int, refDefine js.VarRef, value js.IExpr) bool {
+	// see if not already defined in variable declaration list
+	for i, item := range decl.List[iDefines:] {
+		if ref, ok := item.Binding.(js.VarRef); ok && ref == refDefine {
+			decl.List[iDefines+i].Default = value
+			if 0 < i {
+				decl.List[iDefines], decl.List[iDefines+i] = decl.List[iDefines+i], decl.List[iDefines]
+			}
+			return true
+		}
+	}
+	return false
+}
+
 func (m *jsMinifier) isEmptyStmt(stmt js.IStmt) bool {
 	if stmt == nil {
 		return true

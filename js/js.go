@@ -712,10 +712,15 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) bool {
 	parentVarsHoisted := m.varsHoisted
 	m.varsHoisted = false
 	if 1 < body.Scope.NVarDecls {
-		if decl, ok := body.List[0].(*js.VarDecl); ok && decl.TokenType == js.VarToken {
+		iDefines := 0 // position past last variable definition in declaration
+		decl, isDecl := body.List[0].(*js.VarDecl)
+		if isDecl && decl.TokenType == js.VarToken {
 			// original declarations
 			refs := []js.VarRef{}
-			for _, item := range decl.List {
+			for i, item := range decl.List {
+				if item.Default != nil {
+					iDefines = i + 1
+				}
 				refs = append(refs, bindingRefs(item.Binding)...)
 			}
 
@@ -733,7 +738,7 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) bool {
 				}
 			}
 		} else {
-			decl := &js.VarDecl{js.VarToken, nil}
+			decl = &js.VarDecl{js.VarToken, nil}
 			for _, ref := range body.Scope.Declared {
 				v := ref.Var(m.ast)
 				if v.Decl == js.VariableDecl {
@@ -741,6 +746,40 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) bool {
 				}
 			}
 			body.List = append([]js.IStmt{decl}, body.List...)
+		}
+
+		// pull in assignments to variables into the declaration, e.g. var a;a=5  =>  var a=5
+		// sort in order of definitions
+		nMerged := 0
+	FindDefinitionsLoop:
+		for _, item := range body.List[1:] {
+			if exprStmt, ok := item.(*js.ExprStmt); ok {
+				if binaryExpr, ok := exprStmt.Value.(*js.BinaryExpr); ok && binaryExpr.Op == js.EqToken {
+					if ref, ok := binaryExpr.X.(js.VarRef); ok && ref.Var(m.ast).Decl == js.VariableDecl {
+						if addDefinition(decl, iDefines, ref, binaryExpr.Y) {
+							iDefines++
+							nMerged++
+							continue
+						}
+					}
+				}
+			} else if varDecl, ok := item.(*js.VarDecl); ok && varDecl.TokenType == js.VarToken {
+				for _, item := range varDecl.List {
+					if ref, ok := item.Binding.(js.VarRef); ok && item.Default != nil {
+						if addDefinition(decl, iDefines, ref, item.Default) {
+							iDefines++
+							continue
+						}
+					}
+					break FindDefinitionsLoop // one of the declarations isn't a definition or can't be matched
+				}
+				nMerged++
+				continue // all variable declarations were matched, keep looking
+			}
+			break // not ExprStmt nor VarDecl
+		}
+		if 0 < nMerged {
+			body.List = append(body.List[:1], body.List[1+nMerged:]...)
 		}
 		m.varsHoisted = true
 	}
