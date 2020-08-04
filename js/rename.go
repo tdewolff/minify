@@ -35,8 +35,9 @@ func (r *renamer) renameScope(scope js.Scope) {
 	}
 
 	rename := []byte("`") // so that the next is 'a'
-	sort.Sort(scope.Declared)
-	for _, v := range scope.Declared {
+	sort.Sort(js.VarsByUses{r.ast, scope.Declared})
+	for _, ref := range scope.Declared {
+		v := ref.Var(r.ast)
 		rename = r.next(rename)
 		for r.isReserved(rename, scope.Undeclared) {
 			rename = r.next(rename)
@@ -51,7 +52,8 @@ func (r *renamer) isReserved(name []byte, undeclared js.VarArray) bool {
 			return true
 		}
 	}
-	for _, v := range undeclared {
+	for _, ref := range undeclared {
+		v := ref.Var(r.ast)
 		if bytes.Equal(name, v.Name) {
 			return true
 		}

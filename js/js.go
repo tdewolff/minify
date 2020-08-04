@@ -721,7 +721,8 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) bool {
 
 			// hoist other variable declarations in this function scope but don't initialize yet
 		DeclaredLoop:
-			for _, v := range body.Scope.Declared {
+			for _, ref := range body.Scope.Declared {
+				v := ref.Var(m.ast)
 				if v.Decl == js.VariableDecl {
 					for _, ref := range refs {
 						if ref == v.Ref {
@@ -733,7 +734,8 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) bool {
 			}
 		} else {
 			decl := &js.VarDecl{js.VarToken, nil}
-			for _, v := range body.Scope.Declared {
+			for _, ref := range body.Scope.Declared {
+				v := ref.Var(m.ast)
 				if v.Decl == js.VariableDecl {
 					decl.List = append(decl.List, js.BindingElement{v.Ref, nil})
 				}

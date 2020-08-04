@@ -259,10 +259,12 @@ func exprPrec(i js.IExpr) js.OpPrec {
 		if expr.Tag == nil {
 			return js.OpPrimary
 		}
-		return js.OpMember
+		return expr.Prec
 	case *js.DotExpr:
-		return js.OpMember
-	case *js.IndexExpr, *js.NewTargetExpr, *js.ImportMetaExpr:
+		return expr.Prec
+	case *js.IndexExpr:
+		return expr.Prec
+	case *js.NewTargetExpr, *js.ImportMetaExpr:
 		return js.OpMember
 	case *js.OptChainExpr, *js.CallExpr:
 		return js.OpCall
