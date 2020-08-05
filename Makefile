@@ -1,23 +1,30 @@
-VERSION=`git describe --tags`
-FLAGS=-ldflags "-s -w -X 'main.Version=${VERSION}'" -trimpath
-ENVS=CGO_ENABLED=0
-
 NAME=minify
 CMD=./cmd/minify
 TARGETS=linux_amd64 darwin_amd64 freebsd_amd64 netbsd_amd64 openbsd_amd64 windows_amd64
+VERSION=`git describe --tags`
+FLAGS=-ldflags "-s -w -X 'main.Version=${VERSION}'" -trimpath
+
+CGO_ENABLED=0
+GO111MODULES=on
 
 all: install
 
 install:
-	@git pull -q --tags
-	@${ENVS} go install ${FLAGS} ./cmd/minify
-	@. cmd/minify/bash_completion
+	echo "Installing ${VERSION}"
+	${ENVS} go install ${FLAGS} ./cmd/minify
+	. cmd/minify/bash_completion
 
 release:
-	@git pull -q --tags
-	@rm -rf dist
-	@mkdir dist
-	@for t in ${TARGETS}; do \
+	TAG=$(shell git describe --exact-match 2> /dev/null);
+	if [ "${.SHELLSTATUS}" -eq 0 ]; then \
+		echo "Releasing ${VERSION}"; \
+	else \
+		echo "WARNING: commit is not tagged with a version"; \
+		echo ""; \
+	fi
+	rm -rf dist
+	mkdir -p dist
+	for t in ${TARGETS}; do \
 		echo Building $$t...; \
 		mkdir dist/$$t; \
 		os=$$(echo $$t | cut -f1 -d_); \
@@ -35,7 +42,7 @@ release:
 		else \
 			cp cmd/minify/bash_completion dist/$$t/.; \
 			cd dist/$$t; \
-			tar -czf - * | gzip -9 > ../${NAME}_$$t.tar.gz; \
+			tar -cf - * | gzip -9 > ../${NAME}_$$t.tar.gz; \
 			cd ..; \
 			sha256sum ${NAME}_$$t.tar.gz >> checksums.txt; \
 			cd ..; \
@@ -43,4 +50,9 @@ release:
 		rm -rf dist/$$t; \
 	done
 
-.PHONY: install release
+clean:
+	echo "Cleaning dist/"
+	rm -rf dist
+
+.PHONY: install release clean
+.SILENT: install release clean
