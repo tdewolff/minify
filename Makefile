@@ -15,7 +15,7 @@ install:
 	. cmd/minify/bash_completion
 
 release:
-	TAG=$(shell git describe --exact-match 2> /dev/null);
+	TAG=$(shell git describe --tags --exact-match 2> /dev/null);
 	if [ "${.SHELLSTATUS}" -eq 0 ]; then \
 		echo "Releasing ${VERSION}"; \
 	else \
