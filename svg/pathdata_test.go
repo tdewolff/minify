@@ -77,6 +77,7 @@ func TestPathData(t *testing.T) {
 		},
 		{"0z", "z"},
 		{"0a0z", "z"},
+		{"t.3.3.3.3z", "t.3.3.3.3z"},
 	}
 
 	p := NewPathData(&Minifier{})
