@@ -127,7 +127,6 @@ func TestJS(t *testing.T) {
 		{`"string\000\12\015\042\47\411string"`, `"string\0\n\r\"'!1string"`},
 		{"'string\\n\\rstring'", "'string\\n\\rstring'"},
 		{"'string\\\r\nstring\\\nstring\\\rstring\\\u2028string\\\u2029string'", "'stringstringstringstringstringstring'"},
-		//{`"string" + "string"`, `"stringstring"`},
 
 		// rename true, false, undefined, Infinity
 		{`x=true`, `x=!0`},
@@ -431,6 +430,10 @@ func TestJS(t *testing.T) {
 		{"(`tmpl`)", "`tmpl`"},
 		{"(a`tmpl`)", "a`tmpl`"},
 		{"a=-(b=5)", "a=-(b=5)"},
+
+		// expressions
+		//{`"string" + "string"`, `"stringstring"`},
+		//{`-0`, `0`},
 
 		// other
 		//{`a=a+5`, `a+=5`},
