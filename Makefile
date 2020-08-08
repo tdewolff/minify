@@ -12,7 +12,7 @@ all: install
 install:
 	echo "Installing ${VERSION}"
 	${ENVS} go install ${FLAGS} ./cmd/minify
-	. cmd/minify/bash_completion
+	source cmd/minify/bash_completion
 
 release:
 	TAG=$(shell git describe --tags --exact-match 2> /dev/null);

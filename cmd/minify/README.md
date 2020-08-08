@@ -12,13 +12,14 @@ Run the following command
     mkdir $HOME/src
     cd $HOME/src
     git clone https://github.com/tdewolff/minify.git
-    cd minify/cmd/minify
-    ./install.sh
+    cd minify
+    make install
 
 and the `minify` command will be in `$GOPATH/bin` or `$HOME/go/bin`.
 
-You can enable bash tab completion by executing
+If you do not have `make`, instead run the following lines to install `minify` and enable bash tab completion:
 
+    go install ./cmd/minify
     source minify_bash_tab_completion
 
 ### Arch Linux
