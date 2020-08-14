@@ -51,7 +51,6 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	m := &jsMinifier{
 		o:       o,
 		w:       w,
-		ast:     ast,
 		renamer: newRenamer(ast, ast.Undeclared, !o.KeepVarNames),
 	}
 	m.hoistVars(&ast.BlockStmt)
@@ -79,7 +78,6 @@ type jsMinifier struct {
 	spaceBefore    byte
 	varsHoisted    bool // whether variables are hoisted to the top for this function scope
 
-	ast     *js.AST
 	renamer *renamer
 }
 
@@ -716,31 +714,31 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) bool {
 		decl, isDecl := body.List[0].(*js.VarDecl)
 		if isDecl && decl.TokenType == js.VarToken {
 			// original declarations
-			refs := []js.VarRef{}
+			vs := []*js.Var{}
 			for i, item := range decl.List {
 				if item.Default != nil {
 					iDefines = i + 1
 				}
-				refs = append(refs, bindingRefs(item.Binding)...)
+				vs = append(vs, bindingRefs(item.Binding)...)
 			}
 
 			// hoist other variable declarations in this function scope but don't initialize yet
 		DeclaredLoop:
 			for _, v := range body.Scope.Declared {
 				if v.Decl == js.VariableDecl {
-					for _, ref := range refs {
-						if ref == v.Ref {
+					for _, vdef := range vs {
+						if v == vdef {
 							continue DeclaredLoop
 						}
 					}
-					decl.List = append(decl.List, js.BindingElement{v.Ref, nil})
+					decl.List = append(decl.List, js.BindingElement{v, nil})
 				}
 			}
 		} else {
 			decl = &js.VarDecl{js.VarToken, nil}
 			for _, v := range body.Scope.Declared {
 				if v.Decl == js.VariableDecl {
-					decl.List = append(decl.List, js.BindingElement{v.Ref, nil})
+					decl.List = append(decl.List, js.BindingElement{v, nil})
 				}
 			}
 			body.List = append([]js.IStmt{decl}, body.List...)
@@ -753,8 +751,8 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) bool {
 		for _, item := range body.List[1:] {
 			if exprStmt, ok := item.(*js.ExprStmt); ok {
 				if binaryExpr, ok := exprStmt.Value.(*js.BinaryExpr); ok && binaryExpr.Op == js.EqToken {
-					if ref, ok := binaryExpr.X.(js.VarRef); ok && ref.Var(m.ast).Decl == js.VariableDecl {
-						if addDefinition(decl, iDefines, ref, binaryExpr.Y) {
+					if v, ok := binaryExpr.X.(*js.Var); ok && v.Decl == js.VariableDecl {
+						if addDefinition(decl, iDefines, v, binaryExpr.Y) {
 							iDefines++
 							nMerged++
 							continue
@@ -763,8 +761,8 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) bool {
 				}
 			} else if varDecl, ok := item.(*js.VarDecl); ok && varDecl.TokenType == js.VarToken {
 				for _, item := range varDecl.List {
-					if ref, ok := item.Binding.(js.VarRef); ok && item.Default != nil {
-						if addDefinition(decl, iDefines, ref, item.Default) {
+					if v, ok := item.Binding.(*js.Var); ok && item.Default != nil {
+						if addDefinition(decl, iDefines, v, item.Default) {
 							iDefines++
 							continue
 						}
@@ -795,13 +793,11 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 	if inExpr {
 		m.renamer.renameScope(decl.Body.Scope)
 	}
-	if decl.Name != 0 {
-		if v := decl.Name.Var(m.ast); !inExpr || 1 < v.Uses {
-			if !decl.Generator {
-				m.write(spaceBytes)
-			}
-			m.write(v.Name)
+	if decl.Name != nil && (!inExpr || 1 < decl.Name.Uses) {
+		if !decl.Generator {
+			m.write(spaceBytes)
 		}
+		m.write(decl.Name.Data)
 	}
 	if !inExpr {
 		m.renamer.renameScope(decl.Body.Scope)
@@ -853,7 +849,7 @@ func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
 	if decl.Params.Rest == nil && len(decl.Params.List) == 1 && decl.Params.List[0].Default == nil {
 		if decl.Async && decl.Params.List[0].Binding != nil {
 			// add space after async in: async a => ...
-			if _, ok := decl.Params.List[0].Binding.(js.VarRef); ok {
+			if _, ok := decl.Params.List[0].Binding.(*js.Var); ok {
 				m.write(spaceBytes)
 			}
 		}
@@ -903,9 +899,9 @@ func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
 
 func (m *jsMinifier) minifyClassDecl(decl js.ClassDecl) {
 	m.write(classBytes)
-	if decl.Name != 0 {
+	if decl.Name != nil {
 		m.write(spaceBytes)
-		m.write(decl.Name.Var(m.ast).Name)
+		m.write(decl.Name.Data)
 	}
 	if decl.Extends != nil {
 		m.write(spaceExtendsBytes)
@@ -934,7 +930,7 @@ func (m *jsMinifier) minifyProperty(property js.Property) {
 	// property.Name is always set in ObjectLiteral
 	if property.Spread {
 		m.write(ellipsisBytes)
-	} else if ref, ok := property.Value.(js.VarRef); property.Name != nil && (!ok || !property.Name.IsIdent(ref.LinkedVar(m.ast).Name)) {
+	} else if v, ok := property.Value.(*js.Var); property.Name != nil && (!ok || !property.Name.IsIdent(v.Name())) {
 		// add 'old-name:' before BindingName as the latter will be renamed
 		m.minifyPropertyName(*property.Name)
 		m.write(colonBytes)
@@ -958,8 +954,8 @@ func (m *jsMinifier) minifyBindingElement(element js.BindingElement) {
 
 func (m *jsMinifier) minifyBinding(ibinding js.IBinding) {
 	switch binding := ibinding.(type) {
-	case js.VarRef:
-		m.write(binding.Var(m.ast).Name)
+	case *js.Var:
+		m.write(binding.Data)
 	case *js.BindingArray:
 		m.write(openBracketBytes)
 		for i, item := range binding.List {
@@ -988,19 +984,19 @@ func (m *jsMinifier) minifyBinding(ibinding js.IBinding) {
 			if item.Key.IsComputed() {
 				m.minifyPropertyName(*item.Key)
 				m.write(colonBytes)
-			} else if ref, ok := item.Value.Binding.(js.VarRef); !ok || !item.Key.IsIdent(ref.Var(m.ast).Name) {
+			} else if v, ok := item.Value.Binding.(*js.Var); !ok || !item.Key.IsIdent(v.Data) {
 				// add 'old-name:' before BindingName as the latter will be renamed
 				m.minifyPropertyName(*item.Key)
 				m.write(colonBytes)
 			}
 			m.minifyBindingElement(item.Value)
 		}
-		if binding.Rest != 0 {
+		if binding.Rest != nil {
 			if 0 < len(binding.List) {
 				m.write(commaBytes)
 			}
 			m.write(ellipsisBytes)
-			m.write(binding.Rest.Var(m.ast).Name)
+			m.write(binding.Rest.Data)
 		}
 		m.write(closeBraceBytes)
 	}
@@ -1008,8 +1004,11 @@ func (m *jsMinifier) minifyBinding(ibinding js.IBinding) {
 
 func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 	switch expr := i.(type) {
-	case js.VarRef:
-		data := expr.LinkedVar(m.ast).Name
+	case *js.Var:
+		for expr.Link != nil {
+			expr = expr.Link
+		}
+		data := expr.Data
 		if bytes.Equal(data, undefinedBytes) { // TODO: only if not defined
 			if js.OpUnary < prec {
 				m.write(groupedVoidZeroBytes)
@@ -1234,7 +1233,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			if expr.Generator {
 				m.write(starBytes)
 				m.minifyExpr(expr.X, js.OpAssign)
-			} else if ref, ok := expr.X.(js.VarRef); !ok || !bytes.Equal(ref.LinkedVar(m.ast).Name, undefinedBytes) { // TODO: only if not bound
+			} else if v, ok := expr.X.(*js.Var); !ok || !bytes.Equal(v.Name(), undefinedBytes) { // TODO: only if not bound
 				m.minifyExpr(expr.X, js.OpAssign)
 			}
 		}
@@ -1243,7 +1242,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.minifyArguments(expr.Args)
 	case *js.IndexExpr:
 		if m.expectStmt {
-			if ref, ok := expr.X.(js.VarRef); ok && bytes.Equal(ref.LinkedVar(m.ast).Name, letBytes) {
+			if v, ok := expr.X.(*js.Var); ok && bytes.Equal(v.Name(), letBytes) {
 				m.write(notBytes)
 			}
 		}

@@ -244,7 +244,7 @@ var binaryOpPrecMap = map[js.TokenType]js.OpPrec{
 
 func exprPrec(i js.IExpr) js.OpPrec {
 	switch expr := i.(type) {
-	case js.VarRef, *js.LiteralExpr, *js.ArrayExpr, *js.ObjectExpr, *js.FuncDecl, *js.ClassDecl:
+	case *js.Var, *js.LiteralExpr, *js.ArrayExpr, *js.ObjectExpr, *js.FuncDecl, *js.ClassDecl:
 		return js.OpPrimary
 	case *js.UnaryExpr:
 		return unaryOpPrecMap[expr.Op]
@@ -276,9 +276,9 @@ func exprPrec(i js.IExpr) js.OpPrec {
 	return js.OpExpr // does not happen
 }
 
-func bindingRefs(ibinding js.IBinding) (refs []js.VarRef) {
+func bindingRefs(ibinding js.IBinding) (refs []*js.Var) {
 	switch binding := ibinding.(type) {
-	case js.VarRef:
+	case *js.Var:
 		refs = append(refs, binding)
 	case *js.BindingArray:
 		for _, item := range binding.List {
@@ -295,17 +295,17 @@ func bindingRefs(ibinding js.IBinding) (refs []js.VarRef) {
 				refs = append(refs, bindingRefs(item.Value.Binding)...)
 			}
 		}
-		if binding.Rest != 0 {
+		if binding.Rest != nil {
 			refs = append(refs, binding.Rest)
 		}
 	}
 	return
 }
 
-func addDefinition(decl *js.VarDecl, iDefines int, refDefine js.VarRef, value js.IExpr) bool {
+func addDefinition(decl *js.VarDecl, iDefines int, vdef *js.Var, value js.IExpr) bool {
 	// see if not already defined in variable declaration list
 	for i, item := range decl.List[iDefines:] {
-		if ref, ok := item.Binding.(js.VarRef); ok && ref == refDefine {
+		if v, ok := item.Binding.(*js.Var); ok && v == vdef {
 			decl.List[iDefines+i].Default = value
 			if 0 < i {
 				decl.List[iDefines], decl.List[iDefines+i] = decl.List[iDefines+i], decl.List[iDefines]
@@ -384,8 +384,8 @@ func (m *jsMinifier) isFalse(i js.IExpr) bool {
 }
 
 func (m *jsMinifier) isUndefined(i js.IExpr) bool {
-	if ref, ok := i.(js.VarRef); ok {
-		if bytes.Equal(ref.Var(m.ast).Name, undefinedBytes) { // TODO: only if not defined
+	if v, ok := i.(*js.Var); ok {
+		if bytes.Equal(v.Name(), undefinedBytes) { // TODO: only if not defined
 			return true
 		}
 	} else if unary, ok := i.(*js.UnaryExpr); ok && unary.Op == js.VoidToken {
@@ -440,9 +440,9 @@ func (m *jsMinifier) isEqualExpr(a, b js.IExpr) bool {
 	if group, ok := b.(*js.GroupExpr); ok {
 		b = group.X
 	}
-	if left, ok := a.(js.VarRef); ok {
-		if right, ok := b.(js.VarRef); ok {
-			return bytes.Equal(left.Var(m.ast).Name, right.Var(m.ast).Name)
+	if left, ok := a.(*js.Var); ok {
+		if right, ok := b.(*js.Var); ok {
+			return bytes.Equal(left.Name(), right.Name())
 		}
 	}
 	// TODO: use reflect.DeepEqual?

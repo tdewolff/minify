@@ -41,7 +41,7 @@ func (r *renamer) renameScope(scope js.Scope) {
 		for r.isReserved(rename, scope.Undeclared) {
 			rename = r.next(rename)
 		}
-		v.Name = parse.Copy(rename)
+		v.Data = parse.Copy(rename)
 	}
 }
 
@@ -55,7 +55,7 @@ func (r *renamer) isReserved(name []byte, undeclared js.VarArray) bool {
 		for v.Link != nil {
 			v = v.Link
 		}
-		if bytes.Equal(name, v.Name) {
+		if bytes.Equal(v.Data, name) {
 			return true
 		}
 	}
