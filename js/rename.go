@@ -37,13 +37,11 @@ func (r *renamer) renameScope(scope js.Scope) {
 	rename := []byte("`") // so that the next is 'a'
 	sort.Sort(js.VarsByUses(scope.Declared))
 	for _, v := range scope.Declared {
-		if v.Link == nil {
+		rename = r.next(rename)
+		for r.isReserved(rename, scope.Undeclared) {
 			rename = r.next(rename)
-			for r.isReserved(rename, scope.Undeclared) {
-				rename = r.next(rename)
-			}
-			v.Name = parse.Copy(rename)
 		}
+		v.Name = parse.Copy(rename)
 	}
 }
 

@@ -795,11 +795,13 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 	if inExpr {
 		m.renamer.renameScope(decl.Body.Scope)
 	}
-	if decl.Name != 0 && (!inExpr || 1 < decl.Name.Var(m.ast).Uses) {
-		if !decl.Generator {
-			m.write(spaceBytes)
+	if decl.Name != 0 {
+		if v := decl.Name.Var(m.ast); !inExpr || 1 < v.Uses {
+			if !decl.Generator {
+				m.write(spaceBytes)
+			}
+			m.write(v.Name)
 		}
-		m.write(decl.Name.Name(m.ast))
 	}
 	if !inExpr {
 		m.renamer.renameScope(decl.Body.Scope)
@@ -903,7 +905,7 @@ func (m *jsMinifier) minifyClassDecl(decl js.ClassDecl) {
 	m.write(classBytes)
 	if decl.Name != 0 {
 		m.write(spaceBytes)
-		m.write(decl.Name.Name(m.ast))
+		m.write(decl.Name.Var(m.ast).Name)
 	}
 	if decl.Extends != nil {
 		m.write(spaceExtendsBytes)
@@ -932,7 +934,7 @@ func (m *jsMinifier) minifyProperty(property js.Property) {
 	// property.Name is always set in ObjectLiteral
 	if property.Spread {
 		m.write(ellipsisBytes)
-	} else if ref, ok := property.Value.(js.VarRef); property.Name != nil && (!ok || !property.Name.IsIdent(ref.Name(m.ast))) {
+	} else if ref, ok := property.Value.(js.VarRef); property.Name != nil && (!ok || !property.Name.IsIdent(ref.LinkedVar(m.ast).Name)) {
 		// add 'old-name:' before BindingName as the latter will be renamed
 		m.minifyPropertyName(*property.Name)
 		m.write(colonBytes)
@@ -957,7 +959,7 @@ func (m *jsMinifier) minifyBindingElement(element js.BindingElement) {
 func (m *jsMinifier) minifyBinding(ibinding js.IBinding) {
 	switch binding := ibinding.(type) {
 	case js.VarRef:
-		m.write(binding.Name(m.ast))
+		m.write(binding.Var(m.ast).Name)
 	case *js.BindingArray:
 		m.write(openBracketBytes)
 		for i, item := range binding.List {
@@ -986,7 +988,7 @@ func (m *jsMinifier) minifyBinding(ibinding js.IBinding) {
 			if item.Key.IsComputed() {
 				m.minifyPropertyName(*item.Key)
 				m.write(colonBytes)
-			} else if ref, ok := item.Value.Binding.(js.VarRef); !ok || !item.Key.IsIdent(ref.Name(m.ast)) {
+			} else if ref, ok := item.Value.Binding.(js.VarRef); !ok || !item.Key.IsIdent(ref.Var(m.ast).Name) {
 				// add 'old-name:' before BindingName as the latter will be renamed
 				m.minifyPropertyName(*item.Key)
 				m.write(colonBytes)
@@ -998,7 +1000,7 @@ func (m *jsMinifier) minifyBinding(ibinding js.IBinding) {
 				m.write(commaBytes)
 			}
 			m.write(ellipsisBytes)
-			m.write(binding.Rest.Name(m.ast))
+			m.write(binding.Rest.Var(m.ast).Name)
 		}
 		m.write(closeBraceBytes)
 	}
@@ -1007,7 +1009,7 @@ func (m *jsMinifier) minifyBinding(ibinding js.IBinding) {
 func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 	switch expr := i.(type) {
 	case js.VarRef:
-		data := expr.Name(m.ast)
+		data := expr.LinkedVar(m.ast).Name
 		if bytes.Equal(data, undefinedBytes) { // TODO: only if not defined
 			if js.OpUnary < prec {
 				m.write(groupedVoidZeroBytes)
@@ -1232,7 +1234,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			if expr.Generator {
 				m.write(starBytes)
 				m.minifyExpr(expr.X, js.OpAssign)
-			} else if ref, ok := expr.X.(js.VarRef); !ok || !bytes.Equal(ref.Name(m.ast), undefinedBytes) { // TODO: only if not bound
+			} else if ref, ok := expr.X.(js.VarRef); !ok || !bytes.Equal(ref.LinkedVar(m.ast).Name, undefinedBytes) { // TODO: only if not bound
 				m.minifyExpr(expr.X, js.OpAssign)
 			}
 		}
@@ -1241,7 +1243,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.minifyArguments(expr.Args)
 	case *js.IndexExpr:
 		if m.expectStmt {
-			if ref, ok := expr.X.(js.VarRef); ok && bytes.Equal(ref.Name(m.ast), letBytes) {
+			if ref, ok := expr.X.(js.VarRef); ok && bytes.Equal(ref.LinkedVar(m.ast).Name, letBytes) {
 				m.write(notBytes)
 			}
 		}

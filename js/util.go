@@ -385,7 +385,7 @@ func (m *jsMinifier) isFalse(i js.IExpr) bool {
 
 func (m *jsMinifier) isUndefined(i js.IExpr) bool {
 	if ref, ok := i.(js.VarRef); ok {
-		if bytes.Equal(ref.Name(m.ast), undefinedBytes) { // TODO: only if not defined
+		if bytes.Equal(ref.Var(m.ast).Name, undefinedBytes) { // TODO: only if not defined
 			return true
 		}
 	} else if unary, ok := i.(*js.UnaryExpr); ok && unary.Op == js.VoidToken {
@@ -442,7 +442,7 @@ func (m *jsMinifier) isEqualExpr(a, b js.IExpr) bool {
 	}
 	if left, ok := a.(js.VarRef); ok {
 		if right, ok := b.(js.VarRef); ok {
-			return bytes.Equal(left.Name(m.ast), right.Name(m.ast))
+			return bytes.Equal(left.Var(m.ast).Name, right.Var(m.ast).Name)
 		}
 	}
 	// TODO: use reflect.DeepEqual?
