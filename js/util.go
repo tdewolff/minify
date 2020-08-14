@@ -321,7 +321,7 @@ func (m *jsMinifier) isEmptyStmt(stmt js.IStmt) bool {
 		return true
 	} else if _, ok := stmt.(*js.EmptyStmt); ok {
 		return true
-	} else if decl, ok := stmt.(*js.VarDecl); ok && m.varsHoisted {
+	} else if decl, ok := stmt.(*js.VarDecl); ok && m.varsHoisted != nil && decl != m.varsHoisted {
 		for _, item := range decl.List {
 			if item.Default != nil {
 				return false
