@@ -3,16 +3,14 @@ CMD=./cmd/minify
 TARGETS=linux_amd64 darwin_amd64 freebsd_amd64 netbsd_amd64 openbsd_amd64 windows_amd64
 VERSION=`git describe --tags`
 FLAGS=-ldflags "-s -w -X 'main.Version=${VERSION}'" -trimpath
-
-CGO_ENABLED=0
-GO111MODULES=on
+ENVS=GO111MODULES=on CGO_ENABLED=0
 
 all: install
 
 install:
 	echo "Installing ${VERSION}"
 	${ENVS} go install ${FLAGS} ./cmd/minify
-	source cmd/minify/bash_completion
+	. cmd/minify/bash_completion
 
 release:
 	TAG=$(shell git describe --tags --exact-match 2> /dev/null);
