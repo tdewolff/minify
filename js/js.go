@@ -1252,13 +1252,13 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			m.minifyExpr(expr.X, js.OpMember)
 		}
 		if lit, ok := expr.Index.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken && 2 < len(lit.Data) {
-			if _, ok := js.ParseIdentifierName(lit.Data[1 : len(lit.Data)-1]); ok {
+			if isIdent := js.AsIdentifierName(lit.Data[1 : len(lit.Data)-1]); isIdent {
 				m.write(dotBytes)
 				m.write(lit.Data[1 : len(lit.Data)-1])
 				break
-			} else if _, ok := js.ParseNumericLiteral(lit.Data[1 : len(lit.Data)-1]); ok {
+			} else if isNum := js.AsDecimalLiteral(lit.Data[1 : len(lit.Data)-1]); isNum {
 				m.write(openBracketBytes)
-				m.write(lit.Data[1 : len(lit.Data)-1])
+				m.write(minify.Number(lit.Data[1:len(lit.Data)-1], 0))
 				m.write(closeBracketBytes)
 				break
 			}
