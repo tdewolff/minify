@@ -227,7 +227,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.write(semicolonBytes)
 		m.minifyExpr(stmt.Post, js.OpExpr)
 		m.write(closeParenBytes)
-		m.minifyStmtOrBlock(stmt.Body, iterationBlock)
+		m.minifyStmtOrBlock(&stmt.Body, iterationBlock)
 	case *js.ForInStmt:
 		m.write(forOpenBytes)
 		if decl, ok := stmt.Init.(*js.VarDecl); ok {
@@ -240,7 +240,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.writeSpaceBeforeIdent()
 		m.minifyExpr(stmt.Value, js.OpExpr)
 		m.write(closeParenBytes)
-		m.minifyStmtOrBlock(stmt.Body, iterationBlock)
+		m.minifyStmtOrBlock(&stmt.Body, iterationBlock)
 	case *js.ForOfStmt:
 		if stmt.Await {
 			m.write(forAwaitOpenBytes)
@@ -257,7 +257,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.writeSpaceBeforeIdent()
 		m.minifyExpr(stmt.Value, js.OpAssign)
 		m.write(closeParenBytes)
-		m.minifyStmtOrBlock(stmt.Body, iterationBlock)
+		m.minifyStmtOrBlock(&stmt.Body, iterationBlock)
 	case *js.SwitchStmt:
 		m.write(switchOpenBytes)
 		m.minifyExpr(stmt.Init, js.OpExpr)
@@ -528,7 +528,13 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 					j--
 				}
 			} else if whileStmt, ok := list[i+1].(*js.WhileStmt); ok {
-				list[i+1] = &js.ForStmt{left.Value, whileStmt.Cond, nil, whileStmt.Body}
+				var body js.BlockStmt
+				if blockStmt, ok := whileStmt.Body.(*js.BlockStmt); ok {
+					body = *blockStmt
+				} else {
+					body.List = []js.IStmt{whileStmt.Body}
+				}
+				list[i+1] = &js.ForStmt{left.Value, whileStmt.Cond, nil, body}
 				j--
 			} else if switchStmt, ok := list[i+1].(*js.SwitchStmt); ok {
 				switchStmt.Init = &js.BinaryExpr{js.CommaToken, left.Value, switchStmt.Init}
@@ -709,7 +715,13 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) *js.VarDecl {
 			}
 		} else if whileStmt, ok := body.List[0].(*js.WhileStmt); ok {
 			decl = &js.VarDecl{js.VarToken, nil}
-			body.List[0] = &js.ForStmt{decl, whileStmt.Cond, nil, whileStmt.Body}
+			var forBody js.BlockStmt
+			if blockStmt, ok := whileStmt.Body.(*js.BlockStmt); ok {
+				forBody = *blockStmt
+			} else {
+				forBody.List = []js.IStmt{whileStmt.Body}
+			}
+			body.List[0] = &js.ForStmt{decl, whileStmt.Cond, nil, forBody}
 		}
 		if decl != nil {
 			// original declarations
