@@ -248,6 +248,7 @@ func TestJS(t *testing.T) {
 		{`var a=5;var b=6`, `var a=5,b=6`},
 		{`for(var a=6,b=7;;);var c=8`, `for(var a=6,b=7,c=8;;);`},
 		{`while(b);var a=4;var b=5;`, `for(var a=4,b=5;b;);`},
+		{`for(var c;b;){let a=8};var a`, `for(var c,a;b;)let a=8`},
 
 		// function and method declarations
 		{`function g(){return}`, `function g(){}`},
@@ -559,6 +560,7 @@ func TestJSVarRenaming(t *testing.T) {
 		{`!function(a){for(var b=0;;);};var c;var d;`, `var c,d;!function(a){for(var b=0;;);}`},
 		{`function(){var b;{(T=x),T}{var T}}`, `function(){var b,a;a=x,a}`},
 		{`var T;function(){var b;{(T=x),T}{var T}}`, `var T;function(){var b,a;a=x,a}`},
+		{`function(){let a=b,b=c,c=d,d=e,e=f,f=g,g=h,h=a,j;for(let i=0;;)j=4}`, `function(){let a=b,b=c,c=d,d=e,e=f,f=g,g=h,h=a,i;for(let a=0;;)i=4}`},
 		{`name=function(){var a001,a002,a003,a004,a005,a006,a007,a008,a009,a010,a011,a012,a013,a014,a015,a016,a017,a018,a019,a020,a021,a022,a023,a024,a025,a026,a027,a028,a029,a030,a031,a032,a033,a034,a035,a036,a037,a038,a039,a040,a041,a042,a043,a044,a045,a046,a047,a048,a049,a050,a051,a052,a053,a054,a055,a056,a057,a058,a059,a060,a061,a062,a063,a064,a065,a066,a067,a068,a069,a070,a071,a072,a073,a074,a075,a076,a077,a078,a079,a080,a081,a082,a083,a084,a085,a086,a087,a088,a089,a090,a091,a092,a093,a094,a095,a096,a097,a098,a099,a100,a101,a102,a103,a104,a105,a106,a107,a108,a109}`, `name=function(){var a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,_,$,aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak,al,am,an,ao,ap,aq,ar,at,au,av,aw,ax,ay,az,aA,aB,aC,aD,aE,aF,aG,aH,aI,aJ,aK,aL,aM,aN,aO,aP,aQ,aR,aS,aT,aU,aV,aW,aX,aY,aZ,a_,a$,ba,bb}`}, // 'as' is a keyword
 	}
 

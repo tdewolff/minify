@@ -119,25 +119,6 @@ func (m *jsMinifier) writeSemicolon() {
 	}
 }
 
-func (m *jsMinifier) minifyStmtOrBlock(i js.IStmt, blockType blockType) {
-	if blockStmt, ok := i.(*js.BlockStmt); ok {
-		blockStmt.List = m.optimizeStmtList(blockStmt.List, blockType)
-		if 1 < len(blockStmt.List) {
-			m.minifyBlockStmt(*blockStmt)
-		} else if len(blockStmt.List) == 1 {
-			m.minifyStmt(blockStmt.List[0])
-		} else {
-			m.write(semicolonBytes)
-			m.needsSemicolon = false
-		}
-	} else if _, ok := i.(*js.EmptyStmt); ok {
-		m.write(semicolonBytes)
-		m.needsSemicolon = false
-	} else {
-		m.minifyStmt(i)
-	}
-}
-
 func (m *jsMinifier) minifyStmt(i js.IStmt) {
 	switch stmt := i.(type) {
 	case *js.ExprStmt:
@@ -216,6 +197,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.write(closeParenBytes)
 		m.minifyStmtOrBlock(stmt.Body, iterationBlock)
 	case *js.ForStmt:
+		m.renamer.renameScope(stmt.Body.Scope)
 		m.write(forOpenBytes)
 		if decl, ok := stmt.Init.(*js.VarDecl); ok {
 			m.minifyVarDecl(decl, false)
@@ -227,8 +209,9 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.write(semicolonBytes)
 		m.minifyExpr(stmt.Post, js.OpExpr)
 		m.write(closeParenBytes)
-		m.minifyStmtOrBlock(&stmt.Body, iterationBlock)
+		m.minifyBlockAsStmt(&stmt.Body, iterationBlock)
 	case *js.ForInStmt:
+		m.renamer.renameScope(stmt.Body.Scope)
 		m.write(forOpenBytes)
 		if decl, ok := stmt.Init.(*js.VarDecl); ok {
 			m.minifyVarDecl(decl, false)
@@ -240,8 +223,9 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.writeSpaceBeforeIdent()
 		m.minifyExpr(stmt.Value, js.OpExpr)
 		m.write(closeParenBytes)
-		m.minifyStmtOrBlock(&stmt.Body, iterationBlock)
+		m.minifyBlockAsStmt(&stmt.Body, iterationBlock)
 	case *js.ForOfStmt:
+		m.renamer.renameScope(stmt.Body.Scope)
 		if stmt.Await {
 			m.write(forAwaitOpenBytes)
 		} else {
@@ -257,7 +241,9 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.writeSpaceBeforeIdent()
 		m.minifyExpr(stmt.Value, js.OpAssign)
 		m.write(closeParenBytes)
-		m.minifyStmtOrBlock(&stmt.Body, iterationBlock)
+		if len(stmt.Body.List) == 1 {
+		}
+		m.minifyBlockAsStmt(&stmt.Body, iterationBlock)
 	case *js.SwitchStmt:
 		m.write(switchOpenBytes)
 		m.minifyExpr(stmt.Init, js.OpExpr)
@@ -624,6 +610,30 @@ func (m *jsMinifier) minifyBlockStmt(stmt js.BlockStmt) {
 	m.needsSemicolon = false
 }
 
+func (m *jsMinifier) minifyBlockAsStmt(blockStmt *js.BlockStmt, blockType blockType) {
+	blockStmt.List = m.optimizeStmtList(blockStmt.List, blockType)
+	if 1 < len(blockStmt.List) {
+		m.minifyBlockStmt(*blockStmt)
+	} else if len(blockStmt.List) == 1 {
+		m.minifyStmt(blockStmt.List[0])
+	} else {
+		m.write(semicolonBytes)
+		m.needsSemicolon = false
+	}
+}
+
+func (m *jsMinifier) minifyStmtOrBlock(i js.IStmt, blockType blockType) {
+	if blockStmt, ok := i.(*js.BlockStmt); ok {
+		m.renamer.renameScope(blockStmt.Scope)
+		m.minifyBlockAsStmt(blockStmt, blockType)
+	} else if _, ok := i.(*js.EmptyStmt); ok {
+		m.write(semicolonBytes)
+		m.needsSemicolon = false
+	} else {
+		m.minifyStmt(i)
+	}
+}
+
 func (m *jsMinifier) minifyAlias(alias js.Alias) {
 	if alias.Name != nil {
 		m.write(alias.Name)
@@ -674,7 +684,7 @@ func (m *jsMinifier) minifyArguments(args js.Arguments) {
 }
 
 func (m *jsMinifier) minifyVarDecl(decl *js.VarDecl, onlyDefines bool) {
-	if m.varsHoisted != nil && decl != m.varsHoisted {
+	if decl.TokenType == js.VarToken && m.varsHoisted != nil && decl != m.varsHoisted {
 		// remove 'var' when hoisting variables
 		first := true
 		for _, item := range decl.List {
