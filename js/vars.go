@@ -8,6 +8,22 @@ import (
 	"github.com/tdewolff/parse/v2/js"
 )
 
+// common globals in JS up to 5 characters (we don't expect to rename variables to anything beyond 5 characters)
+var globals = []string{
+	"NaN",
+	"eval",
+	"isNaN",
+	"Error",
+	"Math",
+	"Date",
+	"Array",
+	"Map",
+	"Set",
+	"JSON",
+	"Proxy",
+	"Intl",
+}
+
 type renamer struct {
 	ast      *js.AST
 	reserved map[string]struct{}
@@ -15,11 +31,11 @@ type renamer struct {
 }
 
 func newRenamer(ast *js.AST, undeclared js.VarArray, rename bool) *renamer {
-	reserved := make(map[string]struct{}, len(js.Keywords)+len(js.Globals))
+	reserved := make(map[string]struct{}, len(js.Keywords)+len(globals))
 	for name, _ := range js.Keywords {
 		reserved[name] = struct{}{}
 	}
-	for name, _ := range js.Globals {
+	for _, name := range globals {
 		reserved[name] = struct{}{}
 	}
 	return &renamer{
