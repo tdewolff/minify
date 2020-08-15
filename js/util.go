@@ -276,44 +276,15 @@ func exprPrec(i js.IExpr) js.OpPrec {
 	return js.OpExpr // does not happen
 }
 
-func bindingRefs(ibinding js.IBinding) (refs []*js.Var) {
-	switch binding := ibinding.(type) {
-	case *js.Var:
-		refs = append(refs, binding)
-	case *js.BindingArray:
-		for _, item := range binding.List {
-			if item.Binding != nil {
-				refs = append(refs, bindingRefs(item.Binding)...)
-			}
-		}
-		if binding.Rest != nil {
-			refs = append(refs, bindingRefs(binding.Rest)...)
-		}
-	case *js.BindingObject:
-		for _, item := range binding.List {
-			if item.Value.Binding != nil {
-				refs = append(refs, bindingRefs(item.Value.Binding)...)
-			}
-		}
-		if binding.Rest != nil {
-			refs = append(refs, binding.Rest)
-		}
+func groupExpr(i js.IExpr, prec js.OpPrec) js.IExpr {
+	if exprPrec(i) < prec {
+		return &js.GroupExpr{i}
 	}
-	return
+	return i
 }
 
-func addDefinition(decl *js.VarDecl, iDefines int, vdef *js.Var, value js.IExpr) bool {
-	// see if not already defined in variable declaration list
-	for i, item := range decl.List[iDefines:] {
-		if v, ok := item.Binding.(*js.Var); ok && v == vdef {
-			decl.List[iDefines+i].Default = value
-			if 0 < i {
-				decl.List[iDefines], decl.List[iDefines+i] = decl.List[iDefines+i], decl.List[iDefines]
-			}
-			return true
-		}
-	}
-	return false
+func condExpr(x, y, z js.IExpr) js.IExpr {
+	return &js.CondExpr{groupExpr(x, js.OpCoalesce), groupExpr(y, js.OpAssign), groupExpr(z, js.OpAssign)}
 }
 
 func (m *jsMinifier) isEmptyStmt(stmt js.IStmt) bool {
