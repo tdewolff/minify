@@ -72,6 +72,7 @@ var (
 	importMetaBytes            = []byte("import.meta")
 	varBytes                   = []byte("var")
 	varSpaceBytes              = []byte("var ")
+	nanBytes                   = []byte("NaN")
 	undefinedBytes             = []byte("undefined")
 	infinityBytes              = []byte("Infinity")
 	voidZeroBytes              = []byte("void 0")
@@ -346,7 +347,7 @@ func (m *jsMinifier) isFalse(i js.IExpr) bool {
 		return lit.TokenType == js.FalseToken
 	} else if unary, ok := i.(*js.UnaryExpr); ok && unary.Op == js.NotToken {
 		if lit, ok := unary.X.(*js.LiteralExpr); ok && lit.TokenType == js.DecimalToken {
-			if data := lit.Data; len(data) != 1 || data[0] != '0' { // TODO: what about decimal with dot?
+			if data := lit.Data; len(data) != 1 || data[0] != '0' {
 				return true
 			}
 		}
@@ -365,6 +366,7 @@ func (m *jsMinifier) isUndefined(i js.IExpr) bool {
 	return false
 }
 
+// returns whether truthy and whether it could be coerced to a boolean (i.e. when returns (false,true) this means it is falsy)
 func (m *jsMinifier) isTruthy(i js.IExpr) (bool, bool) {
 	if falsy, ok := m.isFalsy(i); ok {
 		return !falsy, true
@@ -372,6 +374,7 @@ func (m *jsMinifier) isTruthy(i js.IExpr) (bool, bool) {
 	return false, false
 }
 
+// returns whether falsy and whether it could be coerced to a boolean (i.e. when returns (false,true) this means it is truthy)
 func (m *jsMinifier) isFalsy(i js.IExpr) (bool, bool) {
 	negated := false
 	group, isGroup := i.(*js.GroupExpr)
@@ -389,17 +392,24 @@ func (m *jsMinifier) isFalsy(i js.IExpr) (bool, bool) {
 	if lit, ok := i.(*js.LiteralExpr); ok {
 		tt := lit.TokenType
 		d := lit.Data
-		if tt == js.FalseToken || tt == js.NullToken ||
-			tt == js.StringToken && len(d) == 0 ||
-			tt == js.DecimalToken && (len(d) == 1 && d[0] == '0' || len(d) == 2 && d[0] == '.' && d[1] == '0') ||
-			(tt == js.BinaryToken || tt == js.OctalToken || tt == js.HexadecimalToken) && len(d) == 3 && d[2] == '0' ||
-			tt == js.BigIntToken && len(d) == 2 && d[0] == '0' {
-			return !negated, true // false
-		} else if tt == js.TrueToken || tt == js.StringToken || tt == js.DecimalToken || tt == js.BinaryToken || tt == js.OctalToken || tt == js.HexadecimalToken || tt == js.BigIntToken {
-			return negated, true // true
+		if tt == js.FalseToken || tt == js.NullToken || tt == js.StringToken && len(lit.Data) == 0 {
+			return !negated, true // falsy
+		} else if tt == js.TrueToken || tt == js.StringToken {
+			return negated, true // truthy
+		} else if tt == js.DecimalToken || tt == js.BinaryToken || tt == js.OctalToken || tt == js.HexadecimalToken || tt == js.BigIntToken {
+			for _, c := range d {
+				if c == 'e' || c == 'E' || c == 'n' {
+					break
+				} else if c != '0' && c != '.' && c != 'x' && c != 'X' && c != 'b' && c != 'B' && c != 'o' && c != 'O' {
+					return negated, true // truthy
+				}
+			}
+			return !negated, true // falsy
 		}
 	} else if m.isUndefined(i) {
-		return !negated, true // false
+		return !negated, true // falsy
+	} else if v, ok := i.(*js.Var); ok && bytes.Equal(v.Name(), nanBytes) {
+		return !negated, true // falsy
 	}
 	return false, false // unknown
 }
