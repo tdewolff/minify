@@ -8,22 +8,6 @@ import (
 	"github.com/tdewolff/parse/v2/js"
 )
 
-// common globals in JS up to 5 characters (we don't expect to rename variables to anything beyond 5 characters)
-var globals = []string{
-	"NaN",
-	"eval",
-	"isNaN",
-	"Error",
-	"Math",
-	"Date",
-	"Array",
-	"Map",
-	"Set",
-	"JSON",
-	"Proxy",
-	"Intl",
-}
-
 type renamer struct {
 	ast      *js.AST
 	reserved map[string]struct{}
@@ -31,11 +15,8 @@ type renamer struct {
 }
 
 func newRenamer(ast *js.AST, undeclared js.VarArray, rename bool) *renamer {
-	reserved := make(map[string]struct{}, len(js.Keywords)+len(globals))
+	reserved := make(map[string]struct{}, len(js.Keywords))
 	for name, _ := range js.Keywords {
-		reserved[name] = struct{}{}
-	}
-	for _, name := range globals {
 		reserved[name] = struct{}{}
 	}
 	return &renamer{
@@ -158,7 +139,7 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) *js.VarDecl {
 	// Except for the first var declaration, all others are converted to expressions. This is possible because an ArrayBindingPattern and ObjectBindingPattern can be converted to an ArrayLiteral or ObjectLiteral respectively, as they are supersets of the BindingPatterns.
 	parentVarsHoisted := m.varsHoisted
 	m.varsHoisted = nil
-	if 1 < body.Scope.NVarDecls {
+	if 1 < body.Scope.NumVarDecls {
 		iDefines := 0 // position past last variable definition in declaration
 		var decl *js.VarDecl
 		if varDecl, ok := body.List[0].(*js.VarDecl); ok && varDecl.TokenType == js.VarToken {
