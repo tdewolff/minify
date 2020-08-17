@@ -1,9 +1,6 @@
 // Package js minifies ECMAScript5.1 following the specifications at http://www.ecma-international.org/ecma-262/5.1/.
 package js
 
-// TODO: remove dead code (if(false) or after return/throw/break/continue), difficulty with var/func decls
-// TODO: don't minify variable names when code has with statement or eval call
-
 import (
 	"bytes"
 	"io"
@@ -480,6 +477,9 @@ func (m *jsMinifier) minifyVarDecl(decl *js.VarDecl, onlyDefines bool) {
 }
 
 func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
+	parentRename := m.renamer.rename
+	m.renamer.rename = !decl.Body.Scope.HasWithOrEval && !m.o.KeepVarNames
+
 	if decl.Async {
 		m.write(asyncSpaceBytes)
 	}
@@ -505,9 +505,14 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 	decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
 	m.minifyBlockStmt(decl.Body)
 	m.varsHoisted = parentVarsHoisted
+
+	m.renamer.rename = parentRename
 }
 
 func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
+	parentRename := m.renamer.rename
+	m.renamer.rename = !decl.Body.Scope.HasWithOrEval && !m.o.KeepVarNames
+
 	if decl.Static {
 		m.write(staticBytes)
 		m.writeSpaceBeforeIdent()
@@ -536,9 +541,14 @@ func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
 	decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
 	m.minifyBlockStmt(decl.Body)
 	m.varsHoisted = parentVarsHoisted
+
+	m.renamer.rename = parentRename
 }
 
 func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
+	parentRename := m.renamer.rename
+	m.renamer.rename = !decl.Body.Scope.HasWithOrEval && !m.o.KeepVarNames
+
 	m.renamer.renameScope(decl.Body.Scope)
 	if decl.Async {
 		m.write(asyncBytes)
@@ -592,6 +602,8 @@ func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
 		m.minifyBlockStmt(decl.Body)
 		m.varsHoisted = parentVarsHoisted
 	}
+
+	m.renamer.rename = parentRename
 }
 
 func (m *jsMinifier) minifyClassDecl(decl js.ClassDecl) {
