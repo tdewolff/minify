@@ -434,13 +434,10 @@ func TestJS(t *testing.T) {
 		{"a=-(b=5)", "a=-(b=5)"},
 
 		// expressions
-		//{`"string" + "string"`, `"stringstring"`},
-		//{`-0`, `0`},
-
-		// other
+		{`"string" + "string"`, `"stringstring"`},
+		{`"string" + "string" + "string"`, `"stringstringstring"`},
 		//{`a=a+5`, `a+=5`},
 		//{`a=5+a`, `a+=5`},
-		{`async function g(){await x+y}`, `async function g(){await x+y}`},
 		{`a?true:false`, `!!a`},
 		{`a==b?true:false`, `a==b`},
 		{`!a?true:false`, `!a`},
@@ -482,6 +479,9 @@ func TestJS(t *testing.T) {
 		{`!42`, `!1`},
 		{`!"str"`, `!1`},
 		{`!/regexp/`, `!1`},
+
+		// other
+		{`async function g(){await x+y}`, `async function g(){await x+y}`},
 		{`a={"property": val1, "2": val2, "3name": val3};`, `a={property:val1,2:val2,"3name":val3}`},
 		{`a=obj["if"]`, `a=obj.if`},
 		{`a=obj["2"]`, `a=obj[2]`},
