@@ -333,11 +333,8 @@ func (m *jsMinifier) isTrue(i js.IExpr) bool {
 	if lit, ok := i.(*js.LiteralExpr); ok && lit.TokenType == js.TrueToken {
 		return true
 	} else if unary, ok := i.(*js.UnaryExpr); ok && unary.Op == js.NotToken {
-		if lit, ok := unary.X.(*js.LiteralExpr); ok && lit.TokenType == js.DecimalToken {
-			if data := lit.Data; len(data) == 1 && data[0] == '0' {
-				return true
-			}
-		}
+		ret, _ := m.isFalsy(unary.X)
+		return ret
 	}
 	return false
 }
@@ -346,11 +343,8 @@ func (m *jsMinifier) isFalse(i js.IExpr) bool {
 	if lit, ok := i.(*js.LiteralExpr); ok {
 		return lit.TokenType == js.FalseToken
 	} else if unary, ok := i.(*js.UnaryExpr); ok && unary.Op == js.NotToken {
-		if lit, ok := unary.X.(*js.LiteralExpr); ok && lit.TokenType == js.DecimalToken {
-			if data := lit.Data; len(data) != 1 || data[0] != '0' {
-				return true
-			}
-		}
+		ret, _ := m.isTruthy(unary.X)
+		return ret
 	}
 	return false
 }
