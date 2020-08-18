@@ -478,7 +478,7 @@ func (m *jsMinifier) minifyVarDecl(decl *js.VarDecl, onlyDefines bool) {
 
 func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 	parentRename := m.renamer.rename
-	m.renamer.rename = !decl.Body.Scope.HasWithOrEval && !m.o.KeepVarNames
+	m.renamer.rename = !decl.Body.Scope.HasWith && !m.o.KeepVarNames
 
 	if decl.Async {
 		m.write(asyncSpaceBytes)
@@ -511,7 +511,7 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 
 func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
 	parentRename := m.renamer.rename
-	m.renamer.rename = !decl.Body.Scope.HasWithOrEval && !m.o.KeepVarNames
+	m.renamer.rename = !decl.Body.Scope.HasWith && !m.o.KeepVarNames
 
 	if decl.Static {
 		m.write(staticBytes)
@@ -547,7 +547,7 @@ func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
 
 func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
 	parentRename := m.renamer.rename
-	m.renamer.rename = !decl.Body.Scope.HasWithOrEval && !m.o.KeepVarNames
+	m.renamer.rename = !decl.Body.Scope.HasWith && !m.o.KeepVarNames
 
 	m.renamer.renameScope(decl.Body.Scope)
 	if decl.Async {
@@ -723,7 +723,7 @@ func (m *jsMinifier) minifyBinaryExpr(expr *js.BinaryExpr) bool {
 				n += len(lit.Data) - 2
 				strings = append(strings, lit)
 				break
-			} else if left, ok = expr.X.(*js.BinaryExpr); ok && left.Op == js.AddToken {
+			} else if left, ok = left.X.(*js.BinaryExpr); ok && left.Op == js.AddToken {
 				if lit, ok := left.Y.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken {
 					n += len(lit.Data) - 2
 					strings = append(strings, lit)
