@@ -231,9 +231,19 @@ func (c *cssMinifier) minifyGrammar() {
 			c.minifyDeclaration(data, c.p.Values())
 			semicolonQueued = true
 		case css.CustomPropertyGrammar:
-			c.w.Write(data)
-			c.w.Write(colonBytes)
-			c.w.Write(c.p.Values()[0].Data)
+			if _, err := c.w.Write(data); err != nil {
+				return err
+			}
+			if _, err := c.w.Write(colonBytes); err != nil {
+				return err
+			}
+			value := parse.TrimWhitespace(c.p.Values()[0].Data)
+			if len(c.p.Values()[0].Data) != 0 && len(value) == 0 {
+				value = spaceBytes
+			}
+			if _, err := c.w.Write(value); err != nil {
+				return err
+			}
 			semicolonQueued = true
 		case css.CommentGrammar:
 			if len(data) > 5 && data[1] == '*' && data[2] == '!' {

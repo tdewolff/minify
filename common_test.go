@@ -40,12 +40,12 @@ func TestDataURI(t *testing.T) {
 		{"data:TEXT/PLAIN;CHARSET=US-ASCII,text", "data:,text"},
 		{"data:text/plain;charset=us-asciiz,text", "data:;charset=us-asciiz,text"},
 		{"data:;base64,dGV4dA==", "data:,text"},
-		{"data:text/svg+xml;base64,PT09PT09", "data:text/svg+xml;base64,PT09PT09"},
+		{"data:text/svg+xml;base64,IyMjIyMj", "data:text/svg+xml;base64,IyMjIyMj"},
 		{"data:text/xml;version=2.0,content", "data:text/xml;version=2.0,content"},
 		{"data:text/xml; version = 2.0,content", "data:text/xml;version=2.0,content"},
-		{"data:,%3D%3D%3D%3D%3D", "data:,%3D%3D%3D%3D%3D"},
-		{"data:,%3D%3D%3D%3D%3D%3D", "data:;base64,PT09PT09"},
-		{"data:text/x,<?xx?>", "data:text/x,%3C%3Fxx%3F%3E"},
+		{"data:,%23%23%23%23%23", "data:,%23%23%23%23%23"},
+		{"data:,%23%23%23%23%23%23", "data:;base64,IyMjIyMj"},
+		{"data:text/x,<?xx?>", "data:text/x,%3C?xx?%3E"},
 		{"data:text/other,\"<\u2318", "data:text/other,%22%3C%E2%8C%98"},
 		{"data:text/other,\"<\u2318>", "data:text/other;base64,IjzijJg+"},
 		{`data:text/svg+xml,%3Csvg height="100" width="100"><circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red" /></svg>`, `data:text/svg+xml,%3Csvg height="100" width="100"><circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red" /></svg>`},
@@ -70,6 +70,7 @@ func TestDecimal(t *testing.T) {
 		number   string
 		expected string
 	}{
+		{"", ""},
 		{"0", "0"},
 		{".0", "0"},
 		{"1.0", "1"},
@@ -149,6 +150,7 @@ func TestNumber(t *testing.T) {
 		number   string
 		expected string
 	}{
+		{"", ""},
 		{"0", "0"},
 		{".0", "0"},
 		{"1.0", "1"},

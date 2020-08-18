@@ -113,7 +113,7 @@ func (p *PathData) ShortenPathData(b []byte) []byte {
 }
 
 // copyInstruction copies pathdata of a single command, but may be comprised of multiple sets for that command. For example, L takes two coordinates, but this function may process 2*N coordinates. Lowercase commands are relative commands, where the coordinates are relative to the previous point. Uppercase commands have absolute coordinates.
-// We update p.x and p.y (the current coordinates) according to the commands given. For each set of coordinates we call shortenCurPosInstruction and shortenAltPosInstruction. The former just minifies the coordinates, the latter will inverse the lowercase/uppercase of the command, and see if the coordinates get smaller due to that. The shortest is chosen and copied to `b`.
+// We update p.x and p.y (the current coordinates) according to the commands given. For each set of coordinates we call shortenCurPosInstruction and shortenAltPosInstruction. The former just minifies the coordinates, the latter will inverse the lowercase/uppercase of the command, and see if the coordinates get smaller due to that. The shortest is chosen and copied to b, i.e. b is the destination and is not read from.
 func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 	n := len(p.coords)
 	if n == 0 {
@@ -217,8 +217,8 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 
 			// if control points overlap begin/end points, this is a straight line
 			// even though if the control points would be along the straight line, we won't minify that as the control points influence the speed along the curve (important for dashes for example)
-			// only change to a lines if we are sure no 'S' or 's' follows
-			if (cmd == 'C' || cmd == 'c' || i+di >= n) && (cp1x == p.x && cp1y == p.y || cp1x == ax && cp1y == ay) && (cp2x == p.x && cp2y == p.y || cp2x == ax && cp2y == ay) {
+			// only change to a lines if we start with s or S and none follow
+			if (cmd == 'C' || cmd == 'c' || i == 0 && i+di >= n) && (cp1x == p.x && cp1y == p.y || cp1x == ax && cp1y == ay) && (cp2x == p.x && cp2y == p.y || cp2x == ax && cp2y == ay) {
 				if isRelCmd {
 					cmd = 'l'
 				} else {
@@ -262,9 +262,9 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 			}
 
 			// if control point overlaps begin/end points, this is a straight line
-			// even though if the control point would be along the straight line, we won't minify that as the control point influences the speed along the curve (important for dashes for example)
-			// only change to a lines if we are sure no 'T' or 't' follows
-			if (cmd == 'Q' || cmd == 'q' || i+di >= n) && (cpx == p.x && cpy == p.y || cpx == ax && cpy == ay) {
+			// even if the control point would be along the straight line, we won't minify that as the control point influences the speed along the curve (important for dashes for example)
+			// only change to line if we start with t or T and none follow
+			if (cmd == 'Q' || cmd == 'q' || i == 0 && i+di >= n) && (cpx == p.x && cpy == p.y || cpx == ax && cpy == ay) {
 				if isRelCmd {
 					cmd = 'l'
 				} else {

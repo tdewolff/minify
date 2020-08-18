@@ -12,13 +12,14 @@ Run the following command
     mkdir $HOME/src
     cd $HOME/src
     git clone https://github.com/tdewolff/minify.git
-    cd minify/cmd/minify
-    ./install.sh
+    cd minify
+    make install
 
 and the `minify` command will be in `$GOPATH/bin` or `$HOME/go/bin`.
 
-You can enable bash tab completion by executing
+If you do not have `make`, instead run the following lines to install `minify` and enable bash tab completion:
 
+    go install ./cmd/minify
     source minify_bash_tab_completion
 
 ### Arch Linux
@@ -61,6 +62,7 @@ sudo apt-get install minify
 
     Options:
       -a, --all                              Minify all files, including hidden files and files in hidden directories
+          --cpuprofile string                Export CPU profile
           --css-precision int                Number of significant digits to preserve in numbers, 0 is all (default 0)
       -h, --help                             Show usage
           --html-keep-conditional-comments   Preserve all IE conditional comments
@@ -69,8 +71,10 @@ sudo apt-get install minify
           --html-keep-end-tags               Preserve all end tags
           --html-keep-quotes                 Preserve quotes around attribute values
           --html-keep-whitespace             Preserve whitespace characters but still collapse multiple into one
+          --json-precision int               Number of significant digits to preserve in numbers, 0 is all (default 0)
       -l, --list                             List all accepted filetypes
           --match string                     Filename pattern matching using regular expressions
+          --memprofile string                Export memory profile
           --mime string                      Mimetype (eg. text/css), optional for input filenames, has precedence over -type
       -o, --output string                    Output file or directory (must have trailing slash), leave blank to use stdout
       -r, --recursive                        Recursively minify directories

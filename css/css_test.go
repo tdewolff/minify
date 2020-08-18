@@ -302,8 +302,11 @@ func TestCSSInline(t *testing.T) {
 		{"margin:calc(10px) calc(20px)", "margin:calc(10px)calc(20px)"},
 		{"border-left:0 none", "border-left:0"},
 		{"--custom-variable:0px;", "--custom-variable:0px"},
-		{"--foo: if(x > 5) this.width = 10", "--foo: if(x > 5) this.width = 10"},
-		{"--foo: ;", "--foo: "},
+		{"--foo: 0px ;", "--foo:0px"},
+		{"--foo: if(x > 5) this.width = 10", "--foo:if(x > 5) this.width = 10"},
+		{"--foo: ;", "--foo: "},               // whitespace value
+		{"--foo:;", "--foo:"},                 // empty value
+		{"--foo: initial ;", "--foo:initial"}, // invalid value, serializes to empty
 		{"color=blue;", "color=blue"},
 		{"x: white , white", "x:white,white"},
 

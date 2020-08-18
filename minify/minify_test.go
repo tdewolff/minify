@@ -25,7 +25,7 @@ func TestMin(t *testing.T) {
 
 	json, err := JSON(`{"key" : 5.00}`)
 	test.Error(t, err)
-	test.String(t, json, `{"key":5.00}`)
+	test.String(t, json, `{"key":5}`)
 
 	xml, err := XML(`<note> text </note>`)
 	test.Error(t, err)

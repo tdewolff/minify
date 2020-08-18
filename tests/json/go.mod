@@ -2,9 +2,7 @@ module github.com/tdewolff/fuzz/minify/json
 
 go 1.13
 
-replace github.com/tdewolff/minify/v2 => ../../../minify
-
 require (
-	github.com/dvyukov/go-fuzz v0.0.0-20191022152526-8cb203812681 // indirect
-	github.com/tdewolff/minify/v2 v2.5.2
+	github.com/dvyukov/go-fuzz v0.0.0-20200318091601-be3528f3a813 // indirect
+	github.com/tdewolff/minify/v2 v2.7.6
 )
