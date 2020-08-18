@@ -5,13 +5,13 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/tdewolff/minify/v2/min"
+	"github.com/tdewolff/minify/v2/minify"
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/buffer"
 )
 
 func benchmark(b *testing.B, mediatype string, sample string) {
-	m := min.Default
+	m := minify.Default
 	buf, err := ioutil.ReadFile(sample)
 	if err != nil {
 		panic(err)

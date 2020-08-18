@@ -70,6 +70,6 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				w.Write(minusZeroBytes)
 			}
 		}
-		w.Write(text); err != nil {
+		w.Write(text)
 	}
 }
