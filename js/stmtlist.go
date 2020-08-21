@@ -129,23 +129,24 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 			} else if throwStmt, ok := list[i+1].(*js.ThrowStmt); ok {
 				throwStmt.Value = &js.BinaryExpr{js.CommaToken, left.Value, throwStmt.Value}
 				j--
-			} else if forStmt, ok := list[i+1].(*js.ForStmt); ok {
-				if forStmt.Init == nil {
-					forStmt.Init = left.Value
-					j--
-				} else if _, ok := forStmt.Init.(*js.VarDecl); !ok {
-					forStmt.Init = &js.BinaryExpr{js.CommaToken, left.Value, forStmt.Init}
-					j--
-				}
-			} else if whileStmt, ok := list[i+1].(*js.WhileStmt); ok {
-				var body js.BlockStmt
-				if blockStmt, ok := whileStmt.Body.(*js.BlockStmt); ok {
-					body = *blockStmt
-				} else {
-					body.List = []js.IStmt{whileStmt.Body}
-				}
-				list[i+1] = &js.ForStmt{left.Value, whileStmt.Cond, nil, body}
-				j--
+				// TODO: only merge statements that don't have 'in' or 'of' keywords (slow to check?)
+				//} else if forStmt, ok := list[i+1].(*js.ForStmt); ok {
+				//	if forStmt.Init == nil {
+				//		forStmt.Init = left.Value
+				//		j--
+				//	} else if _, ok := forStmt.Init.(*js.VarDecl); !ok {
+				//		forStmt.Init = &js.BinaryExpr{js.CommaToken, left.Value, forStmt.Init}
+				//		j--
+				//	}
+				//} else if whileStmt, ok := list[i+1].(*js.WhileStmt); ok {
+				//	var body js.BlockStmt
+				//	if blockStmt, ok := whileStmt.Body.(*js.BlockStmt); ok {
+				//		body = *blockStmt
+				//	} else {
+				//		body.List = []js.IStmt{whileStmt.Body}
+				//	}
+				//	list[i+1] = &js.ForStmt{left.Value, whileStmt.Cond, nil, body}
+				//	j--
 			} else if switchStmt, ok := list[i+1].(*js.SwitchStmt); ok {
 				switchStmt.Init = &js.BinaryExpr{js.CommaToken, left.Value, switchStmt.Init}
 				j--
