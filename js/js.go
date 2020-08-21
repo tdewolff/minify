@@ -893,7 +893,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		if last := m.prev[len(m.prev)-1]; '0' <= last && last <= '9' {
 			isInteger := true
 			for _, c := range m.prev[:len(m.prev)-1] {
-				if c == '.' || c == 'e' || c == 'E' {
+				if c < '0' || '9' < c {
 					isInteger = false
 					break
 				}

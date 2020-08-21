@@ -513,6 +513,7 @@ func TestJS(t *testing.T) {
 		{`1..a`, `1..a`},
 		{`1.5.a`, `1.5.a`},
 		{`1e4.a`, `1e4.a`},
+		{`t0.a`, `t0.a`},
 		{"var a=/\\s?auto?\\s?/i\nvar b", "var a=/\\s?auto?\\s?/i,b"}, // #14
 		{"false`string`", "(!1)`string`"},                             // #181
 		{"x / /\\d+/.exec(s)[0]", "x/ /\\d+/.exec(s)[0]"},             // #183
