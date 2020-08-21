@@ -510,14 +510,17 @@ func TestJS(t *testing.T) {
 
 		// edge-cases
 		{`let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`, `let o=null;try{o=o?.a.b||"FAIL"}catch(x){}console.log(o||"PASS")`},
+		{`1..a`, `1..a`},
+		{`1.5.a`, `1.5.a`},
+		{`1e4.a`, `1e4.a`},
 		{"var a=/\\s?auto?\\s?/i\nvar b", "var a=/\\s?auto?\\s?/i,b"}, // #14
-		{"false`string`", "(!1)`string`"},                 // #181
-		{"x / /\\d+/.exec(s)[0]", "x/ /\\d+/.exec(s)[0]"}, // #183
-		{`({"":a})`, `({"":a})`},                          // go-fuzz
-		{`a[""]`, `a[""]`},                                // go-fuzz
-		{`function f(){;}`, `function f(){}`},             // go-fuzz
-		{`0xeb00000000`, `0xeb00000000`},                  // go-fuzz
-		{`export{a,}`, `export{a,}`},                      // go-fuzz
+		{"false`string`", "(!1)`string`"},                             // #181
+		{"x / /\\d+/.exec(s)[0]", "x/ /\\d+/.exec(s)[0]"},             // #183
+		{`({"":a})`, `({"":a})`},                                      // go-fuzz
+		{`a[""]`, `a[""]`},                                            // go-fuzz
+		{`function f(){;}`, `function f(){}`},                         // go-fuzz
+		{`0xeb00000000`, `0xeb00000000`},                              // go-fuzz
+		{`export{a,}`, `export{a,}`},                                  // go-fuzz
 	}
 
 	m := minify.New()

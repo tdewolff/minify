@@ -890,6 +890,19 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		} else {
 			m.minifyExpr(expr.X, js.OpMember)
 		}
+		if last := m.prev[len(m.prev)-1]; '0' <= last && last <= '9' {
+			isInteger := true
+			for _, c := range m.prev[:len(m.prev)-1] {
+				if c == '.' || c == 'e' || c == 'E' {
+					isInteger = false
+					break
+				}
+			}
+			if isInteger {
+				// prevent previous integer
+				m.write(dotBytes)
+			}
+		}
 		m.write(dotBytes)
 		m.write(expr.Y.Data)
 	case *js.GroupExpr:
