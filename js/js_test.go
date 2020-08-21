@@ -434,8 +434,9 @@ func TestJS(t *testing.T) {
 		{"a=-(b=5)", "a=-(b=5)"},
 
 		// expressions
-		{`"string" + "string"`, `"stringstring"`},
-		{`"string" + "string" + "string"`, `"stringstringstring"`},
+		{`"str1ng" + "str2ng"`, `"str1ngstr2ng"`},
+		{`"str1ng" + "str2ng" + "str3ng"`, `"str1ngstr2ngstr3ng"`},
+		{`"padding" + this`, `"padding"+this`},
 		//{`a=a+5`, `a+=5`},
 		//{`a=5+a`, `a+=5`},
 		{`a?true:false`, `!!a`},

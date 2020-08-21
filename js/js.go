@@ -712,7 +712,7 @@ func (m *jsMinifier) minifyBinding(ibinding js.IBinding) {
 }
 
 func (m *jsMinifier) minifyBinaryExpr(expr *js.BinaryExpr) bool {
-	if lit, ok := expr.Y.(*js.LiteralExpr); ok && expr.Op == js.AddToken {
+	if lit, ok := expr.Y.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken && expr.Op == js.AddToken {
 		// merge strings that are added together
 		n := len(lit.Data) - 2
 		strings := []*js.LiteralExpr{lit}
@@ -734,11 +734,11 @@ func (m *jsMinifier) minifyBinaryExpr(expr *js.BinaryExpr) bool {
 		}
 
 		b := make([]byte, 0, n+2)
-		b = append(b, strings[0].Data[:len(strings[0].Data)-1]...)
+		b = append(b, strings[len(strings)-1].Data[:len(strings[len(strings)-1].Data)-1]...)
 		for i := len(strings) - 2; 0 < i; i-- {
 			b = append(b, strings[i].Data[1:len(strings[i].Data)-1]...)
 		}
-		b = append(b, strings[len(strings)-1].Data[1:]...)
+		b = append(b, strings[0].Data[1:]...)
 		m.write(minifyString(b))
 		return true
 	}
