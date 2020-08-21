@@ -186,7 +186,6 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.write(whileOpenBytes)
 		m.minifyExpr(stmt.Cond, js.OpExpr)
 		m.write(closeParenBytes)
-		m.requireSemicolon()
 	case *js.WhileStmt:
 		m.write(whileOpenBytes)
 		m.minifyExpr(stmt.Cond, js.OpExpr)

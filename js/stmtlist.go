@@ -1,6 +1,8 @@
 package js
 
-import "github.com/tdewolff/parse/v2/js"
+import (
+	"github.com/tdewolff/parse/v2/js"
+)
 
 func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 	// convert if/else into expression statement, and optimize blocks
@@ -83,6 +85,7 @@ func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 }
 
 func (m *jsMinifier) flattenStmt(list []js.IStmt, i int) []js.IStmt {
+	// TODO: can be optimized by including in optimizeStmtList?
 	if ifStmt, ok := list[i].(*js.IfStmt); ok && !m.isEmptyStmt(ifStmt.Else) && isFlowStmt(lastStmt(ifStmt.Body)) {
 		// if body ends in flow statement (return, throw, break, continue), so we can remove the else statement and put its body in the current scope
 		if blockStmt, ok := ifStmt.Else.(*js.BlockStmt); ok {
@@ -107,7 +110,7 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 	} else {
 		list = m.flattenStmt(list, 0)
 	}
-	for i, _ := range list[:len(list)-1] {
+	for i := 0; i < len(list)-1; i++ {
 		// probe at every i allowing one lookahead to i+1, write to position j <= i
 		j++
 		list[i+1] = m.optimizeStmt(list[i+1])

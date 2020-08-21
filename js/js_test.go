@@ -105,7 +105,7 @@ func TestJS(t *testing.T) {
 		{`while(a < 10){while(b);c}`, `while(a<10){while(b);c}`},
 		{`do {a} while(a < 10)`, `do a;while(a<10)`},
 		{`do [a]=5; while(a < 10)`, `do[a]=5;while(a<10)`},
-		{`do [a]=5; while(a < 10);return a`, `do[a]=5;while(a<10);return a`},
+		{`do [a]=5; while(a < 10);return a`, `do[a]=5;while(a<10)return a`},
 		{`throw a`, `throw a`},
 		{`throw [a]`, `throw[a]`},
 		{`try {a} catch {b}`, `try{a}catch{b}`},
@@ -228,6 +228,9 @@ func TestJS(t *testing.T) {
 		{`if(a){return b}else{while(c);}`, `if(a)return b;while(c);`},
 		{`if(a){return b}else{while(c);d}`, `if(a)return b;while(c);d`},
 		{`if(!a){while(b);c}`, `if(!a){while(b);c}`},
+		{`while(a){if(b)continue;if(c)continue;else d}`, `while(a){if(b)continue;if(c)continue;d}`},
+		//{`while(a)if(b)continue;else c`, `while(a){if(b)continue;c}`},
+		{`while(a){if(b)continue;else c}`, `while(a){if(b)continue;c}`},
 
 		// var declarations
 		{`var a;var b`, `var a,b`},
