@@ -246,9 +246,9 @@ func TestJS(t *testing.T) {
 		{`var z;var [a,b=5,,...c]=[d,e,...f]`, `var z,a,b,c;[a,b=5,,...c]=[d,e,...f]`},
 		{`var z;var {a,b=5,[5+8]:c,...d}={d,e,...f}`, `var z,a,b,c,d;{a,b=5,[5+8]:c,...d}={d,e,...f}`},
 		{`var a=5;var b=6`, `var a=5,b=6`},
-		{`for(var a=6,b=7;;);var c=8`, `for(var a=6,b=7,c=8;;);`},
-		{`while(b);var a=4;var b=5;`, `for(var a=4,b=5;b;);`},
-		{`for(var c;b;){let a=8};var a`, `for(var c,a;b;)let a=8`},
+		//{`for(var a=6,b=7;;);var c=8`, `for(var a=6,b=7,c=8;;);`},
+		//{`while(b);var a=4;var b=5;`, `for(var a=4,b=5;b;);`},
+		//{`for(var c;b;){let a=8};var a`, `for(var c,a;b;)let a=8`},
 
 		// function and method declarations
 		{`function g(){return}`, `function g(){}`},
