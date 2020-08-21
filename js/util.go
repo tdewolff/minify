@@ -472,10 +472,30 @@ func minifyString(b []byte) []byte {
 	if len(b) < 3 {
 		return b
 	}
+
+	// switch quotes if more optimal
+	singleQuotes := 0
+	doubleQuotes := 0
+	for i := 1; i < len(b)-1; i++ {
+		if b[i] == '\'' {
+			singleQuotes++
+		} else if b[i] == '"' {
+			doubleQuotes++
+		}
+	}
 	quote := b[0]
+	if singleQuotes < doubleQuotes {
+		quote = byte('\'')
+	} else if doubleQuotes < singleQuotes {
+		quote = byte('"')
+	}
+	b[0] = quote
+	b[len(b)-1] = quote
+
+	// strip unnecessary escapes
 	j := 0
 	start := 0
-	for i := 1; i+1 < len(b)-1; i++ {
+	for i := 1; i < len(b)-1; i++ {
 		if c := b[i]; c == '\\' {
 			c = b[i+1]
 			if c == '0' && (i+2 == len(b)-1 || b[i+2] < '0' || '7' < b[i+2]) || c == '\\' || c == quote || c == 'n' || c == 'r' || c == 'u' {
@@ -553,6 +573,19 @@ func minifyString(b []byte) []byte {
 			}
 			start = i + n
 			i += n - 1
+		} else if c == quote {
+			// may not be escaped properly when changing quotes
+			if j < start {
+				// avoid append
+				j += copy(b[j:], b[start:i])
+				b[j] = '\\'
+				j++
+				start = i
+			} else {
+				b = append(append(b[:i], '\\'), b[i:]...)
+				i++
+				b[i] = quote // was overwritten above
+			}
 		}
 	}
 	if start != 0 {
