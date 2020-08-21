@@ -127,6 +127,14 @@ func TestJS(t *testing.T) {
 		{`"string\000\12\015\042\47\411string"`, `"string\0\n\r\"'!1string"`},
 		{"'string\\n\\rstring'", "'string\\n\\rstring'"},
 		{"'string\\\r\nstring\\\nstring\\\rstring\\\u2028string\\\u2029string'", "'stringstringstringstringstringstring'"},
+		{`"str1ng" + "str2ng"`, `"str1ngstr2ng"`},
+		{`"str1ng" + "str2ng" + "str3ng"`, `"str1ngstr2ngstr3ng"`},
+		{`"padding" + this`, `"padding"+this`},
+		{`"\""`, `'"'`},
+		{`'\'""'`, `'\'""'`},
+		{`"\"\"a'"`, `'""a\''`},
+		{`"'" + '"'`, `"'\""`},
+		{`'"' + "'"`, `'"\''`},
 
 		// rename true, false, undefined, Infinity
 		{`x=true`, `x=!0`},
@@ -435,9 +443,6 @@ func TestJS(t *testing.T) {
 		{"f({},(a=5,b))", "f({},(a=5,b))"},
 
 		// expressions
-		{`"str1ng" + "str2ng"`, `"str1ngstr2ng"`},
-		{`"str1ng" + "str2ng" + "str3ng"`, `"str1ngstr2ngstr3ng"`},
-		{`"padding" + this`, `"padding"+this`},
 		//{`a=a+5`, `a+=5`},
 		//{`a=5+a`, `a+=5`},
 		{`a?true:false`, `!!a`},

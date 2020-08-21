@@ -739,6 +739,8 @@ func (m *jsMinifier) minifyBinaryExpr(expr *js.BinaryExpr) bool {
 			b = append(b, strings[i].Data[1:len(strings[i].Data)-1]...)
 		}
 		b = append(b, strings[0].Data[1:]...)
+		b[len(b)-1] = b[0]
+		// unescaped quotes will be repaired in minifyString
 		m.write(minifyString(b))
 		return true
 	}
