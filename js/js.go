@@ -439,14 +439,14 @@ func (m *jsMinifier) minifyArguments(args js.Arguments) {
 		if i != 0 {
 			m.write(commaBytes)
 		}
-		m.minifyExpr(item, js.OpExpr)
+		m.minifyExpr(item, js.OpAssign)
 	}
 	if args.Rest != nil {
 		if len(args.List) != 0 {
 			m.write(commaBytes)
 		}
 		m.write(ellipsisBytes)
-		m.minifyExpr(args.Rest, js.OpExpr)
+		m.minifyExpr(args.Rest, js.OpAssign)
 	}
 	m.write(closeParenBytes)
 }

@@ -432,6 +432,7 @@ func TestJS(t *testing.T) {
 		{"(`tmpl`)", "`tmpl`"},
 		{"(a`tmpl`)", "a`tmpl`"},
 		{"a=-(b=5)", "a=-(b=5)"},
+		{"f({},(a=5,b))", "f({},(a=5,b))"},
 
 		// expressions
 		{`"str1ng" + "str2ng"`, `"str1ngstr2ng"`},
