@@ -177,6 +177,7 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) *js.VarDecl {
 							continue DeclaredLoop
 						}
 					}
+					v.Uses++ // might be inaccurate as we remove non-defining variable declarations later on
 					decl.List = append(decl.List, js.BindingElement{v, nil})
 				}
 			}
@@ -184,6 +185,7 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) *js.VarDecl {
 			decl = &js.VarDecl{js.VarToken, nil}
 			for _, v := range body.Scope.Declared {
 				if v.Decl == js.VariableDecl {
+					v.Uses++ // might be inaccurate as we remove non-defining variable declarations later on
 					decl.List = append(decl.List, js.BindingElement{v, nil})
 				}
 			}

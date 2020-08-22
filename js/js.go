@@ -478,6 +478,7 @@ func (m *jsMinifier) minifyVarDecl(decl *js.VarDecl, onlyDefines bool) {
 func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 	parentRename := m.renamer.rename
 	m.renamer.rename = !decl.Body.Scope.HasWith && !m.o.KeepVarNames
+	parentVarsHoisted := m.hoistVars(&decl.Body)
 
 	if decl.Async {
 		m.write(asyncSpaceBytes)
@@ -500,17 +501,17 @@ func (m *jsMinifier) minifyFuncDecl(decl js.FuncDecl, inExpr bool) {
 	}
 	m.minifyParams(decl.Params)
 
-	parentVarsHoisted := m.hoistVars(&decl.Body)
 	decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
 	m.minifyBlockStmt(decl.Body)
-	m.varsHoisted = parentVarsHoisted
 
+	m.varsHoisted = parentVarsHoisted
 	m.renamer.rename = parentRename
 }
 
 func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
 	parentRename := m.renamer.rename
 	m.renamer.rename = !decl.Body.Scope.HasWith && !m.o.KeepVarNames
+	parentVarsHoisted := m.hoistVars(&decl.Body)
 
 	if decl.Static {
 		m.write(staticBytes)
@@ -536,17 +537,17 @@ func (m *jsMinifier) minifyMethodDecl(decl js.MethodDecl) {
 	m.renamer.renameScope(decl.Body.Scope)
 	m.minifyParams(decl.Params)
 
-	parentVarsHoisted := m.hoistVars(&decl.Body)
 	decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
 	m.minifyBlockStmt(decl.Body)
-	m.varsHoisted = parentVarsHoisted
 
+	m.varsHoisted = parentVarsHoisted
 	m.renamer.rename = parentRename
 }
 
 func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
 	parentRename := m.renamer.rename
 	m.renamer.rename = !decl.Body.Scope.HasWith && !m.o.KeepVarNames
+	parentVarsHoisted := m.hoistVars(&decl.Body)
 
 	m.renamer.renameScope(decl.Body.Scope)
 	if decl.Async {
@@ -596,12 +597,11 @@ func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
 		}
 	}
 	if !removeBraces {
-		parentVarsHoisted := m.hoistVars(&decl.Body)
 		decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
 		m.minifyBlockStmt(decl.Body)
-		m.varsHoisted = parentVarsHoisted
 	}
 
+	m.varsHoisted = parentVarsHoisted
 	m.renamer.rename = parentRename
 }
 

@@ -664,6 +664,7 @@ func minify(mimetype string, t Task) bool {
 		return true
 	}
 
+	// TODO: load file entirely, allocate write buffer, then minify and measure time, and then write out file. That will speed it up
 	r := NewCountingReader(fr)
 	var w *countingWriter
 	if fw == os.Stdout {
