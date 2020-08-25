@@ -458,6 +458,7 @@ func TestJS(t *testing.T) {
 		{"(a`tmpl`)", "a`tmpl`"},
 		{"a=-(b=5)", "a=-(b=5)"},
 		{"f({},(a=5,b))", "f({},(a=5,b))"},
+		{"for(var a=(b in c);;);", "for(var a=(b in c);;);"},
 
 		// expressions
 		//{`a=a+5`, `a+=5`},

@@ -71,6 +71,7 @@ type jsMinifier struct {
 	needsSpace     bool // write a space if next token is an identifier
 	expectStmt     bool // avoid ambiguous syntax such as an expression starting with function
 	groupedStmt    bool // avoid ambiguous syntax by grouping the expression statement
+	inFor          bool
 	spaceBefore    byte
 	varsHoisted    *js.VarDecl // set when variables are hoisted to this declaration
 
@@ -194,11 +195,13 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 	case *js.ForStmt:
 		m.renamer.renameScope(stmt.Body.Scope)
 		m.write(forOpenBytes)
+		m.inFor = true
 		if decl, ok := stmt.Init.(*js.VarDecl); ok {
 			m.minifyVarDecl(decl, false)
 		} else {
 			m.minifyExpr(stmt.Init, js.OpLHS)
 		}
+		m.inFor = false
 		m.write(semicolonBytes)
 		m.minifyExpr(stmt.Cond, js.OpExpr)
 		m.write(semicolonBytes)
@@ -208,11 +211,13 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 	case *js.ForInStmt:
 		m.renamer.renameScope(stmt.Body.Scope)
 		m.write(forOpenBytes)
+		m.inFor = true
 		if decl, ok := stmt.Init.(*js.VarDecl); ok {
 			m.minifyVarDecl(decl, false)
 		} else {
 			m.minifyExpr(stmt.Init, js.OpLHS)
 		}
+		m.inFor = false
 		m.writeSpaceAfterIdent()
 		m.write(inBytes)
 		m.writeSpaceBeforeIdent()
@@ -226,11 +231,13 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		} else {
 			m.write(forOpenBytes)
 		}
+		m.inFor = true
 		if decl, ok := stmt.Init.(*js.VarDecl); ok {
 			m.minifyVarDecl(decl, false)
 		} else {
 			m.minifyExpr(stmt.Init, js.OpLHS)
 		}
+		m.inFor = false
 		m.writeSpaceAfterIdent()
 		m.write(ofBytes)
 		m.writeSpaceBeforeIdent()
@@ -562,7 +569,10 @@ func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
 		}
 		m.minifyBindingElement(decl.Params.List[0])
 	} else {
+		parentInFor := m.inFor
+		m.inFor = false
 		m.minifyParams(decl.Params)
+		m.inFor = parentInFor
 	}
 	m.write(arrowBytes)
 	removeBraces := false
@@ -652,7 +662,10 @@ func (m *jsMinifier) minifyProperty(property js.Property) {
 
 func (m *jsMinifier) minifyBindingElement(element js.BindingElement) {
 	if element.Binding != nil {
+		parentInFor := m.inFor
+		m.inFor = false
 		m.minifyBinding(element.Binding)
+		m.inFor = parentInFor
 		if element.Default != nil {
 			m.write(equalBytes)
 			m.minifyExpr(element.Default, js.OpAssign)
@@ -809,12 +822,21 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				}
 			}
 		}
-		m.minifyExpr(expr.X, precLeft)
 		if expr.Op == js.InstanceofToken || expr.Op == js.InToken {
+			group := expr.Op == js.InToken && m.inFor
+			if group {
+				m.write(openParenBytes)
+			}
+			m.minifyExpr(expr.X, precLeft)
 			m.writeSpaceAfterIdent()
 			m.write(expr.Op.Bytes())
 			m.writeSpaceBeforeIdent()
+			m.minifyExpr(expr.Y, binaryRightPrecMap[expr.Op])
+			if group {
+				m.write(closeParenBytes)
+			}
 		} else {
+			m.minifyExpr(expr.X, precLeft)
 			if expr.Op == js.GtToken && m.prev[len(m.prev)-1] == '-' {
 				m.write(spaceBytes)
 			}
@@ -829,8 +851,8 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				// //  =>  / /
 				m.writeSpaceBefore('/')
 			}
+			m.minifyExpr(expr.Y, binaryRightPrecMap[expr.Op])
 		}
-		m.minifyExpr(expr.Y, binaryRightPrecMap[expr.Op])
 	case *js.UnaryExpr:
 		if expr.Op == js.PostIncrToken || expr.Op == js.PostDecrToken {
 			m.minifyExpr(expr.X, unaryPrecMap[expr.Op])
@@ -911,11 +933,16 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		if prec <= precInside || precInside == js.OpCoalesce && prec == js.OpBitOr {
 			m.minifyExpr(expr.X, prec)
 		} else {
+			parentInFor := m.inFor
+			m.inFor = false
 			m.write(openParenBytes)
 			m.minifyExpr(expr.X, js.OpExpr)
 			m.write(closeParenBytes)
+			m.inFor = parentInFor
 		}
 	case *js.ArrayExpr:
+		parentInFor := m.inFor
+		m.inFor = false
 		m.write(openBracketBytes)
 		for i, item := range expr.List {
 			if i != 0 {
@@ -930,7 +957,10 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			m.write(commaBytes)
 		}
 		m.write(closeBracketBytes)
+		m.inFor = parentInFor
 	case *js.ObjectExpr:
+		parentInFor := m.inFor
+		m.inFor = false
 		expectStmt := m.expectStmt
 		if expectStmt {
 			m.write(openParenBracketBytes)
@@ -948,6 +978,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		} else {
 			m.write(closeBraceBytes)
 		}
+		m.inFor = parentInFor
 	case *js.TemplateExpr:
 		if expr.Tag != nil {
 			if prec < js.OpMember {
@@ -956,11 +987,14 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				m.minifyExpr(expr.Tag, js.OpMember)
 			}
 		}
+		parentInFor := m.inFor
+		m.inFor = false
 		for _, item := range expr.List {
 			m.write(item.Value)
 			m.minifyExpr(item.Expr, js.OpExpr)
 		}
 		m.write(expr.Tail)
+		m.inFor = parentInFor
 	case *js.NewExpr:
 		if expr.Args == nil && js.OpLHS < prec && prec != js.OpNew {
 			m.write(openNewBytes)
@@ -1000,7 +1034,10 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		}
 	case *js.CallExpr:
 		m.minifyExpr(expr.X, js.OpCall)
+		parentInFor := m.inFor
+		m.inFor = false
 		m.minifyArguments(expr.Args)
+		m.inFor = parentInFor
 	case *js.IndexExpr:
 		if m.expectStmt {
 			if v, ok := expr.X.(*js.Var); ok && bytes.Equal(v.Name(), letBytes) {
@@ -1024,9 +1061,12 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				break
 			}
 		}
+		parentInFor := m.inFor
+		m.inFor = false
 		m.write(openBracketBytes)
 		m.minifyExpr(expr.Index, js.OpExpr)
 		m.write(closeBracketBytes)
+		m.inFor = parentInFor
 	case *js.CondExpr:
 		// remove double negative !! in condition, or switch cases for single negative !
 		if unary1, ok := expr.Cond.(*js.UnaryExpr); ok && unary1.Op == js.NotToken {
@@ -1125,7 +1165,10 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		if m.expectStmt {
 			m.write(notBytes)
 		}
+		parentInFor := m.inFor
+		m.inFor = false
 		m.minifyFuncDecl(*expr, true)
+		m.inFor = parentInFor
 	case *js.ArrowFunc:
 		m.minifyArrowFunc(*expr)
 	case *js.MethodDecl:
@@ -1134,6 +1177,9 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		if m.expectStmt {
 			m.write(notBytes)
 		}
+		parentInFor := m.inFor
+		m.inFor = false
 		m.minifyClassDecl(*expr)
+		m.inFor = parentInFor
 	}
 }
