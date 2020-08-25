@@ -232,6 +232,7 @@ func TestJS(t *testing.T) {
 		//{`while(a)if(b)continue;else c`, `while(a){if(b)continue;c}`},
 		{`while(a){if(b)continue;else c}`, `while(a){if(b)continue;c}`},
 		{`if(a){while(b)if(c)5}else{6}`, `if(a){while(b)if(c)5}else 6`},
+		{`if(a){for(;;)if(b)break}else c`, `if(a){for(;;)if(b)break}else c`},
 
 		// var declarations
 		{`var a;var b`, `var a,b`},
