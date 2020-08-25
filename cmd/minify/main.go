@@ -434,7 +434,7 @@ func run() int {
 	if verbose && !watch {
 		Info.Println(time.Since(start), "total")
 	}
-	if fails > 0 {
+	if 0 < fails {
 		return 1
 	}
 	return 0
@@ -463,11 +463,11 @@ func sanitizePath(p string) string {
 }
 
 func validFile(info os.FileInfo) bool {
-	return info.Mode().IsRegular() && len(info.Name()) > 0 && (hidden || info.Name()[0] != '.')
+	return info.Mode().IsRegular() && 0 < len(info.Name()) && (hidden || info.Name()[0] != '.')
 }
 
 func validDir(info os.FileInfo) bool {
-	return info.Mode().IsDir() && len(info.Name()) > 0 && (hidden || info.Name()[0] != '.')
+	return info.Mode().IsDir() && 0 < len(info.Name()) && (hidden || info.Name()[0] != '.')
 }
 
 func fileMatches(filename string) bool {
@@ -476,7 +476,7 @@ func fileMatches(filename string) bool {
 	}
 
 	ext := path.Ext(filename)
-	if len(ext) > 0 {
+	if 0 < len(ext) {
 		ext = ext[1:]
 	}
 	if _, ok := filetypeMime[ext]; !ok {
@@ -587,7 +587,7 @@ func openOutputFile(output string) (*os.File, error) {
 func minify(mimetype string, t Task) bool {
 	if mimetype == "" && !t.sync {
 		for _, src := range t.srcs {
-			if len(path.Ext(src)) > 0 {
+			if 0 < len(path.Ext(src)) {
 				srcMimetype, ok := filetypeMime[path.Ext(src)[1:]]
 				if !ok {
 					Error.Println("cannot infer mimetype from extension in", src)
@@ -664,7 +664,6 @@ func minify(mimetype string, t Task) bool {
 		return true
 	}
 
-	// TODO: load file entirely, allocate write buffer, then minify and measure time, and then write out file. That will speed it up
 	r := NewCountingReader(fr)
 	var w *countingWriter
 	if fw == os.Stdout {
@@ -682,11 +681,11 @@ func minify(mimetype string, t Task) bool {
 	if verbose {
 		dur := time.Since(startTime)
 		speed := "Inf MB"
-		if dur > 0 {
+		if 0 < dur {
 			speed = humanize.Bytes(uint64(float64(r.N) / dur.Seconds()))
 		}
 		ratio := 1.0
-		if r.N > 0 {
+		if 0 < r.N {
 			ratio = float64(w.N) / float64(r.N)
 		}
 
