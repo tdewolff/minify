@@ -60,7 +60,9 @@ func (r *renamer) isReserved(name []byte, undeclared js.VarArray) bool {
 }
 
 func (r *renamer) next(name []byte) []byte {
-	// generate new names for variables where the last character is (a-zA-Z$_) and others are (a-zA-Z). Thus we can have 54 one-character names and 52*54=2808 two-character names. That is sufficient for virtually all input.
+	// Generate new names for variables where the last character is (a-zA-Z$_) and others are (a-zA-Z).
+	// Thus we can have 54 one-character names and 52*54=2808 two-character names for every branch leaf.
+	// That is sufficient for virtually all input.
 	if name[len(name)-1] == 'z' {
 		name[len(name)-1] = 'A'
 	} else if name[len(name)-1] == 'Z' {
