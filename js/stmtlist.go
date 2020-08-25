@@ -38,6 +38,9 @@ func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 			}
 		} else if hasIf && hasElse {
 			ifStmt.Body = m.optimizeStmt(ifStmt.Body)
+			if endsInIf(ifStmt.Body) {
+				ifStmt.Body = &js.BlockStmt{[]js.IStmt{ifStmt.Body}, js.Scope{}}
+			}
 			ifStmt.Else = m.optimizeStmt(ifStmt.Else)
 			XExpr, isExprBody := ifStmt.Body.(*js.ExprStmt)
 			YExpr, isExprElse := ifStmt.Else.(*js.ExprStmt)
@@ -61,6 +64,7 @@ func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 			}
 		}
 	} else if decl, ok := i.(*js.VarDecl); ok && m.varsHoisted != nil && decl != m.varsHoisted {
+		// convert hoisted var declaration to expression of empty (if there are no defines) statement
 		for _, item := range decl.List {
 			if item.Default != nil {
 				return &js.ExprStmt{decl}

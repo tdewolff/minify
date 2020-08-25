@@ -464,6 +464,33 @@ func (m *jsMinifier) minifyBooleanExpr(expr js.IExpr, invert bool, prec js.OpPre
 	}
 }
 
+func endsInIf(istmt js.IStmt) bool {
+	switch stmt := istmt.(type) {
+	case *js.IfStmt:
+		if stmt.Else == nil {
+			return true
+		}
+		return endsInIf(stmt.Else)
+	case *js.BlockStmt:
+		if 0 < len(stmt.List) {
+			return endsInIf(stmt.List[len(stmt.List)-1])
+		}
+	case *js.LabelledStmt:
+		return endsInIf(stmt.Value)
+	case *js.WithStmt:
+		return endsInIf(stmt.Body)
+	case *js.WhileStmt:
+		return endsInIf(stmt.Body)
+	case *js.ForStmt:
+		return endsInIf(stmt.Body)
+	case *js.ForInStmt:
+		return endsInIf(stmt.Body)
+	case *js.ForOfStmt:
+		return endsInIf(stmt.Body)
+	}
+	return false
+}
+
 func isHexDigit(b byte) bool {
 	return '0' <= b && b <= '9' || 'a' <= b && b <= 'f' || 'A' <= b && b <= 'F'
 }
