@@ -226,11 +226,15 @@ The following features are implemented:
 - remove superfluous semicolons
 - shorten `true`, `false`, and `undefined` to `!0`, `!1` and `void 0`
 - rename variables and functions to shorter names (not in global scope)
+- move `var` declarations to the top of the global/function scope (if more than one)
 - collapse if/else statements to expressions
+- minify conditional expressions to simpler ones
 - merge sequential expression statements to one, including into `return` and `throw`
 - remove superfluous grouping in expressions
 - shorten or remove string escapes
 - convert object key or index expression from string to identifier or decimal
+- merge concatenated strings
+- rewrite numbers (binary, octal, decimal, hexadecimal) to shorter representations
 
 ## JSON
 
