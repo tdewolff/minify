@@ -1,10 +1,10 @@
 package svg
 
 import (
-	"bytes"
 	"strconv"
 	"testing"
 
+	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/xml"
 	"github.com/tdewolff/test"
 )
@@ -12,7 +12,7 @@ import (
 func TestBuffer(t *testing.T) {
 	//    0   12     3            4 5   6   7 8   9    01
 	s := `<svg><path d="M0 0L1 1z"/>text<tag/>text</svg>`
-	z := NewTokenBuffer(xml.NewLexer(bytes.NewBufferString(s)))
+	z := NewTokenBuffer(xml.NewLexer(parse.NewInputString(s)))
 
 	tok := z.Shift()
 	test.That(t, tok.Hash == Svg, "first token is <svg>")
@@ -38,8 +38,7 @@ func TestBuffer(t *testing.T) {
 }
 
 func TestAttributes(t *testing.T) {
-	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
-	l := xml.NewLexer(r)
+	l := xml.NewLexer(parse.NewInputString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`))
 	tb := NewTokenBuffer(l)
 	tb.Shift()
 	for k := 0; k < 2; k++ { // run twice to ensure similar results
@@ -56,8 +55,7 @@ func TestAttributes(t *testing.T) {
 ////////////////////////////////////////////////////////////////
 
 func BenchmarkAttributes(b *testing.B) {
-	r := bytes.NewBufferString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
-	l := xml.NewLexer(r)
+	l := xml.NewLexer(parse.NewInputString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`))
 	tb := NewTokenBuffer(l)
 	tb.Shift()
 	tb.Peek(6)

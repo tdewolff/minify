@@ -1,4 +1,4 @@
-package min
+package minify
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 	"github.com/tdewolff/test"
 )
 
-func TestMin(t *testing.T) {
+func TestMinify(t *testing.T) {
 	css, err := CSS(`a { color: blue; }`)
 	test.Error(t, err)
 	test.String(t, css, `a{color:blue}`)
@@ -21,7 +21,7 @@ func TestMin(t *testing.T) {
 
 	js, err := JS(`var a = 5.0;`)
 	test.Error(t, err)
-	test.String(t, js, `var a=5.0;`)
+	test.String(t, js, `var a=5`)
 
 	json, err := JSON(`{"key" : 5.00}`)
 	test.Error(t, err)

@@ -21,11 +21,23 @@ var (
 	commaBytes        = []byte(",")
 	leftBracketBytes  = []byte("{")
 	rightBracketBytes = []byte("}")
+	rightParenBytes   = []byte(")")
+	urlBytes          = []byte("url(")
 	zeroBytes         = []byte("0")
+	oneBytes          = []byte("1")
 	transparentBytes  = []byte("transparent")
+	blackBytes        = []byte("#0000")
 	initialBytes      = []byte("initial")
 	noneBytes         = []byte("none")
 	autoBytes         = []byte("auto")
+	leftBytes         = []byte("left")
+	topBytes          = []byte("top")
+	n400Bytes         = []byte("400")
+	n700Bytes         = []byte("700")
+	n50pBytes         = []byte("50%")
+	n100pBytes        = []byte("100%")
+	repeatXBytes      = []byte("repeat-x")
+	repeatYBytes      = []byte("repeat-y")
 	importantBytes    = []byte("!important")
 	dataSchemeBytes   = []byte("data:")
 )
@@ -106,6 +118,8 @@ func (t Token) IsLengthPercentage() bool {
 	return t.TokenType == css.PercentageToken || t.IsLength()
 }
 
+////////////////////////////////////////////////////////////////
+
 // Minify minifies CSS data, it reads from r and writes to w.
 func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	if o.Decimals != 0 {
@@ -119,22 +133,28 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 		o.newPrecision = 15 // minimum number of digits a double can represent exactly
 	}
 
+	z := parse.NewInput(r)
+	defer z.Restore()
+
 	isInline := params != nil && params["inline"] == "1"
 	c := &cssMinifier{
 		m: m,
 		w: w,
-		p: css.NewParser(r, isInline),
+		p: css.NewParser(z, isInline),
 		o: o,
 	}
-	defer c.p.Restore()
+	c.minifyGrammar()
 
-	if err := c.minifyGrammar(); err != nil && err != io.EOF {
+	if _, err := w.Write(nil); err != nil {
 		return err
 	}
-	return nil
+	if c.p.Err() == io.EOF {
+		return nil
+	}
+	return c.p.Err()
 }
 
-func (c *cssMinifier) minifyGrammar() error {
+func (c *cssMinifier) minifyGrammar() {
 	semicolonQueued := false
 	for {
 		gt, _, data := c.p.Next()
@@ -142,9 +162,7 @@ func (c *cssMinifier) minifyGrammar() error {
 		case css.ErrorGrammar:
 			if c.p.HasParseError() {
 				if semicolonQueued {
-					if _, err := c.w.Write(semicolonBytes); err != nil {
-						return err
-					}
+					c.w.Write(semicolonBytes)
 				}
 
 				// write out the offending declaration (but save the semicolon)
@@ -154,33 +172,25 @@ func (c *cssMinifier) minifyGrammar() error {
 					semicolonQueued = true
 				}
 				for _, val := range vals {
-					if _, err := c.w.Write(val.Data); err != nil {
-						return err
-					}
+					c.w.Write(val.Data)
 				}
 				continue
 			}
-			return c.p.Err()
+			return
 		case css.EndAtRuleGrammar, css.EndRulesetGrammar:
-			if _, err := c.w.Write(rightBracketBytes); err != nil {
-				return err
-			}
+			c.w.Write(rightBracketBytes)
 			semicolonQueued = false
 			continue
 		}
 
 		if semicolonQueued {
-			if _, err := c.w.Write(semicolonBytes); err != nil {
-				return err
-			}
+			c.w.Write(semicolonBytes)
 			semicolonQueued = false
 		}
 
 		switch gt {
 		case css.AtRuleGrammar:
-			if _, err := c.w.Write(data); err != nil {
-				return err
-			}
+			c.w.Write(data)
 			values := c.p.Values()
 			if ToHash(data[1:]) == Import && len(values) == 2 && values[1].TokenType == css.URLToken {
 				url := values[1].Data
@@ -202,79 +212,47 @@ func (c *cssMinifier) minifyGrammar() error {
 				values[1].Data = url
 			}
 			for _, val := range values {
-				if _, err := c.w.Write(val.Data); err != nil {
-					return err
-				}
+				c.w.Write(val.Data)
 			}
 			semicolonQueued = true
 		case css.BeginAtRuleGrammar:
-			if _, err := c.w.Write(data); err != nil {
-				return err
-			}
+			c.w.Write(data)
 			for _, val := range c.p.Values() {
-				if _, err := c.w.Write(val.Data); err != nil {
-					return err
-				}
+				c.w.Write(val.Data)
 			}
-			if _, err := c.w.Write(leftBracketBytes); err != nil {
-				return err
-			}
+			c.w.Write(leftBracketBytes)
 		case css.QualifiedRuleGrammar:
-			if err := c.minifySelectors(data, c.p.Values()); err != nil {
-				return err
-			}
-			if _, err := c.w.Write(commaBytes); err != nil {
-				return err
-			}
+			c.minifySelectors(data, c.p.Values())
+			c.w.Write(commaBytes)
 		case css.BeginRulesetGrammar:
-			if err := c.minifySelectors(data, c.p.Values()); err != nil {
-				return err
-			}
-			if _, err := c.w.Write(leftBracketBytes); err != nil {
-				return err
-			}
+			c.minifySelectors(data, c.p.Values())
+			c.w.Write(leftBracketBytes)
 		case css.DeclarationGrammar:
-			if err := c.minifyDeclaration(data, c.p.Values()); err != nil {
-				return err
-			}
+			c.minifyDeclaration(data, c.p.Values())
 			semicolonQueued = true
 		case css.CustomPropertyGrammar:
-			if _, err := c.w.Write(data); err != nil {
-				return err
-			}
-			if _, err := c.w.Write(colonBytes); err != nil {
-				return err
-			}
+			c.w.Write(data)
+			c.w.Write(colonBytes)
 			value := parse.TrimWhitespace(c.p.Values()[0].Data)
 			if len(c.p.Values()[0].Data) != 0 && len(value) == 0 {
 				value = spaceBytes
 			}
-			if _, err := c.w.Write(value); err != nil {
-				return err
-			}
+			c.w.Write(value)
 			semicolonQueued = true
 		case css.CommentGrammar:
 			if len(data) > 5 && data[1] == '*' && data[2] == '!' {
-				if _, err := c.w.Write(data[:3]); err != nil {
-					return err
-				}
+				c.w.Write(data[:3])
 				comment := parse.TrimWhitespace(parse.ReplaceMultipleWhitespace(data[3 : len(data)-2]))
-				if _, err := c.w.Write(comment); err != nil {
-					return err
-				}
-				if _, err := c.w.Write(data[len(data)-2:]); err != nil {
-					return err
-				}
+				c.w.Write(comment)
+				c.w.Write(data[len(data)-2:])
 			}
 		default:
-			if _, err := c.w.Write(data); err != nil {
-				return err
-			}
+			c.w.Write(data)
 		}
 	}
 }
 
-func (c *cssMinifier) minifySelectors(property []byte, values []css.Token) error {
+func (c *cssMinifier) minifySelectors(property []byte, values []css.Token) {
 	inAttr := false
 	isClass := false
 	for _, val := range c.p.Values() {
@@ -293,24 +271,17 @@ func (c *cssMinifier) minifySelectors(property []byte, values []css.Token) error
 			if val.TokenType == css.StringToken && len(val.Data) > 2 {
 				s := val.Data[1 : len(val.Data)-1]
 				if css.IsIdent(s) {
-					if _, err := c.w.Write(s); err != nil {
-						return err
-					}
+					c.w.Write(s)
 					continue
 				}
 			} else if val.TokenType == css.RightBracketToken {
 				inAttr = false
 			} else if val.TokenType == css.IdentToken && len(val.Data) == 1 && (val.Data[0] == 'i' || val.Data[0] == 'I') {
-				if _, err := c.w.Write(spaceBytes); err != nil {
-					return err
-				}
+				c.w.Write(spaceBytes)
 			}
 		}
-		if _, err := c.w.Write(val.Data); err != nil {
-			return err
-		}
+		c.w.Write(val.Data)
 	}
-	return nil
 }
 
 func (c *cssMinifier) parseFunction(values []css.Token) ([]Token, int) {
@@ -385,16 +356,12 @@ func (c *cssMinifier) parseDeclaration(values []css.Token) []Token {
 	return tokens
 }
 
-func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token) error {
-	if _, err := c.w.Write(property); err != nil {
-		return err
-	}
-	if _, err := c.w.Write(colonBytes); err != nil {
-		return err
-	}
+func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token) {
+	c.w.Write(property)
+	c.w.Write(colonBytes)
 
 	if len(components) == 0 {
-		return nil
+		return
 	}
 
 	// Strip !important from the component list, this will be added later separately
@@ -426,61 +393,42 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 		}
 
 		for _, component := range components {
-			if _, err := c.w.Write(component.Data); err != nil {
-				return err
-			}
+			c.w.Write(component.Data)
 		}
 		if important {
-			if _, err := c.w.Write(importantBytes); err != nil {
-				return err
-			}
+			c.w.Write(importantBytes)
 		}
-		return nil
+		return
 	}
 
 	values = c.minifyTokens(prop, values)
 	if len(values) > 0 {
 		values = c.minifyProperty(prop, values)
 	}
-	return c.writeDeclaration(values, important)
+	c.writeDeclaration(values, important)
 }
 
-func (c *cssMinifier) writeFunction(args []Token) error {
+func (c *cssMinifier) writeFunction(args []Token) {
 	for _, arg := range args {
-		if _, err := c.w.Write(arg.Data); err != nil {
-			return err
-		}
+		c.w.Write(arg.Data)
 		if arg.TokenType == css.FunctionToken {
-			if err := c.writeFunction(arg.Args); err != nil {
-				return err
-			}
-			if _, err := c.w.Write([]byte(")")); err != nil {
-				return err
-			}
+			c.writeFunction(arg.Args)
+			c.w.Write(rightParenBytes)
 		}
 	}
-	return nil
 }
 
-func (c *cssMinifier) writeDeclaration(values []Token, important bool) error {
+func (c *cssMinifier) writeDeclaration(values []Token, important bool) {
 	prevSep := true
 	for _, value := range values {
 		if !prevSep && value.TokenType != css.CommaToken && (value.TokenType != css.DelimToken || value.Data[0] != '/') {
-			if _, err := c.w.Write(spaceBytes); err != nil {
-				return err
-			}
+			c.w.Write(spaceBytes)
 		}
 
-		if _, err := c.w.Write(value.Data); err != nil {
-			return err
-		}
+		c.w.Write(value.Data)
 		if value.TokenType == css.FunctionToken {
-			if err := c.writeFunction(value.Args); err != nil {
-				return err
-			}
-			if _, err := c.w.Write([]byte(")")); err != nil {
-				return err
-			}
+			c.writeFunction(value.Args)
+			c.w.Write(rightParenBytes)
 		}
 
 		if value.TokenType == css.CommaToken || value.TokenType == css.DelimToken && value.Data[0] == '/' || value.TokenType == css.FunctionToken || value.TokenType == css.URLToken {
@@ -491,11 +439,8 @@ func (c *cssMinifier) writeDeclaration(values []Token, important bool) error {
 	}
 
 	if important {
-		if _, err := c.w.Write(importantBytes); err != nil {
-			return err
-		}
+		c.w.Write(importantBytes)
 	}
-	return nil
 }
 
 func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
@@ -541,9 +486,9 @@ func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
 					uri = minify.DataURI(c.m, uri)
 				}
 				if css.IsURLUnquoted(uri) {
-					values[i].Data = append(append([]byte("url("), uri...), ')')
+					values[i].Data = append(append(urlBytes, uri...), ')')
 				} else {
-					values[i].Data = append(append(append([]byte("url("), delim), uri...), delim, ')')
+					values[i].Data = append(append(append(urlBytes, delim), uri...), delim, ')')
 				}
 			}
 		case css.FunctionToken:
@@ -648,7 +593,7 @@ func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
 						for j := 0; j < 3; j++ {
 							args[j*2].TokenType = css.NumberToken
 							if vals[j] < minify.Epsilon {
-								args[j*2].Data = []byte("0")
+								args[j*2].Data = zeroBytes
 							} else if math.Abs(vals[j]-0.2) < minify.Epsilon {
 								args[j*2].Data = []byte("51")
 							} else if math.Abs(vals[j]-0.4) < minify.Epsilon {
@@ -725,8 +670,8 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 						values = append(values[:i], values[i+1:]...)
 					} else if values[i].Ident == Bold {
 						values[i].TokenType = css.NumberToken
-						values[i].Data = []byte("700")
-					} else if values[i].TokenType == css.NumberToken && bytes.Equal(values[i].Data, []byte("400")) {
+						values[i].Data = n700Bytes
+					} else if values[i].TokenType == css.NumberToken && bytes.Equal(values[i].Data, n400Bytes) {
 						values = append(values[:i], values[i+1:]...)
 					}
 				}
@@ -755,10 +700,10 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 	case Font_Weight:
 		if values[0].Ident == Normal {
 			values[0].TokenType = css.NumberToken
-			values[0].Data = []byte("400")
+			values[0].Data = n400Bytes
 		} else if values[0].Ident == Bold {
 			values[0].TokenType = css.NumberToken
-			values[0].Data = []byte("700")
+			values[0].Data = n700Bytes
 		}
 	case Url:
 		for i := 0; i < len(values); i++ {
@@ -804,7 +749,7 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			}
 		}
 		if len(values) == 0 {
-			values = []Token{{css.IdentToken, []byte("none"), nil, 0, None}}
+			values = []Token{{css.IdentToken, noneBytes, nil, 0, None}}
 		}
 	case Outline:
 		for i := 0; i < len(values); i++ {
@@ -816,7 +761,7 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			}
 		}
 		if len(values) == 0 {
-			values = []Token{{css.IdentToken, []byte("none"), nil, 0, None}}
+			values = []Token{{css.IdentToken, noneBytes, nil, 0, None}}
 		}
 	case Background:
 		// minify background-size and lowercase all identifiers
@@ -876,7 +821,7 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 					}
 					continue
 				}
-			} else if values[i].TokenType == css.HashToken && bytes.Equal(values[i].Data, []byte("#0000")) {
+			} else if values[i].TokenType == css.HashToken && bytes.Equal(values[i].Data, blackBytes) {
 				values = append(values[:i], values[i+1:]...)
 				i--
 				continue
@@ -907,7 +852,7 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 		}
 
 		if len(values) == 0 {
-			values = []Token{{css.NumberToken, []byte("0"), nil, 0, 0}, {css.NumberToken, []byte("0"), nil, 0, 0}}
+			values = []Token{{css.NumberToken, zeroBytes, nil, 0, 0}, {css.NumberToken, zeroBytes, nil, 0, 0}}
 		}
 	case Background_Size:
 		if len(values) == 2 && values[1].Ident == Auto {
@@ -919,11 +864,11 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 				values = values[:1]
 			} else if values[0].Ident == Repeat && values[1].Ident == No_Repeat {
 				values = values[:1]
-				values[0].Data = []byte("repeat-x")
+				values[0].Data = repeatXBytes
 				values[0].Ident = Repeat_X
 			} else if values[0].Ident == No_Repeat && values[1].Ident == Repeat {
 				values = values[:1]
-				values[0].Data = []byte("repeat-y")
+				values[0].Data = repeatYBytes
 				values[0].Ident = Repeat_Y
 			}
 		}
@@ -953,10 +898,10 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 							b = append(b, '%')
 							values[i+1].Data = b
 							if values[i].Ident == Right {
-								values[i].Data = []byte("left")
+								values[i].Data = leftBytes
 								values[i].Ident = Left
 							} else {
-								values[i].Data = []byte("top")
+								values[i].Data = topBytes
 								values[i].Ident = Top
 							}
 						}
@@ -967,14 +912,14 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 						offsets[1] = values[i+1]
 					}
 				} else if values[i].Ident == Left {
-					offsets[0] = Token{css.NumberToken, []byte("0"), nil, 0, 0}
+					offsets[0] = Token{css.NumberToken, zeroBytes, nil, 0, 0}
 				} else if values[i].Ident == Top {
-					offsets[1] = Token{css.NumberToken, []byte("0"), nil, 0, 0}
+					offsets[1] = Token{css.NumberToken, zeroBytes, nil, 0, 0}
 				} else if values[i].Ident == Right {
-					offsets[0] = Token{css.PercentageToken, []byte("100%"), nil, 0, 0}
+					offsets[0] = Token{css.PercentageToken, n100pBytes, nil, 0, 0}
 					values[i].Ident = Left
 				} else if values[i].Ident == Bottom {
-					offsets[1] = Token{css.PercentageToken, []byte("100%"), nil, 0, 0}
+					offsets[1] = Token{css.PercentageToken, n100pBytes, nil, 0, 0}
 					values[i].Ident = Top
 				}
 			}
@@ -983,7 +928,7 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 				if values[0].Ident == Left || values[j].Ident == Left {
 					offsets = offsets[:1]
 				} else if values[0].Ident == Top || values[j].Ident == Top {
-					offsets[0] = Token{css.NumberToken, []byte("50%"), nil, 0, 0}
+					offsets[0] = Token{css.NumberToken, n50pBytes, nil, 0, 0}
 				}
 			}
 
@@ -1009,33 +954,33 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 				if values[i].TokenType == css.IdentToken {
 					if values[i].Ident == Left || values[i].Ident == Top {
 						values[i].TokenType = css.NumberToken
-						values[i].Data = []byte("0")
+						values[i].Data = zeroBytes
 						values[i].Ident = 0
 					} else if values[i].Ident == Right || values[i].Ident == Bottom {
 						values[i].TokenType = css.PercentageToken
-						values[i].Data = []byte("100%")
+						values[i].Data = n100pBytes
 						values[i].Ident = 0
 					} else if values[i].Ident == Center {
 						if i == 0 {
 							values[i].TokenType = css.PercentageToken
-							values[i].Data = []byte("50%")
+							values[i].Data = n50pBytes
 							values[i].Ident = 0
 						} else {
 							values = values[:1]
 						}
 					}
-				} else if i == 1 && values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, []byte("50%")) {
+				} else if i == 1 && values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, n50pBytes) {
 					values = values[:1]
 				} else if values[i].TokenType == css.PercentageToken && values[i].Data[0] == '0' {
 					values[i].TokenType = css.NumberToken
-					values[i].Data = []byte("0")
+					values[i].Data = zeroBytes
 					values[i].Ident = 0
 				}
 			}
 		}
 	case Box_Shadow:
 		if len(values) == 1 && (values[0].Ident == None || values[0].Ident == Initial) {
-			values = []Token{{css.NumberToken, []byte("0"), nil, 0, 0}, {css.NumberToken, []byte("0"), nil, 0, 0}}
+			values = []Token{{css.NumberToken, zeroBytes, nil, 0, 0}, {css.NumberToken, zeroBytes, nil, 0, 0}}
 		} else {
 			numbers := []int{}
 			for i := 0; i < len(values); i++ {
@@ -1099,7 +1044,7 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			}
 		}
 		if len(values) == 0 {
-			values = []Token{{css.IdentToken, []byte("none"), nil, 0, None}}
+			values = []Token{{css.IdentToken, noneBytes, nil, 0, None}}
 		}
 	case Text_Shadow:
 		for i := 0; i < len(values); i++ {
@@ -1115,7 +1060,7 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			}
 		}
 		if len(values) == 0 {
-			values = []Token{{css.IdentToken, []byte("none"), nil, 0, None}}
+			values = []Token{{css.IdentToken, noneBytes, nil, 0, None}}
 		}
 	case Text_Emphasis:
 		for i := 0; i < len(values); i++ {
@@ -1127,7 +1072,7 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			}
 		}
 		if len(values) == 0 {
-			values = []Token{{css.IdentToken, []byte("none"), nil, 0, None}}
+			values = []Token{{css.IdentToken, noneBytes, nil, 0, None}}
 		}
 	case Flex:
 		if len(values) == 2 && values[0].TokenType == css.NumberToken {
@@ -1166,7 +1111,7 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 		}
 	case Flex_Basis:
 		if values[0].Ident == Initial {
-			values[0].Data = []byte("auto")
+			values[0].Data = autoBytes
 			values[0].Ident = Auto
 		} else {
 			values[0] = minifyLengthPercentage(values[0])
@@ -1174,13 +1119,13 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 	case Order, Flex_Grow:
 		if values[0].Ident == Initial {
 			values[0].TokenType = css.NumberToken
-			values[0].Data = []byte("0")
+			values[0].Data = zeroBytes
 			values[0].Ident = 0
 		}
 	case Flex_Shrink:
 		if values[0].Ident == Initial {
 			values[0].TokenType = css.NumberToken
-			values[0].Data = []byte("1")
+			values[0].Data = oneBytes
 			values[0].Ident = 0
 		}
 	}
@@ -1200,7 +1145,7 @@ func minifyColor(value Token) Token {
 			if data[7] == 'f' {
 				data = data[:7]
 			} else if data[7] == '0' {
-				data = []byte("#0000")
+				data = blackBytes
 			}
 		}
 		if ident, ok := ShortenColorHex[string(data)]; ok {

@@ -1,4 +1,4 @@
-package min
+package minify
 
 import (
 	"regexp"

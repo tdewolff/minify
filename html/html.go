@@ -20,10 +20,22 @@ var (
 	cssMimeBytes    = []byte("text/css")
 	htmlMimeBytes   = []byte("text/html")
 	svgMimeBytes    = []byte("image/svg+xml")
+	formMimeBytes   = []byte("application/x-www-form-urlencoded")
 	mathMimeBytes   = []byte("application/mathml+xml")
 	dataSchemeBytes = []byte("data:")
 	jsSchemeBytes   = []byte("javascript:")
 	httpBytes       = []byte("http")
+	radioBytes      = []byte("radio")
+	onBytes         = []byte("on")
+	textBytes       = []byte("text")
+	noneBytes       = []byte("none")
+	submitBytes     = []byte("submit")
+	allBytes        = []byte("all")
+	rectBytes       = []byte("rect")
+	dataBytes       = []byte("data")
+	getBytes        = []byte("get")
+	autoBytes       = []byte("auto")
+	oneBytes        = []byte("one")
 	inlineParams    = map[string]string{"inline": "1"}
 )
 
@@ -58,22 +70,24 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
 
-	l := html.NewLexer(r)
-	defer l.Restore()
+	z := parse.NewInput(r)
+	defer z.Restore()
 
+	l := html.NewLexer(z)
 	tb := NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()
 		switch t.TokenType {
 		case html.ErrorToken:
+			if _, err := w.Write(nil); err != nil {
+				return err
+			}
 			if l.Err() == io.EOF {
 				return nil
 			}
 			return l.Err()
 		case html.DoctypeToken:
-			if _, err := w.Write(doctypeBytes); err != nil {
-				return err
-			}
+			w.Write(doctypeBytes)
 		case html.CommentToken:
 			if o.KeepConditionalComments && len(t.Text) > 6 && (bytes.HasPrefix(t.Text, []byte("[if ")) || bytes.HasSuffix(t.Text, []byte("[endif]")) || bytes.HasSuffix(t.Text, []byte("[endif]--"))) {
 				// [if ...] is always 7 or more characters, [endif] is only encountered for downlevel-revealed
@@ -81,34 +95,28 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				if bytes.HasPrefix(t.Data, []byte("<!--[if ")) && bytes.HasSuffix(t.Data, []byte("<![endif]-->")) { // downlevel-hidden
 					begin := bytes.IndexByte(t.Data, '>') + 1
 					end := len(t.Data) - len("<![endif]-->")
-					if _, err := w.Write(t.Data[:begin]); err != nil {
-						return err
-					}
+					w.Write(t.Data[:begin])
 					if err := o.Minify(m, w, buffer.NewReader(t.Data[begin:end]), nil); err != nil {
 						return err
 					}
-					if _, err := w.Write(t.Data[end:]); err != nil {
-						return err
-					}
-				} else if _, err := w.Write(t.Data); err != nil { // downlevel-revealed or short downlevel-hidden
-					return err
+					w.Write(t.Data[end:])
+				} else {
+					w.Write(t.Data) // downlevel-revealed or short downlevel-hidden
 				}
 			}
 		case html.SvgToken:
 			if err := m.MinifyMimetype(svgMimeBytes, w, buffer.NewReader(t.Data), nil); err != nil {
 				if err != minify.ErrNotExist {
 					return err
-				} else if _, err := w.Write(t.Data); err != nil {
-					return err
 				}
+				w.Write(t.Data)
 			}
 		case html.MathToken:
 			if err := m.MinifyMimetype(mathMimeBytes, w, buffer.NewReader(t.Data), nil); err != nil {
 				if err != minify.ErrNotExist {
 					return err
-				} else if _, err := w.Write(t.Data); err != nil {
-					return err
 				}
+				w.Write(t.Data)
 			}
 		case html.TextToken:
 			// CSS and JS minifiers for inline code
@@ -128,17 +136,14 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					if err := m.MinifyMimetype(mimetype, w, buffer.NewReader(t.Data), params); err != nil {
 						if err != minify.ErrNotExist {
 							return err
-						} else if _, err := w.Write(t.Data); err != nil {
-							return err
 						}
+						w.Write(t.Data)
 					}
-				} else if _, err := w.Write(t.Data); err != nil {
-					return err
+				} else {
+					w.Write(t.Data)
 				}
 			} else if inPre {
-				if _, err := w.Write(t.Data); err != nil {
-					return err
-				}
+				w.Write(t.Data)
 			} else {
 				t.Data = parse.ReplaceMultipleWhitespaceAndEntities(t.Data, EntitiesMap, TextRevEntitiesMap)
 
@@ -186,9 +191,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 				}
 
-				if _, err := w.Write(t.Data); err != nil {
-					return err
-				}
+				w.Write(t.Data)
 			}
 		case html.StartTagToken, html.EndTagToken:
 			rawTagHash = 0
@@ -276,9 +279,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						t.Data[2+len(t.Text)] = '>'
 						t.Data = t.Data[:3+len(t.Text)]
 					}
-					if _, err := w.Write(t.Data); err != nil {
-						return err
-					}
+					w.Write(t.Data)
 				}
 
 				// skip text in select and optgroup tags
@@ -296,9 +297,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				omitSpace = true // omit spaces after block elements
 			}
 
-			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
+			w.Write(t.Data)
 
 			if hasAttributes {
 				if t.Hash == Meta {
@@ -346,10 +345,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				} else if t.Hash == Input {
 					attrs := tb.Attributes(Type, Value)
 					if t, value := attrs[0], attrs[1]; t != nil && value != nil {
-						isRadio := parse.EqualFold(t.AttrVal, []byte("radio"))
+						isRadio := parse.EqualFold(t.AttrVal, radioBytes)
 						if !isRadio && len(value.AttrVal) == 0 {
 							value.Text = nil
-						} else if isRadio && parse.EqualFold(value.AttrVal, []byte("on")) {
+						} else if isRadio && parse.EqualFold(value.AttrVal, onBytes) {
 							value.Text = nil
 						}
 					}
@@ -399,22 +398,22 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 						// default attribute values can be omitted
 						if !o.KeepDefaultAttrVals && (attr.Hash == Type && (t.Hash == Script && jsMimetypes[string(val)] ||
-							t.Hash == Style && bytes.Equal(val, []byte("text/css")) ||
-							t.Hash == Link && bytes.Equal(val, []byte("text/css")) ||
-							t.Hash == Input && bytes.Equal(val, []byte("text")) ||
-							t.Hash == Button && bytes.Equal(val, []byte("submit"))) ||
+							t.Hash == Style && bytes.Equal(val, cssMimeBytes) ||
+							t.Hash == Link && bytes.Equal(val, cssMimeBytes) ||
+							t.Hash == Input && bytes.Equal(val, textBytes) ||
+							t.Hash == Button && bytes.Equal(val, submitBytes)) ||
 							attr.Hash == Language && t.Hash == Script ||
-							attr.Hash == Method && bytes.Equal(val, []byte("get")) ||
-							attr.Hash == Enctype && bytes.Equal(val, []byte("application/x-www-form-urlencoded")) ||
-							attr.Hash == Colspan && bytes.Equal(val, []byte("1")) ||
-							attr.Hash == Rowspan && bytes.Equal(val, []byte("1")) ||
-							attr.Hash == Shape && bytes.Equal(val, []byte("rect")) ||
-							attr.Hash == Span && bytes.Equal(val, []byte("1")) ||
-							attr.Hash == Clear && bytes.Equal(val, []byte("none")) ||
-							attr.Hash == Frameborder && bytes.Equal(val, []byte("1")) ||
-							attr.Hash == Scrolling && bytes.Equal(val, []byte("auto")) ||
-							attr.Hash == Valuetype && bytes.Equal(val, []byte("data")) ||
-							attr.Hash == Media && t.Hash == Style && bytes.Equal(val, []byte("all"))) {
+							attr.Hash == Method && bytes.Equal(val, getBytes) ||
+							attr.Hash == Enctype && bytes.Equal(val, formMimeBytes) ||
+							attr.Hash == Colspan && bytes.Equal(val, oneBytes) ||
+							attr.Hash == Rowspan && bytes.Equal(val, oneBytes) ||
+							attr.Hash == Shape && bytes.Equal(val, rectBytes) ||
+							attr.Hash == Span && bytes.Equal(val, oneBytes) ||
+							attr.Hash == Clear && bytes.Equal(val, noneBytes) ||
+							attr.Hash == Frameborder && bytes.Equal(val, oneBytes) ||
+							attr.Hash == Scrolling && bytes.Equal(val, autoBytes) ||
+							attr.Hash == Valuetype && bytes.Equal(val, dataBytes) ||
+							attr.Hash == Media && t.Hash == Style && bytes.Equal(val, allBytes)) {
 							continue
 						}
 
@@ -469,33 +468,23 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						}
 					}
 
-					if _, err := w.Write(spaceBytes); err != nil {
-						return err
-					}
-					if _, err := w.Write(attr.Text); err != nil {
-						return err
-					}
+					w.Write(spaceBytes)
+					w.Write(attr.Text)
 					if len(val) > 0 && attr.Traits&booleanAttr == 0 {
-						if _, err := w.Write(isBytes); err != nil {
-							return err
-						}
+						w.Write(isBytes)
 
 						// use double quotes for RDFa attributes
 						isXML := attr.Hash == Vocab || attr.Hash == Typeof || attr.Hash == Property || attr.Hash == Resource || attr.Hash == Prefix || attr.Hash == Content || attr.Hash == About || attr.Hash == Rev || attr.Hash == Datatype || attr.Hash == Inlist
 
 						// no quotes if possible, else prefer single or double depending on which occurs more often in value
 						val = html.EscapeAttrVal(&attrByteBuffer, attr.AttrVal, val, o.KeepQuotes || isXML)
-						if _, err := w.Write(val); err != nil {
-							return err
-						}
+						w.Write(val)
 					}
 				}
 			} else {
 				_ = tb.Shift() // StartTagClose
 			}
-			if _, err := w.Write(gtBytes); err != nil {
-				return err
-			}
+			w.Write(gtBytes)
 
 			// skip text in select and optgroup tags
 			if t.Hash == Select || t.Hash == Optgroup {

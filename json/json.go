@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/json"
 )
 
@@ -34,13 +35,17 @@ func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) err
 func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 	skipComma := true
 
-	p := json.NewParser(r)
-	defer p.Restore()
+	z := parse.NewInput(r)
+	defer z.Restore()
 
+	p := json.NewParser(z)
 	for {
 		state := p.State()
 		gt, text := p.Next()
 		if gt == json.ErrorGrammar {
+			if _, err := w.Write(nil); err != nil {
+				return err
+			}
 			if p.Err() != io.EOF {
 				return p.Err()
 			}
@@ -49,13 +54,9 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 		if !skipComma && gt != json.EndObjectGrammar && gt != json.EndArrayGrammar {
 			if state == json.ObjectKeyState || state == json.ArrayState {
-				if _, err := w.Write(commaBytes); err != nil {
-					return err
-				}
+				w.Write(commaBytes)
 			} else if state == json.ObjectValueState {
-				if _, err := w.Write(colonBytes); err != nil {
-					return err
-				}
+				w.Write(colonBytes)
 			}
 		}
 		skipComma = gt == json.StartObjectGrammar || gt == json.StartArrayGrammar
@@ -69,8 +70,6 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				w.Write(minusZeroBytes)
 			}
 		}
-		if _, err := w.Write(text); err != nil {
-			return err
-		}
+		w.Write(text)
 	}
 }

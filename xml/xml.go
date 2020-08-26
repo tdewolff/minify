@@ -36,9 +36,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 	attrByteBuffer := make([]byte, 0, 64)
 
-	l := xml.NewLexer(r)
-	defer l.Restore()
+	z := parse.NewInput(r)
+	defer z.Restore()
 
+	l := xml.NewLexer(z)
 	tb := NewTokenBuffer(l)
 	for {
 		t := *tb.Shift()
@@ -53,18 +54,17 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		}
 		switch t.TokenType {
 		case xml.ErrorToken:
+			if _, err := w.Write(nil); err != nil {
+				return err
+			}
 			if l.Err() == io.EOF {
 				return nil
 			}
 			return l.Err()
 		case xml.DOCTYPEToken:
-			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
+			w.Write(t.Data)
 		case xml.CDATAToken:
-			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
+			w.Write(t.Data)
 			if len(t.Text) > 0 && parse.IsWhitespace(t.Text[len(t.Text)-1]) {
 				omitSpace = true
 			}
@@ -114,43 +114,26 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					i++
 				}
 			}
-
-			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
+			w.Write(t.Data)
 		case xml.StartTagToken:
 			if o.KeepWhitespace {
 				omitSpace = false
 			}
-			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
+			w.Write(t.Data)
 		case xml.StartTagPIToken:
-			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
+			w.Write(t.Data)
 		case xml.AttributeToken:
-			if _, err := w.Write(spaceBytes); err != nil {
-				return err
-			}
-			if _, err := w.Write(t.Text); err != nil {
-				return err
-			}
-			if _, err := w.Write(isBytes); err != nil {
-				return err
-			}
+			w.Write(spaceBytes)
+			w.Write(t.Text)
+			w.Write(isBytes)
 
 			if len(t.AttrVal) < 2 {
-				if _, err := w.Write(t.AttrVal); err != nil {
-					return err
-				}
+				w.Write(t.AttrVal)
 			} else {
 				val := t.AttrVal[1 : len(t.AttrVal)-1]
 				val = parse.ReplaceEntities(val, EntitiesMap, nil)
 				val = xml.EscapeAttrVal(&attrByteBuffer, val) // prefer single or double quotes depending on what occurs more often in value
-				if _, err := w.Write(val); err != nil {
-					return err
-				}
+				w.Write(val)
 			}
 		case xml.StartTagCloseToken:
 			next := tb.Peek(0)
@@ -165,22 +148,14 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				if skipExtra {
 					tb.Shift()
 				}
-				if _, err := w.Write(voidBytes); err != nil {
-					return err
-				}
+				w.Write(voidBytes)
 			} else {
-				if _, err := w.Write(t.Data); err != nil {
-					return err
-				}
+				w.Write(t.Data)
 			}
 		case xml.StartTagCloseVoidToken:
-			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
+			w.Write(t.Data)
 		case xml.StartTagClosePIToken:
-			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
+			w.Write(t.Data)
 		case xml.EndTagToken:
 			if o.KeepWhitespace {
 				omitSpace = false
@@ -189,9 +164,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				t.Data[2+len(t.Text)] = '>'
 				t.Data = t.Data[:3+len(t.Text)]
 			}
-			if _, err := w.Write(t.Data); err != nil {
-				return err
-			}
+			w.Write(t.Data)
 		}
 	}
 }
