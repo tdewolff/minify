@@ -509,6 +509,7 @@ func TestJS(t *testing.T) {
 		{`!/regexp/`, `!1`},
 		{`typeof a==='object'`, `typeof a=='object'`},
 		{`typeof a!=='object'`, `typeof a!='object'`},
+		{`'object'===typeof a`, `'object'==typeof a`},
 		{`typeof a===b`, `typeof a===b`},
 		{`a!=null?a:b`, `a??b`},
 		{`a==null?b:a`, `a??b`},

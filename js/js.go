@@ -853,8 +853,8 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 							expr.Op = js.NotEqToken
 						}
 					}
-				} else if right, ok := expr.X.(*js.UnaryExpr); ok && right.Op == js.TypeofToken {
-					if left, ok := expr.Y.(*js.LiteralExpr); ok && left.TokenType == js.StringToken {
+				} else if right, ok := expr.Y.(*js.UnaryExpr); ok && right.Op == js.TypeofToken {
+					if left, ok := expr.X.(*js.LiteralExpr); ok && left.TokenType == js.StringToken {
 						if expr.Op == js.EqEqEqToken {
 							expr.Op = js.EqEqToken
 						} else {
