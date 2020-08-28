@@ -21,6 +21,7 @@ func TestJS(t *testing.T) {
 	}{
 		{`/*comment*/a`, `a`},
 		{`/*!comment*/a`, `/*!comment*/a`},
+		{"//!comment1\n\n//!comment2\na", "//!comment1\n//!comment2\na"},
 		{`debugger`, ``},
 		{`"use strict"`, `"use strict"`},
 		{`1.0`, `1`},

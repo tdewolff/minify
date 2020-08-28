@@ -11,6 +11,7 @@ import (
 
 var (
 	spaceBytes                 = []byte(" ")
+	newlineBytes               = []byte("\n")
 	starBytes                  = []byte("*")
 	colonBytes                 = []byte(":")
 	semicolonBytes             = []byte(";")

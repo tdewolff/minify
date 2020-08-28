@@ -40,8 +40,14 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		return err
 	}
 
-	if 3 < len(ast.Comment) && ast.Comment[1] == '*' && ast.Comment[2] == '!' {
-		w.Write(ast.Comment) // license comment
+	// license comments
+	for _, comment := range ast.Comments {
+		if 3 < len(comment) && comment[2] == '!' {
+			w.Write(comment)
+			if comment[1] == '/' {
+				w.Write(newlineBytes)
+			}
+		}
 	}
 
 	m := &jsMinifier{
