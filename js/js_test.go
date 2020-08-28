@@ -257,7 +257,7 @@ func TestJS(t *testing.T) {
 		{`var {a,}=b`, `var{a}=b`},
 		{`var {a,b=5,...c}={d,e=7,...f}`, `var{a,b=5,...c}={d,e=7,...f}`},
 		{`var {[a+b]: c}=d`, `var{[a+b]:c}=d`},
-		{`{let a}`, `{let a}`}, // TODO: remove entire block
+		{`{let a}`, `{let a}`}, // could remove entire block
 		{`for(var [a] in b){}`, `for(var[a]in b);`},
 		{`for(var {a} of b){}`, `for(var{a}of b);`},
 		{`for(var a in b);var c`, `var a,c;for(a in b);`},
@@ -539,9 +539,14 @@ func TestJS(t *testing.T) {
 		{`a();b();throw c()`, `throw a(),b(),c()`},
 		{`a=b;if(a){return a}else return b`, `return a=b,a||b`},
 		{`a=5;if(b)while(c){}`, `if(a=5,b)while(c);`},
-		//{`a=5;for(;b;)c()`, `for(a=5;b;)c()`},
-		//{`a=5;for(b=4;b;)c()`, `for(a=5,b=4;b;)c()`},
+		{`a=5;while(b)c()`, `for(a=5;b;)c()`},
+		{`a=5;for(;b;)c()`, `for(a=5;b;)c()`},
+		{`a=5;for(b=4;b;)c()`, `a=5;for(b=4;b;)c()`},
+		{`a in 5;for(;b;)c()`, `for((a in 5);b;)c()`}, // is longer
 		{`a in 5;for(b=4;b;)c()`, `a in 5;for(b=4;b;)c()`},
+		{`var a=5;for(;b;)c()`, `for(var a=5;b;)c()`},
+		{`var a=b in c;for(;b;)c()`, `for(var a=(b in c);b;)c()`},
+		{`var a=5;while(b)c()`, `for(var a=5;b;)c()`},
 		{`a=5;for(var b=4;b;)c()`, `a=5;for(var b=4;b;)c()`},
 		{`a=5;switch(b=4){}`, `switch(a=5,b=4){}`},
 		{`a=5;with(b=4){}`, `with(a=5,b=4);`},
