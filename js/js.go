@@ -255,7 +255,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			m.writeSemicolon()
 			m.write(clause.TokenType.Bytes())
 			if clause.Cond != nil {
-				m.write(spaceBytes)
+				m.writeSpaceBeforeIdent()
 				m.minifyExpr(clause.Cond, js.OpExpr)
 			}
 			m.write(colonBytes)
@@ -400,11 +400,16 @@ func (m *jsMinifier) minifyStmtOrBlock(i js.IStmt, blockType blockType) {
 	if blockStmt, ok := i.(*js.BlockStmt); ok {
 		m.renamer.renameScope(blockStmt.Scope)
 		m.minifyBlockAsStmt(blockStmt, blockType)
-	} else if _, ok := i.(*js.EmptyStmt); ok {
-		m.write(semicolonBytes)
-		m.needsSemicolon = false
 	} else {
-		m.minifyStmt(i)
+		list := m.optimizeStmtList([]js.IStmt{i}, blockType)
+		if len(list) == 1 {
+			m.minifyStmt(list[0])
+		} else if len(list) == 0 {
+			m.write(semicolonBytes)
+			m.needsSemicolon = false
+		} else {
+			m.minifyBlockStmt(js.BlockStmt{list, js.Scope{}})
+		}
 	}
 }
 
@@ -839,6 +844,24 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			m.minifyExpr(expr.X, precLeft)
 			if expr.Op == js.GtToken && m.prev[len(m.prev)-1] == '-' {
 				m.write(spaceBytes)
+			} else if expr.Op == js.EqEqEqToken || expr.Op == js.NotEqEqToken {
+				if left, ok := expr.X.(*js.UnaryExpr); ok && left.Op == js.TypeofToken {
+					if right, ok := expr.Y.(*js.LiteralExpr); ok && right.TokenType == js.StringToken {
+						if expr.Op == js.EqEqEqToken {
+							expr.Op = js.EqEqToken
+						} else {
+							expr.Op = js.NotEqToken
+						}
+					}
+				} else if right, ok := expr.X.(*js.UnaryExpr); ok && right.Op == js.TypeofToken {
+					if left, ok := expr.Y.(*js.LiteralExpr); ok && left.TokenType == js.StringToken {
+						if expr.Op == js.EqEqEqToken {
+							expr.Op = js.EqEqToken
+						} else {
+							expr.Op = js.NotEqToken
+						}
+					}
+				}
 			}
 			m.write(expr.Op.Bytes())
 			if expr.Op == js.AddToken {
@@ -1086,12 +1109,18 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		} else if !truthy && ok {
 			// if condition is falsy
 			m.minifyExpr(expr.Y, prec)
-		} else if m.isEqualExpr(expr.Cond, expr.X) && prec <= js.OpOr && (exprPrec(expr.X) < js.OpAssign || binaryLeftPrecMap[js.OrToken] <= exprPrec(expr.X)) && (exprPrec(expr.Y) < js.OpAssign || binaryRightPrecMap[js.OrToken] <= exprPrec(expr.Y)) {
+		} else if m.isEqualExpr(expr.Cond, expr.X) && (exprPrec(expr.X) < js.OpAssign || binaryLeftPrecMap[js.OrToken] <= exprPrec(expr.X)) && (exprPrec(expr.Y) < js.OpAssign || binaryRightPrecMap[js.OrToken] <= exprPrec(expr.Y)) {
 			// if condition is equal to true body
 			// for higher prec we need to add group parenthesis, and for lower prec we have parenthesis anyways. This only is shorter if len(expr.X) >= 3. isEqualExpr only checks for literal variables, which is a name will be minified to a one or two character name.
 			m.minifyExpr(expr.X, binaryLeftPrecMap[js.OrToken])
 			m.write(orBytes)
 			m.minifyExpr(expr.Y, binaryRightPrecMap[js.OrToken])
+		} else if m.isEqualExpr(expr.Cond, expr.Y) && (exprPrec(expr.Y) < js.OpAssign || binaryLeftPrecMap[js.AndToken] <= exprPrec(expr.Y)) && (exprPrec(expr.X) < js.OpAssign || binaryRightPrecMap[js.AndToken] <= exprPrec(expr.X)) {
+			// if condition is equal to false body
+			// for higher prec we need to add group parenthesis, and for lower prec we have parenthesis anyways. This only is shorter if len(expr.X) >= 3. isEqualExpr only checks for literal variables, which is a name will be minified to a one or two character name.
+			m.minifyExpr(expr.Y, binaryLeftPrecMap[js.AndToken])
+			m.write(andBytes)
+			m.minifyExpr(expr.X, binaryRightPrecMap[js.AndToken])
 		} else if m.isEqualExpr(expr.X, expr.Y) {
 			// if true and false bodies are equal
 			if prec <= js.OpExpr {
@@ -1105,6 +1134,11 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				m.minifyExpr(expr.X, binaryRightPrecMap[js.CommaToken])
 				m.write(closeParenBytes)
 			}
+		} else if left, right, ok := m.toNullishExpr(expr); ok {
+			// no need to check whether left/right need to add groups, as the space saving is always more
+			m.minifyExpr(groupExpr(left, binaryLeftPrecMap[js.NullishToken]), binaryLeftPrecMap[js.NullishToken])
+			m.write(nullishBytes)
+			m.minifyExpr(groupExpr(right, binaryRightPrecMap[js.NullishToken]), binaryRightPrecMap[js.NullishToken])
 		} else {
 			// shorten when true and false bodies are true and false
 			trueX, falseX := m.isTrue(expr.X), m.isFalse(expr.X)

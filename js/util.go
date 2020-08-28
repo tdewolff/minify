@@ -33,6 +33,7 @@ var (
 	andBytes                   = []byte("&&")
 	orBytes                    = []byte("||")
 	optChainBytes              = []byte("?.")
+	nullishBytes               = []byte("??")
 	arrowBytes                 = []byte("=>")
 	zeroBytes                  = []byte("0")
 	oneBytes                   = []byte("1")
@@ -278,7 +279,8 @@ func exprPrec(i js.IExpr) js.OpPrec {
 }
 
 func groupExpr(i js.IExpr, prec js.OpPrec) js.IExpr {
-	if exprPrec(i) < prec {
+	precInside := exprPrec(i)
+	if precInside < prec && (precInside != js.OpCoalesce || prec != js.OpBitOr) {
 		return &js.GroupExpr{i}
 	}
 	return i
@@ -347,6 +349,26 @@ func (m *jsMinifier) isFalse(i js.IExpr) bool {
 		return ret
 	}
 	return false
+}
+
+func (m *jsMinifier) toNullishExpr(condExpr *js.CondExpr) (js.IExpr, js.IExpr, bool) {
+	// convert conditional expression to nullish:  a!=null?a:b  =>  a??b
+	if binaryExpr, ok := condExpr.Cond.(*js.BinaryExpr); ok && (binaryExpr.Op == js.EqEqToken || binaryExpr.Op == js.NotEqToken) {
+		var left, right js.IExpr
+		if binaryExpr.Op == js.EqEqToken {
+			left = condExpr.Y
+			right = condExpr.X
+		} else {
+			left = condExpr.X
+			right = condExpr.Y
+		}
+		if lit, ok := binaryExpr.X.(*js.LiteralExpr); ((ok && lit.TokenType == js.NullToken) || m.isUndefined(binaryExpr.X)) && m.isEqualExpr(binaryExpr.Y, left) {
+			return left, right, true
+		} else if lit, ok := binaryExpr.Y.(*js.LiteralExpr); ((ok && lit.TokenType == js.NullToken) || m.isUndefined(binaryExpr.Y)) && m.isEqualExpr(binaryExpr.X, left) {
+			return left, right, true
+		}
+	}
+	return nil, nil, false
 }
 
 func (m *jsMinifier) isUndefined(i js.IExpr) bool {
