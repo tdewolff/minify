@@ -242,6 +242,7 @@ func TestJS(t *testing.T) {
 		{`if(a){for(d of e)if(b)break}else c`, `if(a){for(d of e)if(b)break}else c`},
 		{`if(a){d:if(b)break}else c`, `if(a){d:if(b)break}else c`},
 		{`if(a){with(d)if(b)break}else c`, `if(a){with(d)if(b)break}else c`},
+		{`if(a)return b;if(c)return d;return e`, `return a?b:c?d:e`},
 
 		// var declarations
 		{`var a;var b`, `var a,b`},

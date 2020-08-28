@@ -170,6 +170,7 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 		list[j] = list[i]
 
 		// merge if/else with return/throw when followed by return/throw
+	MergeIfReturnThrow:
 		if 0 < j {
 			// separate from expression merging in case of:  if(a)return b;b=c;return d
 			if ifStmt, ok := list[j-1].(*js.IfStmt); ok && m.isEmptyStmt(ifStmt.Body) != m.isEmptyStmt(ifStmt.Else) {
@@ -186,10 +187,12 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 							returnStmt.Value = condExpr(ifStmt.Cond, left.Value, returnStmt.Value)
 							list[j-1] = returnStmt
 							j--
+							goto MergeIfReturnThrow
 						} else if left, ok := ifStmt.Else.(*js.ReturnStmt); ok && left.Value != nil {
 							returnStmt.Value = condExpr(ifStmt.Cond, returnStmt.Value, left.Value)
 							list[j-1] = returnStmt
 							j--
+							goto MergeIfReturnThrow
 						}
 					}
 				} else if throwStmt, ok := list[j].(*js.ThrowStmt); ok {
@@ -197,10 +200,12 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 						throwStmt.Value = condExpr(ifStmt.Cond, left.Value, throwStmt.Value)
 						list[j-1] = throwStmt
 						j--
+						goto MergeIfReturnThrow
 					} else if left, ok := ifStmt.Else.(*js.ThrowStmt); ok {
 						throwStmt.Value = condExpr(ifStmt.Cond, throwStmt.Value, left.Value)
 						list[j-1] = throwStmt
 						j--
+						goto MergeIfReturnThrow
 					}
 				}
 			}
