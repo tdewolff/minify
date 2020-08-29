@@ -535,6 +535,8 @@ func TestJS(t *testing.T) {
 		{`a=b?.[c]`, `a=b?.[c]`},
 		{`a={b(c){d}}`, `a={b(c){d}}`},
 		{`a(b,...c)`, `a(b,...c)`},
+		//{`'a b c'.split(' ')`, `['a','b','c']`}, // TODO?
+		//{`!function(){var a}`, `!function(){}`}, // TODO? remove unused variables
 
 		// merge expressions
 		{`b=5;return a+b`, `return b=5,a+b`},
