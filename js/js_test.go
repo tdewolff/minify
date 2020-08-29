@@ -527,6 +527,7 @@ func TestJS(t *testing.T) {
 		// other
 		{`async function g(){await x+y}`, `async function g(){await x+y}`},
 		{`a={"property": val1, "2": val2, "3name": val3};`, `a={property:val1,2:val2,"3name":val3}`},
+		{`() => { const v=6; x={v} }`, `()=>{const v=6;x={v}}`},
 		{`a=obj["if"]`, `a=obj.if`},
 		{`a=obj["2"]`, `a=obj[2]`},
 		{`a=obj["3name"]`, `a=obj["3name"]`},
