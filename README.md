@@ -270,7 +270,8 @@ All tools give very similar results, although UglifyJS compresses slightly bette
 | Closure Compiler | 53.4% | 64.0% | 35.7% | 53.6% | 34.3% |
 
 #### Time (lower is better)
-`minify` is the fastest tool amongst the tools tested.
+Most tools are extremely slow, with `minify` and `esbuild` being orders of magnitudes faster.
+
 | Tool | ace.js | dot.js | jquery.js | jqueryui.js | moment.js |
 | --- | --- | --- | --- | --- | --- |
 | **minify** | 49ms | 5ms | 22ms | 35ms | 13ms |
