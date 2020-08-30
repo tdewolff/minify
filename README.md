@@ -258,22 +258,22 @@ The following features are implemented:
 
 Performance is measured with `time [command]` ran 10 times and selecting the fastest one, on a Thinkpad T460 (i5-6300U quad-core 2.4GHz running Arch Linux) using Go 1.15.
 
-#### Compression ratio
-UglifyJS gives consistently better results, but the other tools gives very similar results.
+#### Compression ratio (lower is better)
+All tools give very similar results, although UglifyJS compresses slightly better.
 
 | Tool | ace.js | dot.js | jquery.js | jqueryui.js | moment.js |
 | --- | --- | --- | --- | --- | --- |
-| minify | 53.7% | 64.8% | 34.2% | 51.3% | 34.8% |
+| **minify** | 53.7% | 64.8% | 34.2% | 51.3% | 34.8% |
 | esbuild | 53.8% | 66.3% | 34.4% | 53.1% | 34.8% |
 | terser | 53.2% | 65.2% | 34.2% | 51.8% | 34.7% |
-| UglifyJS | **53.1%** | **64.7%** | **33.8%** | **50.7%** | **34.2%** |
+| UglifyJS | 53.1% | 64.7% | 33.8% | 50.7% | 34.2% |
 | Closure Compiler | 53.4% | 64.0% | 35.7% | 53.6% | 34.3% |
 
-#### Speed
+#### Time (lower is better)
 `minify` is the fastest tool amongst the tools tested.
 | Tool | ace.js | dot.js | jquery.js | jqueryui.js | moment.js |
 | --- | --- | --- | --- | --- | --- |
-| minify | **49ms** | **5ms** | **22ms** | **35ms** | **13ms** |
+| **minify** | 49ms | 5ms | 22ms | 35ms | 13ms |
 | esbuild | 64ms | 9ms | 31ms | 51ms | 17ms |
 | terser | 2900s | 180ms | 1400ms | 2200ms | 730ms |
 | UglifyJS | 3900ms | 210ms | 2000ms | 3100ms | 910ms |
