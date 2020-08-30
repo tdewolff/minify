@@ -2,7 +2,7 @@
 
 **[Online demo](https://go.tacodewolff.nl/minify) if you need to minify files *now*.**
 
-**[Command line tool](https://github.com/tdewolff/minify/tree/master/cmd/minify) that minifies concurrently and supports watching file changes.**
+**[Command line tool](https://github.com/tdewolff/minify/tree/master/cmd/minify) that minifies concurrently and watches file changes.**
 
 **[Releases](https://github.com/tdewolff/minify/releases) of CLI for various platforms.** See [CLI](https://github.com/tdewolff/minify/tree/master/cmd/minify) for more installation instructions.
 
