@@ -248,11 +248,11 @@ The following features are implemented:
 
 | File | Original Size | Compressed Size | Ratio | Time | Speed |
 | --- | --- | --- | --- | --- | --- |
-| ace.js | 644 kB | 346 kB | 53.7% | 34ms | 19 MB/s |
-| dot.js | 5.2 kB | 3.3 kB | 64.9% | 563µs | 9.2 MB/s |
-| jquery.js | 247 kB | 85 kB | 34.4% | 11ms | 22 MB/s |
-| jqueryui.js | 470 kB | 241 kB | 51.3% | 26ms | 18 MB/s |
-| moment.js | 99 kB | 35 kB | 34.9% | 4ms | 24 MB/s |
+| ace.js | 644&nbsp;kB | 346&nbsp;kB | 53.7% | 34ms | 19&nbsp;MB/s |
+| dot.js | 5.2&nbsp;kB | 3.3&nbsp;kB | 64.9% | 563µs | 9.2&nbsp;MB/s |
+| jquery.js | 247&nbsp;kB | 85&nbsp;kB | 34.4% | 11ms | 22&nbsp;MB/s |
+| jqueryui.js | 470&nbsp;kB | 241&nbsp;kB | 51.3% | 26ms | 18&nbsp;MB/s |
+| moment.js | 99&nbsp;kB | 35&nbsp;kB | 34.9% | 4ms | 24&nbsp;MB/s |
 
 ### Comparison with other tools
 
@@ -261,7 +261,6 @@ Performance is measured with `time [command]` ran 10 times and selecting the fas
 #### Compression ratio
 UglifyJS gives consistently better results, but the other tools gives very similar results.
 
-<sub>
 | Tool | ace.js | dot.js | jquery.js | jqueryui.js | moment.js |
 | --- | --- | --- | --- | --- | --- |
 | minify | 53.7% | 64.8% | 34.2% | 51.3% | 34.8% |
@@ -269,11 +268,9 @@ UglifyJS gives consistently better results, but the other tools gives very simil
 | terser | 53.2% | 65.2% | 34.2% | 51.8% | 34.7% |
 | UglifyJS | **53.1%** | **64.7%** | **33.8%** | **50.7%** | **34.2%** |
 | Closure Compiler | 53.4% | 64.0% | 35.7% | 53.6% | 34.3% |
-</sub>
 
 #### Speed
 `minify` is the fastest tool amongst the tools tested.
-<sub>
 | Tool | ace.js | dot.js | jquery.js | jqueryui.js | moment.js |
 | --- | --- | --- | --- | --- | --- |
 | minify | **49ms** | **5ms** | **22ms** | **35ms** | **13ms** |
@@ -281,7 +278,6 @@ UglifyJS gives consistently better results, but the other tools gives very simil
 | terser | 2900s | 180ms | 1400ms | 2200ms | 730ms |
 | UglifyJS | 3900ms | 210ms | 2000ms | 3100ms | 910ms |
 | Closure Compiler | 6100ms | 2500ms | 4400ms | 5300ms | 3500ms |
-</sub>
 
 Tools:
 - [minify](https://github.com/tdewolff/minify): `minify -o script.min.js script.js`
