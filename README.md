@@ -87,56 +87,64 @@ There is no guarantee for absolute stability, but I take issues and bugs serious
 For all subpackages and the imported `parse` package, test coverage of 100% is pursued. Besides full coverage, the minifiers are [fuzz tested](https://github.com/tdewolff/fuzz) using [github.com/dvyukov/go-fuzz](http://www.github.com/dvyukov/go-fuzz), see [the wiki](https://github.com/tdewolff/minify/wiki) for the most important bugs found by fuzz testing. These tests ensure that everything works as intended and that the code does not crash (whatever the input). If you still encounter a bug, please file a [bug report](https://github.com/tdewolff/minify/issues)!
 
 ## Performance
-The benchmarks directory contains a number of standardized samples used to compare performance between changes. To give an indication of the speed of this library, I've ran the tests on my Thinkpad T460 (i5-6300U quad-core 2.4GHz running Arch Linux) using Go 1.9.2.
+The benchmarks directory contains a number of standardized samples used to compare performance between changes. To give an indication of the speed of this library, I've ran the tests on my Thinkpad T460 (i5-6300U quad-core 2.4GHz running Arch Linux) using Go 1.15.
 
 ```
 name                              time/op
-CSS/sample_bootstrap.css-4          2.26ms ± 0%
-CSS/sample_gumby.css-4              2.92ms ± 1%
-HTML/sample_amazon.html-4           2.33ms ± 2%
-HTML/sample_bbc.html-4              1.02ms ± 1%
-HTML/sample_blogpost.html-4          171µs ± 2%
-HTML/sample_es6.html-4              14.5ms ± 0%
-HTML/sample_stackoverflow.html-4    2.41ms ± 1%
-HTML/sample_wikipedia.html-4        4.76ms ± 0%
-JS/sample_ace.js-4                  7.41ms ± 0%
-JS/sample_dot.js-4                  63.7µs ± 0%
-JS/sample_jquery.js-4               2.99ms ± 0%
-JS/sample_jqueryui.js-4             5.92ms ± 2%
-JS/sample_moment.js-4               1.09ms ± 1%
-JSON/sample_large.json-4            2.95ms ± 0%
-JSON/sample_testsuite.json-4        1.51ms ± 1%
-JSON/sample_twitter.json-4          6.75µs ± 1%
-SVG/sample_arctic.svg-4             62.3ms ± 1%
-SVG/sample_gopher.svg-4              218µs ± 0%
-SVG/sample_usa.svg-4                33.1ms ± 3%
-XML/sample_books.xml-4              36.2µs ± 0%
-XML/sample_catalog.xml-4            14.9µs ± 0%
-XML/sample_omg.xml-4                6.31ms ± 1%
+CSS/sample_bootstrap.css-4          2.70ms ± 0%
+CSS/sample_gumby.css-4              3.57ms ± 0%
+CSS/sample_fontawesome.css-4         767µs ± 0%
+CSS/sample_normalize.css-4          85.5µs ± 0%
+HTML/sample_amazon.html-4           15.2ms ± 0%
+HTML/sample_bbc.html-4              3.90ms ± 0%
+HTML/sample_blogpost.html-4          420µs ± 0%
+HTML/sample_es6.html-4              15.6ms ± 0%
+HTML/sample_stackoverflow.html-4    3.73ms ± 0%
+HTML/sample_wikipedia.html-4        6.60ms ± 0%
+JS/sample_ace.js-4                  28.7ms ± 0%
+JS/sample_dot.js-4                   357µs ± 0%
+JS/sample_jquery.js-4               10.0ms ± 0%
+JS/sample_jqueryui.js-4             20.4ms ± 0%
+JS/sample_moment.js-4               3.47ms ± 0%
+JSON/sample_large.json-4            3.25ms ± 0%
+JSON/sample_testsuite.json-4        1.74ms ± 0%
+JSON/sample_twitter.json-4          24.2µs ± 0%
+SVG/sample_arctic.svg-4             34.7ms ± 0%
+SVG/sample_gopher.svg-4              307µs ± 0%
+SVG/sample_usa.svg-4                57.4ms ± 0%
+SVG/sample_car.svg-4                18.0ms ± 0%
+SVG/sample_tiger.svg-4              5.61ms ± 0%
+XML/sample_books.xml-4              54.7µs ± 0%
+XML/sample_catalog.xml-4            33.0µs ± 0%
+XML/sample_omg.xml-4                7.17ms ± 0%
 
 name                              speed
-CSS/sample_bootstrap.css-4        60.8MB/s ± 0%
-CSS/sample_gumby.css-4            63.9MB/s ± 1%
-HTML/sample_amazon.html-4          203MB/s ± 2%
-HTML/sample_bbc.html-4             113MB/s ± 1%
-HTML/sample_blogpost.html-4        123MB/s ± 2%
-HTML/sample_es6.html-4            70.7MB/s ± 0%
-HTML/sample_stackoverflow.html-4  85.2MB/s ± 1%
-HTML/sample_wikipedia.html-4      93.6MB/s ± 0%
-JS/sample_ace.js-4                86.9MB/s ± 0%
-JS/sample_dot.js-4                81.0MB/s ± 0%
-JS/sample_jquery.js-4             82.8MB/s ± 0%
-JS/sample_jqueryui.js-4           79.3MB/s ± 2%
-JS/sample_moment.js-4             91.2MB/s ± 1%
-JSON/sample_large.json-4           258MB/s ± 0%
-JSON/sample_testsuite.json-4       457MB/s ± 1%
-JSON/sample_twitter.json-4         226MB/s ± 1%
-SVG/sample_arctic.svg-4           23.6MB/s ± 1%
-SVG/sample_gopher.svg-4           26.7MB/s ± 0%
-SVG/sample_usa.svg-4              30.9MB/s ± 3%
-XML/sample_books.xml-4             122MB/s ± 0%
-XML/sample_catalog.xml-4           130MB/s ± 0%
-XML/sample_omg.xml-4               180MB/s ± 1%
+CSS/sample_bootstrap.css-4        50.7MB/s ± 0%
+CSS/sample_gumby.css-4            52.1MB/s ± 0%
+CSS/sample_fontawesome.css-4      61.2MB/s ± 0%
+CSS/sample_normalize.css-4        70.8MB/s ± 0%
+HTML/sample_amazon.html-4         31.1MB/s ± 0%
+HTML/sample_bbc.html-4            29.5MB/s ± 0%
+HTML/sample_blogpost.html-4       49.8MB/s ± 0%
+HTML/sample_es6.html-4            65.6MB/s ± 0%
+HTML/sample_stackoverflow.html-4  55.0MB/s ± 0%
+HTML/sample_wikipedia.html-4      67.5MB/s ± 0%
+JS/sample_ace.js-4                22.4MB/s ± 0%
+JS/sample_dot.js-4                14.5MB/s ± 0%
+JS/sample_jquery.js-4             24.8MB/s ± 0%
+JS/sample_jqueryui.js-4           23.0MB/s ± 0%
+JS/sample_moment.js-4             28.6MB/s ± 0%
+JSON/sample_large.json-4           234MB/s ± 0%
+JSON/sample_testsuite.json-4       394MB/s ± 0%
+JSON/sample_twitter.json-4        63.0MB/s ± 0%
+SVG/sample_arctic.svg-4           42.4MB/s ± 0%
+SVG/sample_gopher.svg-4           19.0MB/s ± 0%
+SVG/sample_usa.svg-4              17.8MB/s ± 0%
+SVG/sample_car.svg-4              29.3MB/s ± 0%
+SVG/sample_tiger.svg-4            12.2MB/s ± 0%
+XML/sample_books.xml-4            81.0MB/s ± 0%
+XML/sample_catalog.xml-4          58.6MB/s ± 0%
+XML/sample_omg.xml-4               159MB/s ± 0%
 ```
 
 ## HTML
@@ -235,6 +243,35 @@ The following features are implemented:
 - convert object key or index expression from string to identifier or decimal
 - merge concatenated strings
 - rewrite numbers (binary, octal, decimal, hexadecimal) to shorter representations
+
+### Speed and compression
+
+| File | Original Size | Compressed Size | Ratio | Time | Speed |
+| --- | --- | --- | --- | --- | --- |
+| ace.js | 644 kB | 346 kB | 53.7% | 34ms | 19 MB/s |
+| dot.js | 5.2 kB | 3.3 kB | 64.9% | 563µs | 9.2 MB/s |
+| jquery.js | 247 kB | 85 kB | 34.4% | 11ms | 22 MB/s |
+| jqueryui.js | 470 kB | 241 kB | 51.3% | 26ms | 18 MB/s |
+| moment.js | 99 kB | 35 kB | 34.9% | 4ms | 24 MB/s |
+
+### Comparison with other tools
+
+Performance is measured with `time [command]` ran 10 times and selecting the fastest one, on a Thinkpad T460 (i5-6300U quad-core 2.4GHz running Arch Linux) using Go 1.15.
+
+| Tool | ace.js | dot.js | jquery.js | jqueryui.js | moment.js |
+| --- | --- | --- | --- | --- | --- |
+| **minify** | 53.7% in 49ms | 64.8% in 5ms | 34.2% in 22ms | 51.3% in 35ms | 34.8% in 13ms |
+| esbuild | 53.8% in 64ms | 66.3% in 9ms | 34.4% in 31ms | 53.1% in 51ms | 34.8% in 17ms |
+| terser | 53.2% in 2900s | 65.2% in 180ms | 34.2% in 1400ms | 51.8% in 2200ms | 34.7% in 730ms |
+| UglifyJS | 53.1% in 3900ms | 64.7% in 210ms | 33.8% in 2000ms | 50.7% in 3100ms | 34.2% in 910ms |
+| Closure Compiler | 38.9% in 7200ms | 56.9% in 2600ms | 32.3% in 5300ms | 43.2% in 6300ms | 29.3% in 4100ms |
+
+Tools:
+- [minify](https://github.com/tdewolff/minify): `minify -o script.min.js script.js`
+- [esbuild](https://github.com/evanw/esbuild): `esbuild --minify --outfile=script.min.js script.js`
+- [terser](https://github.com/terser/terser): `terser script.js --compress --mangle -o script.min.js`
+- [UglifyJS](https://github.com/Skalman/UglifyJS-online): `uglifyjs --compress --mangle -o script.min.js script.js`
+- [Closure Compiler](https://github.com/google/closure-compiler): `closure-compiler -O ADVANCED --js script.js --js_output_file script.min.js --language_in ECMASCRIPT_NEXT -W QUIET --jscomp_off=checkVars`
 
 ## JSON
 
