@@ -258,20 +258,37 @@ The following features are implemented:
 
 Performance is measured with `time [command]` ran 10 times and selecting the fastest one, on a Thinkpad T460 (i5-6300U quad-core 2.4GHz running Arch Linux) using Go 1.15.
 
+#### Compression ratio
+UglifyJS gives consistently better results, but the other tools gives very similar results.
+
+<sub>
 | Tool | ace.js | dot.js | jquery.js | jqueryui.js | moment.js |
 | --- | --- | --- | --- | --- | --- |
-| **minify** | 53.7% in 49ms | 64.8% in 5ms | 34.2% in 22ms | 51.3% in 35ms | 34.8% in 13ms |
-| esbuild | 53.8% in 64ms | 66.3% in 9ms | 34.4% in 31ms | 53.1% in 51ms | 34.8% in 17ms |
-| terser | 53.2% in 2900s | 65.2% in 180ms | 34.2% in 1400ms | 51.8% in 2200ms | 34.7% in 730ms |
-| UglifyJS | 53.1% in 3900ms | 64.7% in 210ms | 33.8% in 2000ms | 50.7% in 3100ms | 34.2% in 910ms |
-| Closure Compiler | 38.9% in 7200ms | 56.9% in 2600ms | 32.3% in 5300ms | 43.2% in 6300ms | 29.3% in 4100ms |
+| minify | 53.7% | 64.8% | 34.2% | 51.3% | 34.8% |
+| esbuild | 53.8% | 66.3% | 34.4% | 53.1% | 34.8% |
+| terser | 53.2% | 65.2% | 34.2% | 51.8% | 34.7% |
+| UglifyJS | **53.1%** | **64.7%** | **33.8%** | **50.7%** | **34.2%** |
+| Closure Compiler | 53.4% | 64.0% | 35.7% | 53.6% | 34.3% |
+</sub>
+
+#### Speed
+`minify` is the fastest tool amongst the tools tested.
+<sub>
+| Tool | ace.js | dot.js | jquery.js | jqueryui.js | moment.js |
+| --- | --- | --- | --- | --- | --- |
+| minify | **49ms** | **5ms** | **22ms** | **35ms** | **13ms** |
+| esbuild | 64ms | 9ms | 31ms | 51ms | 17ms |
+| terser | 2900s | 180ms | 1400ms | 2200ms | 730ms |
+| UglifyJS | 3900ms | 210ms | 2000ms | 3100ms | 910ms |
+| Closure Compiler | 6100ms | 2500ms | 4400ms | 5300ms | 3500ms |
+</sub>
 
 Tools:
 - [minify](https://github.com/tdewolff/minify): `minify -o script.min.js script.js`
 - [esbuild](https://github.com/evanw/esbuild): `esbuild --minify --outfile=script.min.js script.js`
 - [terser](https://github.com/terser/terser): `terser script.js --compress --mangle -o script.min.js`
 - [UglifyJS](https://github.com/Skalman/UglifyJS-online): `uglifyjs --compress --mangle -o script.min.js script.js`
-- [Closure Compiler](https://github.com/google/closure-compiler): `closure-compiler -O ADVANCED --js script.js --js_output_file script.min.js --language_in ECMASCRIPT_NEXT -W QUIET --jscomp_off=checkVars`
+- [Closure Compiler](https://github.com/google/closure-compiler): `closure-compiler -O SIMPLE --js script.js --js_output_file script.min.js --language_in ECMASCRIPT_NEXT -W QUIET --jscomp_off=checkVars` optimization level `SIMPLE` instead of `ADVANCED` to make similar assumptions as do the other tools (do not rename/assume anything of global level variables)
 
 ## JSON
 
