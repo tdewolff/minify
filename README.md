@@ -26,6 +26,9 @@ The core functionality associates mimetypes with minification functions, allowin
 		- [Whitespace removal](#whitespace-removal)
 	- [CSS](#css)
 	- [JS](#js)
+		- [Comparison with other tools](#comparison-with-other-tools)
+            - [Compression ratio (lower is better)](#compression-ratio-lower-is-better)
+            - [Time (lower is better)](#time-lower-is-better)
 	- [JSON](#json)
 	- [SVG](#svg)
 	- [XML](#xml)
@@ -244,19 +247,15 @@ The following features are implemented:
 - merge concatenated strings
 - rewrite numbers (binary, octal, decimal, hexadecimal) to shorter representations
 
-### Speed and compression
-
-| File | Original Size | Compressed Size | Ratio | Time | Speed |
-| --- | --- | --- | --- | --- | --- |
-| ace.js | 644&nbsp;kB | 346&nbsp;kB | 53.7% | 34ms | 19&nbsp;MB/s |
-| dot.js | 5.2&nbsp;kB | 3.3&nbsp;kB | 64.9% | 563µs | 9.2&nbsp;MB/s |
-| jquery.js | 247&nbsp;kB | 85&nbsp;kB | 34.4% | 11ms | 22&nbsp;MB/s |
-| jqueryui.js | 470&nbsp;kB | 241&nbsp;kB | 51.3% | 26ms | 18&nbsp;MB/s |
-| moment.js | 99&nbsp;kB | 35&nbsp;kB | 34.9% | 4ms | 24&nbsp;MB/s |
-
 ### Comparison with other tools
 
 Performance is measured with `time [command]` ran 10 times and selecting the fastest one, on a Thinkpad T460 (i5-6300U quad-core 2.4GHz running Arch Linux) using Go 1.15.
+
+- [minify](https://github.com/tdewolff/minify): `minify -o script.min.js script.js`
+- [esbuild](https://github.com/evanw/esbuild): `esbuild --minify --outfile=script.min.js script.js`
+- [terser](https://github.com/terser/terser): `terser script.js --compress --mangle -o script.min.js`
+- [UglifyJS](https://github.com/Skalman/UglifyJS-online): `uglifyjs --compress --mangle -o script.min.js script.js`
+- [Closure Compiler](https://github.com/google/closure-compiler): `closure-compiler -O SIMPLE --js script.js --js_output_file script.min.js --language_in ECMASCRIPT_NEXT -W QUIET --jscomp_off=checkVars` optimization level `SIMPLE` instead of `ADVANCED` to make similar assumptions as do the other tools (do not rename/assume anything of global level variables)
 
 #### Compression ratio (lower is better)
 All tools give very similar results, although UglifyJS compresses slightly better.
@@ -279,13 +278,6 @@ Most tools are extremely slow, with `minify` and `esbuild` being orders of magni
 | terser | 2900s | 180ms | 1400ms | 2200ms | 730ms |
 | UglifyJS | 3900ms | 210ms | 2000ms | 3100ms | 910ms |
 | Closure Compiler | 6100ms | 2500ms | 4400ms | 5300ms | 3500ms |
-
-Tools:
-- [minify](https://github.com/tdewolff/minify): `minify -o script.min.js script.js`
-- [esbuild](https://github.com/evanw/esbuild): `esbuild --minify --outfile=script.min.js script.js`
-- [terser](https://github.com/terser/terser): `terser script.js --compress --mangle -o script.min.js`
-- [UglifyJS](https://github.com/Skalman/UglifyJS-online): `uglifyjs --compress --mangle -o script.min.js script.js`
-- [Closure Compiler](https://github.com/google/closure-compiler): `closure-compiler -O SIMPLE --js script.js --js_output_file script.min.js --language_in ECMASCRIPT_NEXT -W QUIET --jscomp_off=checkVars` optimization level `SIMPLE` instead of `ADVANCED` to make similar assumptions as do the other tools (do not rename/assume anything of global level variables)
 
 ## JSON
 
