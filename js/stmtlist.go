@@ -150,11 +150,11 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 					// merge const, let declarations
 					right.List = append(left.List, right.List...)
 					j--
-				} else if forStmt, ok := list[i].(*js.ForStmt); ok && forStmt.Init == nil {
+				} else if forStmt, ok := list[i].(*js.ForStmt); ok && left.TokenType == js.VarToken && forStmt.Init == nil {
 					// TODO: only merge statements that don't have 'in' or 'of' keywords (slow to check?)
 					forStmt.Init = left
 					j--
-				} else if whileStmt, ok := list[i].(*js.WhileStmt); ok {
+				} else if whileStmt, ok := list[i].(*js.WhileStmt); ok && left.TokenType == js.VarToken {
 					// TODO: only merge statements that don't have 'in' or 'of' keywords (slow to check?)
 					var body js.BlockStmt
 					if blockStmt, ok := whileStmt.Body.(*js.BlockStmt); ok {

@@ -551,8 +551,10 @@ func TestJS(t *testing.T) {
 		{`a in 5;for(;b;)c()`, `for((a in 5);b;)c()`}, // is longer
 		{`a in 5;for(b=4;b;)c()`, `a in 5;for(b=4;b;)c()`},
 		{`var a=5;for(;b;)c()`, `for(var a=5;b;)c()`},
+		{`let a=5;for(;b;)c()`, `let a=5;for(;b;)c()`},
 		{`var a=b in c;for(;b;)c()`, `for(var a=(b in c);b;)c()`},
 		{`var a=5;while(b)c()`, `for(var a=5;b;)c()`},
+		{`let a=5;while(b)c()`, `let a=5;while(b)c()`},
 		{`a=5;for(var b=4;b;)c()`, `a=5;for(var b=4;b;)c()`},
 		{`a=5;switch(b=4){}`, `switch(a=5,b=4){}`},
 		{`a=5;with(b=4){}`, `with(a=5,b=4);`},
