@@ -275,9 +275,9 @@ func TestJS(t *testing.T) {
 		{`var a;var b=6;a=7`, `var b=6,a=7`}, // swap declaration order to maintain definition order
 		{`var a=5;var b=6;a=7`, `var a=5,b=6;a=7`},
 		{`var a;var b=6;z=7`, `var b=6,a;z=7`},
-		//{`for(var a=6,b=7;;);var c=8`, `for(var a=6,b=7,c=8;;);`},
-		//{`while(b);var a=4;var b=5;`, `for(var a=4,b=5;b;);`},
-		//{`for(var c;b;){let a=8};var a`, `for(var c,a;b;)let a=8`},
+		{`for(var a=6,b=7;;);var c=8`, `for(var a=6,b=7,c=8;;);`},
+		{`for(var c;b;){let a=8};var a`, `for(var c,a;b;)let a=8`},
+		{`for(;b;){let a=8};var a;var b`, `for(var a,b;b;)let a=8`},
 
 		// function and method declarations
 		{`function g(){return}`, `function g(){}`},
@@ -536,7 +536,11 @@ func TestJS(t *testing.T) {
 		{`a={b(c){d}}`, `a={b(c){d}}`},
 		{`a(b,...c)`, `a(b,...c)`},
 		//{`'a b c'.split(' ')`, `['a','b','c']`}, // TODO?
-		//{`!function(){var a}`, `!function(){}`}, // TODO? remove unused variables
+		//{`!function(){var a}`, `!function(){}`}, // TODO: remove unused variables
+		//{`const a=6;f(a)`, `f(6)`},             // TODO: inline single-use variables that are literals
+		//{`let a="string";f(a)`, `f("string")`}, // TODO: inline single-use variables that are literals
+		{`let a="string"`, `let a="string"`},
+		//{`{let a="string"}`, ``}, // TODO: remove unused variables that are not in global scope
 
 		// merge expressions
 		{`b=5;return a+b`, `return b=5,a+b`},
@@ -555,6 +559,7 @@ func TestJS(t *testing.T) {
 		{`var a=b in c;for(;b;)c()`, `for(var a=(b in c);b;)c()`},
 		{`var a=5;while(b)c()`, `for(var a=5;b;)c()`},
 		{`let a=5;while(b)c()`, `let a=5;while(b)c()`},
+		//{`var a;for(a=5;b;)c()`, `for(var a=5;b;)c()`}, // TODO
 		{`a=5;for(var b=4;b;)c()`, `a=5;for(var b=4;b;)c()`},
 		{`a=5;switch(b=4){}`, `switch(a=5,b=4){}`},
 		{`a=5;with(b=4){}`, `with(a=5,b=4);`},

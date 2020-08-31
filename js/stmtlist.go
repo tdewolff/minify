@@ -146,14 +146,18 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 					j--
 				}
 			} else if left, ok := list[i-1].(*js.VarDecl); ok {
-				if right, ok := list[i].(*js.VarDecl); ok && left.TokenType != js.VarToken && left.TokenType == right.TokenType {
-					// merge const, let declarations
+				if right, ok := list[i].(*js.VarDecl); ok && left.TokenType == right.TokenType {
+					// merge const and let declarations
 					right.List = append(left.List, right.List...)
 					j--
-				} else if forStmt, ok := list[i].(*js.ForStmt); ok && left.TokenType == js.VarToken && forStmt.Init == nil {
+				} else if forStmt, ok := list[i].(*js.ForStmt); ok && left.TokenType == js.VarToken {
 					// TODO: only merge statements that don't have 'in' or 'of' keywords (slow to check?)
-					forStmt.Init = left
-					j--
+					if forStmt.Init == nil {
+						forStmt.Init = left
+						j--
+					} else {
+						// TODO: merge with expressions if they define the declarations
+					}
 				} else if whileStmt, ok := list[i].(*js.WhileStmt); ok && left.TokenType == js.VarToken {
 					// TODO: only merge statements that don't have 'in' or 'of' keywords (slow to check?)
 					var body js.BlockStmt

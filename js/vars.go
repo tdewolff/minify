@@ -146,19 +146,24 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) *js.VarDecl {
 		var decl *js.VarDecl
 		if varDecl, ok := body.List[0].(*js.VarDecl); ok && varDecl.TokenType == js.VarToken {
 			decl = varDecl
-			//} else if forStmt, ok := body.List[0].(*js.ForStmt); ok && forStmt.Init != nil {
-			//	if varDecl, ok := forStmt.Init.(*js.VarDecl); ok && varDecl.TokenType == js.VarToken {
-			//		decl = varDecl
-			//	}
-			//} else if whileStmt, ok := body.List[0].(*js.WhileStmt); ok {
-			//	decl = &js.VarDecl{js.VarToken, nil}
-			//	var forBody js.BlockStmt
-			//	if blockStmt, ok := whileStmt.Body.(*js.BlockStmt); ok {
-			//		forBody = *blockStmt
-			//	} else {
-			//		forBody.List = []js.IStmt{whileStmt.Body}
-			//	}
-			//	body.List[0] = &js.ForStmt{decl, whileStmt.Cond, nil, forBody}
+		} else if forStmt, ok := body.List[0].(*js.ForStmt); ok {
+			// TODO: only merge statements that don't have 'in' or 'of' keywords (slow to check?)
+			if forStmt.Init == nil {
+				decl = &js.VarDecl{js.VarToken, nil}
+				forStmt.Init = decl
+			} else if varDecl, ok := forStmt.Init.(*js.VarDecl); ok && varDecl.TokenType == js.VarToken {
+				decl = varDecl
+			}
+		} else if whileStmt, ok := body.List[0].(*js.WhileStmt); ok {
+			// TODO: only merge statements that don't have 'in' or 'of' keywords (slow to check?)
+			decl = &js.VarDecl{js.VarToken, nil}
+			var forBody js.BlockStmt
+			if blockStmt, ok := whileStmt.Body.(*js.BlockStmt); ok {
+				forBody = *blockStmt
+			} else {
+				forBody.List = []js.IStmt{whileStmt.Body}
+			}
+			body.List[0] = &js.ForStmt{decl, whileStmt.Cond, nil, forBody}
 		}
 		if decl != nil {
 			// original declarations
