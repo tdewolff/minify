@@ -979,22 +979,32 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			}
 		}
 	case Box_Shadow:
-		if len(values) == 1 && (values[0].Ident == None || values[0].Ident == Initial) {
-			values = []Token{{css.NumberToken, zeroBytes, nil, 0, 0}, {css.NumberToken, zeroBytes, nil, 0, 0}}
-		} else {
-			numbers := []int{}
-			for i := 0; i < len(values); i++ {
-				if values[i].IsLength() {
-					numbers = append(numbers, i)
+		start := 0
+		for end := 0; end <= len(values); end++ { // loop over comma-separated lists
+			if end != len(values) && values[end].TokenType != css.CommaToken {
+				continue
+			}
+
+			if end-start == 1 && (values[start].Ident == None || values[start].Ident == Initial) {
+				values = append(append(values[:start], Token{css.NumberToken, zeroBytes, nil, 0, 0}, Token{css.NumberToken, zeroBytes, nil, 0, 0}), values[end:]...)
+			} else {
+				numbers := []int{}
+				for i := start; i < end; i++ {
+					if values[i].IsLength() {
+						numbers = append(numbers, i)
+					}
+				}
+				if len(numbers) == 4 && values[numbers[3]].IsZero() {
+					values = append(values[:numbers[3]], values[numbers[3]+1:]...)
+					numbers = numbers[:3]
+					end--
+				}
+				if len(numbers) == 3 && values[numbers[2]].IsZero() {
+					values = append(values[:numbers[2]], values[numbers[2]+1:]...)
+					end--
 				}
 			}
-			if len(numbers) == 4 && values[numbers[3]].IsZero() {
-				values = append(values[:numbers[3]], values[numbers[3]+1:]...)
-				numbers = numbers[:3]
-			}
-			if len(numbers) == 3 && values[numbers[2]].IsZero() {
-				values = append(values[:numbers[2]], values[numbers[2]+1:]...)
-			}
+			start = end + 1
 		}
 	case Ms_Filter:
 		alpha := []byte("progid:DXImageTransform.Microsoft.Alpha(Opacity=")
