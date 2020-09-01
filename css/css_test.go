@@ -371,6 +371,7 @@ func TestCSSInline(t *testing.T) {
 		{"margin: rgb(ident);", "margin:rgb(ident)"},
 		{"filter: progid:b().c.Alpha(rgba(x));", "filter:progid:b().c.Alpha(rgba(x))"},
 		{"margin: rgb((brackets));", "margin:rgb((brackets))"},
+		//{`background-color:transparent`, `background-color:#0000`}, // TODO for CSS3
 
 		// bugs
 		{"background: linear-gradient(-180deg, #355FFF 0%, #1F52FF 100%) 0% 0% / cover", "background:linear-gradient(-180deg,#355FFF 0%,#1F52FF 100%)0 0/cover"}, // #263
@@ -402,6 +403,7 @@ func TestCSSKeepCSS2(t *testing.T) {
 		expected string
 	}{
 		{`margin:5000em`, `margin:5000em`},
+		{`color:transparent`, `color:transparent`},
 	}
 
 	m := minify.New()
