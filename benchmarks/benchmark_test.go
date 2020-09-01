@@ -12,17 +12,18 @@ import (
 
 func benchmark(b *testing.B, mediatype string, sample string) {
 	m := minify.Default
-	buf, err := ioutil.ReadFile(sample)
+	in, err := ioutil.ReadFile(sample)
 	if err != nil {
 		panic(err)
 	}
 	b.Run(sample, func(b *testing.B) {
-		b.SetBytes(int64(len(buf)))
+		out := make([]byte, 0, len(in))
+		b.SetBytes(int64(len(in)))
 		for i := 0; i < b.N; i++ {
 			b.StopTimer()
 			runtime.GC()
-			r := buffer.NewReader(parse.Copy(buf))
-			w := buffer.NewWriter(make([]byte, 0, len(buf)))
+			r := buffer.NewReader(parse.Copy(in))
+			w := buffer.NewWriter(out[:0])
 			b.StartTimer()
 
 			if err := m.Minify(mediatype, w, r); err != nil {
