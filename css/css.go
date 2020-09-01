@@ -679,11 +679,11 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 		}
 	case Font_Family:
 		for i, value := range values {
-			if value.TokenType == css.StringToken && len(value.Data) > 2 {
+			if value.TokenType == css.StringToken && 2 < len(value.Data) {
 				unquote := true
 				parse.ToLower(value.Data)
 				s := value.Data[1 : len(value.Data)-1]
-				if len(s) > 0 {
+				if 0 < len(s) {
 					for _, split := range bytes.Split(s, spaceBytes) {
 						// if len is zero, it contains two consecutive spaces
 						if len(split) == 0 || !css.IsIdent(split) {
@@ -764,219 +764,270 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			values = []Token{{css.IdentToken, noneBytes, nil, 0, None}}
 		}
 	case Background:
-		// minify background-size and lowercase all identifiers
-		for i := 0; i < len(values); i++ {
-			if values[i].TokenType == css.DelimToken && values[i].Data[0] == '/' {
-				// background-size consists of either [<length-percentage> | auto | cover | contain] or [<length-percentage> | auto]{2}
-				// we can only minify the latter
-				if i+1 < len(values) && (values[i+1].TokenType == css.NumberToken || values[i+1].IsLengthPercentage() || values[i+1].Ident == Auto) {
-					if i+2 < len(values) && (values[i+2].TokenType == css.NumberToken || values[i+2].IsLengthPercentage() || values[i+2].Ident == Auto) {
-						sizeValues := c.minifyProperty(Background_Size, values[i+1:i+3])
-						if len(sizeValues) == 1 && sizeValues[0].Ident == Auto {
-							// remove background-size if it is '/ auto' after minifying the property
-							values = append(values[:i], values[i+3:]...)
-							i--
-						} else {
-							values = append(values[:i+1], append(sizeValues, values[i+3:]...)...)
-							i += len(sizeValues) - 1
-						}
-					} else if values[i+1].Ident == Auto {
-						// remove background-size if it is '/ auto'
-						values = append(values[:i], values[i+2:]...)
-						i--
-					}
-				}
-			}
-		}
-
-		// minify all other values
-		iPaddingBox := -1 // position of background-origin that is padding-box
-		for i := 0; i < len(values); i++ {
-			h := values[i].Ident
-			values[i] = minifyColor(values[i])
-			if values[i].TokenType == css.IdentToken {
-				if i+1 < len(values) && values[i+1].TokenType == css.IdentToken && (h == Space || h == Round || h == Repeat || h == No_Repeat) {
-					if h2 := values[i+1].Ident; h2 == Space || h2 == Round || h2 == Repeat || h2 == No_Repeat {
-						repeatValues := c.minifyProperty(Background_Repeat, values[i:i+2])
-						if len(repeatValues) == 1 && repeatValues[0].Ident == Repeat {
-							values = append(values[:i], values[i+2:]...)
-							i--
-						} else {
-							values = append(values[:i], append(repeatValues, values[i+2:]...)...)
-							i += len(repeatValues) - 1
-						}
-						continue
-					}
-				} else if h == None || h == Scroll || h == Transparent {
-					values = append(values[:i], values[i+1:]...)
-					i--
-					continue
-				} else if h == Border_Box || h == Padding_Box {
-					if iPaddingBox == -1 && h == Padding_Box { // background-origin
-						iPaddingBox = i
-					} else if iPaddingBox != -1 && h == Border_Box { // background-clip
-						values = append(values[:i], values[i+1:]...)
-						values = append(values[:iPaddingBox], values[iPaddingBox+1:]...)
-						i -= 2
-					}
-					continue
-				}
-			} else if values[i].TokenType == css.HashToken && bytes.Equal(values[i].Data, blackBytes) {
-				values = append(values[:i], values[i+1:]...)
-				i--
+		start := 0
+		for end := 0; end <= len(values); end++ { // loop over comma-separated lists
+			if end != len(values) && values[end].TokenType != css.CommaToken {
 				continue
 			}
 
-			// further minify background-position and background-size combination
-			if values[i].TokenType == css.NumberToken || values[i].IsLengthPercentage() || h == Left || h == Right || h == Top || h == Bottom || h == Center {
-				j := i + 1
-				for ; j < len(values); j++ {
-					if h := values[j].Ident; h == Left || h == Right || h == Top || h == Bottom || h == Center {
-						continue
-					} else if values[j].TokenType == css.NumberToken || values[j].IsLengthPercentage() {
-						continue
-					}
-					break
-				}
-
-				positionValues := c.minifyProperty(Background_Position, values[i:j])
-				hasSize := j < len(values) && values[j].TokenType == css.DelimToken && values[j].Data[0] == '/'
-				if !hasSize && len(positionValues) == 2 && positionValues[0].IsZero() && positionValues[1].IsZero() {
-					values = append(values[:i], values[j:]...)
-					i--
-				} else {
-					values = append(values[:i], append(positionValues, values[j:]...)...)
-					i += len(positionValues) - 1
-				}
-			}
-		}
-
-		if len(values) == 0 {
-			values = []Token{{css.NumberToken, zeroBytes, nil, 0, 0}, {css.NumberToken, zeroBytes, nil, 0, 0}}
-		}
-	case Background_Size:
-		if len(values) == 2 && values[1].Ident == Auto {
-			values = values[:1]
-		}
-	case Background_Repeat:
-		if len(values) == 2 && values[0].TokenType == css.IdentToken && values[1].TokenType == css.IdentToken {
-			if values[0].Ident == values[1].Ident {
-				values = values[:1]
-			} else if values[0].Ident == Repeat && values[1].Ident == No_Repeat {
-				values = values[:1]
-				values[0].Data = repeatXBytes
-				values[0].Ident = Repeat_X
-			} else if values[0].Ident == No_Repeat && values[1].Ident == Repeat {
-				values = values[:1]
-				values[0].Data = repeatYBytes
-				values[0].Ident = Repeat_Y
-			}
-		}
-	case Background_Position:
-		if len(values) == 3 || len(values) == 4 {
-			// remove zero offsets
-			for _, i := range []int{len(values) - 1, 1} {
-				if 2 < len(values) && values[i].IsZero() {
-					values = append(values[:i], values[i+1:]...)
-				}
-			}
-
-			j := 1 // position of second set of horizontal/vertical values
-			if 2 < len(values) && values[2].TokenType == css.IdentToken {
-				j = 2
-			}
-
-			b := make([]byte, 0, 4)
-			offsets := make([]Token, 2)
-			for _, i := range []int{j, 0} {
-				if i+1 < len(values) && i+1 != j {
-					if values[i+1].TokenType == css.PercentageToken {
-						// change right or bottom with percentage offset to left or top respectively
-						if values[i].Ident == Right || values[i].Ident == Bottom {
-							n, _ := strconvParse.ParseInt(values[i+1].Data[:len(values[i+1].Data)-1])
-							b = strconv.AppendInt(b[:0], 100-n, 10)
-							b = append(b, '%')
-							values[i+1].Data = b
-							if values[i].Ident == Right {
-								values[i].Data = leftBytes
-								values[i].Ident = Left
+			// minify background-size and lowercase all identifiers
+			for i := start; i < end; i++ {
+				if values[i].TokenType == css.DelimToken && values[i].Data[0] == '/' {
+					// background-size consists of either [<length-percentage> | auto | cover | contain] or [<length-percentage> | auto]{2}
+					// we can only minify the latter
+					if i+1 < end && (values[i+1].TokenType == css.NumberToken || values[i+1].IsLengthPercentage() || values[i+1].Ident == Auto) {
+						if i+2 < end && (values[i+2].TokenType == css.NumberToken || values[i+2].IsLengthPercentage() || values[i+2].Ident == Auto) {
+							sizeValues := c.minifyProperty(Background_Size, values[i+1:i+3])
+							if len(sizeValues) == 1 && sizeValues[0].Ident == Auto {
+								// remove background-size if it is '/ auto' after minifying the property
+								values = append(values[:i], values[i+3:]...)
+								end -= 3
+								i--
 							} else {
-								values[i].Data = topBytes
-								values[i].Ident = Top
+								values = append(values[:i+1], append(sizeValues, values[i+3:]...)...)
+								end -= 2 - len(sizeValues)
+								i += len(sizeValues) - 1
 							}
+						} else if values[i+1].Ident == Auto {
+							// remove background-size if it is '/ auto'
+							values = append(values[:i], values[i+2:]...)
+							end -= 2
+							i--
 						}
 					}
-					if values[i].Ident == Left {
-						offsets[0] = values[i+1]
-					} else if values[i].Ident == Top {
-						offsets[1] = values[i+1]
-					}
-				} else if values[i].Ident == Left {
-					offsets[0] = Token{css.NumberToken, zeroBytes, nil, 0, 0}
-				} else if values[i].Ident == Top {
-					offsets[1] = Token{css.NumberToken, zeroBytes, nil, 0, 0}
-				} else if values[i].Ident == Right {
-					offsets[0] = Token{css.PercentageToken, n100pBytes, nil, 0, 0}
-					values[i].Ident = Left
-				} else if values[i].Ident == Bottom {
-					offsets[1] = Token{css.PercentageToken, n100pBytes, nil, 0, 0}
-					values[i].Ident = Top
 				}
 			}
 
-			if values[0].Ident == Center || values[j].Ident == Center {
-				if values[0].Ident == Left || values[j].Ident == Left {
-					offsets = offsets[:1]
-				} else if values[0].Ident == Top || values[j].Ident == Top {
-					offsets[0] = Token{css.NumberToken, n50pBytes, nil, 0, 0}
-				}
-			}
-
-			if offsets[0].Data != nil && (len(offsets) == 1 || offsets[1].Data != nil) {
-				values = offsets
-			}
-		}
-		// removing zero offsets in the previous loop might make it eligible for the next loop
-		if len(values) == 1 || len(values) == 2 {
-			if values[0].Ident == Top || values[0].Ident == Bottom {
-				if len(values) == 1 {
-					// we can't make this smaller, and converting to a number will break it
-					// (https://github.com/tdewolff/minify/issues/221#issuecomment-415419918)
-					break
-				}
-				// if it's a vertical position keyword, swap it with the next element
-				// since otherwise converted number positions won't be valid anymore
-				// (https://github.com/tdewolff/minify/issues/221#issue-353067229)
-				values[0], values[1] = values[1], values[0]
-			}
-			// transform keywords to lengths|percentages
-			for i := 0; i < len(values); i++ {
+			// minify all other values
+			iPaddingBox := -1 // position of background-origin that is padding-box
+			for i := start; i < end; i++ {
+				h := values[i].Ident
+				values[i] = minifyColor(values[i])
 				if values[i].TokenType == css.IdentToken {
-					if values[i].Ident == Left || values[i].Ident == Top {
+					if i+1 < end && values[i+1].TokenType == css.IdentToken && (h == Space || h == Round || h == Repeat || h == No_Repeat) {
+						if h2 := values[i+1].Ident; h2 == Space || h2 == Round || h2 == Repeat || h2 == No_Repeat {
+							repeatValues := c.minifyProperty(Background_Repeat, values[i:i+2])
+							if len(repeatValues) == 1 && repeatValues[0].Ident == Repeat {
+								values = append(values[:i], values[i+2:]...)
+								end -= 2
+								i--
+							} else {
+								values = append(values[:i], append(repeatValues, values[i+2:]...)...)
+								end -= 2 - len(repeatValues)
+								i += len(repeatValues) - 1
+							}
+							continue
+						}
+					} else if h == None || h == Scroll || h == Transparent {
+						values = append(values[:i], values[i+1:]...)
+						end--
+						i--
+						continue
+					} else if h == Border_Box || h == Padding_Box {
+						if iPaddingBox == -1 && h == Padding_Box { // background-origin
+							iPaddingBox = i
+						} else if iPaddingBox != -1 && h == Border_Box { // background-clip
+							values = append(values[:i], values[i+1:]...)
+							values = append(values[:iPaddingBox], values[iPaddingBox+1:]...)
+							end -= 2
+							i -= 2
+						}
+						continue
+					}
+				} else if values[i].TokenType == css.HashToken && bytes.Equal(values[i].Data, blackBytes) {
+					values = append(values[:i], values[i+1:]...)
+					end--
+					i--
+					continue
+				}
+
+				// further minify background-position and background-size combination
+				if values[i].TokenType == css.NumberToken || values[i].IsLengthPercentage() || h == Left || h == Right || h == Top || h == Bottom || h == Center {
+					j := i + 1
+					for ; j < len(values); j++ {
+						if h := values[j].Ident; h == Left || h == Right || h == Top || h == Bottom || h == Center {
+							continue
+						} else if values[j].TokenType == css.NumberToken || values[j].IsLengthPercentage() {
+							continue
+						}
+						break
+					}
+
+					positionValues := c.minifyProperty(Background_Position, values[i:j])
+					hasSize := j < len(values) && values[j].TokenType == css.DelimToken && values[j].Data[0] == '/'
+					if !hasSize && len(positionValues) == 2 && positionValues[0].IsZero() && positionValues[1].IsZero() {
+						values = append(values[:i], values[j:]...)
+						end -= j - i
+						i--
+					} else {
+						values = append(values[:i], append(positionValues, values[j:]...)...)
+						end -= j - i - len(positionValues)
+						i += len(positionValues) - 1
+					}
+				}
+			}
+
+			if end-start == 0 {
+				values = append(values[:start], append([]Token{{css.NumberToken, zeroBytes, nil, 0, 0}, Token{css.NumberToken, zeroBytes, nil, 0, 0}}, values[end:]...)...)
+				end += 2
+			}
+			start = end + 1
+		}
+	case Background_Size:
+		start := 0
+		for end := 0; end <= len(values); end++ { // loop over comma-separated lists
+			if end != len(values) && values[end].TokenType != css.CommaToken {
+				continue
+			}
+
+			if end-start == 2 && values[start+1].Ident == Auto {
+				values = append(values[:start+1], values[start+2:]...)
+				end--
+			}
+			start = end + 1
+		}
+	case Background_Repeat:
+		start := 0
+		for end := 0; end <= len(values); end++ { // loop over comma-separated lists
+			if end != len(values) && values[end].TokenType != css.CommaToken {
+				continue
+			}
+
+			if end-start == 2 && values[start].TokenType == css.IdentToken && values[start+1].TokenType == css.IdentToken {
+				if values[start].Ident == values[start+1].Ident {
+					values = append(values[:start+1], values[start+2:]...)
+					end--
+				} else if values[start].Ident == Repeat && values[start+1].Ident == No_Repeat {
+					values[start].Data = repeatXBytes
+					values[start].Ident = Repeat_X
+					values = append(values[:start+1], values[start+2:]...)
+					end--
+				} else if values[start].Ident == No_Repeat && values[start+1].Ident == Repeat {
+					values[start].Data = repeatYBytes
+					values[start].Ident = Repeat_Y
+					values = append(values[:start+1], values[start+2:]...)
+					end--
+				}
+			}
+			start = end + 1
+		}
+	case Background_Position:
+		start := 0
+		for end := 0; end <= len(values); end++ { // loop over comma-separated lists
+			if end != len(values) && values[end].TokenType != css.CommaToken {
+				continue
+			}
+
+			if end-start == 3 || end-start == 4 {
+				// remove zero offsets
+				for _, i := range []int{end - start - 1, start + 1} {
+					if 2 < end-start && values[i].IsZero() {
+						values = append(values[:i], values[i+1:]...)
+						end--
+					}
+				}
+
+				j := start + 1 // position of second set of horizontal/vertical values
+				if 2 < end-start && values[start+2].TokenType == css.IdentToken {
+					j = start + 2
+				}
+
+				b := make([]byte, 0, 4)
+				offsets := make([]Token, 2)
+				for _, i := range []int{j, start} {
+					if i+1 < end && i+1 != j {
+						if values[i+1].TokenType == css.PercentageToken {
+							// change right or bottom with percentage offset to left or top respectively
+							if values[i].Ident == Right || values[i].Ident == Bottom {
+								n, _ := strconvParse.ParseInt(values[i+1].Data[:len(values[i+1].Data)-1])
+								b = strconv.AppendInt(b[:0], 100-n, 10)
+								b = append(b, '%')
+								values[i+1].Data = b
+								if values[i].Ident == Right {
+									values[i].Data = leftBytes
+									values[i].Ident = Left
+								} else {
+									values[i].Data = topBytes
+									values[i].Ident = Top
+								}
+							}
+						}
+						if values[i].Ident == Left {
+							offsets[0] = values[i+1]
+						} else if values[i].Ident == Top {
+							offsets[1] = values[i+1]
+						}
+					} else if values[i].Ident == Left {
+						offsets[0] = Token{css.NumberToken, zeroBytes, nil, 0, 0}
+					} else if values[i].Ident == Top {
+						offsets[1] = Token{css.NumberToken, zeroBytes, nil, 0, 0}
+					} else if values[i].Ident == Right {
+						offsets[0] = Token{css.PercentageToken, n100pBytes, nil, 0, 0}
+						values[i].Ident = Left
+					} else if values[i].Ident == Bottom {
+						offsets[1] = Token{css.PercentageToken, n100pBytes, nil, 0, 0}
+						values[i].Ident = Top
+					}
+				}
+
+				if values[start].Ident == Center || values[j].Ident == Center {
+					if values[start].Ident == Left || values[j].Ident == Left {
+						offsets = offsets[:1]
+					} else if values[start].Ident == Top || values[j].Ident == Top {
+						offsets[0] = Token{css.NumberToken, n50pBytes, nil, 0, 0}
+					}
+				}
+
+				if offsets[0].Data != nil && (len(offsets) == 1 || offsets[1].Data != nil) {
+					values = append(append(values[:start], offsets...), values[end:]...)
+					end -= end - start - len(offsets)
+				}
+			}
+			// removing zero offsets in the previous loop might make it eligible for the next loop
+			if end-start == 1 || end-start == 2 {
+				if values[start].Ident == Top || values[start].Ident == Bottom {
+					if end-start == 1 {
+						// we can't make this smaller, and converting to a number will break it
+						// (https://github.com/tdewolff/minify/issues/221#issuecomment-415419918)
+						break
+					}
+					// if it's a vertical position keyword, swap it with the next element
+					// since otherwise converted number positions won't be valid anymore
+					// (https://github.com/tdewolff/minify/issues/221#issue-353067229)
+					values[start], values[start+1] = values[start+1], values[start]
+				}
+				// transform keywords to lengths|percentages
+				for i := start; i < end; i++ {
+					if values[i].TokenType == css.IdentToken {
+						if values[i].Ident == Left || values[i].Ident == Top {
+							values[i].TokenType = css.NumberToken
+							values[i].Data = zeroBytes
+							values[i].Ident = 0
+						} else if values[i].Ident == Right || values[i].Ident == Bottom {
+							values[i].TokenType = css.PercentageToken
+							values[i].Data = n100pBytes
+							values[i].Ident = 0
+						} else if values[i].Ident == Center {
+							if i == start {
+								values[i].TokenType = css.PercentageToken
+								values[i].Data = n50pBytes
+								values[i].Ident = 0
+							} else {
+								values = append(values[:start+1], values[start+2:]...)
+								end--
+							}
+						}
+					} else if i == start+1 && values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, n50pBytes) {
+						values = append(values[:start+1], values[start+2:]...)
+						end--
+					} else if values[i].TokenType == css.PercentageToken && values[i].Data[0] == '0' {
 						values[i].TokenType = css.NumberToken
 						values[i].Data = zeroBytes
 						values[i].Ident = 0
-					} else if values[i].Ident == Right || values[i].Ident == Bottom {
-						values[i].TokenType = css.PercentageToken
-						values[i].Data = n100pBytes
-						values[i].Ident = 0
-					} else if values[i].Ident == Center {
-						if i == 0 {
-							values[i].TokenType = css.PercentageToken
-							values[i].Data = n50pBytes
-							values[i].Ident = 0
-						} else {
-							values = values[:1]
-						}
 					}
-				} else if i == 1 && values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, n50pBytes) {
-					values = values[:1]
-				} else if values[i].TokenType == css.PercentageToken && values[i].Data[0] == '0' {
-					values[i].TokenType = css.NumberToken
-					values[i].Data = zeroBytes
-					values[i].Ident = 0
 				}
 			}
+			start = end + 1
 		}
 	case Box_Shadow:
 		start := 0
@@ -986,7 +1037,8 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			}
 
 			if end-start == 1 && (values[start].Ident == None || values[start].Ident == Initial) {
-				values = append(append(values[:start], Token{css.NumberToken, zeroBytes, nil, 0, 0}, Token{css.NumberToken, zeroBytes, nil, 0, 0}), values[end:]...)
+				values = append(values[:start], append([]Token{{css.NumberToken, zeroBytes, nil, 0, 0}, Token{css.NumberToken, zeroBytes, nil, 0, 0}}, values[end:]...)...)
+				end += 2
 			} else {
 				numbers := []int{}
 				for i := start; i < end; i++ {
@@ -1057,6 +1109,7 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			values = []Token{{css.IdentToken, noneBytes, nil, 0, None}}
 		}
 	case Text_Shadow:
+		// TODO: minify better (can be comma separated list)
 		for i := 0; i < len(values); i++ {
 			values[i] = minifyColor(values[i])
 		}
