@@ -29,12 +29,8 @@ var (
 
 ////////////////////////////////////////////////////////////////
 
-// DEPRECATED: DefaultMinifier is the default minifier.
-var DefaultMinifier = &Minifier{}
-
 // Minifier is an SVG minifier.
 type Minifier struct {
-	Decimals     int // DEPRECATED
 	Precision    int // number of significant digits
 	newPrecision int // precision for new numbers
 }
@@ -46,12 +42,6 @@ func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) err
 
 // Minify minifies SVG data, it reads from r and writes to w.
 func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
-	if o.Decimals != 0 {
-		minify.Warning.Println("SVG option `Decimals` is deprecated, using as `Precision` instead. Be aware that `Decimals` meant the number of digits behind the dot while `Precision` means the number of significant digits. Example: 1.23 with `Decimals=1` would give 1.2 but with `Pecision=1` gives 1. The default `Decimals=-1` is now `Precision=0` which prints the whole number.")
-	}
-	if o.Precision == 0 {
-		o.Precision = o.Decimals
-	}
 	o.newPrecision = o.Precision
 	if o.newPrecision <= 0 || 15 < o.newPrecision {
 		o.newPrecision = 15 // minimum number of digits a double can represent exactly

@@ -31,8 +31,6 @@ import (
 )
 
 var Version = "built from source"
-var Commit = "" // DEPRECATED
-var Date = ""   // DEPRECATED
 
 var filetypeMime = map[string]string{
 	"css":  "text/css",
@@ -127,7 +125,6 @@ func run() int {
 	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
 	flag.StringVar(&cpuprofile, "cpuprofile", "", "Export CPU profile")
 	flag.StringVar(&memprofile, "memprofile", "", "Export memory profile")
-	flag.IntVar(&cssMinifier.Decimals, "css-decimals", 0, "Number of significant digits to preserve in numbers, 0 is all (DEPRECATED")
 	flag.IntVar(&cssMinifier.Precision, "css-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
 	flag.BoolVar(&htmlMinifier.KeepConditionalComments, "html-keep-conditional-comments", false, "Preserve all IE conditional comments")
 	flag.BoolVar(&htmlMinifier.KeepDefaultAttrVals, "html-keep-default-attrvals", false, "Preserve default attribute values")
@@ -136,7 +133,6 @@ func run() int {
 	flag.BoolVar(&htmlMinifier.KeepWhitespace, "html-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
 	flag.BoolVar(&htmlMinifier.KeepQuotes, "html-keep-quotes", false, "Preserve quotes around attribute values")
 	flag.IntVar(&jsonMinifier.Precision, "json-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
-	flag.IntVar(&svgMinifier.Decimals, "svg-decimals", 0, "Number of significant digits to preserve in numbers, 0 is all (DEPRECATED")
 	flag.IntVar(&svgMinifier.Precision, "svg-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
 	flag.BoolVar(&xmlMinifier.KeepWhitespace, "xml-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
 	if len(os.Args) == 1 {
