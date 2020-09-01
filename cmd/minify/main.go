@@ -53,6 +53,7 @@ var (
 	version   bool
 	watch     bool
 	sync      bool
+	bundle    bool
 )
 
 type Task struct {
@@ -120,6 +121,7 @@ func run() int {
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose")
 	flag.BoolVarP(&watch, "watch", "w", false, "Watch files and minify upon changes")
 	flag.BoolVarP(&sync, "sync", "s", false, "Copy all files to destination directory and minify when filetype matches")
+	flag.BoolVarP(&bundle, "bundle", "b", false, "Bundle files by concatenation into a single file")
 	flag.BoolVarP(&version, "version", "", false, "Version")
 
 	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
@@ -144,14 +146,14 @@ func run() int {
 		fmt.Printf("Try 'minify --help' for more information\n")
 		return 1
 	}
-	rawInputs := flag.Args()
-	useStdin := len(rawInputs) == 0
+	inputs := flag.Args()
+	useStdin := len(inputs) == 0
 
 	Error = log.New(os.Stderr, "ERROR: ", 0)
 	if verbose {
-		Info = log.New(os.Stderr, "INFO: ", 0)
+		Info = log.New(os.Stderr, "", 0)
 	} else {
-		Info = log.New(ioutil.Discard, "INFO: ", 0)
+		Info = log.New(ioutil.Discard, "", 0)
 	}
 
 	if help {
@@ -259,13 +261,14 @@ func run() int {
 	// set output, empty means stdout, ending in slash means a directory, otherwise a file
 	dirDst := false
 	if output != "" {
+		if !bundle && 1 < len(inputs) && output[len(output)-1] != '/' {
+			output += "/"
+		}
 		output = sanitizePath(output)
-		if output[len(output)-1] == '/' {
-			dirDst = true
-			if err := os.MkdirAll(output, 0777); err != nil {
-				Error.Println(err)
-				return 1
-			}
+		dirDst = output[len(output)-1] == '/'
+		if dirDst && bundle {
+			Error.Println("--bundle requires destination to be stdout or a file")
+			return 1
 		}
 	}
 	if !dirDst && (sync || watch) {
@@ -291,6 +294,12 @@ func run() int {
 			Info.Println("minify from stdin")
 		}
 	}
+	if dirDst {
+		if err := os.MkdirAll(output, 0777); err != nil {
+			Error.Println(err)
+			return 1
+		}
+	}
 
 	var tasks []Task
 	var roots []string
@@ -303,7 +312,7 @@ func run() int {
 		tasks = append(tasks, task)
 		roots = append(roots, "")
 	} else {
-		tasks, roots, err = createTasks(rawInputs, output)
+		tasks, roots, err = createTasks(inputs, output)
 		if err != nil {
 			Error.Println(err)
 			return 1

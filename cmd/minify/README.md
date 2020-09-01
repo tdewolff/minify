@@ -62,6 +62,7 @@ sudo apt-get install minify
 
     Options:
       -a, --all                              Minify all files, including hidden files and files in hidden directories
+      -b, --bundle                           Bundle files by concatenation into a single file
           --cpuprofile string                Export CPU profile
           --css-precision int                Number of significant digits to preserve in numbers, 0 is all (default 0)
       -h, --help                             Show usage
