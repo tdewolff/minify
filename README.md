@@ -14,6 +14,10 @@ Minify is a minifier package written in [Go][1]. It provides HTML5, CSS3, JS, JS
 
 The core functionality associates mimetypes with minification functions, allowing embedded resources (like CSS or JS within HTML files) to be minified as well. Users can add new implementations that are triggered based on a mimetype (or pattern), or redirect to an external command (like ClosureCompiler, UglifyCSS, ...).
 
+### Sponsors
+
+There are no sponsors yet. Please see https://www.patreon.com/tdewolff for ways to contribute, otherwise please contact me directly!
+
 #### Table of Contents
 
 - [Minify](#minify)
