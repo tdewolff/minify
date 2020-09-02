@@ -78,8 +78,9 @@ func NewTask(root, input, output string) (Task, error) {
 }
 
 var (
-	Error *log.Logger
-	Info  *log.Logger
+	Error   *log.Logger
+	Warning *log.Logger
+	Info    *log.Logger
 )
 
 func main() {
@@ -150,6 +151,7 @@ func run() int {
 	useStdin := len(inputs) == 0
 
 	Error = log.New(os.Stderr, "ERROR: ", 0)
+	Warning = log.New(os.Stderr, "WARNING: ", 0)
 	if verbose {
 		Info = log.New(os.Stderr, "", 0)
 	} else {
@@ -320,7 +322,7 @@ func run() int {
 	}
 
 	// concatenate
-	if 1 < len(tasks) && !dirDst {
+	if 1 < len(tasks) && bundle {
 		// Task.sync == false because dirDst == false
 		for _, task := range tasks[1:] {
 			tasks[0].srcs = append(tasks[0].srcs, task.srcs[0])
@@ -408,9 +410,9 @@ func run() int {
 					}
 				}
 
-				// skip files in output directory (which is also an input directory) for the first change
-				// skips files that are not minified and stay put, as they are not explicitly copied, but that's ok
 				if autoDir && root == output {
+					// skip files in output directory (which is also an input directory) for the first change
+					// skips files that are not minified and stay put as they are not explicitly copied, but that's ok
 					if _, ok := skip[file]; !ok {
 						skip[file] = true
 						break
@@ -437,7 +439,7 @@ func run() int {
 	}
 
 	if verbose && !watch {
-		Info.Println(time.Since(start), "total")
+		Info.Println("finished in", time.Since(start))
 	}
 	if 0 < fails {
 		return 1
@@ -502,48 +504,36 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 
 		if info.Mode().IsRegular() {
 			if sync || fileMatches(info.Name()) {
-				task, err := NewTask("", input, output)
+				task, err := NewTask(filepath.Dir(input), input, output)
 				if err != nil {
 					return nil, nil, err
 				}
 				tasks = append(tasks, task)
 			}
 		} else if info.Mode().IsDir() {
-			roots = append(roots, input)
 			if !recursive {
-				infos, err := ioutil.ReadDir(input)
+				Warning.Println("--recursive not specified, omitting directory", input)
+				continue
+			}
+			roots = append(roots, input)
+			err := filepath.Walk(input, func(path string, info os.FileInfo, err error) error {
 				if err != nil {
-					return nil, nil, err
+					return err
 				}
-				for _, info := range infos {
-					if validFile(info) && (sync || fileMatches(info.Name())) {
-						task, err := NewTask(input, path.Join(input, info.Name()), output)
-						if err != nil {
-							return nil, nil, err
-						}
-						tasks = append(tasks, task)
-					}
-				}
-			} else {
-				err := filepath.Walk(input, func(path string, info os.FileInfo, err error) error {
+				path = sanitizePath(path)
+				if validFile(info) && (sync || fileMatches(info.Name())) {
+					task, err := NewTask(input, path, output)
 					if err != nil {
 						return err
 					}
-					path = sanitizePath(path)
-					if validFile(info) && (sync || fileMatches(info.Name())) {
-						task, err := NewTask(input, path, output)
-						if err != nil {
-							return err
-						}
-						tasks = append(tasks, task)
-					} else if info.Mode().IsDir() && !validDir(info) && info.Name() != "." && info.Name() != ".." { // check for IsDir, so we don't skip the rest of the directory when we have an invalid file
-						return filepath.SkipDir
-					}
-					return nil
-				})
-				if err != nil {
-					return nil, nil, err
+					tasks = append(tasks, task)
+				} else if info.Mode().IsDir() && !validDir(info) && info.Name() != "." && info.Name() != ".." { // check for IsDir, so we don't skip the rest of the directory when we have an invalid file
+					return filepath.SkipDir
 				}
+				return nil
+			})
+			if err != nil {
+				return nil, nil, err
 			}
 		} else {
 			return nil, nil, fmt.Errorf("not a file or directory %s", input)
