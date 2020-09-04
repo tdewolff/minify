@@ -155,8 +155,31 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 					if forStmt.Init == nil {
 						forStmt.Init = left
 						j--
-					} else {
-						// TODO: merge with expressions if they define the declarations
+					} else if decl, ok := forStmt.Init.(*js.VarDecl); ok && decl.TokenType == js.VarToken {
+						// this is the second VarDecl, so we are hoisting var declarations, which means the forInit variables are already in 'left', just import the (simple) definitions
+						iDefines := len(left.List)
+						for i, item := range left.List {
+							if item.Default == nil {
+								iDefines = i
+								break
+							}
+						}
+						merge := true
+						for j := 0; j < len(decl.List); j++ {
+							if decl.List[j].Default != nil {
+								if v, ok := decl.List[j].Binding.(*js.Var); ok && addDefinition(left, iDefines, v, decl.List[j].Default) {
+									iDefines++
+									decl.List = append(decl.List[:j], decl.List[j+1:]...)
+									j--
+								} else {
+									merge = false
+								}
+							}
+						}
+						if merge {
+							forStmt.Init = left
+							j--
+						}
 					}
 				} else if whileStmt, ok := list[i].(*js.WhileStmt); ok && left.TokenType == js.VarToken {
 					// TODO: only merge statements that don't have 'in' or 'of' keywords (slow to check?)

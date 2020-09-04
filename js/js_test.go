@@ -253,7 +253,11 @@ func TestJS(t *testing.T) {
 		{`let a=1;let b=2`, `let a=1,b=2`},
 		{`var a;if(a)var b;else b`, `var a,b;a||b`},
 		{`var a;if(a)var b=5`, `var a,b;a&&(b=5)`},
-		{`var a;for(var b=0;b;b++){}`, `var a,b;for(b=0;b;b++);`},
+		{`var a;for(var b=0;b;b++){}`, `for(var b=0,a;b;b++);`},
+		{`var a=1;for(var b=0;b;b++){}`, `for(var a=1,b=0;b;b++);`},
+		{`var a=1;for(var a;a;a++){}`, `for(var a=1;a;a++);`},
+		{`var a;for(var a=1;a;a++){}`, `for(var a=1;a;a++);`},
+		{`var {...a}=c;for(var {...b}=d;b;b++){}`, `var{...a}=c,b;for({...b}=d;b;b++);`}, // we don't merge complidated declarations
 		{`const a=3;for(const b=0;b;b++){}`, `const a=3;for(const b=0;b;b++);`},
 		{`var a;for(let b=0;b;b++){}`, `var a;for(let b=0;b;b++);`},
 		{`var [a,]=[b,]`, `var[a]=[b]`},
