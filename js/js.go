@@ -391,7 +391,14 @@ func (m *jsMinifier) minifyBlockAsStmt(blockStmt *js.BlockStmt, blockType blockT
 	// minify block when statement is expected, i.e. semicolon if empty or remove braces for single statement
 	// assume we already renamed the scope
 	blockStmt.List = m.optimizeStmtList(blockStmt.List, blockType)
-	if 1 < len(blockStmt.List) {
+	hasLexicalVars := false
+	for _, v := range blockStmt.Scope.Declared[blockStmt.Scope.NumForInit:] {
+		if v.Decl == js.LexicalDecl {
+			hasLexicalVars = true
+			break
+		}
+	}
+	if 1 < len(blockStmt.List) || hasLexicalVars {
 		m.minifyBlockStmt(*blockStmt)
 	} else if len(blockStmt.List) == 1 {
 		m.minifyStmt(blockStmt.List[0])
@@ -407,6 +414,7 @@ func (m *jsMinifier) minifyStmtOrBlock(i js.IStmt, blockType blockType) {
 		m.renamer.renameScope(blockStmt.Scope)
 		m.minifyBlockAsStmt(blockStmt, blockType)
 	} else {
+		// optimizeStmtList can in some cases expand one stmt to two shorter stmts
 		list := m.optimizeStmtList([]js.IStmt{i}, blockType)
 		if len(list) == 1 {
 			m.minifyStmt(list[0])

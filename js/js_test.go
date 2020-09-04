@@ -104,6 +104,7 @@ func TestJS(t *testing.T) {
 		{`for (a in b){a}`, `for(a in b)a`},
 		{`for (var a of b){a}`, `for(var a of b)a`},
 		{`for (a of b){a}`, `for(a of b)a`},
+		{`for (;;){let a}`, `for(;;){let a}`},
 		{`while(a < 10){a}`, `while(a<10)a`},
 		{`while(a < 10){a;b}`, `while(a<10)a,b`},
 		{`while(a < 10){while(b);c}`, `while(a<10){while(b);c}`},
@@ -276,8 +277,8 @@ func TestJS(t *testing.T) {
 		{`var a=5;var b=6;a=7`, `var a=5,b=6;a=7`},
 		{`var a;var b=6;z=7`, `var b=6,a;z=7`},
 		{`for(var a=6,b=7;;);var c=8`, `for(var a=6,b=7,c=8;;);`},
-		{`for(var c;b;){let a=8};var a`, `for(var c,a;b;)let a=8`},
-		{`for(;b;){let a=8};var a;var b`, `for(var a,b;b;)let a=8`},
+		{`for(var c;b;){let a=8};var a`, `for(var c,a;b;){let a=8}`},
+		{`for(;b;){let a=8};var a;var b`, `for(var a,b;b;){let a=8}`},
 
 		// function and method declarations
 		{`function g(){return}`, `function g(){}`},
