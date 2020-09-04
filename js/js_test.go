@@ -105,6 +105,8 @@ func TestJS(t *testing.T) {
 		{`for (var a of b){a}`, `for(var a of b)a`},
 		{`for (a of b){a}`, `for(a of b)a`},
 		{`for (;;){let a}`, `for(;;){let a}`},
+		{`var a;for(var b;;){let a;a++}`, `for(var a,b;;){let a;a++}`},
+		{`var a;for(var b;;){let c = 10;c++}`, `for(var a,b;;){let c=10;c++}`},
 		{`while(a < 10){a}`, `while(a<10)a`},
 		{`while(a < 10){a;b}`, `while(a<10)a,b`},
 		{`while(a < 10){while(b);c}`, `while(a<10){while(b);c}`},

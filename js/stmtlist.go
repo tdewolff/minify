@@ -63,7 +63,7 @@ func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 				return &js.ThrowStmt{condExpr(ifStmt.Cond, XThrow.Value, YThrow.Value)}
 			}
 		}
-	} else if decl, ok := i.(*js.VarDecl); ok && m.varsHoisted != nil && decl != m.varsHoisted {
+	} else if decl, ok := i.(*js.VarDecl); ok && decl.TokenType == js.VarToken && m.varsHoisted != nil && decl != m.varsHoisted {
 		// convert hoisted var declaration to expression of empty (if there are no defines) statement
 		for _, item := range decl.List {
 			if item.Default != nil {
