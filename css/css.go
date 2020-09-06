@@ -754,14 +754,17 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			values = []Token{{css.IdentToken, noneBytes, nil, 0, None}}
 		}
 	case Background:
+		fmt.Println("background")
 		start := 0
 		for end := 0; end <= len(values); end++ { // loop over comma-separated lists
+			fmt.Println(":")
 			if end != len(values) && values[end].TokenType != css.CommaToken {
 				continue
 			}
 
 			// minify background-size and lowercase all identifiers
 			for i := start; i < end; i++ {
+				fmt.Println(",")
 				if values[i].TokenType == css.DelimToken && values[i].Data[0] == '/' {
 					// background-size consists of either [<length-percentage> | auto | cover | contain] or [<length-percentage> | auto]{2}
 					// we can only minify the latter
@@ -791,6 +794,7 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			// minify all other values
 			iPaddingBox := -1 // position of background-origin that is padding-box
 			for i := start; i < end; i++ {
+				fmt.Println(".")
 				h := values[i].Ident
 				values[i] = minifyColor(values[i])
 				if values[i].TokenType == css.IdentToken {
@@ -863,6 +867,7 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			}
 			start = end + 1
 		}
+		fmt.Println("end background")
 	case Background_Size:
 		start := 0
 		for end := 0; end <= len(values); end++ { // loop over comma-separated lists

@@ -62,11 +62,8 @@ type Task struct {
 	sync bool
 }
 
-func NewTask(root, input, output string) (Task, error) {
-	t := Task{[]string{input}, output, false}
-	if input != "" {
-		t.sync = !fileMatches(input)
-	}
+func NewTask(root, input, output string, sync bool) (Task, error) {
+	t := Task{[]string{input}, output, sync}
 	if 0 < len(output) && output[len(output)-1] == '/' {
 		rel, err := filepath.Rel(root, input)
 		if err != nil {
@@ -306,7 +303,7 @@ func run() int {
 	var tasks []Task
 	var roots []string
 	if useStdin {
-		task, err := NewTask("", "", output)
+		task, err := NewTask("", "", output, false)
 		if err != nil {
 			Error.Println(err)
 			return 1
@@ -422,7 +419,7 @@ func run() int {
 				if !verbose {
 					Info.Println(file, "changed")
 				}
-				task, err := NewTask(root, file, output)
+				task, err := NewTask(root, file, output, !fileMatches(file))
 				if err != nil {
 					Error.Println(err)
 					return 1
@@ -503,8 +500,9 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 		}
 
 		if info.Mode().IsRegular() {
-			if sync || fileMatches(info.Name()) {
-				task, err := NewTask(filepath.Dir(input), input, output)
+			valid := pattern == nil || pattern.MatchString(info.Name())
+			if valid || sync {
+				task, err := NewTask(filepath.Dir(input), input, output, !valid)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -521,12 +519,15 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 					return err
 				}
 				path = sanitizePath(path)
-				if validFile(info) && (sync || fileMatches(info.Name())) {
-					task, err := NewTask(input, path, output)
-					if err != nil {
-						return err
+				if validFile(info) {
+					valid := fileMatches(info.Name())
+					if valid || sync {
+						task, err := NewTask(input, path, output, !valid)
+						if err != nil {
+							return err
+						}
+						tasks = append(tasks, task)
 					}
-					tasks = append(tasks, task)
 				} else if info.Mode().IsDir() && !validDir(info) && info.Name() != "." && info.Name() != ".." { // check for IsDir, so we don't skip the rest of the directory when we have an invalid file
 					return filepath.SkipDir
 				}
@@ -582,18 +583,20 @@ func openOutputFile(output string) (*os.File, error) {
 func minify(mimetype string, t Task) bool {
 	if mimetype == "" && !t.sync {
 		for _, src := range t.srcs {
-			if 0 < len(path.Ext(src)) {
-				srcMimetype, ok := filetypeMime[path.Ext(src)[1:]]
-				if !ok {
-					Error.Println("cannot infer mimetype from extension in", src)
-					return false
-				}
-				if mimetype == "" {
-					mimetype = srcMimetype
-				} else if srcMimetype != mimetype {
-					Error.Println("inferred mimetype", srcMimetype, "of", src, "for concatenation unequal to previous mimetypes", mimetype)
-					return false
-				}
+			ext := path.Ext(src)
+			if 0 < len(ext) {
+				ext = ext[1:]
+			}
+			srcMimetype, ok := filetypeMime[ext]
+			if !ok {
+				Error.Println("cannot infer mimetype from extension in", src, ", set --type or --mime explicitly")
+				return false
+			}
+			if mimetype == "" {
+				mimetype = srcMimetype
+			} else if srcMimetype != mimetype {
+				Error.Println("inferred mimetype", srcMimetype, "of", src, "for concatenation unequal to previous mimetypes, set --type or --mime explicitly", mimetype)
+				return false
 			}
 		}
 	}
