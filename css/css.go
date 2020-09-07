@@ -527,7 +527,7 @@ func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
 
 				a := 1.0
 				if len(vals) == 4 {
-					if vals[3] < minify.Epsilon {
+					if vals[0] < minify.Epsilon && vals[1] < minify.Epsilon && vals[2] < minify.Epsilon && vals[3] < minify.Epsilon {
 						values[i] = Token{css.IdentToken, transparentBytes, nil, 0, Transparent}
 						break
 					} else if 1.0-minify.Epsilon < vals[3] {

@@ -110,7 +110,7 @@ func TestCSSInline(t *testing.T) {
 		{"color: rgba(255,0,0,1);", "color:red"},
 		{"color: rgba(255,0,0,2);", "color:red"},
 		{"color: rgba(255,0,0,0.5);", "color:rgba(255,0,0,.5)"},             // {"color: rgba(255,0,0,0.5);", "color:#ff000080"},
-		{"color: rgba(255,0,0,-1);", "color:transparent"},                   // {"color: rgba(255,0,0,-1);", "color:#0000"},
+		{"color: rgba(0,0,0,-1);", "color:transparent"},                     // {"color: rgba(255,0,0,-1);", "color:#0000"},
 		{"color: rgba(0%,0%,0%,0.2);", "color:rgba(0,0,0,.2)"},              // {"color: rgba(0%,15%,25%,0.2);", "color:#00264033"},
 		{"color: rgba(0,0,0,0.5);", "color:rgba(0,0,0,.5)"},                 // {"color: rgba(0,0,0,0.5);", "color:#00000080"},
 		{"color: rgba(0,0,0,0.264705882);", "color:rgba(0,0,0,.264705882)"}, // {"color: rgba(0,0,0,0.264705882);", "color:#0004"},
@@ -127,7 +127,7 @@ func TestCSSInline(t *testing.T) {
 		{"color: hsl(0,100%,50%);", "color:red"},
 		{"color: hsl(-360,100%,50%);", "color:red"},
 		{"color: hsla(1,2%,3%,1);", "color:#080807"},
-		{"color: hsla(1,2%,3%,0);", "color:transparent"}, // {"color: hsla(1,2%,3%,0);", "color:#0000"},
+		{"color: hsla(0,0%,0%,0);", "color:transparent"}, // {"color: hsla(1,2%,3%,0);", "color:#0000"},
 		{"color: hsl(48,100%,50%);", "color:#fc0"},
 		{"color: hsla(0 100% 50% / 1);", "color:red"},
 		{"color: hsla(0 100% 50% / 60%);", "color:hsla(0 100% 50%/.6)"},
@@ -199,7 +199,7 @@ func TestCSSInline(t *testing.T) {
 		{"box-shadow:0 0 0 0", "box-shadow:0 0"},
 		{"box-shadow:0 0 0 0,0 0 0 0", "box-shadow:0 0,0 0"},
 		{"box-shadow:0 inset 0 0 blue 0", "box-shadow:0 inset 0 blue"},
-		{"box-shadow:rgba(11,22,33,0) 0 8px", "box-shadow:transparent 0 8px"},
+		{"box-shadow:rgba(0,0,0,0) 0 8px", "box-shadow:transparent 0 8px"},
 		{"box-shadow: inset .5em 0, .39em 0", "box-shadow:inset .5em 0,.39em 0"},
 		{"font-weight: normal;", "font-weight:400"},
 		{"font-weight: bold;", "font-weight:700"},
@@ -375,8 +375,9 @@ func TestCSSInline(t *testing.T) {
 
 		// bugs
 		{"background: linear-gradient(-180deg, #355FFF 0%, #1F52FF 100%) 0% 0% / cover", "background:linear-gradient(-180deg,#355FFF 0%,#1F52FF 100%)0 0/cover"}, // #263
-		{"font:1em -apple-system", "font:1em '-apple-system'"}, // support for IE9, IE10, IE11, fixes #251
-		{"font:1em -", "font:1em '-'"},                         // support for IE9, IE10, IE11, fixes #251
+		{"font:1em -apple-system", "font:1em '-apple-system'"},     // support for IE9, IE10, IE11, fixes #251
+		{"font:1em -", "font:1em '-'"},                             // support for IE9, IE10, IE11, fixes #251
+		{"color:rgba(255,255,255,0)", "color:rgba(255,255,255,0)"}, // #327
 
 		// go-fuzz
 		{"FONT-FAMILY: ru\"", "font-family:ru\""},
