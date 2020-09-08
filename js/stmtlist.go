@@ -63,14 +63,26 @@ func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 				return &js.ThrowStmt{condExpr(ifStmt.Cond, XThrow.Value, YThrow.Value)}
 			}
 		}
-	} else if decl, ok := i.(*js.VarDecl); ok && decl.TokenType == js.VarToken && m.varsHoisted != nil && decl != m.varsHoisted {
-		// convert hoisted var declaration to expression of empty (if there are no defines) statement
-		for _, item := range decl.List {
-			if item.Default != nil {
-				return &js.ExprStmt{decl}
+	} else if decl, ok := i.(*js.VarDecl); ok {
+		if decl.TokenType == js.VarToken && m.varsHoisted != nil && decl != m.varsHoisted {
+			// convert hoisted var declaration to expression or empty (if there are no defines) statement
+			for _, item := range decl.List {
+				if item.Default != nil {
+					return &js.ExprStmt{decl}
+				}
 			}
+			return &js.EmptyStmt{}
 		}
-		return &js.EmptyStmt{}
+		//for i := 0; i < len(decl.List); i++ {
+		//	if v, ok := decl.List[i].Binding.(*js.Var); ok && v.Uses < 2 {
+		//		decl.List = append(decl.List[:i], decl.List[i+1:]...)
+		//		i--
+		//	}
+		//}
+		//if len(decl.List) == 0 {
+		//	return &js.EmptyStmt{}
+		//}
+		return decl
 	} else if blockStmt, ok := i.(*js.BlockStmt); ok {
 		// merge body and remove braces if it is not a lexical declaration
 		blockStmt.List = m.optimizeStmtList(blockStmt.List, defaultBlock)
@@ -167,7 +179,7 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 						merge := true
 						for j := 0; j < len(decl.List); j++ {
 							if decl.List[j].Default != nil {
-								if v, ok := decl.List[j].Binding.(*js.Var); ok && addDefinition(left, iDefines, v, decl.List[j].Default) {
+								if addDefinition(left, iDefines, decl.List[j].Binding, decl.List[j].Default) {
 									iDefines++
 									decl.List = append(decl.List[:j], decl.List[j+1:]...)
 									j--

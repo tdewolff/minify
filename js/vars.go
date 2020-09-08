@@ -121,16 +121,67 @@ func bindingRefs(ibinding js.IBinding) (refs []*js.Var) {
 	return
 }
 
-func addDefinition(decl *js.VarDecl, iDefines int, vdef *js.Var, value js.IExpr) bool {
-	// see if not already defined in variable declaration list
-	for i, item := range decl.List[iDefines:] {
-		if v, ok := item.Binding.(*js.Var); ok && v == vdef {
-			decl.List[iDefines+i].Default = value
-			if 0 < i {
-				decl.List[iDefines], decl.List[iDefines+i] = decl.List[iDefines+i], decl.List[iDefines]
-			}
-			return true
+func appendBindingVars(vars *[]*js.Var, binding js.IBinding) {
+	if v, ok := binding.(*js.Var); ok {
+		*vars = append(*vars, v)
+	} else if array, ok := binding.(*js.BindingArray); ok {
+		for _, item := range array.List {
+			appendBindingVars(vars, item.Binding)
 		}
+		if array.Rest != nil {
+			appendBindingVars(vars, array.Rest)
+		}
+	} else if object, ok := binding.(*js.BindingObject); ok {
+		for _, item := range object.List {
+			appendBindingVars(vars, item.Value.Binding)
+		}
+		if object.Rest != nil {
+			*vars = append(*vars, object.Rest)
+		}
+	}
+}
+
+func addDefinition(decl *js.VarDecl, iDefines int, binding js.IBinding, value js.IExpr) bool {
+	// see if not already defined in variable declaration list
+	if vdef, ok := binding.(*js.Var); ok {
+		for i, item := range decl.List[iDefines:] {
+			if v, ok := item.Binding.(*js.Var); ok && v == vdef {
+				decl.List[iDefines+i].Default = value
+				if 0 < i {
+					decl.List[iDefines], decl.List[iDefines+i] = decl.List[iDefines+i], decl.List[iDefines]
+				}
+				return true
+			}
+		}
+	} else {
+		vars := []*js.Var{}
+		appendBindingVars(&vars, binding)
+		if len(vars) == 0 {
+			return false
+		}
+		locs := make([]int, len(vars))
+		for i, vdef := range vars {
+			locs[i] = -1
+			for loc, item := range decl.List[iDefines:] {
+				if v, ok := item.Binding.(*js.Var); ok && v == vdef {
+					locs[i] = loc
+					break
+				}
+			}
+			if locs[i] == -1 {
+				return false
+			}
+		}
+		sort.Ints(locs)
+		if iDefines != locs[0] {
+			decl.List[iDefines], decl.List[iDefines+locs[0]] = decl.List[iDefines+locs[0]], decl.List[iDefines]
+		}
+		decl.List[iDefines].Binding = binding
+		decl.List[iDefines].Default = value
+		for i := len(locs) - 1; 1 <= i; i-- {
+			decl.List = append(decl.List[:locs[i]], decl.List[locs[i]+1:]...)
+		}
+		return true
 	}
 	return false
 }
@@ -184,7 +235,7 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) *js.VarDecl {
 							continue DeclaredLoop
 						}
 					}
-					v.Uses++ // might be inaccurate as we remove non-defining variable declarations later on
+					//v.Uses++ // might be inaccurate as we remove non-defining variable declarations later on
 					decl.List = append(decl.List, js.BindingElement{v, nil})
 				}
 			}
@@ -216,8 +267,8 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) *js.VarDecl {
 				}
 			} else if varDecl, ok := item.(*js.VarDecl); ok && varDecl.TokenType == js.VarToken {
 				for _, item := range varDecl.List {
-					if v, ok := item.Binding.(*js.Var); ok && item.Default != nil {
-						if addDefinition(decl, iDefines, v, item.Default) {
+					if item.Default != nil {
+						if addDefinition(decl, iDefines, item.Binding, item.Default) {
 							iDefines++
 							continue
 						}
