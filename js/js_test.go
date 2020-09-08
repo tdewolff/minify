@@ -258,13 +258,14 @@ func TestJS(t *testing.T) {
 		{`var a=1;for(var b=0;b;b++);a`, `for(var a=1,b=0;b;b++);a`},
 		{`var a=1;for(var a;a;a++);`, `for(var a=1;a;a++);`},
 		{`var a;for(var a=1;a;a++);`, `for(var a=1;a;a++);`},
-		//{`var [,,a,,]=b`, `var[,,a]=b`}, //TODO
+		{`var [,,a,,]=b`, `var[,,a]=b`},
+		{`var [,,a,,...c]=b`, `var[,,a,,...c]=b`},
 		{`var {...a}=c;for(var {...b}=d;b;b++);`, `for(var{...a}=c,{...b}=d;b;b++);`}, // we don't merge complidated declarations
 		{`const a=3;for(const b=0;b;b++);a`, `const a=3;for(const b=0;b;b++);a`},
 		{`var a;for(let b=0;b;b++);a`, `var a;for(let b=0;b;b++);a`},
 		{`var [a,]=[b,]`, `var[a]=[b]`},
 		{`var [a,b=5,...c]=[d,e,...f]`, `var[a,b=5,...c]=[d,e,...f]`},
-		{`var [a,,]=[b,,]`, `var[a,,]=[b,,]`},
+		{`var [a,,]=[b,,]`, `var[a]=[b,,]`},
 		{`var {a,}=b`, `var{a}=b`},
 		{`var {a:a}=b`, `var{a}=b`},
 		{`var {a,b=5,...c}={d,e=7,...f}`, `var{a,b=5,...c}={d,e=7,...f}`},
