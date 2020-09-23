@@ -385,6 +385,7 @@ func TestCSSInline(t *testing.T) {
 		{`d:hsl(-360000000000000000000000000000,50%,50%)`, `d:#bf4040`},
 		{`d:hsl(360000000000000000000000000000,50%,50%)`, `d:#bf4040`},
 		{`background:none,,,,,,,,,,,,,,,#00ff00`, `background:0 0,,,,,,,,,,,,,,,#0f0`},
+		{`background:rgba(100%)`, `background:rgba(100%)`},
 	}
 
 	m := minify.New()
