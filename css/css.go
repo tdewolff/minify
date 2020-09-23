@@ -1041,9 +1041,9 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 				continue
 			}
 
-			if end-start == 1 && (values[start].Ident == None || values[start].Ident == Initial) {
-				values = append(values[:start], append([]Token{{css.NumberToken, zeroBytes, nil, 0, 0}, Token{css.NumberToken, zeroBytes, nil, 0, 0}}, values[end:]...)...)
-				end += 2
+			if end-start == 1 && values[start].Ident == Initial {
+				values[start].Ident = None
+				values[start].Data = noneBytes
 			} else {
 				numbers := []int{}
 				for i := start; i < end; i++ {

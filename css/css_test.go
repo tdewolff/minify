@@ -201,6 +201,7 @@ func TestCSSInline(t *testing.T) {
 		{"box-shadow:0 inset 0 0 blue 0", "box-shadow:0 inset 0 blue"},
 		{"box-shadow:rgba(0,0,0,0) 0 8px", "box-shadow:transparent 0 8px"},
 		{"box-shadow: inset .5em 0, .39em 0", "box-shadow:inset .5em 0,.39em 0"},
+		{"box-shadow:initial", "box-shadow:none"},
 		{"font-weight: normal;", "font-weight:400"},
 		{"font-weight: bold;", "font-weight:700"},
 		{"font: ;", "font:"},
@@ -378,6 +379,7 @@ func TestCSSInline(t *testing.T) {
 		{"font:1em -apple-system", "font:1em '-apple-system'"},     // support for IE9, IE10, IE11, fixes #251
 		{"font:1em -", "font:1em '-'"},                             // support for IE9, IE10, IE11, fixes #251
 		{"color:rgba(255,255,255,0)", "color:rgba(255,255,255,0)"}, // #327
+		{"box-shadow:none", "box-shadow:none"},                     // #332
 
 		// go-fuzz
 		{"FONT-FAMILY: ru\"", "font-family:ru\""},
