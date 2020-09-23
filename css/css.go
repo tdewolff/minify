@@ -635,7 +635,7 @@ func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
 					args[6] = minifyNumberPercentage(args[6])
 				}
 
-				if fun == Rgb || fun == Rgba {
+				if 3 <= len(vals) && (fun == Rgb || fun == Rgba) {
 					// 0%, 20%, 40%, 60%, 80% and 100% can be represented exactly as, 51, 102, 153, 204, and 255 respectively
 					removePercentage := true
 					for j := 0; j < 3; j++ {
