@@ -68,15 +68,23 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	return nil
 }
 
+type expectExpr int
+
+const (
+	expectAny      expectExpr = iota
+	expectExprStmt            // in statement
+	expectExprBody            // in arrow function body
+)
+
 type jsMinifier struct {
 	o *Minifier
 	w io.Writer
 
 	prev           []byte
-	needsSemicolon bool // write a semicolon if required
-	needsSpace     bool // write a space if next token is an identifier
-	expectStmt     bool // avoid ambiguous syntax such as an expression starting with function
-	groupedStmt    bool // avoid ambiguous syntax by grouping the expression statement
+	needsSemicolon bool       // write a semicolon if required
+	needsSpace     bool       // write a space if next token is an identifier
+	expectExpr     expectExpr // avoid ambiguous syntax such as an expression starting with function
+	groupedStmt    bool       // avoid ambiguous syntax by grouping the expression statement
 	inFor          bool
 	spaceBefore    byte
 	varsHoisted    *js.VarDecl // set when variables are hoisted to this declaration
@@ -92,7 +100,7 @@ func (m *jsMinifier) write(b []byte) {
 	m.w.Write(b)
 	m.prev = b
 	m.needsSpace = false
-	m.expectStmt = false
+	m.expectExpr = expectAny
 	m.spaceBefore = 0
 }
 
@@ -125,7 +133,7 @@ func (m *jsMinifier) writeSemicolon() {
 func (m *jsMinifier) minifyStmt(i js.IStmt) {
 	switch stmt := i.(type) {
 	case *js.ExprStmt:
-		m.expectStmt = true
+		m.expectExpr = expectExprStmt
 		m.minifyExpr(stmt.Value, js.OpExpr)
 		if m.groupedStmt {
 			m.write(closeParenBytes)
@@ -618,6 +626,7 @@ func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
 				if 0 < len(list) {
 					expr = &js.GroupExpr{expr}
 				}
+				m.expectExpr = expectExprBody
 				m.minifyExpr(expr, js.OpAssign)
 			}
 		} else if isReturn && returnStmt.Value == nil {
@@ -998,8 +1007,8 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 	case *js.ObjectExpr:
 		parentInFor := m.inFor
 		m.inFor = false
-		expectStmt := m.expectStmt
-		if expectStmt {
+		grouped := m.expectExpr != expectAny
+		if grouped {
 			m.write(openParenBracketBytes)
 		} else {
 			m.write(openBraceBytes)
@@ -1010,7 +1019,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			}
 			m.minifyProperty(item)
 		}
-		if expectStmt {
+		if grouped {
 			m.write(closeBracketParenBytes)
 		} else {
 			m.write(closeBraceBytes)
@@ -1052,7 +1061,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.write(newTargetBytes)
 		m.writeSpaceBeforeIdent()
 	case *js.ImportMetaExpr:
-		if m.expectStmt {
+		if m.expectExpr == expectExprStmt {
 			m.write(openParenBytes)
 			m.groupedStmt = true
 		}
@@ -1076,7 +1085,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.minifyArguments(expr.Args)
 		m.inFor = parentInFor
 	case *js.IndexExpr:
-		if m.expectStmt {
+		if m.expectExpr == expectExprStmt {
 			if v, ok := expr.X.(*js.Var); ok && bytes.Equal(v.Name(), letBytes) {
 				m.write(notBytes)
 			}
@@ -1210,7 +1219,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 	case *js.VarDecl:
 		m.minifyVarDecl(expr, true) // happens in for statement or when vars were hoisted
 	case *js.FuncDecl:
-		if m.expectStmt {
+		if m.expectExpr == expectExprStmt {
 			m.write(notBytes)
 		}
 		parentInFor := m.inFor
@@ -1222,7 +1231,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 	case *js.MethodDecl:
 		m.minifyMethodDecl(*expr) // only happens in object literal
 	case *js.ClassDecl:
-		if m.expectStmt {
+		if m.expectExpr == expectExprStmt {
 			m.write(notBytes)
 		}
 		parentInFor := m.inFor

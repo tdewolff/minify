@@ -593,6 +593,8 @@ func TestJS(t *testing.T) {
 		{"var a=/\\s?auto?\\s?/i\nvar b;a,b", "var a=/\\s?auto?\\s?/i,b;a,b"}, // #14
 		{"false`string`", "(!1)`string`"},                                     // #181
 		{"x / /\\d+/.exec(s)[0]", "x/ /\\d+/.exec(s)[0]"},                     // #183
+		{`()=>{return{a}}`, `()=>({a})`},                                      // #333
+		{`()=>({a})`, `()=>({a})`},                                            // #333
 		{`({"":a})`, `({"":a})`},                                              // go-fuzz
 		{`a[""]`, `a[""]`},                                                    // go-fuzz
 		{`function f(){;}`, `function f(){}`},                                 // go-fuzz
