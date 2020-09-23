@@ -63,13 +63,14 @@ func TestHTML(t *testing.T) {
 		{`<input type="radio" value="">`, `<input type=radio value>`},
 		{`<input type="radio" value="on">`, `<input type=radio>`},
 		{`<input type="text" value="">`, `<input>`},
+		{`<a b="x x" c="x x">`, `<a b="x x"c="x x">`},
 
 		// increase coverage
 		{`<script style="css">js</script>`, `<script style=css>js</script>`},
 		{`<script type="text/javascript">js</script>`, `<script>js</script>`},
 		{`<script type="application/javascript">js</script>`, `<script>js</script>`},
 		{`<meta http-equiv="content-type" content="text/plain, text/html">`, `<meta http-equiv=content-type content="text/plain,text/html">`},
-		{`<meta property="rdfa" content="data">`, `<meta property="rdfa" content="data">`},
+		{`<meta property="rdfa" content="data">`, `<meta property="rdfa"content="data">`},
 		{`<span attr=""></span>`, `<span attr></span>`},
 		{`<code>x</code>`, `<code>x</code>`},
 		{`<p></p><p></p>`, `<p><p>`},
