@@ -73,6 +73,7 @@ func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 			}
 			return &js.EmptyStmt{}
 		}
+		// TODO: remove unused declarations
 		//for i := 0; i < len(decl.List); i++ {
 		//	if v, ok := decl.List[i].Binding.(*js.Var); ok && v.Uses < 2 {
 		//		decl.List = append(decl.List[:i], decl.List[i+1:]...)

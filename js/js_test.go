@@ -277,10 +277,6 @@ func TestJS(t *testing.T) {
 		{`for(var a=5,c=6;;);`, `for(var a=5,c=6;;);`},
 		{`function a(){}var a`, `function a(){}var a`},
 		{`var a;function a(){}`, `var a;function a(){}`},
-		{`var z;var [a,b=5,,...c]=[d,e,...f];z`, `var[a,b=5,,...c]=[d,e,...f],z;z`},
-		{`var z;var {a,b=5,[5+8]:c,...d}={d,e,...f};z`, `var{a,b=5,[5+8]:c,...d}={d,e,...f},z;z`},
-		{`var z;z;var [a,b=5,,...c]=[d,e,...f];a`, `var z,a,b,c;z,[a,b=5,,...c]=[d,e,...f],a`},
-		{`var z;z;var {a,b=5,[5+8]:c,...d}={e,f,...g};a`, `var z,a,b,c,d;z,{a,b=5,[5+8]:c,...d}={e,f,...g},a`},
 		{`var [a,b=5,,...c]=[d,e,...f];var z;z`, `var[a,b=5,,...c]=[d,e,...f],z;z`},
 		{`var {a,b=5,[5+8]:c,...d}={d,e,...f};var z;z`, `var{a,b=5,[5+8]:c,...d}={d,e,...f},z;z`},
 		{`var a=5;var b=6;a,b`, `var a=5,b=6;a,b`},
@@ -292,6 +288,15 @@ func TestJS(t *testing.T) {
 		{`for(;b;){let a=8;a};var a;var b;a`, `for(var a,b;b;){let a=8;a}a`},
 		{`var a=1,b=2;while(c);var d=3,e=4;a,b,d,e`, `for(var a=1,b=2,d,e;c;);d=3,e=4,a,b,d,e`},
 		//{`var a=1;a;var b=1`, `var a=1;a`}, // TODO
+		{`var z;var [a,b=5,,...c]=[d,e,...f];z`, `var[a,b=5,,...c]=[d,e,...f],z;z`},
+		{`var z;var {a,b=5,[5+8]:c,...d}={d,e,...f};z`, `var{a,b=5,[5+8]:c,...d}={d,e,...f},z;z`},
+		{`var z;z;var [a,b=5,,...c]=[d,e,...f];a`, `var z,a,b,c;z,[a,b=5,,...c]=[d,e,...f],a`},
+		// TODO
+		//{`var z;z;var {a,b=5,[5+8]:c,...d}={e,f,...g};a`, `var z,a;z,{a}={e,f,...g},a`},
+		//{`var z;z;var {a,b=5,[5+8]:c,...d}={e,f,...g};d`, `var z,a,b,c,d;z,{a,b,[5+8]:c,...d}={e,f,...g},d`},
+		//{`var {a,b=5,[5+8]:c,d:e}=z;b`, `var{b=5}=z;b`},
+		//{`var {a,b=5,[5+8]:c,d:e,...f}=z;b`, `var{b=5}=z;b`},
+		{`var {a,b=5,[5+8]:c,d:e,...f}=z;f`, `var{a,b=5,[5+8]:c,d:e,...f}=z;f`},
 
 		// function and method declarations
 		{`function g(){return}`, `function g(){}`},
