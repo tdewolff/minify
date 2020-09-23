@@ -381,9 +381,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						if len(val) == 0 && (attr.Hash == Class ||
 							attr.Hash == Dir ||
 							attr.Hash == Id ||
-							attr.Hash == Lang ||
 							attr.Hash == Name ||
-							attr.Hash == Title ||
 							attr.Hash == Action && t.Hash == Form) {
 							continue // omit empty attribute values
 						}

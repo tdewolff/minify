@@ -146,6 +146,7 @@ func TestHTML(t *testing.T) {
 		{`<script><!--<`, `<script><!--<`},
 
 		// bugs
+		{`<input title=""><input lang="">`, `<input title><input lang>`},                                         // #331
 		{`<amp-analytics type=adobeanalytics_nativeConfig>`, `<amp-analytics type=adobeanalytics_nativeConfig>`}, // #270
 		{`<p>text</p><br>text`, `<p>text</p><br>text`},                                                           // #122
 		{`text <img> text`, `text <img> text`},                                                                   // #89
