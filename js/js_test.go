@@ -598,6 +598,7 @@ func TestJS(t *testing.T) {
 		{`function f(){;}`, `function f(){}`},                                 // go-fuzz
 		{`0xeb00000000`, `0xeb00000000`},                                      // go-fuzz
 		{`export{a,}`, `export{a,}`},                                          // go-fuzz
+		{`var D;var{U,W,W}=y`, `var{U,W,W}=y,D`},                              // go-fuzz
 	}
 
 	m := minify.New()

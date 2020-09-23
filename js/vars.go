@@ -179,7 +179,9 @@ func addDefinition(decl *js.VarDecl, iDefines int, binding js.IBinding, value js
 		decl.List[iDefines].Binding = binding
 		decl.List[iDefines].Default = value
 		for i := len(locs) - 1; 1 <= i; i-- {
-			decl.List = append(decl.List[:locs[i]], decl.List[locs[i]+1:]...)
+			if locs[i] != locs[i-1] { // ignore duplicates, otherwise remove items from hoisted var declaration
+				decl.List = append(decl.List[:locs[i]], decl.List[locs[i]+1:]...)
+			}
 		}
 		return true
 	}
