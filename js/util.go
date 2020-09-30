@@ -279,16 +279,22 @@ func exprPrec(i js.IExpr) js.OpPrec {
 	return js.OpExpr // does not happen
 }
 
+// TODO: apply in more cases
 func groupExpr(i js.IExpr, prec js.OpPrec) js.IExpr {
 	precInside := exprPrec(i)
 	if precInside < prec && (precInside != js.OpCoalesce || prec != js.OpBitOr) {
-		return &js.GroupExpr{i}
+		return &js.GroupExpr{X: i}
 	}
 	return i
 }
 
-func condExpr(x, y, z js.IExpr) js.IExpr {
-	return &js.CondExpr{groupExpr(x, js.OpCoalesce), groupExpr(y, js.OpAssign), groupExpr(z, js.OpAssign)}
+// TODO: apply in more cases
+func condExpr(cond, x, y js.IExpr) js.IExpr {
+	return &js.CondExpr{
+		Cond: groupExpr(cond, js.OpCoalesce),
+		X:    groupExpr(x, js.OpAssign),
+		Y:    groupExpr(y, js.OpAssign),
+	}
 }
 
 func (m *jsMinifier) isEmptyStmt(stmt js.IStmt) bool {
@@ -477,13 +483,13 @@ func (m *jsMinifier) minifyBooleanExpr(expr js.IExpr, invert bool, prec js.OpPre
 			m.minifyExpr(expr, prec)
 		} else {
 			m.write(notBytes)
-			m.minifyExpr(&js.GroupExpr{expr}, js.OpUnary)
+			m.minifyExpr(&js.GroupExpr{X: expr}, js.OpUnary)
 		}
 	} else if isBooleanExpr(expr) {
-		m.minifyExpr(&js.GroupExpr{expr}, prec)
+		m.minifyExpr(&js.GroupExpr{X: expr}, prec)
 	} else {
 		m.write(notNotBytes)
-		m.minifyExpr(&js.GroupExpr{expr}, js.OpUnary)
+		m.minifyExpr(&js.GroupExpr{X: expr}, js.OpUnary)
 	}
 }
 

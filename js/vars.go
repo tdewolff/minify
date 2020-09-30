@@ -16,7 +16,7 @@ type renamer struct {
 
 func newRenamer(ast *js.AST, undeclared js.VarArray, rename bool) *renamer {
 	reserved := make(map[string]struct{}, len(js.Keywords))
-	for name, _ := range js.Keywords {
+	for name := range js.Keywords {
 		reserved[name] = struct{}{}
 	}
 	return &renamer{
@@ -202,21 +202,21 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) *js.VarDecl {
 		} else if forStmt, ok := body.List[0].(*js.ForStmt); ok {
 			// TODO: only merge statements that don't have 'in' or 'of' keywords (slow to check?)
 			if forStmt.Init == nil {
-				decl = &js.VarDecl{js.VarToken, nil}
+				decl = &js.VarDecl{TokenType: js.VarToken, List: nil}
 				forStmt.Init = decl
 			} else if varDecl, ok := forStmt.Init.(*js.VarDecl); ok && varDecl.TokenType == js.VarToken {
 				decl = varDecl
 			}
 		} else if whileStmt, ok := body.List[0].(*js.WhileStmt); ok {
 			// TODO: only merge statements that don't have 'in' or 'of' keywords (slow to check?)
-			decl = &js.VarDecl{js.VarToken, nil}
+			decl = &js.VarDecl{TokenType: js.VarToken, List: nil}
 			var forBody js.BlockStmt
 			if blockStmt, ok := whileStmt.Body.(*js.BlockStmt); ok {
 				forBody = *blockStmt
 			} else {
 				forBody.List = []js.IStmt{whileStmt.Body}
 			}
-			body.List[0] = &js.ForStmt{decl, whileStmt.Cond, nil, forBody}
+			body.List[0] = &js.ForStmt{Init: decl, Cond: whileStmt.Cond, Post: nil, Body: forBody}
 		}
 		if decl != nil {
 			// original declarations
@@ -238,15 +238,15 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) *js.VarDecl {
 						}
 					}
 					//v.Uses++ // might be inaccurate as we remove non-defining variable declarations later on
-					decl.List = append(decl.List, js.BindingElement{v, nil})
+					decl.List = append(decl.List, js.BindingElement{Binding: v, Default: nil})
 				}
 			}
 		} else {
-			decl = &js.VarDecl{js.VarToken, nil}
+			decl = &js.VarDecl{TokenType: js.VarToken, List: nil}
 			for _, v := range body.Scope.Declared {
 				if v.Decl == js.VariableDecl {
 					v.Uses++ // might be inaccurate as we remove non-defining variable declarations later on
-					decl.List = append(decl.List, js.BindingElement{v, nil})
+					decl.List = append(decl.List, js.BindingElement{Binding: v, Default: nil})
 				}
 			}
 			body.List = append([]js.IStmt{decl}, body.List...)
