@@ -113,9 +113,9 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 		if ifStmt, ok := list[i].(*js.IfStmt); ok && !m.isEmptyStmt(ifStmt.Else) && isFlowStmt(lastStmt(ifStmt.Body)) {
 			// if body ends in flow statement (return, throw, break, continue), so we can remove the else statement and put its body in the current scope
 			if blockStmt, ok := ifStmt.Else.(*js.BlockStmt); ok {
-				list = append(append(list[:i+1], blockStmt.List...), list[i+1:]...)
+				list = append(list[:i+1], append(blockStmt.List, list[i+1:]...)...)
 			} else {
-				list = append(append(list[:i+1], ifStmt.Else), list[i+1:]...)
+				list = append(list[:i+1], append([]js.IStmt{ifStmt.Else}, list[i+1:]...)...)
 			}
 			ifStmt.Else = nil
 		} else if _, ok := list[i].(*js.EmptyStmt); ok {
