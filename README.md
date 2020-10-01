@@ -71,7 +71,7 @@ Minifiers or bindings to minifiers exist in almost all programming languages. So
 
 This minifier proves to be that fast and extensive minifier that can handle HTML and any other filetype it may contain (CSS, JS, ...). It is usually orders of magnitude faster than existing minifiers.
 
-## Installation
+## Basic Installation
 With modules enabled (`GO111MODULES=auto` or `GO111MODULES=on`), add the following imports and run the project with `go get`
 ``` go
 import (
