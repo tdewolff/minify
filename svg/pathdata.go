@@ -9,6 +9,7 @@ import (
 	"github.com/tdewolff/parse/v2/strconv"
 )
 
+// PathData represents a path data string.
 type PathData struct {
 	o *Minifier
 
@@ -25,6 +26,7 @@ type PathData struct {
 	coordBuffer []byte
 }
 
+// PathDataState is the state of the current path.
 type PathDataState struct {
 	cmd            byte
 	prevDigit      bool
@@ -32,6 +34,7 @@ type PathDataState struct {
 	prevFlag       bool
 }
 
+// NewPathData returns a new PathData.
 func NewPathData(o *Minifier) *PathData {
 	return &PathData{
 		o:  o,

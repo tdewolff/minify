@@ -8,12 +8,14 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+// Watcher is a wrapper for watching file changes in directories.
 type Watcher struct {
 	watcher   *fsnotify.Watcher
 	paths     map[string]bool
 	recursive bool
 }
 
+// NewWatcher returns a new Watcher.
 func NewWatcher(recursive bool) (*Watcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -22,10 +24,12 @@ func NewWatcher(recursive bool) (*Watcher, error) {
 	return &Watcher{watcher, make(map[string]bool), recursive}, nil
 }
 
+// Close closes the watcher.
 func (w *Watcher) Close() error {
 	return w.watcher.Close()
 }
 
+// AddPath adds a new path to watch.
 func (w *Watcher) AddPath(root string) error {
 	info, err := os.Stat(root)
 	if err != nil {
@@ -70,6 +74,7 @@ func (w *Watcher) AddPath(root string) error {
 	}
 }
 
+// Run watches for file changes.
 func (w *Watcher) Run() chan string {
 	files := make(chan string, 10)
 	go func() {

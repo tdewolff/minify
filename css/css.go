@@ -65,6 +65,7 @@ func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) err
 	return (&Minifier{}).Minify(m, w, r, params)
 }
 
+// Token is a parsed token with extra information for functions.
 type Token struct {
 	css.TokenType
 	Data       []byte
@@ -79,6 +80,7 @@ func (t Token) String() string {
 	return fmt.Sprint(t.Args)
 }
 
+// Equal returns true if both tokens are equal.
 func (a Token) Equal(b Token) bool {
 	if a.TokenType == b.TokenType && bytes.Equal(a.Data, b.Data) && len(a.Args) == len(b.Args) {
 		for i := 0; i < len(a.Args); i++ {
@@ -91,11 +93,13 @@ func (a Token) Equal(b Token) bool {
 	return false
 }
 
+// IsZero return true if a dimension, percentage, or number token is zero.
 func (t Token) IsZero() bool {
 	// as each number is already minified, starting with a zero means it is zero
 	return (t.TokenType == css.DimensionToken || t.TokenType == css.PercentageToken || t.TokenType == css.NumberToken) && t.Data[0] == '0'
 }
 
+// IsLength returns true if the token is a length.
 func (t Token) IsLength() bool {
 	if t.TokenType == css.DimensionToken {
 		return true
@@ -110,6 +114,7 @@ func (t Token) IsLength() bool {
 	return false
 }
 
+// IsLengthPercentage returns true if the token is a length or percentage token.
 func (t Token) IsLengthPercentage() bool {
 	return t.TokenType == css.PercentageToken || t.IsLength()
 }

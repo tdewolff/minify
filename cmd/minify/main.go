@@ -30,6 +30,7 @@ import (
 	"github.com/tdewolff/minify/v2/xml"
 )
 
+// Version is the current minify version.
 var Version = "built from source"
 
 var filetypeMime = map[string]string{
@@ -56,12 +57,14 @@ var (
 	bundle    bool
 )
 
+// Task is a minify task.
 type Task struct {
 	srcs []string
 	dst  string
 	sync bool
 }
 
+// NewTask returns a new Task.
 func NewTask(root, input, output string, sync bool) (Task, error) {
 	t := Task{[]string{input}, output, sync}
 	if 0 < len(output) && output[len(output)-1] == '/' {
@@ -74,6 +77,7 @@ func NewTask(root, input, output string, sync bool) (Task, error) {
 	return t, nil
 }
 
+// Loggers.
 var (
 	Error   *log.Logger
 	Warning *log.Logger
@@ -634,7 +638,7 @@ func minify(mimetype string, t Task) bool {
 		}
 	}
 
-	fr, err := NewConcatFileReader(t.srcs, openInputFile)
+	fr, err := newConcatFileReader(t.srcs, openInputFile)
 	if err != nil {
 		Error.Println(err)
 		return false
@@ -662,12 +666,12 @@ func minify(mimetype string, t Task) bool {
 		return true
 	}
 
-	r := NewCountingReader(fr)
+	r := newCountingReader(fr)
 	var w *countingWriter
 	if fw == os.Stdout {
-		w = NewCountingWriter(fw)
+		w = newCountingWriter(fw)
 	} else {
-		w = NewCountingWriter(bufio.NewWriter(fw))
+		w = newCountingWriter(bufio.NewWriter(fw))
 	}
 
 	success := true

@@ -84,7 +84,10 @@ func DataURI(m *M, dataURI []byte) []byte {
 	return append(append(append(dataBytes, mediatype...), ','), data...)
 }
 
+// MaxInt is the maximum value of int.
 const MaxInt = int(^uint(0) >> 1)
+
+// MinInt is the minimum value of int.
 const MinInt = -MaxInt - 1
 
 // Decimal minifies a given byte slice containing a decimal and removes superfluous characters. It differs from Number in that it does not parse exponents.

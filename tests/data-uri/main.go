@@ -6,8 +6,9 @@ import (
 	"github.com/tdewolff/parse/v2"
 )
 
+// Fuzz is a fuzz test.
 func Fuzz(data []byte) int {
 	data = parse.Copy(data) // ignore const-input error for OSS-Fuzz
-	data = minify.DataURI(minify.New(), data)
+	_ = minify.DataURI(minify.New(), data)
 	return 1
 }

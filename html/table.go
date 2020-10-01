@@ -244,7 +244,7 @@ var jsMimetypes = map[string]bool{
 	"application/javascript": true,
 }
 
-// Entities are all named character entities.
+// EntitiesMap are all named character entities.
 var EntitiesMap = map[string][]byte{
 	"AElig":                           []byte("&#198;"),
 	"AMP":                             []byte("&"),
@@ -1340,6 +1340,7 @@ var EntitiesMap = map[string][]byte{
 	"zigrarr":             []byte("&#8669;"),
 }
 
+// TextRevEntitiesMap is a map of escapes.
 var TextRevEntitiesMap = map[byte][]byte{
 	'<': []byte("&lt;"),
 }

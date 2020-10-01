@@ -87,7 +87,7 @@ var (
 	groupedNotOneBytes         = []byte("(!1)")
 )
 
-// precendence maps for the precendence inside the operation
+// precedence maps for the precedence inside the operation
 var unaryPrecMap = map[js.TokenType]js.OpPrec{
 	js.PostIncrToken: js.OpLHS,
 	js.PostDecrToken: js.OpLHS,
@@ -187,7 +187,7 @@ var binaryRightPrecMap = map[js.TokenType]js.OpPrec{
 	js.CommaToken:      js.OpAssign,
 }
 
-// precendence maps of the operation itself
+// precedence maps of the operation itself
 var unaryOpPrecMap = map[js.TokenType]js.OpPrec{
 	js.PostIncrToken: js.OpUpdate,
 	js.PostDecrToken: js.OpUpdate,

@@ -9,7 +9,7 @@ type countingReader struct {
 	N int
 }
 
-func NewCountingReader(r io.Reader) *countingReader {
+func newCountingReader(r io.Reader) *countingReader {
 	return &countingReader{r, 0}
 }
 
@@ -24,7 +24,7 @@ type countingWriter struct {
 	N int
 }
 
-func NewCountingWriter(w io.Writer) *countingWriter {
+func newCountingWriter(w io.Writer) *countingWriter {
 	return &countingWriter{w, 0}
 }
 
@@ -56,7 +56,7 @@ type concatFileReader struct {
 // NewConcatFileReader reads from a list of filenames, and lazily loads files as it needs it.
 // It is a reader that reads a concatenation of those files separated by the separator.
 // You must call Close to close the last file in the list.
-func NewConcatFileReader(filenames []string, opener func(string) (io.ReadCloser, error)) (*concatFileReader, error) {
+func newConcatFileReader(filenames []string, opener func(string) (io.ReadCloser, error)) (*concatFileReader, error) {
 	var cur io.ReadCloser
 	if len(filenames) > 0 {
 		var filename string

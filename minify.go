@@ -211,11 +211,10 @@ func (m *M) MinifyMimetype(mimetype []byte, w io.Writer, r io.Reader, params map
 
 	if minifier, ok := m.literal[string(mimetype)]; ok { // string conversion is optimized away
 		return minifier.Minify(m, w, r, params)
-	} else {
-		for _, minifier := range m.pattern {
-			if minifier.pattern.Match(mimetype) {
-				return minifier.Minify(m, w, r, params)
-			}
+	}
+	for _, minifier := range m.pattern {
+		if minifier.pattern.Match(mimetype) {
+			return minifier.Minify(m, w, r, params)
 		}
 	}
 	return ErrNotExist

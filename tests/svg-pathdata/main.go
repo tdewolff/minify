@@ -6,9 +6,10 @@ import (
 	"github.com/tdewolff/parse/v2"
 )
 
+// Fuzz is a fuzz test.
 func Fuzz(data []byte) int {
 	pathDataBuffer := svg.NewPathData(&svg.Minifier{Decimals: -1})
 	data = parse.Copy(data) // ignore const-input error for OSS-Fuzz
-	data = pathDataBuffer.ShortenPathData(data)
+	_ = pathDataBuffer.ShortenPathData(data)
 	return 1
 }

@@ -162,6 +162,7 @@ var ShortenColorName = map[Hash][]byte{
 	White:                []byte("#fff"),
 }
 
+// PropertyOverrides is a map of which properties are overridden by the given property.
 var PropertyOverrides = map[Hash][]Hash{
 	Background:      []Hash{Background, Background_Image, Background_Position, Background_Size, Background_Repeat, Background_Origin, Background_Clip, Background_Attachment, Background_Color},
 	Font:            []Hash{Font, Font_Style, Font_Variant, Font_Weight, Font_Stretch, Font_Size, Font_Family, Line_Height},
