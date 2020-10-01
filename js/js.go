@@ -809,13 +809,13 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		}
 	case *js.LiteralExpr:
 		if expr.TokenType == js.DecimalToken {
-			m.write(minify.Number(expr.Data, 0))
+			m.write(minify.Number(expr.Data, m.o.Precision))
 		} else if expr.TokenType == js.BinaryToken {
-			m.write(binaryNumber(expr.Data))
+			m.write(binaryNumber(expr.Data, m.o.Precision))
 		} else if expr.TokenType == js.OctalToken {
-			m.write(octalNumber(expr.Data))
+			m.write(octalNumber(expr.Data, m.o.Precision))
 		} else if expr.TokenType == js.HexadecimalToken {
-			m.write(hexadecimalNumber(expr.Data))
+			m.write(hexadecimalNumber(expr.Data, m.o.Precision))
 		} else if expr.TokenType == js.TrueToken {
 			if js.OpUnary < prec {
 				m.write(groupedNotZeroBytes)
@@ -920,7 +920,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 					break
 				} else if ok && lit.TokenType == js.DecimalToken {
 					// !123  =>  !1 (except for !0)
-					if num := minify.Number(lit.Data, 0); len(num) == 1 && num[0] == '0' {
+					if num := minify.Number(lit.Data, m.o.Precision); len(num) == 1 && num[0] == '0' {
 						m.write(zeroBytes)
 					} else {
 						m.write(oneBytes)
@@ -933,7 +933,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 	case *js.DotExpr:
 		if group, ok := expr.X.(*js.GroupExpr); ok {
 			if lit, ok := group.X.(*js.LiteralExpr); ok && lit.TokenType == js.DecimalToken {
-				num := minify.Number(lit.Data, 0)
+				num := minify.Number(lit.Data, m.o.Precision)
 				isInt := true
 				for _, c := range num {
 					if c == '.' || c == 'e' || c == 'E' {

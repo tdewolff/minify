@@ -651,7 +651,7 @@ func minifyString(b []byte) []byte {
 	return b
 }
 
-func binaryNumber(b []byte) []byte {
+func binaryNumber(b []byte, prec int) []byte {
 	if len(b) <= 2 || 65 < len(b) {
 		return b
 	}
@@ -667,10 +667,10 @@ func binaryNumber(b []byte) []byte {
 		n /= 10
 		i--
 	}
-	return minify.Number(b, 0)
+	return minify.Number(b, prec)
 }
 
-func octalNumber(b []byte) []byte {
+func octalNumber(b []byte, prec int) []byte {
 	if len(b) <= 2 || 23 < len(b) {
 		return b
 	}
@@ -686,10 +686,10 @@ func octalNumber(b []byte) []byte {
 		n /= 10
 		i--
 	}
-	return minify.Number(b, 0)
+	return minify.Number(b, prec)
 }
 
-func hexadecimalNumber(b []byte) []byte {
+func hexadecimalNumber(b []byte, prec int) []byte {
 	if len(b) <= 2 || 12 < len(b) || len(b) == 12 && ('D' < b[2] && b[2] <= 'F' || 'd' < b[2]) {
 		return b
 	}
@@ -711,5 +711,5 @@ func hexadecimalNumber(b []byte) []byte {
 		n /= 10
 		i--
 	}
-	return minify.Number(b, 0)
+	return minify.Number(b, prec)
 }
