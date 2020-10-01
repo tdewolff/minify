@@ -1244,15 +1244,10 @@ func minifyColor(value Token) Token {
 
 func minifyNumberPercentage(value Token) Token {
 	// assumes input already minified
-	if value.TokenType == css.PercentageToken && 2 < len(value.Data) && value.Data[len(value.Data)-2] == '0' {
-		if len(value.Data) == 4 && (value.Data[3] == '.' || value.Data[3] == '%') {
-			value.Data[0] = '1'
-			value.Data = value.Data[:1]
-		} else {
-			value.Data[1] = value.Data[0]
-			value.Data[0] = '.'
-			value.Data = value.Data[:2]
-		}
+	if value.TokenType == css.PercentageToken && len(value.Data) == 3 && value.Data[len(value.Data)-2] == '0' {
+		value.Data[1] = value.Data[0]
+		value.Data[0] = '.'
+		value.Data = value.Data[:2]
 		value.TokenType = css.NumberToken
 	} else if value.TokenType == css.NumberToken && 2 < len(value.Data) && value.Data[0] == '.' && value.Data[1] == '0' {
 		if value.Data[2] == '0' {

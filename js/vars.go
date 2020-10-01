@@ -169,7 +169,7 @@ func addDefinition(decl *js.VarDecl, iDefines int, binding js.IBinding, value js
 				}
 			}
 			if locs[i] == -1 {
-				return false
+				return false // cannot (probably) happen if we hoist variables
 			}
 		}
 		sort.Ints(locs)

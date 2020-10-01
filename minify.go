@@ -55,6 +55,8 @@ type cmdMinifier struct {
 	cmd *exec.Cmd
 }
 
+var cmdArgExtension = regexp.MustCompile(`^\.[0-9a-zA-Z]+`)
+
 func (c *cmdMinifier) Minify(_ *M, w io.Writer, r io.Reader, _ map[string]string) error {
 	cmd := &exec.Cmd{}
 	*cmd = *c.cmd // concurrency safety
@@ -62,27 +64,19 @@ func (c *cmdMinifier) Minify(_ *M, w io.Writer, r io.Reader, _ map[string]string
 	var in, out *os.File
 	for i, arg := range cmd.Args {
 		if j := strings.Index(arg, "$in"); j != -1 {
-			k := strings.IndexAny(arg[j+3:], " \r\n\t!\"#$&'()*;<=>?[\\]^`{|}")
-			if k == -1 {
-				k = len(arg)
-			}
-
 			var err error
-			if in, err = ioutil.TempFile("", "minify-in-*"+arg[j+3:k]); err != nil {
+			ext := cmdArgExtension.FindString(arg[j+3:])
+			if in, err = ioutil.TempFile("", "minify-in-*"+ext); err != nil {
 				return err
 			}
-			cmd.Args[i] = arg[:j] + in.Name() + arg[k:]
+			cmd.Args[i] = arg[:j] + in.Name() + arg[j+3+len(ext):]
 		} else if j := strings.Index(arg, "$out"); j != -1 {
-			k := strings.IndexAny(arg[j+4:], " \r\n\t!\"#$&'()*;<=>?[\\]^`{|}")
-			if k == -1 {
-				k = len(arg)
-			}
-
 			var err error
-			if out, err = ioutil.TempFile("", "minify-out-*"+arg[j+4:k]); err != nil {
+			ext := cmdArgExtension.FindString(arg[j+4:])
+			if out, err = ioutil.TempFile("", "minify-out-*"+ext); err != nil {
 				return err
 			}
-			cmd.Args[i] = arg[:j] + out.Name() + arg[k:]
+			cmd.Args[i] = arg[:j] + out.Name() + arg[j+4+len(ext):]
 		}
 	}
 
@@ -104,7 +98,7 @@ func (c *cmdMinifier) Minify(_ *M, w io.Writer, r io.Reader, _ map[string]string
 		if stderr.Len() != 0 {
 			err = fmt.Errorf("%s", stderr.String())
 		}
-		err = fmt.Errorf("command %s failed:\n%w", cmd.Path, err)
+		err = fmt.Errorf("command %s failed: %w", cmd.Path, err)
 	}
 	return err
 }

@@ -35,6 +35,7 @@ func TestDataURI(t *testing.T) {
 		dataURI  string
 		expected string
 	}{
+		{"datx:x", "datx:x"},
 		{"data:,text", "data:,text"},
 		{"data:text/plain;charset=us-ascii,text", "data:,text"},
 		{"data:TEXT/PLAIN;CHARSET=US-ASCII,text", "data:,text"},

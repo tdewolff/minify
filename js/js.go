@@ -719,8 +719,6 @@ func (m *jsMinifier) minifyBinding(ibinding js.IBinding) {
 			}
 			m.write(ellipsisBytes)
 			m.minifyBinding(binding.Rest)
-		} else if 0 < len(binding.List) && binding.List[len(binding.List)-1].Binding == nil {
-			m.write(commaBytes)
 		}
 		m.write(closeBracketBytes)
 	case *js.BindingObject:

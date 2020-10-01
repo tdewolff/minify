@@ -67,12 +67,12 @@ func init() {
 
 func TestMinify(t *testing.T) {
 	test.T(t, m.Minify("?", nil, nil), ErrNotExist, "minifier doesn't exist")
-	test.T(t, m.Minify("dummy/nil", nil, nil), nil)
+	test.Error(t, m.Minify("dummy/nil", nil, nil))
 	test.T(t, m.Minify("dummy/err", nil, nil), errDummy)
 
 	b := []byte("test")
 	out, err := m.Bytes("dummy/nil", b)
-	test.T(t, err, nil)
+	test.Error(t, err)
 	test.Bytes(t, out, []byte{}, "dummy/nil returns empty byte slice")
 	out, err = m.Bytes("?", b)
 	test.T(t, err, ErrNotExist, "minifier doesn't exist")
@@ -80,7 +80,7 @@ func TestMinify(t *testing.T) {
 
 	s := "test"
 	out2, err := m.String("dummy/nil", s)
-	test.T(t, err, nil)
+	test.Error(t, err)
 	test.String(t, out2, "", "dummy/nil returns empty string")
 	out2, err = m.String("?", s)
 	test.T(t, err, ErrNotExist, "minifier doesn't exist")
@@ -114,19 +114,27 @@ func TestAdd(t *testing.T) {
 	test.T(t, mAdd.Minify("dummy/err2", nil, nil), errDummy)
 
 	mAdd.AddCmd("dummy/copy", helperCommand(t, "dummy/copy"))
+	mAdd.AddCmd("dummy/file", helperCommand(t, "dummy/file", "-in=[$in.ext]", "-out=$out.ext"))
 	mAdd.AddCmd("dummy/err", helperCommand(t, "dummy/err"))
 	mAdd.AddCmdRegexp(regexp.MustCompile("err6$"), helperCommand(t, "werr6"))
-	test.T(t, mAdd.Minify("dummy/copy", w, r), nil)
-	test.String(t, w.String(), "test", "dummy/copy command returns input")
+
+	test.Error(t, mAdd.Minify("dummy/copy", w, r))
+	test.String(t, w.String(), "test")
+	w.Reset()
+
+	r = bytes.NewBufferString("test")
+	test.Error(t, mAdd.Minify("dummy/file", w, r))
+	test.String(t, w.String(), "test")
+	w.Reset()
 
 	s := mAdd.Minify("dummy/err", w, r).Error()
-	test.String(t, s[len(s)-13:], "exit status 1", "command returns status 1 for dummy/err")
+	test.String(t, s[len(s)-5:], "error")
 
 	s = mAdd.Minify("werr6", w, r).Error()
-	test.String(t, s[len(s)-13:], "exit status 2", "command returns status 2 when minifier doesn't exist")
+	test.String(t, s[len(s)-13:], "exit status 2")
 
 	s = mAdd.Minify("stderr6", w, r).Error()
-	test.String(t, s[len(s)-13:], "exit status 2", "command returns status 2 when minifier doesn't exist")
+	test.String(t, s[len(s)-13:], "exit status 2")
 }
 
 func TestMatch(t *testing.T) {
@@ -298,7 +306,28 @@ func TestHelperProcess(*testing.T) {
 	switch args[0] {
 	case "dummy/copy":
 		io.Copy(os.Stdout, os.Stdin)
+	case "dummy/file":
+		// extract filenames
+		in := args[1][5:]
+		in = in[:len(in)-1]
+		out := args[2][5:]
+
+		w, err := os.Create(out)
+		if err != nil {
+			os.Exit(1)
+			return
+		}
+		defer w.Close()
+
+		b, err := ioutil.ReadFile(in)
+		if err != nil {
+			w.WriteString(err.Error())
+			os.Exit(1)
+			return
+		}
+		_, _ = w.Write(b)
 	case "dummy/err":
+		fmt.Fprint(os.Stderr, "error")
 		os.Exit(1)
 	default:
 		os.Exit(2)
