@@ -97,9 +97,8 @@ func (r *concatFileReader) Read(p []byte) (int, error) {
 		// if previous read returned (0, io.EOF), read from the new reader
 		if n == 0 {
 			return r.Read(p)
-		} else {
-			n += r.writeSep(p[n:])
 		}
+		n += r.writeSep(p[n:])
 	}
 	return n, err
 }
