@@ -58,15 +58,19 @@ func TestSVG(t *testing.T) {
 		{`<svg contentStyleType="text/json ; charset=iso-8859-1"><style>{a : true}</style></svg>`, `<svg contentStyleType="text/json;charset=iso-8859-1"><style>{a : true}</style></svg>`},
 		{`<metadata><dc:title /></metadata>`, ``},
 		{`<metadata><dc:title />`, ``},
+		{`<foreignObject><foreignObject></foreignObject></foreignObject>`, `<foreignObject><foreignObject></foreignObject></foreignObject>`},
+		{`<foreignObject>`, `<foreignObject>`},
+		{`<foreignObject/>  text`, `<foreignObject/>text`},
+		{`<foreignObject><foreignObject/></foreignObject>  text`, `<foreignObject><foreignObject/></foreignObject>text`},
 
 		// from SVGO
 		{`<!DOCTYPE bla><?xml?><!-- comment --><metadata/>`, ``},
 
-		{`<polygon fill="none" stroke="#000" points="-0.1,"/>`, `<polygon fill="none" stroke="#000" points="-0.1,"/>`}, // #45
-		{`<path stroke="url(#UPPERCASE)"/>`, `<path stroke="url(#UPPERCASE)"/>`},                                       // #117
-		{`<rect height="10"/><path/>`, `<path/>`},                                                                      // #244
-		{`<rect height="10"><path/></rect>`, ``},                                                                       // #244
-		{`<foreignObject><div></div></foreignObject>`, `<foreignObject><div></div></foreignObject>`},                   // #291
+		{`<polygon points="-0.1,"/>`, `<polygon points="-0.1,"/>`},                                   // #45
+		{`<path stroke="url(#UPPERCASE)"/>`, `<path stroke="url(#UPPERCASE)"/>`},                     // #117
+		{`<rect height="10"/><path/>`, `<path/>`},                                                    // #244
+		{`<rect height="10"><path/></rect>`, ``},                                                     // #244
+		{`<foreignObject><div></div></foreignObject>`, `<foreignObject><div></div></foreignObject>`}, // #291
 
 		// go fuzz
 		{`<0 d=09e9.6e-9e0`, `<0 d="09e9.6e-9e0"`},

@@ -228,9 +228,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 
 			if tag == ForeignObject {
-				if err := printTag(w, tb, tag); err != nil {
-					return err
-				}
+				printTag(w, tb, tag)
 			}
 		case xml.StartTagCloseVoidToken:
 			tag = 0
@@ -281,41 +279,37 @@ func (o *Minifier) shortenRect(tb *TokenBuffer, t *Token) {
 
 ////////////////////////////////////////////////////////////////
 
-func printTag(w io.Writer, tb *TokenBuffer, tag Hash) error {
+func printTag(w io.Writer, tb *TokenBuffer, tag Hash) {
 	level := 0
+	inStartTag := false
 	for {
 		t := *tb.Peek(0)
-		if level == 0 && t.Hash == tag && (t.TokenType == xml.EndTagToken || t.TokenType == xml.StartTagCloseVoidToken) {
-			break
-		}
 		switch t.TokenType {
 		case xml.ErrorToken:
-			break
+			return
 		case xml.StartTagToken:
+			inStartTag = t.Hash == tag
 			if t.Hash == tag {
 				level++
 			}
 		case xml.StartTagCloseVoidToken:
-			if t.Hash == tag {
+			if inStartTag {
 				if level == 0 {
-					break
+					return
 				}
 				level--
 			}
 		case xml.EndTagToken:
 			if t.Hash == tag {
 				if level == 0 {
-					break
+					return
 				}
 				level--
 			}
 		}
-		if _, err := w.Write(t.Data); err != nil {
-			return err
-		}
+		w.Write(t.Data)
 		tb.Shift()
 	}
-	return nil
 }
 
 func skipTag(tb *TokenBuffer) {
