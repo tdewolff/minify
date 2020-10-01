@@ -176,7 +176,7 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 						forStmt.Init = left
 						j--
 					} else if decl, ok := forStmt.Init.(*js.VarDecl); ok && decl.TokenType == js.VarToken {
-						// this is the second VarDecl, so we are hoisting var declarations, which means the forInit variables are already in 'left', just import the (simple) definitions
+						// this is the second VarDecl, so we are hoisting var declarations, which means the forInit variables are already in 'left'
 						iDefines := len(left.List)
 						for i, item := range left.List {
 							if item.Default == nil {
@@ -194,6 +194,9 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 								} else {
 									merge = false
 								}
+							} else {
+								decl.List = append(decl.List[:j], decl.List[j+1:]...)
+								j--
 							}
 						}
 						if merge {
