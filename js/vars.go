@@ -256,7 +256,7 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) *js.VarDecl {
 		// sort in order of definitions
 		nMerged := 0
 	FindDefinitionsLoop:
-		for _, item := range body.List[1:] {
+		for k, item := range body.List[1:] {
 			if exprStmt, ok := item.(*js.ExprStmt); ok {
 				if binaryExpr, ok := exprStmt.Value.(*js.BinaryExpr); ok && binaryExpr.Op == js.EqToken {
 					if v, ok := binaryExpr.X.(*js.Var); ok && v.Decl == js.VariableDecl {
@@ -268,15 +268,20 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) *js.VarDecl {
 					}
 				}
 			} else if varDecl, ok := item.(*js.VarDecl); ok && varDecl.TokenType == js.VarToken {
-				for _, item := range varDecl.List {
+				for j := 0; j < len(varDecl.List); j++ {
+					item := varDecl.List[j]
 					if item.Default != nil {
 						if addDefinition(decl, iDefines, item.Binding, item.Default) {
 							iDefines++
-							continue
+							varDecl.List = append(varDecl.List[:j], varDecl.List[j+1:]...)
+							j--
+						} else {
+							break FindDefinitionsLoop
 						}
 					}
-					break FindDefinitionsLoop // one of the declarations isn't a definition or can't be matched
+					// declaration has no definition, that's fine as it's already merged previously
 				}
+				body.List[k+1] = varDecl // update varDecl.List
 				nMerged++
 				continue // all variable declarations were matched, keep looking
 			}

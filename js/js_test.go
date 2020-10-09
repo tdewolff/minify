@@ -601,17 +601,18 @@ func TestJS(t *testing.T) {
 		{`t0.a`, `t0.a`},
 
 		// bugs
-		{`({"":a})`, `({"":a})`},                                              // go-fuzz
-		{`a[""]`, `a[""]`},                                                    // go-fuzz
-		{`function f(){;}`, `function f(){}`},                                 // go-fuzz
-		{`0xeb00000000`, `0xeb00000000`},                                      // go-fuzz
-		{`export{a,}`, `export{a,}`},                                          // go-fuzz
-		{`var D;var{U,W,W}=y`, `var{U,W,W}=y,D`},                              // go-fuzz
-		{"var a=/\\s?auto?\\s?/i\nvar b;a,b", "var a=/\\s?auto?\\s?/i,b;a,b"}, // #14
-		{"false`string`", "(!1)`string`"},                                     // #181
-		{"x / /\\d+/.exec(s)[0]", "x/ /\\d+/.exec(s)[0]"},                     // #183
-		{`()=>{return{a}}`, `()=>({a})`},                                      // #333
-		{`()=>({a})`, `()=>({a})`},                                            // #333
+		{`({"":a})`, `({"":a})`},                 // go-fuzz
+		{`a[""]`, `a[""]`},                       // go-fuzz
+		{`function f(){;}`, `function f(){}`},    // go-fuzz
+		{`0xeb00000000`, `0xeb00000000`},         // go-fuzz
+		{`export{a,}`, `export{a,}`},             // go-fuzz
+		{`var D;var{U,W,W}=y`, `var{U,W,W}=y,D`}, // go-fuzz
+		{`var A;var b=(function(){var e;})=c,d`, `var b=function(){var e}=c,A,d`},                       // go-fuzz
+		{"var a=/\\s?auto?\\s?/i\nvar b;a,b", "var a=/\\s?auto?\\s?/i,b;a,b"},                           // #14
+		{"false`string`", "(!1)`string`"},                                                               // #181
+		{"x / /\\d+/.exec(s)[0]", "x/ /\\d+/.exec(s)[0]"},                                               // #183
+		{`()=>{return{a}}`, `()=>({a})`},                                                                // #333
+		{`()=>({a})`, `()=>({a})`},                                                                      // #333
 		{`function f(){if(a){return 1}else if(b){return 2}return 3}`, `function f(){return a?1:b?2:3}`}, // #335
 	}
 
