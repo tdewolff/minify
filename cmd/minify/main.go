@@ -679,6 +679,9 @@ func minify(mimetype string, t Task) bool {
 	success := true
 	startTime := time.Now()
 	if err = m.Minify(mimetype, w, r); err != nil {
+		if t.dst == "" {
+			fmt.Fprintf(os.Stdout, "\n\n")
+		}
 		Error.Println("cannot minify "+srcName+":", err)
 		success = false
 	}
