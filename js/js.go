@@ -1155,11 +1155,11 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				m.minifyExpr(expr.X, binaryRightPrecMap[js.CommaToken])
 				m.write(closeParenBytes)
 			}
-		} else if left, right, ok := m.toNullishExpr(expr); ok {
-			// no need to check whether left/right need to add groups, as the space saving is always more
-			m.minifyExpr(groupExpr(left, binaryLeftPrecMap[js.NullishToken]), binaryLeftPrecMap[js.NullishToken])
-			m.write(nullishBytes)
-			m.minifyExpr(groupExpr(right, binaryRightPrecMap[js.NullishToken]), binaryRightPrecMap[js.NullishToken])
+			//} else if left, right, ok := m.toNullishExpr(expr); ok {
+			//	// no need to check whether left/right need to add groups, as the space saving is always more
+			//	m.minifyExpr(groupExpr(left, binaryLeftPrecMap[js.NullishToken]), binaryLeftPrecMap[js.NullishToken])
+			//	m.write(nullishBytes)
+			//	m.minifyExpr(groupExpr(right, binaryRightPrecMap[js.NullishToken]), binaryRightPrecMap[js.NullishToken])
 		} else {
 			// shorten when true and false bodies are true and false
 			trueX, falseX := m.isTrue(expr.X), m.isFalse(expr.X)
