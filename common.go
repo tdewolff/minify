@@ -385,7 +385,7 @@ func Number(num []byte, prec int) []byte {
 			num[end] = '0'
 			end++
 		}
-	} else if normExp < -3 && lenNormExp < lenIntExp {
+	} else if normExp < -3 && lenNormExp < lenIntExp && dot < end {
 		// case 2: print normalized number (0.1 <= f < 1)
 		zeroes := -normExp + origExp
 		if 0 < zeroes {
