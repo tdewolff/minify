@@ -85,6 +85,7 @@ var (
 	groupedNotZeroBytes        = []byte("(!0)")
 	notOneBytes                = []byte("!1")
 	groupedNotOneBytes         = []byte("(!1)")
+	useStrictBytes             = []byte(`"use strict"`)
 )
 
 // precedence maps for the precedence inside the operation

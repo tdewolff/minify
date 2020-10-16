@@ -126,6 +126,8 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 			}
 			ifStmt.Else = nil
 		} else if _, ok := list[i].(*js.EmptyStmt); ok {
+			list = append(list[:i], list[i+1:]...)
+			i--
 			continue
 		}
 

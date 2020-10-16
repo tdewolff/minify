@@ -302,6 +302,8 @@ func TestJS(t *testing.T) {
 		//{`var {a,b=5,[5+8]:c,d:e,...f}=z;b`, `var{b=5}=z;b`},
 		{`var {a,b=5,[5+8]:c,d:e,...f}=z;f`, `var{a,b=5,[5+8]:c,d:e,...f}=z;f`},
 		{`var a;var {}=b;`, `var a;{}=b`},
+		{`"use strict";var a;var b;b=5`, `"use strict";var b=5,a`},
+		{`"use strict";z+=6;var a;var b;b=5`, `"use strict";var a,b;z+=6,b=5`},
 
 		// function and method declarations
 		{`function g(){return}`, `function g(){}`},
