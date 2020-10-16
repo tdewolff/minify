@@ -1217,13 +1217,19 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 	case *js.VarDecl:
 		m.minifyVarDecl(expr, true) // happens in for statement or when vars were hoisted
 	case *js.FuncDecl:
-		if m.expectExpr == expectExprStmt {
+		grouped := m.expectExpr == expectExprStmt && prec != js.OpExpr
+		if grouped {
+			m.write(openParenBytes)
+		} else if m.expectExpr == expectExprStmt {
 			m.write(notBytes)
 		}
 		parentInFor := m.inFor
 		m.inFor = false
 		m.minifyFuncDecl(*expr, true)
 		m.inFor = parentInFor
+		if grouped {
+			m.write(closeParenBytes)
+		}
 	case *js.ArrowFunc:
 		m.minifyArrowFunc(*expr)
 	case *js.MethodDecl:

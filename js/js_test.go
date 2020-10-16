@@ -424,9 +424,9 @@ func TestJS(t *testing.T) {
 		{`({a:a}=5)`, `({a})=5`},
 		{`({a:"a"}=5)`, `({a:"a"})=5`},
 		{`(function(){})`, `!function(){}`},
-		{`(function(){}())`, `!function(){}()`},
-		{`(function(){})()`, `!function(){}()`},
-		{`(function(){})();x=5;f=6`, `!function(){}(),x=5,f=6`},
+		{`(function(){}())`, `(function(){})()`},
+		{`(function(){})()`, `(function(){})()`},
+		{`(function(){})();x=5;f=6`, `(function(){})(),x=5,f=6`},
 		{`(async function(){})`, `!async function(){}`},
 		{`(class a{})`, `!class a{}`},
 		{`(let [a])`, `!let[a]`},
@@ -594,7 +594,7 @@ func TestJS(t *testing.T) {
 		{`a=5;for(var b=4;b;)c()`, `a=5;for(var b=4;b;)c()`},
 		{`a=5;switch(b=4){}`, `switch(a=5,b=4){}`},
 		{`a=5;with(b=4){}`, `with(a=5,b=4);`},
-		{`(function(){})();(function(){})()`, `!function(){}(),function(){}()`},
+		{`(function(){})();(function(){})()`, `(function(){})(),function(){}()`},
 
 		// edge-cases
 		{`let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`, `let o=null;try{o=o?.a.b||"FAIL"}catch(x){}console.log(o||"PASS")`},
