@@ -362,7 +362,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				}
 
 				// write attributes
-				prevQuote := false
 				for {
 					attr := *tb.Shift()
 					if attr.TokenType != html.AttributeToken {
@@ -467,11 +466,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						}
 					}
 
-					if !prevQuote {
-						w.Write(spaceBytes)
-					}
+					w.Write(spaceBytes)
 					w.Write(attr.Text)
-					prevQuote = false
 					if len(val) > 0 && attr.Traits&booleanAttr == 0 {
 						w.Write(isBytes)
 
@@ -481,7 +477,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						// no quotes if possible, else prefer single or double depending on which occurs more often in value
 						val = html.EscapeAttrVal(&attrByteBuffer, attr.AttrVal, val, o.KeepQuotes || isXML)
 						w.Write(val)
-						prevQuote = val[0] == '"' || val[0] == '\''
 					}
 				}
 			} else {
