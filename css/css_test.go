@@ -274,6 +274,17 @@ func TestCSSInline(t *testing.T) {
 		{"flex-grow:initial", "flex-grow:0"},
 		{"flex-shrink:initial", "flex-shrink:1"},
 		{"order:initial", "order:0"},
+		{"unicode-range:U", "unicode-range:U"},
+		{"unicode-range:U+", "unicode-range:U+"},
+		{"unicode-range:U+0-04FF", "unicode-range:U+0-04FF"},
+		{"unicode-range:U+0-7F", "unicode-range:U+0-7F"},
+		/* TODO {"unicode-range:U+000-FFF", "unicode-range:U+???"}, */
+		{"unicode-range:U+1000-2FFF", "unicode-range:U+1000-2FFF"},
+		{"unicode-range:U+2300-23FF,U+2A00-2aFf", "unicode-range:U+23??,U+2A??"},
+		{"unicode-range:U+25-FF", "unicode-range:U+25-FF"},
+		{"unicode-range:U+26", "unicode-range:U+26"},
+		{"unicode-range:U+2600-26FF", "unicode-range:U+26??"},
+		{"unicode-range:u+1234-1234", "unicode-range:u+1234"},
 
 		{"text-decoration: none !important", "text-decoration:none!important"},
 		{"color:#fff", "color:#fff"},

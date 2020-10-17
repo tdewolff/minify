@@ -1201,6 +1201,41 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			values[0].Data = oneBytes
 			values[0].Ident = 0
 		}
+	case UnicodeRange:
+		// U+2600-26FF → U+26??
+		for i, value := range values {
+			// Starts with "U+..." or "u+..."
+			if len(value.Data) >= 2 && value.Data[0]|32 == 'u' && value.Data[1] == '+' {
+				hyphen := bytes.IndexByte(value.Data, '-')
+				if hyphen == -1 {
+					continue
+				}
+
+				// Skip over "U+", we have a range of two same length parts.
+				left := value.Data[2:hyphen]
+				right := value.Data[hyphen+1:]
+				if len(left) != len(right) {
+					continue
+				}
+
+				// Starting at the ends compare each part byte by byte.
+				for j := len(left); j > 0; j-- {
+					if left[j-1] != '0' || right[j-1]|32 != 'f' {
+						if bytes.EqualFold(left[:j], right[:j]) {
+							// Fill in the wildcards.
+							for k := j; k < len(left); k++ {
+								left[k] = '?'
+							}
+
+							// Chop off the second part.
+							values[i].Data = value.Data[:hyphen]
+						}
+
+						break
+					}
+				}
+			}
+		}
 	}
 	return values
 }
