@@ -619,6 +619,7 @@ func TestJS(t *testing.T) {
 		{`()=>{return{a}}`, `()=>({a})`},                                                                // #333
 		{`()=>({a})`, `()=>({a})`},                                                                      // #333
 		{`function f(){if(a){return 1}else if(b){return 2}return 3}`, `function f(){return a?1:b?2:3}`}, // #335
+		{`new RegExp('\xAA\xB5')`, `new RegExp('\xAA\xB5')`},                                            // #341
 	}
 
 	m := minify.New()

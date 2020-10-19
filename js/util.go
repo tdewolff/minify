@@ -571,7 +571,7 @@ func minifyString(b []byte) []byte {
 					n = 2
 				}
 			} else if c == 'x' {
-				if i+3 < len(b)-1 && isHexDigit(b[i+2]) && isHexDigit(b[i+3]) {
+				if i+3 < len(b)-1 && isHexDigit(b[i+2]) && b[i+2] < '8' && isHexDigit(b[i+3]) {
 					// hexadecimal escapes
 					_, _ = hex.Decode(b[i+3:i+4:i+4], b[i+2:i+4])
 					n = 3
