@@ -287,7 +287,7 @@ func TestJS(t *testing.T) {
 		{`var a;var b=6;a=7;b`, `var b=6,a=7;b`}, // swap declaration order to maintain definition order
 		{`var a=5;var b=6;a=7,b`, `var a=5,b=6;a=7,b`},
 		{`var a;var b=6;a,b,z=7`, `var b=6,a;a,b,z=7`},
-		{`for(var a=6,b=7;;);var c=8;a,b,c`, `for(var a=6,b=7,c=8;;);a,b,c`},
+		{`for(var a=6,b=7;;);var c=8;a,b,c`, `for(var a=6,b=7,c;;);c=8,a,b,c`},
 		{`for(var c;b;){let a=8;a};var a;a`, `for(var c,a;b;){let a=8;a}a`},
 		{`for(;b;){let a=8;a};var a;var b;a`, `for(var a,b;b;){let a=8;a}a`},
 		{`var a=1,b=2;while(c);var d=3,e=4;a,b,d,e`, `for(var a=1,b=2,d,e;c;);d=3,e=4,a,b,d,e`},
@@ -620,6 +620,7 @@ func TestJS(t *testing.T) {
 		{`()=>({a})`, `()=>({a})`},                                                                      // #333
 		{`function f(){if(a){return 1}else if(b){return 2}return 3}`, `function f(){return a?1:b?2:3}`}, // #335
 		{`new RegExp('\xAA\xB5')`, `new RegExp('\xAA\xB5')`},                                            // #341
+		{`for(var a;;)a();var b=5`, `for(var a,b;;)a();b=5`},                                            // #346
 	}
 
 	m := minify.New()

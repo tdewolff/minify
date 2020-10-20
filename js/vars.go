@@ -196,6 +196,7 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) *js.VarDecl {
 	m.varsHoisted = nil
 	if 1 < body.Scope.NumVarDecls {
 		iDefines := 0 // position past last variable definition in declaration
+		mergeStatements := true
 
 		// ignore "use strict"
 		declStart := 0
@@ -216,6 +217,7 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) *js.VarDecl {
 			} else if varDecl, ok := forStmt.Init.(*js.VarDecl); ok && varDecl.TokenType == js.VarToken {
 				decl = varDecl
 			}
+			mergeStatements = false
 		} else if whileStmt, ok := body.List[declStart].(*js.WhileStmt); ok {
 			// TODO: only merge statements that don't have 'in' or 'of' keywords (slow to check?)
 			decl = &js.VarDecl{TokenType: js.VarToken, List: nil}
@@ -226,6 +228,7 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) *js.VarDecl {
 				forBody.List = []js.IStmt{whileStmt.Body}
 			}
 			body.List[declStart] = &js.ForStmt{Init: decl, Cond: whileStmt.Cond, Post: nil, Body: forBody}
+			mergeStatements = false
 		}
 		if decl != nil {
 			// original declarations
@@ -261,44 +264,46 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) *js.VarDecl {
 			body.List = append(body.List[:declStart], append([]js.IStmt{decl}, body.List[declStart:]...)...)
 		}
 
-		// pull in assignments to variables into the declaration, e.g. var a;a=5  =>  var a=5
-		// sort in order of definitions
-		nMerged := 0
-		declEnd := declStart + 1
-	FindDefinitionsLoop:
-		for k, item := range body.List[declEnd:] {
-			if exprStmt, ok := item.(*js.ExprStmt); ok {
-				if binaryExpr, ok := exprStmt.Value.(*js.BinaryExpr); ok && binaryExpr.Op == js.EqToken {
-					if v, ok := binaryExpr.X.(*js.Var); ok && v.Decl == js.VariableDecl {
-						if addDefinition(decl, iDefines, v, binaryExpr.Y) {
-							iDefines++
-							nMerged++
-							continue
+		if mergeStatements {
+			// pull in assignments to variables into the declaration, e.g. var a;a=5  =>  var a=5
+			// sort in order of definitions
+			nMerged := 0
+			declEnd := declStart + 1
+		FindDefinitionsLoop:
+			for k, item := range body.List[declEnd:] {
+				if exprStmt, ok := item.(*js.ExprStmt); ok {
+					if binaryExpr, ok := exprStmt.Value.(*js.BinaryExpr); ok && binaryExpr.Op == js.EqToken {
+						if v, ok := binaryExpr.X.(*js.Var); ok && v.Decl == js.VariableDecl {
+							if addDefinition(decl, iDefines, v, binaryExpr.Y) {
+								iDefines++
+								nMerged++
+								continue
+							}
 						}
 					}
-				}
-			} else if varDecl, ok := item.(*js.VarDecl); ok && varDecl.TokenType == js.VarToken {
-				for j := 0; j < len(varDecl.List); j++ {
-					item := varDecl.List[j]
-					if item.Default != nil {
-						if addDefinition(decl, iDefines, item.Binding, item.Default) {
-							iDefines++
-							varDecl.List = append(varDecl.List[:j], varDecl.List[j+1:]...)
-							j--
-						} else {
-							break FindDefinitionsLoop
+				} else if varDecl, ok := item.(*js.VarDecl); ok && varDecl.TokenType == js.VarToken {
+					for j := 0; j < len(varDecl.List); j++ {
+						item := varDecl.List[j]
+						if item.Default != nil {
+							if addDefinition(decl, iDefines, item.Binding, item.Default) {
+								iDefines++
+								varDecl.List = append(varDecl.List[:j], varDecl.List[j+1:]...)
+								j--
+							} else {
+								break FindDefinitionsLoop
+							}
 						}
+						// declaration has no definition, that's fine as it's already merged previously
 					}
-					// declaration has no definition, that's fine as it's already merged previously
+					body.List[declEnd+k] = varDecl // update varDecl.List
+					nMerged++
+					continue // all variable declarations were matched, keep looking
 				}
-				body.List[declEnd+k] = varDecl // update varDecl.List
-				nMerged++
-				continue // all variable declarations were matched, keep looking
+				break // not ExprStmt nor VarDecl
 			}
-			break // not ExprStmt nor VarDecl
-		}
-		if 0 < nMerged {
-			body.List = append(body.List[:declEnd], body.List[declEnd+nMerged:]...)
+			if 0 < nMerged {
+				body.List = append(body.List[:declEnd], body.List[declEnd+nMerged:]...)
+			}
 		}
 		m.varsHoisted = decl
 	}
