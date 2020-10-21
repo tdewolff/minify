@@ -842,7 +842,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		// convert (a,b)&&c into a,b&&c but not a=(b,c)&&d into a=(b,c&&d)
 		if prec <= js.OpExpr {
 			if group, ok := expr.X.(*js.GroupExpr); ok {
-				if binary, ok := group.X.(*js.BinaryExpr); ok && binary.Op == js.CommaToken {
+				if binary, ok := group.X.(*js.BinaryExpr); ok && binary.Op == js.CommaToken && js.OpAnd <= exprPrec(binary.Y) {
 					expr.X = group.X
 					precLeft = js.OpExpr
 				}

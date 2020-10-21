@@ -489,6 +489,11 @@ func TestJS(t *testing.T) {
 		{"a=-(b=5)", "a=-(b=5)"},
 		{"f({},(a=5,b))", "f({},(a=5,b))"},
 		{"for(var a=(b in c);;);", "for(var a=(b in c);;);"},
+		{`(1,2,a=3)&&b`, `(1,2,a=3)&&b`},
+		{`(1,2,a||3)&&b`, `(1,2,a||3)&&b`},
+		{`(1,2,a??3)&&b`, `(1,2,a??3)&&b`},
+		{`(1,2,a&&3)&&b`, `1,2,a&&3&&b`},
+		{`(1,2,a|3)&&b`, `1,2,a|3&&b`},
 
 		// expressions
 		//{`a=a+5`, `a+=5`},
@@ -621,6 +626,7 @@ func TestJS(t *testing.T) {
 		{`function f(){if(a){return 1}else if(b){return 2}return 3}`, `function f(){return a?1:b?2:3}`}, // #335
 		{`new RegExp('\xAA\xB5')`, `new RegExp('\xAA\xB5')`},                                            // #341
 		{`for(var a;;)a();var b=5`, `for(var a,b;;)a();b=5`},                                            // #346
+		{`if(e?0:n=1,o=2){o.a}`, `(e?0:n=1,o=2)&&o.a`},                                                  // #347
 	}
 
 	m := minify.New()

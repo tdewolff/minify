@@ -280,7 +280,7 @@ func exprPrec(i js.IExpr) js.OpPrec {
 	return js.OpExpr // does not happen
 }
 
-// TODO: apply in more cases
+// TODO: use in more cases
 func groupExpr(i js.IExpr, prec js.OpPrec) js.IExpr {
 	precInside := exprPrec(i)
 	if precInside < prec && (precInside != js.OpCoalesce || prec != js.OpBitOr) {
@@ -289,7 +289,7 @@ func groupExpr(i js.IExpr, prec js.OpPrec) js.IExpr {
 	return i
 }
 
-// TODO: apply in more cases
+// TODO: use in more cases
 func condExpr(cond, x, y js.IExpr) js.IExpr {
 	return &js.CondExpr{
 		Cond: groupExpr(cond, js.OpCoalesce),
