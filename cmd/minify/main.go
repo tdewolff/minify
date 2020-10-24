@@ -263,10 +263,15 @@ func run() int {
 
 	////////////////
 
+	for i, input := range inputs {
+		inputs[i] = sanitizePath(input)
+	}
+
 	// set output, empty means stdout, ending in slash means a directory, otherwise a file
 	dirDst := false
 	if output != "" {
-		if !bundle && 1 < len(inputs) && output[len(output)-1] != '/' {
+		dirSrc := 1 < len(inputs) || len(inputs) == 1 && inputs[0][len(inputs[0])-1] == '/'
+		if !bundle && dirSrc && output[len(output)-1] != '/' {
 			output += "/"
 		}
 		output = sanitizePath(output)
@@ -499,7 +504,6 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 	tasks := []Task{}
 	roots := []string{}
 	for _, input := range inputs {
-		input = sanitizePath(input)
 		info, err := os.Stat(input)
 		if err != nil {
 			return nil, nil, err
