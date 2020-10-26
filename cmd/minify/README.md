@@ -145,16 +145,16 @@ $ minify -r -o out/ --match=\.js src
 ```
 
 ### Concatenate
-When multiple inputs are given and either standard output or a single output file, it will concatenate the files together.
+When multiple inputs are given and the output is either standard output or a single file, it will concatenate the files together if you use the bundle option.
 
 Concatenate **one.css** and **two.css** into **style.css**:
 ```sh
-$ minify -o style.css one.css two.css
+$ minify -b -o style.css one.css two.css
 ```
 
 Concatenate all files in **styles/** into **style.css**:
 ```sh
-$ minify -o style.css styles
+$ minify -r -b -o style.css styles
 ```
 
 You can also use `cat` as standard input to concatenate files and use gzip for example:
