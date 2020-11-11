@@ -105,6 +105,7 @@ func TestHTML(t *testing.T) {
 		{`a <span> <img> </span>b`, `a <span><img> </span>b`},
 		{`a<picture> <img> </picture>b`, `a<picture> <img> </picture>b`},
 		{`a <picture> <img> </picture>b`, `a <picture><img> </picture>b`},
+		{`<input placeholder=" a " value=" b ">`, `<input placeholder=" a " value=" b ">`},
 
 		// from HTML Minifier
 		{`<DIV TITLE="blah">boo</DIV>`, `<div title=blah>boo</div>`},

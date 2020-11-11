@@ -373,6 +373,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					val := attr.AttrVal
 					if attr.Traits&trimAttr != 0 {
 						val = parse.ReplaceMultipleWhitespaceAndEntities(val, EntitiesMap, nil)
+						val = parse.TrimWhitespace(val)
 					} else {
 						val = parse.ReplaceEntities(val, EntitiesMap, nil)
 					}

@@ -1,7 +1,6 @@
 package html
 
 import (
-	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/html"
 )
 
@@ -39,7 +38,7 @@ func (z *TokenBuffer) read(t *Token) {
 	if t.TokenType == html.AttributeToken {
 		t.AttrVal = z.l.AttrVal()
 		if len(t.AttrVal) > 1 && (t.AttrVal[0] == '"' || t.AttrVal[0] == '\'') {
-			t.AttrVal = parse.TrimWhitespace(t.AttrVal[1 : len(t.AttrVal)-1]) // quotes will be readded in attribute loop if necessary
+			t.AttrVal = t.AttrVal[1 : len(t.AttrVal)-1] // quotes will be readded in attribute loop if necessary
 		}
 		t.Hash = ToHash(t.Text)
 		t.Traits = attrMap[t.Hash]
