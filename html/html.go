@@ -304,6 +304,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					attrs := tb.Attributes(Content, Http_Equiv, Charset, Name)
 					if content := attrs[0]; content != nil {
 						if httpEquiv := attrs[1]; httpEquiv != nil {
+							httpEquiv.AttrVal = parse.TrimWhitespace(httpEquiv.AttrVal)
 							if charset := attrs[2]; charset == nil && parse.EqualFold(httpEquiv.AttrVal, []byte("content-type")) {
 								content.AttrVal = minify.Mediatype(content.AttrVal)
 								if bytes.Equal(content.AttrVal, []byte("text/html;charset=utf-8")) {
@@ -315,6 +316,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							}
 						}
 						if name := attrs[3]; name != nil {
+							name.AttrVal = parse.TrimWhitespace(name.AttrVal)
 							if parse.EqualFold(name.AttrVal, []byte("keywords")) {
 								content.AttrVal = bytes.Replace(content.AttrVal, []byte(", "), []byte(","), -1)
 							} else if parse.EqualFold(name.AttrVal, []byte("viewport")) {
