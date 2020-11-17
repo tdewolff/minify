@@ -226,7 +226,7 @@ var attrMap = map[Hash]traits{
 	Tabindex:        trimAttr,
 	Target:          caselessAttr,
 	Text:            caselessAttr,
-	Translate:       booleanAttr,
+	Translate:       caselessAttr,
 	Truespeed:       booleanAttr,
 	Type:            caselessAttr,
 	Typemustmatch:   booleanAttr,
