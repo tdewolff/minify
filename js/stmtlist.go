@@ -108,6 +108,8 @@ func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 	return i
 }
 
+var xxx int = 0
+
 func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 	// merge expression statements as well as if/else statements followed by flow control statements
 	if len(list) == 0 {
@@ -115,8 +117,6 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 	}
 	j := 0                           // write index
 	for i := 0; i < len(list); i++ { // read index
-		list[i] = m.optimizeStmt(list[i])
-
 		if ifStmt, ok := list[i].(*js.IfStmt); ok && !m.isEmptyStmt(ifStmt.Else) && isFlowStmt(lastStmt(ifStmt.Body)) {
 			// if body ends in flow statement (return, throw, break, continue), so we can remove the else statement and put its body in the current scope
 			if blockStmt, ok := ifStmt.Else.(*js.BlockStmt); ok {
@@ -125,7 +125,11 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 				list = append(list[:i+1], append([]js.IStmt{ifStmt.Else}, list[i+1:]...)...)
 			}
 			ifStmt.Else = nil
-		} else if _, ok := list[i].(*js.EmptyStmt); ok {
+		}
+
+		list[i] = m.optimizeStmt(list[i])
+
+		if _, ok := list[i].(*js.EmptyStmt); ok {
 			list = append(list[:i], list[i+1:]...)
 			i--
 			continue

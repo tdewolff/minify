@@ -248,6 +248,9 @@ func TestJS(t *testing.T) {
 		{`if(a){d:if(b)break}else c`, `if(a){d:if(b)break}else c`},
 		{`if(a){with(d)if(b)break}else c`, `if(a){with(d)if(b)break}else c`},
 		{`if(a)return b;if(c)return d;return e`, `return a?b:c?d:e`},
+		{`if(a,b)b`, `a,b&&b`},
+		{`if(a,b)b;else d`, `a,b||d`},
+		{`if(a=b)a;else b`, `(a=b)||b`},
 
 		// var declarations
 		//{`{let a}`, ``}, // TODO
@@ -494,6 +497,8 @@ func TestJS(t *testing.T) {
 		{`(1,2,a??3)&&b`, `(1,2,a??3)&&b`},
 		{`(1,2,a&&3)&&b`, `1,2,a&&3&&b`},
 		{`(1,2,a|3)&&b`, `1,2,a|3&&b`},
+		{`(a,b)?c:b`, `a,b&&c`},
+		{`(a,b)?c:d`, `a,b?c:d`},
 
 		// expressions
 		//{`a=a+5`, `a+=5`},
@@ -570,6 +575,7 @@ func TestJS(t *testing.T) {
 		{`a={b(c){d}}`, `a={b(c){d}}`},
 		{`a(b,...c)`, `a(b,...c)`},
 		{`let a="string";a`, `let a="string";a`},
+		{`f((a,b)||d)`, `f((a,b)||d)`},
 		//{`{let a="string"}a`, `a`},
 		//{`!function(){var a}`, `!function(){}`}, // TODO
 		//{`const a=6;f(a)`, `f(6)`},             // TODO: inline single-use variables that are literals

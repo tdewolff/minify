@@ -1,4 +1,4 @@
-// Package js minifies ECMAScript5.1 following the specifications at http://www.ecma-international.org/ecma-262/5.1/.
+// Package js minifies ECMAScript 2021 following the language specification at https://tc39.es/ecma262/.
 package js
 
 import (
@@ -1124,24 +1124,21 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			}
 		}
 
+		finalCond := finalExpr(expr.Cond)
 		if truthy, ok := m.isTruthy(expr.Cond); truthy && ok {
 			// if condition is truthy
 			m.minifyExpr(expr.X, prec)
 		} else if !truthy && ok {
 			// if condition is falsy
 			m.minifyExpr(expr.Y, prec)
-		} else if m.isEqualExpr(expr.Cond, expr.X) && (exprPrec(expr.X) < js.OpAssign || binaryLeftPrecMap[js.OrToken] <= exprPrec(expr.X)) && (exprPrec(expr.Y) < js.OpAssign || binaryRightPrecMap[js.OrToken] <= exprPrec(expr.Y)) {
+		} else if m.isEqualExpr(finalCond, expr.X) && (exprPrec(finalCond) < js.OpAssign || binaryLeftPrecMap[js.OrToken] <= exprPrec(finalCond)) && (exprPrec(expr.Y) < js.OpAssign || binaryRightPrecMap[js.OrToken] <= exprPrec(expr.Y)) {
 			// if condition is equal to true body
 			// for higher prec we need to add group parenthesis, and for lower prec we have parenthesis anyways. This only is shorter if len(expr.X) >= 3. isEqualExpr only checks for literal variables, which is a name will be minified to a one or two character name.
-			m.minifyExpr(expr.X, binaryLeftPrecMap[js.OrToken])
-			m.write(orBytes)
-			m.minifyExpr(expr.Y, binaryRightPrecMap[js.OrToken])
-		} else if m.isEqualExpr(expr.Cond, expr.Y) && (exprPrec(expr.Y) < js.OpAssign || binaryLeftPrecMap[js.AndToken] <= exprPrec(expr.Y)) && (exprPrec(expr.X) < js.OpAssign || binaryRightPrecMap[js.AndToken] <= exprPrec(expr.X)) {
+			m.minifyExpr(&js.BinaryExpr{js.OrToken, groupExpr(expr.Cond, binaryLeftPrecMap[js.OrToken]), expr.Y}, prec)
+		} else if m.isEqualExpr(finalCond, expr.Y) && (exprPrec(finalCond) < js.OpAssign || binaryLeftPrecMap[js.AndToken] <= exprPrec(finalCond)) && (exprPrec(expr.X) < js.OpAssign || binaryRightPrecMap[js.AndToken] <= exprPrec(expr.X)) {
 			// if condition is equal to false body
 			// for higher prec we need to add group parenthesis, and for lower prec we have parenthesis anyways. This only is shorter if len(expr.X) >= 3. isEqualExpr only checks for literal variables, which is a name will be minified to a one or two character name.
-			m.minifyExpr(expr.Y, binaryLeftPrecMap[js.AndToken])
-			m.write(andBytes)
-			m.minifyExpr(expr.X, binaryRightPrecMap[js.AndToken])
+			m.minifyExpr(&js.BinaryExpr{js.AndToken, groupExpr(expr.Cond, binaryLeftPrecMap[js.AndToken]), expr.X}, prec)
 		} else if m.isEqualExpr(expr.X, expr.Y) {
 			// if true and false bodies are equal
 			if prec <= js.OpExpr {
@@ -1195,6 +1192,14 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				m.minifyExpr(expr.Y, js.OpAssign)
 			} else {
 				// regular conditional expression
+				// convert  (a,b)?c:d  =>  a,b?c:d
+				if prec <= js.OpExpr {
+					if group, ok := expr.Cond.(*js.GroupExpr); ok {
+						if binary, ok := group.X.(*js.BinaryExpr); ok && binary.Op == js.CommaToken && js.OpCoalesce <= exprPrec(binary.Y) {
+							expr.Cond = group.X
+						}
+					}
+				}
 				m.minifyExpr(expr.Cond, js.OpCoalesce)
 				m.write(questionBytes)
 				m.minifyExpr(expr.X, js.OpAssign)

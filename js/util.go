@@ -283,7 +283,7 @@ func exprPrec(i js.IExpr) js.OpPrec {
 // TODO: use in more cases
 func groupExpr(i js.IExpr, prec js.OpPrec) js.IExpr {
 	precInside := exprPrec(i)
-	if precInside < prec && (precInside != js.OpCoalesce || prec != js.OpBitOr) {
+	if _, ok := i.(*js.GroupExpr); !ok && precInside < prec && (precInside != js.OpCoalesce || prec != js.OpBitOr) {
 		return &js.GroupExpr{X: i}
 	}
 	return i
@@ -319,6 +319,19 @@ func (m *jsMinifier) isEmptyStmt(stmt js.IStmt) bool {
 		return true
 	}
 	return false
+}
+
+func finalExpr(expr js.IExpr) js.IExpr {
+	if group, ok := expr.(*js.GroupExpr); ok {
+		expr = group.X
+	}
+	if binary, ok := expr.(*js.BinaryExpr); ok && binary.Op == js.CommaToken {
+		expr = binary.Y
+	}
+	if binary, ok := expr.(*js.BinaryExpr); ok && binary.Op == js.EqToken {
+		expr = binary.X
+	}
+	return expr
 }
 
 func isFlowStmt(stmt js.IStmt) bool {
