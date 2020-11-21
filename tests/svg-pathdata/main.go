@@ -8,7 +8,7 @@ import (
 
 // Fuzz is a fuzz test.
 func Fuzz(data []byte) int {
-	pathDataBuffer := svg.NewPathData(&svg.Minifier{Decimals: -1})
+	pathDataBuffer := svg.NewPathData(&svg.Minifier{})
 	data = parse.Copy(data) // ignore const-input error for OSS-Fuzz
 	_ = pathDataBuffer.ShortenPathData(data)
 	return 1
