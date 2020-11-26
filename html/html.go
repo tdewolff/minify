@@ -89,7 +89,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		case html.DoctypeToken:
 			w.Write(doctypeBytes)
 		case html.CommentToken:
-			if o.KeepConditionalComments && len(t.Text) > 6 && (bytes.HasPrefix(t.Text, []byte("[if ")) || bytes.HasSuffix(t.Text, []byte("[endif]")) || bytes.HasSuffix(t.Text, []byte("[endif]--"))) {
+			if o.KeepConditionalComments && 6 < len(t.Text) && (bytes.HasPrefix(t.Text, []byte("[if ")) || bytes.HasSuffix(t.Text, []byte("[endif]")) || bytes.HasSuffix(t.Text, []byte("[endif]--"))) {
 				// [if ...] is always 7 or more characters, [endif] is only encountered for downlevel-revealed
 				// see https://msdn.microsoft.com/en-us/library/ms537512(v=vs.85).aspx#syntax
 				if bytes.HasPrefix(t.Data, []byte("<!--[if ")) && bytes.HasSuffix(t.Data, []byte("<![endif]-->")) { // downlevel-hidden
@@ -103,6 +103,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				} else {
 					w.Write(t.Data) // downlevel-revealed or short downlevel-hidden
 				}
+			} else if 1 < len(t.Text) && t.Text[0] == '#' {
+				// SSI tags
+				w.Write(t.Data)
 			}
 		case html.SvgToken:
 			if err := m.MinifyMimetype(svgMimeBytes, w, buffer.NewReader(t.Data), nil); err != nil {

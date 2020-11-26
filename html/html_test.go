@@ -27,6 +27,7 @@ func TestHTML(t *testing.T) {
 		{`html`, `html`},
 		{`<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">`, `<!doctype html>`},
 		{`<!-- comment -->`, ``},
+		{`<!--# SSI Tag -->`, `<!--# SSI Tag -->`},
 		{`<style><!--\ncss\n--></style>`, `<style><!--\ncss\n--></style>`},
 		{`<style>&</style>`, `<style>&</style>`},
 		{`<html><head></head><body>x</body></html>`, `x`},
