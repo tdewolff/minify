@@ -321,12 +321,17 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			m.write(stmt.Default)
 			if len(stmt.List) != 0 {
 				m.write(commaBytes)
+			} else if stmt.Default != nil || len(stmt.List) != 0 {
+				m.write(spaceBytes)
 			}
 		}
-		if len(stmt.List) == 1 {
+		if len(stmt.List) == 1 && len(stmt.List[0].Name) == 1 && stmt.List[0].Name[0] == '*' {
 			m.writeSpaceBeforeIdent()
 			m.minifyAlias(stmt.List[0])
-		} else if 1 < len(stmt.List) {
+			if stmt.Default != nil || len(stmt.List) != 0 {
+				m.write(spaceBytes)
+			}
+		} else if 0 < len(stmt.List) {
 			m.write(openBraceBytes)
 			for i, item := range stmt.List {
 				if i != 0 {
@@ -337,9 +342,6 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			m.write(closeBraceBytes)
 		}
 		if stmt.Default != nil || len(stmt.List) != 0 {
-			if len(stmt.List) < 2 {
-				m.write(spaceBytes)
-			}
 			m.write(fromBytes)
 		}
 		m.write(stmt.Module)
@@ -358,10 +360,13 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 				m.requireSemicolon()
 			}
 		} else {
-			if len(stmt.List) == 1 {
+			if len(stmt.List) == 1 && (len(stmt.List[0].Name) == 1 && stmt.List[0].Name[0] == '*' || stmt.List[0].Name == nil && len(stmt.List[0].Binding) == 1 && stmt.List[0].Binding[0] == '*') {
 				m.writeSpaceBeforeIdent()
 				m.minifyAlias(stmt.List[0])
-			} else if 1 < len(stmt.List) {
+				if stmt.Module != nil && stmt.List[0].Name != nil {
+					m.write(spaceBytes)
+				}
+			} else if 0 < len(stmt.List) {
 				m.write(openBraceBytes)
 				for i, item := range stmt.List {
 					if i != 0 {
@@ -372,9 +377,6 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 				m.write(closeBraceBytes)
 			}
 			if stmt.Module != nil {
-				if len(stmt.List) < 2 && (len(stmt.List) != 1 || !bytes.Equal(stmt.List[0].Binding, starBytes)) {
-					m.write(spaceBytes)
-				}
 				m.write(fromBytes)
 				m.write(stmt.Module)
 			}
