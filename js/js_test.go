@@ -141,6 +141,8 @@ func TestJS(t *testing.T) {
 		{`"str1ng" + "str2ng"`, `"str1ngstr2ng"`},
 		{`"str1ng" + "str2ng" + "str3ng"`, `"str1ngstr2ngstr3ng"`},
 		{`"padding" + this`, `"padding"+this`},
+		{`"<\/script>"`, `"<\/script>"`},
+		{`"</scr"+"ipt>"`, `"<\/script>"`},
 		{`"\""`, `'"'`},
 		{`'\'""'`, `'\'""'`},
 		{`"\"\"a'"`, `'""a\''`},

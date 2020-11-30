@@ -656,6 +656,23 @@ func minifyString(b []byte) []byte {
 				i++
 				b[i] = quote // was overwritten above
 			}
+		} else if c == '<' && 9 <= len(b)-1-i {
+			if b[i+1] == '\\' && 10 <= len(b)-1-i && bytes.Equal(b[i+2:i+10], []byte("/script>")) {
+				i += 9
+			} else if bytes.Equal(b[i+1:i+9], []byte("/script>")) {
+				i++
+				if j < start {
+					// avoid append
+					j += copy(b[j:], b[start:i])
+					b[j] = '\\'
+					j++
+					start = i
+				} else {
+					b = append(append(b[:i], '\\'), b[i:]...)
+					i++
+					b[i] = '/' // was overwritten above
+				}
+			}
 		}
 	}
 	if start != 0 {
