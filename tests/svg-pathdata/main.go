@@ -3,13 +3,12 @@ package fuzz
 
 import (
 	"github.com/alex-bacart/minify/v2/svg"
-	"github.com/tdewolff/parse/v2"
+	"github.com/tdewolff/parse"
 )
 
-// Fuzz is a fuzz test.
 func Fuzz(data []byte) int {
-	pathDataBuffer := svg.NewPathData(&svg.Minifier{})
+	pathDataBuffer := svg.NewPathData(&svg.Minifier{Decimals: -1})
 	data = parse.Copy(data) // ignore const-input error for OSS-Fuzz
-	_ = pathDataBuffer.ShortenPathData(data)
+	data = pathDataBuffer.ShortenPathData(data)
 	return 1
 }

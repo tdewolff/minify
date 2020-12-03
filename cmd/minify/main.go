@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"runtime/pprof"
 	"sort"
 	"strings"
 	"time"
@@ -30,8 +29,9 @@ import (
 	"github.com/alex-bacart/minify/v2/xml"
 )
 
-// Version is the current minify version.
 var Version = "built from source"
+var Commit = "" // DEPRECATED
+var Date = ""   // DEPRECATED
 
 var filetypeMime = map[string]string{
 	"css":  "text/css",
@@ -54,19 +54,15 @@ var (
 	version   bool
 	watch     bool
 	sync      bool
-	bundle    bool
 )
 
-// Task is a minify task.
 type Task struct {
 	srcs []string
 	dst  string
-	sync bool
 }
 
-// NewTask returns a new Task.
-func NewTask(root, input, output string, sync bool) (Task, error) {
-	t := Task{[]string{input}, output, sync}
+func NewTask(root, input, output string) (Task, error) {
+	t := Task{[]string{input}, output}
 	if 0 < len(output) && output[len(output)-1] == '/' {
 		rel, err := filepath.Rel(root, input)
 		if err != nil {
@@ -77,11 +73,9 @@ func NewTask(root, input, output string, sync bool) (Task, error) {
 	return t, nil
 }
 
-// Loggers.
 var (
-	Error   *log.Logger
-	Warning *log.Logger
-	Info    *log.Logger
+	Error *log.Logger
+	Info  *log.Logger
 )
 
 func main() {
@@ -95,8 +89,6 @@ func run() int {
 	filetype := ""
 	match := ""
 	siteurl := ""
-	cpuprofile := ""
-	memprofile := ""
 
 	cssMinifier := &css.Minifier{}
 	htmlMinifier := &html.Minifier{}
@@ -109,7 +101,7 @@ func run() int {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [input]\n\nOptions:\n", os.Args[0])
 		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\nInput:\n  Files or directories, leave blank to use stdin. Specify --mime or --type to use stdin and stdout.\n")
+		fmt.Fprintf(os.Stderr, "\nInput:\n  Files or directories, leave blank to use stdin\n")
 	}
 
 	flag.BoolVarP(&help, "help", "h", false, "Show usage")
@@ -123,12 +115,10 @@ func run() int {
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose")
 	flag.BoolVarP(&watch, "watch", "w", false, "Watch files and minify upon changes")
 	flag.BoolVarP(&sync, "sync", "s", false, "Copy all files to destination directory and minify when filetype matches")
-	flag.BoolVarP(&bundle, "bundle", "b", false, "Bundle files by concatenation into a single file")
 	flag.BoolVarP(&version, "version", "", false, "Version")
 
 	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
-	flag.StringVar(&cpuprofile, "cpuprofile", "", "Export CPU profile")
-	flag.StringVar(&memprofile, "memprofile", "", "Export memory profile")
+	flag.IntVar(&cssMinifier.Decimals, "css-decimals", 0, "Number of significant digits to preserve in numbers, 0 is all (DEPRECATED")
 	flag.IntVar(&cssMinifier.Precision, "css-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
 	flag.BoolVar(&htmlMinifier.KeepConditionalComments, "html-keep-conditional-comments", false, "Preserve all IE conditional comments")
 	flag.BoolVar(&htmlMinifier.KeepDefaultAttrVals, "html-keep-default-attrvals", false, "Preserve default attribute values")
@@ -136,30 +126,24 @@ func run() int {
 	flag.BoolVar(&htmlMinifier.KeepEndTags, "html-keep-end-tags", false, "Preserve all end tags")
 	flag.BoolVar(&htmlMinifier.KeepWhitespace, "html-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
 	flag.BoolVar(&htmlMinifier.KeepQuotes, "html-keep-quotes", false, "Preserve quotes around attribute values")
-	flag.IntVar(&jsMinifier.Precision, "js-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
-	flag.BoolVar(&jsMinifier.KeepVarNames, "js-keep-var-names", false, "Preserve original variable names")
 	flag.BoolVar(&htmlMinifier.DontLowercaseAttributes, "html-dont-lowercase", false, "Prevent attributes lower case")
 	flag.IntVar(&jsonMinifier.Precision, "json-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
+	flag.IntVar(&svgMinifier.Decimals, "svg-decimals", 0, "Number of significant digits to preserve in numbers, 0 is all (DEPRECATED")
 	flag.IntVar(&svgMinifier.Precision, "svg-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
 	flag.BoolVar(&xmlMinifier.KeepWhitespace, "xml-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
-	if len(os.Args) == 1 {
-		fmt.Printf("minify: must specify --mime or --type in order to use stdin and stdout\n")
-		fmt.Printf("Try 'minify --help' for more information\n")
-		return 1
-	} else if err := flag.Parse(os.Args[1:]); err != nil {
-		fmt.Printf("minify: %v\n", err)
-		fmt.Printf("Try 'minify --help' for more information\n")
+	if err := flag.Parse(os.Args[1:]); err != nil {
+		fmt.Printf("Error: %v\n\n", err)
+		flag.Usage()
 		return 1
 	}
-	inputs := flag.Args()
-	useStdin := len(inputs) == 0
+	rawInputs := flag.Args()
+	useStdin := len(rawInputs) == 0
 
 	Error = log.New(os.Stderr, "ERROR: ", 0)
-	Warning = log.New(os.Stderr, "WARNING: ", 0)
 	if verbose {
-		Info = log.New(os.Stderr, "", 0)
+		Info = log.New(os.Stderr, "INFO: ", 0)
 	} else {
-		Info = log.New(ioutil.Discard, "", 0)
+		Info = log.New(ioutil.Discard, "INFO: ", 0)
 	}
 
 	if help {
@@ -184,53 +168,11 @@ func run() int {
 		return 0
 	}
 
-	if cpuprofile != "" {
-		f, err := os.Create(cpuprofile)
-		if err != nil {
-			Error.Println(err)
-			return 1
-		}
-		if err = pprof.StartCPUProfile(f); err != nil {
-			Error.Println(err)
-			return 1
-		}
-		defer func() {
-			pprof.StopCPUProfile()
-			if err = f.Close(); err != nil {
-				Error.Println(err)
-			}
-		}()
-	}
-
-	if memprofile != "" {
-		defer func() {
-			f, err := os.Create(memprofile)
-			if err != nil {
-				Error.Println(err)
-			}
-			if err = pprof.WriteHeapProfile(f); err != nil {
-				Error.Println(err)
-			}
-			if err = f.Close(); err != nil {
-				Error.Println(err)
-			}
-		}()
-	}
-
 	var err error
 	if match != "" {
 		pattern, err = regexp.Compile(match)
 		if err != nil {
 			Error.Println(err)
-			return 1
-		}
-	}
-
-	// detect mimetype, mimetype=="" means we'll infer mimetype from file extensions
-	if mimetype == "" && filetype != "" {
-		var ok bool
-		if mimetype, ok = filetypeMime[filetype]; !ok {
-			Error.Println("cannot find mimetype for filetype", filetype)
 			return 1
 		}
 	}
@@ -247,12 +189,18 @@ func run() int {
 		}
 		return 1
 	}
-	if mimetype == "" && useStdin {
+	if mimetype == "" && filetype == "" && useStdin {
 		Error.Println("must specify --mime or --type for stdin")
 		return 1
-	} else if mimetype != "" && sync {
-		Error.Println("must specify either --sync or --mime/--type")
-		return 1
+	}
+
+	// detect mimetype, mimetype=="" means we'll infer mimetype from file extensions
+	if mimetype == "" && filetype != "" {
+		var ok bool
+		if mimetype, ok = filetypeMime[filetype]; !ok {
+			Error.Println("cannot find mimetype for filetype", filetype)
+			return 1
+		}
 	}
 	if verbose {
 		if mimetype == "" {
@@ -264,22 +212,16 @@ func run() int {
 
 	////////////////
 
-	for i, input := range inputs {
-		inputs[i] = sanitizePath(input)
-	}
-
 	// set output, empty means stdout, ending in slash means a directory, otherwise a file
 	dirDst := false
 	if output != "" {
-		dirSrc := 1 < len(inputs) || len(inputs) == 1 && inputs[0][len(inputs[0])-1] == '/'
-		if !bundle && dirSrc && output[len(output)-1] != '/' {
-			output += "/"
-		}
 		output = sanitizePath(output)
-		dirDst = output[len(output)-1] == '/'
-		if dirDst && bundle {
-			Error.Println("--bundle requires destination to be stdout or a file")
-			return 1
+		if output[len(output)-1] == '/' {
+			dirDst = true
+			if err := os.MkdirAll(output, 0777); err != nil {
+				Error.Println(err)
+				return 1
+			}
 		}
 	}
 	if !dirDst && (sync || watch) {
@@ -305,17 +247,11 @@ func run() int {
 			Info.Println("minify from stdin")
 		}
 	}
-	if dirDst {
-		if err := os.MkdirAll(output, 0777); err != nil {
-			Error.Println(err)
-			return 1
-		}
-	}
 
 	var tasks []Task
 	var roots []string
 	if useStdin {
-		task, err := NewTask("", "", output, false)
+		task, err := NewTask("", "", output)
 		if err != nil {
 			Error.Println(err)
 			return 1
@@ -323,7 +259,7 @@ func run() int {
 		tasks = append(tasks, task)
 		roots = append(roots, "")
 	} else {
-		tasks, roots, err = createTasks(inputs, output)
+		tasks, roots, err = createTasks(rawInputs, output)
 		if err != nil {
 			Error.Println(err)
 			return 1
@@ -331,8 +267,7 @@ func run() int {
 	}
 
 	// concatenate
-	if 1 < len(tasks) && bundle {
-		// Task.sync == false because dirDst == false
+	if 1 < len(tasks) && !dirDst {
 		for _, task := range tasks[1:] {
 			tasks[0].srcs = append(tasks[0].srcs, task.srcs[0])
 		}
@@ -419,9 +354,9 @@ func run() int {
 					}
 				}
 
+				// skip files in output directory (which is also an input directory) for the first change
+				// skips files that are not minified and stay put, as they are not explicitly copied, but that's ok
 				if autoDir && root == output {
-					// skip files in output directory (which is also an input directory) for the first change
-					// skips files that are not minified and stay put as they are not explicitly copied, but that's ok
 					if _, ok := skip[file]; !ok {
 						skip[file] = true
 						break
@@ -431,7 +366,7 @@ func run() int {
 				if !verbose {
 					Info.Println(file, "changed")
 				}
-				task, err := NewTask(root, file, output, !fileMatches(file))
+				task, err := NewTask(root, file, output)
 				if err != nil {
 					Error.Println(err)
 					return 1
@@ -448,9 +383,9 @@ func run() int {
 	}
 
 	if verbose && !watch {
-		Info.Println("finished in", time.Since(start))
+		Info.Println(time.Since(start), "total")
 	}
-	if 0 < fails {
+	if fails > 0 {
 		return 1
 	}
 	return 0
@@ -479,73 +414,82 @@ func sanitizePath(p string) string {
 }
 
 func validFile(info os.FileInfo) bool {
-	return info.Mode().IsRegular() && 0 < len(info.Name()) && (hidden || info.Name()[0] != '.')
+	if info.Mode().IsRegular() && len(info.Name()) > 0 && (hidden || info.Name()[0] != '.') {
+		if pattern != nil && !pattern.MatchString(info.Name()) {
+			return false
+		}
+
+		if !sync {
+			ext := path.Ext(info.Name())
+			if len(ext) > 0 {
+				ext = ext[1:]
+			}
+
+			if _, ok := filetypeMime[ext]; !ok {
+				return false
+			}
+		}
+		return true
+	}
+	return false
 }
 
 func validDir(info os.FileInfo) bool {
-	return info.Mode().IsDir() && 0 < len(info.Name()) && (hidden || info.Name()[0] != '.')
-}
-
-func fileMatches(filename string) bool {
-	if pattern != nil && !pattern.MatchString(filename) {
-		return false
-	}
-
-	ext := path.Ext(filename)
-	if 0 < len(ext) {
-		ext = ext[1:]
-	}
-	if _, ok := filetypeMime[ext]; !ok {
-		return false
-	}
-	return true
+	return info.Mode().IsDir() && len(info.Name()) > 0 && (hidden || info.Name()[0] != '.')
 }
 
 func createTasks(inputs []string, output string) ([]Task, []string, error) {
 	tasks := []Task{}
 	roots := []string{}
 	for _, input := range inputs {
+		input = sanitizePath(input)
 		info, err := os.Stat(input)
 		if err != nil {
 			return nil, nil, err
 		}
 
 		if info.Mode().IsRegular() {
-			valid := pattern == nil || pattern.MatchString(info.Name())
-			if valid || sync {
-				task, err := NewTask(filepath.Dir(input), input, output, !valid)
+			task, err := NewTask("", input, output)
+			if err != nil {
+				return nil, nil, err
+			}
+			tasks = append(tasks, task)
+		} else if info.Mode().IsDir() {
+			roots = append(roots, input)
+			if !recursive {
+				infos, err := ioutil.ReadDir(input)
 				if err != nil {
 					return nil, nil, err
 				}
-				tasks = append(tasks, task)
-			}
-		} else if info.Mode().IsDir() {
-			if !recursive {
-				Warning.Println("--recursive not specified, omitting directory", input)
-				continue
-			}
-			roots = append(roots, input)
-			err := filepath.Walk(input, func(path string, info os.FileInfo, err error) error {
-				if err != nil {
-					return err
+				for _, info := range infos {
+					if validFile(info) {
+						task, err := NewTask(input, path.Join(input, info.Name()), output)
+						if err != nil {
+							return nil, nil, err
+						}
+						tasks = append(tasks, task)
+					}
 				}
-				path = sanitizePath(path)
-				if validFile(info) {
-					valid := fileMatches(info.Name())
-					if valid || sync {
-						task, err := NewTask(input, path, output, !valid)
+			} else {
+				err := filepath.Walk(input, func(path string, info os.FileInfo, err error) error {
+					if err != nil {
+						return err
+					}
+					path = sanitizePath(path)
+					if validFile(info) {
+						task, err := NewTask(input, path, output)
 						if err != nil {
 							return err
 						}
 						tasks = append(tasks, task)
+					} else if info.Mode().IsDir() && !validDir(info) && info.Name() != "." && info.Name() != ".." { // check for IsDir, so we don't skip the rest of the directory when we have an invalid file
+						return filepath.SkipDir
 					}
-				} else if info.Mode().IsDir() && !validDir(info) && info.Name() != "." && info.Name() != ".." { // check for IsDir, so we don't skip the rest of the directory when we have an invalid file
-					return filepath.SkipDir
+					return nil
+				})
+				if err != nil {
+					return nil, nil, err
 				}
-				return nil
-			})
-			if err != nil {
-				return nil, nil, err
 			}
 		} else {
 			return nil, nil, fmt.Errorf("not a file or directory %s", input)
@@ -592,28 +536,28 @@ func openOutputFile(output string) (*os.File, error) {
 }
 
 func minify(mimetype string, t Task) bool {
-	if mimetype == "" && !t.sync {
+	if mimetype == "" {
 		for _, src := range t.srcs {
-			ext := path.Ext(src)
-			if 0 < len(ext) {
-				ext = ext[1:]
-			}
-			srcMimetype, ok := filetypeMime[ext]
-			if !ok {
-				Error.Println("cannot infer mimetype from extension in", src, ", set --type or --mime explicitly")
-				return false
-			}
-			if mimetype == "" {
-				mimetype = srcMimetype
-			} else if srcMimetype != mimetype {
-				Error.Println("inferred mimetype", srcMimetype, "of", src, "for concatenation unequal to previous mimetypes, set --type or --mime explicitly", mimetype)
-				return false
+			if len(path.Ext(src)) > 0 {
+				srcMimetype, ok := filetypeMime[path.Ext(src)[1:]]
+				if !ok && sync {
+					break // is sync==true, then len(t.srcs)==1
+				} else if !ok {
+					Error.Println("cannot infer mimetype from extension in", src)
+					return false
+				}
+				if mimetype == "" {
+					mimetype = srcMimetype
+				} else if srcMimetype != mimetype {
+					Error.Println("inferred mimetype", srcMimetype, "of", src, "for concatenation unequal to previous mimetypes", mimetype)
+					return false
+				}
 			}
 		}
 	}
 
 	// synchronizing files that are not minified but just copied to the same directory, no action needed
-	if t.sync && t.srcs[0] == t.dst {
+	if sync && mimetype == "" && t.srcs[0] == t.dst {
 		return true
 	}
 
@@ -645,7 +589,7 @@ func minify(mimetype string, t Task) bool {
 		}
 	}
 
-	fr, err := newConcatFileReader(t.srcs, openInputFile)
+	fr, err := NewConcatFileReader(t.srcs, openInputFile)
 	if err != nil {
 		Error.Println(err)
 		return false
@@ -653,15 +597,23 @@ func minify(mimetype string, t Task) bool {
 	if mimetype == filetypeMime["js"] {
 		fr.SetSeparator([]byte("\n"))
 	}
+	r := NewCountingReader(fr)
+
 	fw, err := openOutputFile(t.dst)
 	if err != nil {
 		Error.Println(err)
 		fr.Close()
 		return false
 	}
+	var w *countingWriter
+	if fw == os.Stdout {
+		w = NewCountingWriter(fw)
+	} else {
+		w = NewCountingWriter(bufio.NewWriter(fw))
+	}
 
 	// synchronize file
-	if t.sync {
+	if sync && mimetype == "" {
 		_, err = io.Copy(fw, fr)
 		fr.Close()
 		fw.Close()
@@ -673,31 +625,20 @@ func minify(mimetype string, t Task) bool {
 		return true
 	}
 
-	r := newCountingReader(fr)
-	var w *countingWriter
-	if fw == os.Stdout {
-		w = newCountingWriter(fw)
-	} else {
-		w = newCountingWriter(bufio.NewWriter(fw))
-	}
-
 	success := true
 	startTime := time.Now()
 	if err = m.Minify(mimetype, w, r); err != nil {
-		if t.dst == "" {
-			fmt.Fprintf(os.Stdout, "\n\n")
-		}
 		Error.Println("cannot minify "+srcName+":", err)
 		success = false
 	}
 	if verbose {
 		dur := time.Since(startTime)
 		speed := "Inf MB"
-		if 0 < dur {
+		if dur > 0 {
 			speed = humanize.Bytes(uint64(float64(r.N) / dur.Seconds()))
 		}
 		ratio := 1.0
-		if 0 < r.N {
+		if r.N > 0 {
 			ratio = float64(w.N) / float64(r.N)
 		}
 

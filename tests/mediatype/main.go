@@ -3,12 +3,11 @@ package fuzz
 
 import (
 	"github.com/alex-bacart/minify/v2"
-	"github.com/tdewolff/parse/v2"
+	"github.com/tdewolff/parse"
 )
 
-// Fuzz is a fuzz test.
 func Fuzz(data []byte) int {
 	data = parse.Copy(data) // ignore const-input error for OSS-Fuzz
-	_ = minify.Mediatype(data)
+	data = minify.Mediatype(data)
 	return 1
 }
