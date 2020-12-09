@@ -1013,9 +1013,9 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 	case *js.ObjectExpr:
 		parentInFor := m.inFor
 		m.inFor = false
-		grouped := m.expectExpr != expectAny
-		if grouped {
+		if m.expectExpr != expectAny {
 			m.write(openParenBracketBytes)
+			m.groupedStmt = true
 		} else {
 			m.write(openBraceBytes)
 		}
@@ -1025,11 +1025,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			}
 			m.minifyProperty(item)
 		}
-		if grouped {
-			m.write(closeBracketParenBytes)
-		} else {
-			m.write(closeBraceBytes)
-		}
+		m.write(closeBraceBytes)
 		m.inFor = parentInFor
 	case *js.TemplateExpr:
 		if expr.Tag != nil {
