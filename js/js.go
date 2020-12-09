@@ -589,12 +589,18 @@ func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
 	if decl.Async {
 		m.write(asyncBytes)
 	}
+	removeParens := false
 	if decl.Params.Rest == nil && len(decl.Params.List) == 1 && decl.Params.List[0].Default == nil {
+		if decl.Params.List[0].Binding == nil {
+			removeParens = true
+		} else if _, ok := decl.Params.List[0].Binding.(*js.Var); ok {
+			removeParens = true
+		}
+	}
+	if removeParens {
 		if decl.Async && decl.Params.List[0].Binding != nil {
 			// add space after async in: async a => ...
-			if _, ok := decl.Params.List[0].Binding.(*js.Var); ok {
-				m.write(spaceBytes)
-			}
+			m.write(spaceBytes)
 		}
 		m.minifyBindingElement(decl.Params.List[0])
 	} else {
