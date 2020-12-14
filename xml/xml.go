@@ -69,7 +69,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				omitSpace = true
 			}
 		case xml.TextToken:
-			t.Data = parse.ReplaceMultipleWhitespaceAndEntities(t.Data, EntitiesMap, nil)
+			t.Data = parse.ReplaceMultipleWhitespaceAndEntities(t.Data, EntitiesMap, TextRevEntitiesMap)
 
 			// whitespace removal; trim left
 			if omitSpace && parse.IsWhitespace(t.Data[0]) {

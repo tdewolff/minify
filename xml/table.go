@@ -6,3 +6,9 @@ var EntitiesMap = map[string][]byte{
 	"gt":   []byte(">"),
 	"quot": []byte("\""),
 }
+
+// TextRevEntitiesMap is a map of escapes.
+var TextRevEntitiesMap = map[byte][]byte{
+	'<': []byte("&lt;"),
+	'&': []byte("&amp;"),
+}

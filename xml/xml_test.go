@@ -33,6 +33,7 @@ func TestXML(t *testing.T) {
 		{`<x a="&quot;&quot;'"></x>`, `<x a='""&#39;'/>`},
 		{`<x a="&amp;&lt;&gt;"></x>`, `<x a="&amp;&lt;>"/>`},
 		{`<x>&amp;&lt;&gt;</x>`, `<x>&amp;&lt;></x>`},
+		{`<x>&#38;&#038;&#60;</x>`, `<x>&amp;&amp;&lt;</x>`},
 		{`<!DOCTYPE foo SYSTEM "Foo.dtd">`, `<!DOCTYPE foo SYSTEM "Foo.dtd">`},
 		{`text <!--comment--> text`, `text text`},
 		{"text\n<!--comment-->\ntext", "text\ntext"},
