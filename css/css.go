@@ -854,12 +854,24 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 					positionValues := c.minifyProperty(Background_Position, values[i:j])
 					hasSize := j < len(values) && values[j].TokenType == css.DelimToken && values[j].Data[0] == '/'
 					if !hasSize && len(positionValues) == 2 && positionValues[0].IsZero() && positionValues[1].IsZero() {
-						values = append(values[:i], values[j:]...)
-						end -= j - i
-						i--
+						if end-start == 2 {
+							values[i] = Token{css.NumberToken, zeroBytes, nil, 0, 0}
+							values[i+1] = Token{css.NumberToken, zeroBytes, nil, 0, 0}
+							i++
+						} else {
+							values = append(values[:i], values[j:]...)
+							end -= j - i
+							i--
+						}
 					} else {
-						values = append(values[:i], append(positionValues, values[j:]...)...)
-						end -= j - i - len(positionValues)
+						if len(positionValues) == j-i {
+							for k, positionValue := range positionValues {
+								values[i+k] = positionValue
+							}
+						} else {
+							values = append(values[:i], append(positionValues, values[j:]...)...)
+							end -= j - i - len(positionValues)
+						}
 						i += len(positionValues) - 1
 					}
 				}

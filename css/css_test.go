@@ -181,6 +181,7 @@ func TestCSSInline(t *testing.T) {
 		{"background:#0000 none padding-box 0 0 / auto auto scroll border-box repeat repeat", "background:0 0"},
 		{"background:0 0 / auto", "background:0 0"},
 		{"background:0 0 / auto 10%", "background:0 0/auto 10%"},
+		{"background:0 / auto 10%", "background:0/auto 10%"},
 		{"background:0 0/200px auto", "background:0 0/200px"},
 		{"background:0 0 no-repeat", "background:no-repeat"},
 		{"background:0% 0%", "background:0 0"},
