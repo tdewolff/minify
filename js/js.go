@@ -154,7 +154,8 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		if !hasIf && hasElse {
 			m.requireSemicolon()
 		} else if hasIf {
-			if ifStmt, ok := stmt.Body.(*js.IfStmt); ok && m.isEmptyStmt(ifStmt.Else) {
+			if hasElse && endsInIf(stmt.Body) {
+				// prevent: if(a){if(b)c}else d;  =>  if(a)if(b)c;else d;
 				m.write(openBraceBytes)
 				m.minifyStmt(stmt.Body)
 				m.write(closeBraceBytes)

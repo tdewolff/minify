@@ -236,7 +236,7 @@ func TestJS(t *testing.T) {
 		{`if(a)a++;else b;if(b)b++;else c`, `a?a++:b,b?b++:c`},
 		{`if(a){while(b);}`, `if(a)while(b);`},
 		{`if(a){while(b);c}`, `if(a){while(b);c}`},
-		{`if(a){if(b){while(c);}}`, `if(a){if(b)while(c);}`},
+		{`if(a){if(b){while(c);}}`, `if(a)if(b)while(c);`},
 		{`if(a){}else{while(b);}`, `if(a);else while(b);`},
 		{`if(a){return b}else{while(c);}`, `if(a)return b;while(c);`},
 		{`if(a){return b}else{while(c);d}`, `if(a)return b;while(c);d`},

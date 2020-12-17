@@ -37,9 +37,6 @@ func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 			}
 		} else if hasIf && hasElse {
 			ifStmt.Body = m.optimizeStmt(ifStmt.Body)
-			if endsInIf(ifStmt.Body) {
-				ifStmt.Body = &js.BlockStmt{List: []js.IStmt{ifStmt.Body}, Scope: js.Scope{}}
-			}
 			ifStmt.Else = m.optimizeStmt(ifStmt.Else)
 			XExpr, isExprBody := ifStmt.Body.(*js.ExprStmt)
 			YExpr, isExprElse := ifStmt.Else.(*js.ExprStmt)
@@ -107,8 +104,6 @@ func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 	}
 	return i
 }
-
-var xxx int = 0
 
 func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 	// merge expression statements as well as if/else statements followed by flow control statements
