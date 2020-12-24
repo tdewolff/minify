@@ -46,6 +46,7 @@ var DefaultMinifier = &Minifier{}
 
 // Minifier is an HTML minifier.
 type Minifier struct {
+	KeepComments            bool
 	KeepConditionalComments bool
 	KeepDefaultAttrVals     bool
 	KeepDocumentTags        bool
@@ -89,7 +90,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		case html.DoctypeToken:
 			w.Write(doctypeBytes)
 		case html.CommentToken:
-			if o.KeepConditionalComments && 6 < len(t.Text) && (bytes.HasPrefix(t.Text, []byte("[if ")) || bytes.HasSuffix(t.Text, []byte("[endif]")) || bytes.HasSuffix(t.Text, []byte("[endif]--"))) {
+			if o.KeepComments {
+				w.Write(t.Data)
+			} else if o.KeepConditionalComments && 6 < len(t.Text) && (bytes.HasPrefix(t.Text, []byte("[if ")) || bytes.HasSuffix(t.Text, []byte("[endif]")) || bytes.HasSuffix(t.Text, []byte("[endif]--"))) {
 				// [if ...] is always 7 or more characters, [endif] is only encountered for downlevel-revealed
 				// see https://msdn.microsoft.com/en-us/library/ms537512(v=vs.85).aspx#syntax
 				if bytes.HasPrefix(t.Data, []byte("<!--[if ")) && bytes.HasSuffix(t.Data, []byte("<![endif]-->")) { // downlevel-hidden

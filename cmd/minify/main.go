@@ -130,6 +130,7 @@ func run() int {
 	flag.StringVar(&cpuprofile, "cpuprofile", "", "Export CPU profile")
 	flag.StringVar(&memprofile, "memprofile", "", "Export memory profile")
 	flag.IntVar(&cssMinifier.Precision, "css-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
+	flag.BoolVar(&htmlMinifier.KeepComments, "html-keep-comments", false, "Preserve all comments")
 	flag.BoolVar(&htmlMinifier.KeepConditionalComments, "html-keep-conditional-comments", false, "Preserve all IE conditional comments")
 	flag.BoolVar(&htmlMinifier.KeepDefaultAttrVals, "html-keep-default-attrvals", false, "Preserve default attribute values")
 	flag.BoolVar(&htmlMinifier.KeepDocumentTags, "html-keep-document-tags", false, "Preserve html, head and body tags")

@@ -66,6 +66,7 @@ sudo apt-get install minify
           --cpuprofile string                Export CPU profile
           --css-precision int                Number of significant digits to preserve in numbers, 0 is all (default 0)
       -h, --help                             Show usage
+          --html-keep-comments               Preserve all comments
           --html-keep-conditional-comments   Preserve all IE conditional comments
           --html-keep-default-attrvals       Preserve default attribute values
           --html-keep-document-tags          Preserve html, head and body tags
