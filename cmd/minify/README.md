@@ -132,7 +132,7 @@ You can also give directories as input, and these directories can be minified re
 
 Minify files in the current working directory to **out/** (no subdirectories):
 ```sh
-$ minify -o out/ .
+$ minify -o out/ *
 ```
 
 Minify files recursively in **src/**:
