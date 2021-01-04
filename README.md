@@ -16,7 +16,9 @@ The core functionality associates mimetypes with minification functions, allowin
 
 ### Sponsors
 
-There are no sponsors yet. Please see https://www.patreon.com/tdewolff for ways to contribute, otherwise please contact me directly!
+[![SiteGround](https://www.siteground.com/img/downloads/siteground-logo-black-transparent-vector.svg)](https://www.siteground.com/)
+
+Please see https://www.patreon.com/tdewolff for ways to contribute, otherwise please contact me directly!
 
 #### Table of Contents
 
