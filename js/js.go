@@ -637,6 +637,10 @@ func (m *jsMinifier) minifyArrowFunc(decl js.ArrowFunc) {
 				}
 				m.expectExpr = expectExprBody
 				m.minifyExpr(expr, js.OpAssign)
+				if m.groupedStmt {
+					m.write(closeParenBytes)
+					m.groupedStmt = false
+				}
 			}
 		} else if isReturn && returnStmt.Value == nil {
 			// remove empty return
