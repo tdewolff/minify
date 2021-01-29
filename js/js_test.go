@@ -640,6 +640,7 @@ func TestJS(t *testing.T) {
 		{`for(var a;;)a();var b=5`, `for(var a,b;;)a();b=5`},                                            // #346
 		{`if(e?0:n=1,o=2){o.a}`, `(e?0:n=1,o=2)&&o.a`},                                                  // #347
 		{`const a=(a,b)=>({...a,b})`, `const a=(a,b)=>({...a,b})`},                                      // #369
+		{`if(!a)debugger;`, `!a`},                                                                       // #370
 	}
 
 	m := minify.New()
