@@ -86,6 +86,7 @@ var (
 	notOneBytes                = []byte("!1")
 	groupedNotOneBytes         = []byte("(!1)")
 	useStrictBytes             = []byte(`"use strict"`)
+	debuggerBytes              = []byte("debugger")
 )
 
 // precedence maps for the precedence inside the operation
@@ -302,8 +303,6 @@ func (m *jsMinifier) isEmptyStmt(stmt js.IStmt) bool {
 	if stmt == nil {
 		return true
 	} else if _, ok := stmt.(*js.EmptyStmt); ok {
-		return true
-	} else if _, ok := stmt.(*js.DebuggerStmt); ok {
 		return true
 	} else if decl, ok := stmt.(*js.VarDecl); ok && m.varsHoisted != nil && decl != m.varsHoisted {
 		for _, item := range decl.List {

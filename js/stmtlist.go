@@ -101,8 +101,6 @@ func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 			return &js.EmptyStmt{}
 		}
 		return blockStmt
-	} else if _, ok := i.(*js.DebuggerStmt); ok {
-		return &js.EmptyStmt{}
 	}
 	return i
 }

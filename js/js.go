@@ -314,6 +314,8 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 	case *js.ClassDecl:
 		m.minifyClassDecl(*stmt)
 	case *js.DebuggerStmt:
+		m.write(debuggerBytes)
+		m.requireSemicolon()
 	case *js.EmptyStmt:
 	case *js.ImportStmt:
 		m.write(importBytes)
