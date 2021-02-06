@@ -767,7 +767,7 @@ func (m *jsMinifier) minifyBinaryExpr(expr *js.BinaryExpr) bool {
 		strings := []*js.LiteralExpr{lit}
 
 		left := expr
-		for {
+		for len(strings) < 20 { // limit recursion
 			if lit, ok := left.X.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken {
 				n += len(lit.Data) - 2
 				strings = append(strings, lit)
