@@ -505,6 +505,7 @@ func TestJS(t *testing.T) {
 		{`(1,2,a|3)&&b`, `1,2,a|3&&b`},
 		{`(a,b)?c:b`, `a,b&&c`},
 		{`(a,b)?c:d`, `a,b?c:d`},
+		{`f(...a,...b)`, `f(...a,...b)`},
 
 		// expressions
 		//{`a=a+5`, `a+=5`},
