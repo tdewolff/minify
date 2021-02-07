@@ -610,6 +610,11 @@ func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
 }
 
 func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
+	// limit maximum to prevent slow recursions (e.g. for background's append)
+	if 100 < len(values) {
+		return values
+	}
+
 	switch prop {
 	case Font:
 		if len(values) > 1 { // must contain atleast font-size and font-family
