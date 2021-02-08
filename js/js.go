@@ -354,13 +354,16 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		if stmt.Decl != nil {
 			if stmt.Default {
 				m.write(spaceDefaultBytes)
-			}
-			m.writeSpaceBeforeIdent()
-			m.minifyExpr(stmt.Decl, js.OpAssign)
-			_, isHoistable := stmt.Decl.(*js.FuncDecl)
-			_, isClass := stmt.Decl.(*js.ClassDecl)
-			if !isHoistable && !isClass {
-				m.requireSemicolon()
+				m.writeSpaceBeforeIdent()
+				m.minifyExpr(stmt.Decl, js.OpAssign)
+				_, isHoistable := stmt.Decl.(*js.FuncDecl)
+				_, isClass := stmt.Decl.(*js.ClassDecl)
+				if !isHoistable && !isClass {
+					m.requireSemicolon()
+				}
+			} else {
+				m.writeSpaceBeforeIdent()
+				m.minifyStmt(stmt.Decl.(js.IStmt)) // can only be variable, function, or class decl
 			}
 		} else {
 			if len(stmt.List) == 1 && (len(stmt.List[0].Name) == 1 && stmt.List[0].Name[0] == '*' || stmt.List[0].Name == nil && len(stmt.List[0].Binding) == 1 && stmt.List[0].Binding[0] == '*') {

@@ -92,6 +92,7 @@ func TestJS(t *testing.T) {
 		{`export {a as b, c} from 'path'`, `export{a as b,c}from'path'`},
 		{`export {a as b, c}`, `export{a as b,c}`},
 		{`export var a = b`, `export var a=b`},
+		{`export function a(){}`, `export function a(){}`},
 		{`export default a = b`, `export default a=b`},
 		{`export default a = b;c=d`, `export default a=b;c=d`},
 		{`export default function a(){};c=d`, `export default function(){}c=d`},
@@ -642,6 +643,7 @@ func TestJS(t *testing.T) {
 		{`if(e?0:n=1,o=2){o.a}`, `(e?0:n=1,o=2)&&o.a`},                                                  // #347
 		{`const a=(a,b)=>({...a,b})`, `const a=(a,b)=>({...a,b})`},                                      // #369
 		{`if(!a)debugger;`, `if(!a)debugger`},                                                           // #370
+		{`export function a(b){}`, `export function a(b){}`},                                            // #375
 	}
 
 	m := minify.New()
