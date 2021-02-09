@@ -388,6 +388,9 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			}
 			m.requireSemicolon()
 		}
+	case *js.DirectivePrologueStmt:
+		m.write(stmt.Value)
+		m.requireSemicolon()
 	}
 }
 

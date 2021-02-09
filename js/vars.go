@@ -200,9 +200,11 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) *js.VarDecl {
 
 		// ignore "use strict"
 		declStart := 0
-		if expr, ok := body.List[0].(*js.ExprStmt); ok {
-			if lit, ok := expr.Value.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken && bytes.Equal(lit.Data, useStrictBytes) {
-				declStart = 1
+		for {
+			if _, ok := body.List[declStart].(*js.DirectivePrologueStmt); ok {
+				declStart++
+			} else {
+				break
 			}
 		}
 
