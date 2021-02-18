@@ -571,6 +571,9 @@ func TestJS(t *testing.T) {
 		//{`a!=undefined?a:true`, `a??!0`},
 		{`a?a:b`, `a||b`},
 		{`a?b:a`, `a&&b`},
+		{`a&&=b`, `a&&=b`},
+		{`a||=b`, `a||=b`},
+		{`a??=b`, `a??=b`},
 
 		// other
 		{`async function g(){await x+y}`, `async function g(){await x+y}`},
