@@ -1,6 +1,10 @@
-module github.com/tdewolff/fuzz/minify/number
+module github.com/tdewolff/minify/tests/number
 
 go 1.13
+
+replace github.com/tdewolff/minify/v2 => ../../../minify
+
+replace github.com/tdewolff/parse/v2 => ../../../parse
 
 require (
 	github.com/dvyukov/go-fuzz v0.0.0-20200318091601-be3528f3a813 // indirect

@@ -1,8 +1,6 @@
-module github.com/tdewolff/fuzz/minify/js
+module github.com/tdewolff/minify/tests/js
 
 go 1.13
-
-replace github.com/tdewolff/parse/v2 => ../../../parse
 
 replace github.com/tdewolff/minify/v2 => ../../../minify
 
