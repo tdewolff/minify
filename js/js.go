@@ -672,8 +672,21 @@ func (m *jsMinifier) minifyClassDecl(decl js.ClassDecl) {
 		m.minifyExpr(decl.Extends, js.OpLHS)
 	}
 	m.write(openBraceBytes)
-	for _, item := range decl.Methods {
-		m.minifyMethodDecl(item)
+	m.needsSemicolon = false
+	for _, item := range decl.Definitions {
+		m.writeSemicolon()
+		m.minifyPropertyName(item.Name)
+		if item.Init != nil {
+			m.write(equalBytes)
+			m.minifyExpr(item.Init, js.OpAssign)
+		}
+		m.requireSemicolon()
+	}
+	if 0 < len(decl.Methods) {
+		m.writeSemicolon()
+		for _, item := range decl.Methods {
+			m.minifyMethodDecl(item)
+		}
 	}
 	m.write(closeBraceBytes)
 	m.needsSemicolon = false

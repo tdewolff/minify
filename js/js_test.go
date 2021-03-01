@@ -336,6 +336,7 @@ func TestJS(t *testing.T) {
 		{`class a{static async*[1](){}}`, `class a{static async*[1](){}}`},
 		{`class a{"f"(){}}`, `class a{f(){}}`},
 		{`class a{f(){};g(){}}`, `class a{f(){}g(){}}`},
+		{`class a{one;#two = 2;f(){}}`, `class a{one;#two=2;f(){}}`},
 
 		// dead code
 		//{`return;a`, `return`},
