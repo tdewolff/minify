@@ -773,8 +773,10 @@ func (m *jsMinifier) minifyBinaryExpr(expr *js.BinaryExpr) bool {
 		strings := []*js.LiteralExpr{lit}
 
 		left := expr
-		for len(strings) < 20 { // limit recursion
-			if lit, ok := left.X.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken {
+		for {
+			if 50 < len(strings) {
+				return false // limit recursion
+			} else if lit, ok := left.X.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken {
 				n += len(lit.Data) - 2
 				strings = append(strings, lit)
 				break
@@ -795,6 +797,7 @@ func (m *jsMinifier) minifyBinaryExpr(expr *js.BinaryExpr) bool {
 		}
 		b = append(b, strings[0].Data[1:]...)
 		b[len(b)-1] = b[0]
+
 		// unescaped quotes will be repaired in minifyString
 		m.write(minifyString(b))
 		return true
