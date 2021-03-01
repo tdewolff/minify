@@ -257,6 +257,11 @@ The following features are implemented:
 - merge concatenated strings
 - rewrite numbers (binary, octal, decimal, hexadecimal) to shorter representations
 
+Options:
+
+- `KeepVarNames` keeps variable names as they are and omits shortening variable names
+- `Precision` number of significant digits to preserve for numbers, `0` means no trimming
+
 ### Comparison with other tools
 
 Performance is measured with `time [command]` ran 10 times and selecting the fastest one, on a Thinkpad T460 (i5-6300U quad-core 2.4GHz running Arch Linux) using Go 1.15.
