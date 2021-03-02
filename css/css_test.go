@@ -324,9 +324,9 @@ func TestCSSInline(t *testing.T) {
 		{"x: white , white", "x:white,white"},
 
 		// TODO: functions
-		{"width:calc(0%-0px)", "width:calc(0%0)"}, // invalid
-		{"width:calc(0% - 0px)", "width:calc(0% - 0)"},
-		{"width:calc(calc(0% - 0px) + 1em)", "width:calc(calc(0% - 0) + 1em)"},
+		{"width:calc(0%-0px)", "width:calc(0%0px)"}, // invalid
+		{"width:calc(0% - 0px)", "width:calc(0% - 0px)"},
+		{"width:calc(calc(0% - 0px) + 1em)", "width:calc(calc(0% - 0px) + 1em)"},
 		//{"width:calc(5px);", "width:5px"},
 		//{"width:calc(5px - 3px);", "width:2px"},
 		//{"width:calc(5px + -3px);", "width:2px"},
@@ -387,6 +387,7 @@ func TestCSSInline(t *testing.T) {
 		{"font:1em -", "font:1em '-'"},                             // support for IE9, IE10, IE11, fixes #251
 		{"color:rgba(255,255,255,0)", "color:rgba(255,255,255,0)"}, // #327
 		{"box-shadow:none", "box-shadow:none"},                     // #332
+		{"margin:var(--a,0px)", "margin:var(--a,0px)"},             // #371
 
 		// go-fuzz
 		{"FONT-FAMILY: ru\"", "font-family:ru\""},

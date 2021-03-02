@@ -462,7 +462,7 @@ func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
 		case css.DimensionToken:
 			var dim []byte
 			values[i], dim = c.minifyDimension(values[i])
-			if 1 < len(values[i].Data) && values[i].Data[0] == '0' && optionalZeroDimension[string(dim)] && prop != Flex {
+			if 1 < len(values[i].Data) && values[i].Data[0] == '0' && optionalZeroDimension[string(dim)] && prop != Flex && prop != Function {
 				// cut dimension for zero value, TODO: don't hardcode check for Flex and remove the dimension in minifyDimension
 				values[i].Data = values[i].Data[:1]
 			}
@@ -487,7 +487,7 @@ func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
 				}
 			}
 		case css.FunctionToken:
-			values[i].Args = c.minifyTokens(prop, values[i].Args)
+			values[i].Args = c.minifyTokens(Function, values[i].Args)
 
 			fun := values[i].Fun
 			args := values[i].Args
