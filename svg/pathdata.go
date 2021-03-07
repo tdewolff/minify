@@ -71,8 +71,12 @@ var pathCmds = map[byte]bool{
 // ShortenPathData takes a full pathdata string and returns a shortened version. The original string is overwritten.
 // It parses all commands (M, A, Z, ...) and coordinates (numbers) and calls copyInstruction for each command.
 func (p *PathData) ShortenPathData(b []byte) []byte {
-	var cmd byte
+	if 100000 < len(b) {
+		// prevent extremely long paths for being too costly (OSS-Fuzz)
+		return b
+	}
 
+	var cmd byte
 	p.x, p.y = 0.0, 0.0
 	p.coords = p.coords[:0]
 	p.coordFloats = p.coordFloats[:0]
