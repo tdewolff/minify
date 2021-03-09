@@ -111,6 +111,7 @@ func (w *Watcher) Run() chan string {
 					} else if info.Mode().IsRegular() {
 						if event.Op&fsnotify.Write == fsnotify.Write {
 							if t, ok := changetimes[event.Name]; !ok || 100*time.Millisecond < time.Now().Sub(t) {
+								time.Sleep(100 * time.Millisecond) // wait to make sure write is finished
 								files <- event.Name
 								changetimes[event.Name] = time.Now()
 							}
