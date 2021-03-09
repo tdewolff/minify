@@ -91,7 +91,7 @@ func (w *Watcher) Run() chan string {
 							watched = true
 							break
 						}
-					} else if rel, err := filepath.Rel(path, event.Name); err == nil {
+					} else if _, err := filepath.Rel(path, event.Name); err == nil {
 						// dir in w.paths
 						watched = true
 						break

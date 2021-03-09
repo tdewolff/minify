@@ -285,12 +285,9 @@ func run() int {
 			return 1
 		}
 	}
-	if !dirDst && (sync || watch) {
+	if !dirDst && sync {
 		if sync {
 			Error.Println("--sync requires destination to be a directory")
-		}
-		if watch {
-			Error.Println("--watch requires destination to be a directory")
 		}
 		return 1
 	}
@@ -373,6 +370,7 @@ func run() int {
 		go minifyWorker(chanTasks, chanFails)
 	}
 
+	fmt.Println(watch)
 	if !watch {
 		for _, task := range tasks {
 			chanTasks <- task
@@ -395,6 +393,7 @@ func run() int {
 		if !recursive {
 			files = inputs
 		}
+		fmt.Println(files)
 		for _, filename := range files {
 			watcher.AddPath(filename)
 			if filename == output {
