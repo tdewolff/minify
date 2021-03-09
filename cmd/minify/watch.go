@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
@@ -11,6 +12,7 @@ import (
 // Watcher is a wrapper for watching file changes in directories.
 type Watcher struct {
 	watcher   *fsnotify.Watcher
+	dirs      map[string]bool
 	paths     map[string]bool
 	recursive bool
 }
@@ -21,7 +23,7 @@ func NewWatcher(recursive bool) (*Watcher, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Watcher{watcher, make(map[string]bool), recursive}, nil
+	return &Watcher{watcher, map[string]bool{}, map[string]bool{}, recursive}, nil
 }
 
 // Close closes the watcher.
@@ -31,47 +33,40 @@ func (w *Watcher) Close() error {
 
 // AddPath adds a new path to watch.
 func (w *Watcher) AddPath(root string) error {
-	info, err := os.Stat(root)
+	w.paths[root] = true
+
+	info, err := os.Lstat(root)
 	if err != nil {
 		return err
 	}
 
 	if info.Mode().IsRegular() {
 		root = filepath.Dir(root)
-		if w.paths[root] {
+		if w.dirs[root] {
 			return nil
 		}
 		if err := w.watcher.Add(root); err != nil {
 			return err
 		}
-		w.paths[root] = true
-		return nil
-	} else if !w.recursive {
-		if w.paths[root] {
-			return nil
-		}
-		if err := w.watcher.Add(root); err != nil {
-			return err
-		}
-		w.paths[root] = true
-		return nil
-	} else {
-		return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		w.dirs[root] = true
+	} else if info.Mode().IsDir() && w.recursive {
+		return fs.WalkDir(os.DirFS("."), filepath.Clean(root), func(path string, d fs.DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
-			if info.Mode().IsDir() {
-				if w.paths[path] {
-					return filepath.SkipDir
+			if d.IsDir() {
+				if w.dirs[path] {
+					return fs.SkipDir
 				}
 				if err := w.watcher.Add(path); err != nil {
 					return err
 				}
-				w.paths[path] = true
+				w.dirs[path] = true
 			}
 			return nil
 		})
 	}
+	return nil
 }
 
 // Run watches for file changes.
@@ -86,8 +81,28 @@ func (w *Watcher) Run() chan string {
 					w.watcher.Events = nil
 					break
 				}
-				if info, err := os.Stat(event.Name); err == nil {
-					if info.Mode().IsDir() {
+
+				// check if changed file is being watched (as a file or indirectly in a dir)
+				watched := false
+				for path, _ := range w.paths {
+					if 0 < len(path) && path[len(path)-1] != '/' {
+						// file in w.paths
+						if path == filepath.Clean(event.Name) {
+							watched = true
+							break
+						}
+					} else if rel, err := filepath.Rel(path, event.Name); err == nil {
+						// dir in w.paths
+						watched = true
+						break
+					}
+				}
+				if !watched {
+					break
+				}
+
+				if info, err := os.Lstat(event.Name); err == nil {
+					if info.Mode().IsDir() && w.recursive {
 						if event.Op&fsnotify.Create == fsnotify.Create {
 							if err := w.AddPath(event.Name); err != nil {
 								Error.Println(err)

@@ -57,6 +57,7 @@ var (
 	sync             bool
 	bundle           bool
 	preserveSymlinks bool
+	mimetype         string
 )
 
 // Task is a minify task.
@@ -93,7 +94,6 @@ func main() {
 
 func run() int {
 	output := ""
-	mimetype := ""
 	filetype := ""
 	match := ""
 	siteurl := ""
@@ -370,7 +370,7 @@ func run() int {
 	chanTasks := make(chan Task, 100)
 	chanFails := make(chan int, numWorkers)
 	for n := 0; n < numWorkers; n++ {
-		go minifyWorker(mimetype, chanTasks, chanFails)
+		go minifyWorker(chanTasks, chanFails)
 	}
 
 	if !watch {
@@ -391,9 +391,13 @@ func run() int {
 		}
 
 		autoDir := false
-		for _, root := range roots {
-			watcher.AddPath(root)
-			if root == output {
+		files := roots
+		if !recursive {
+			files = inputs
+		}
+		for _, filename := range files {
+			watcher.AddPath(filename)
+			if filename == output {
 				autoDir = true
 			}
 		}
@@ -413,8 +417,8 @@ func run() int {
 				file = sanitizePath(file)
 
 				// find longest common path among roots
-				root := roots[0]
-				for _, path := range roots[1:] {
+				root := ""
+				for _, path := range roots {
 					pathRel, err1 := filepath.Rel(path, file)
 					rootRel, err2 := filepath.Rel(root, file)
 					if err2 != nil || err1 == nil && len(pathRel) < len(rootRel) {
@@ -459,10 +463,10 @@ func run() int {
 	return 0
 }
 
-func minifyWorker(mimetype string, chanTasks <-chan Task, chanFails chan<- int) {
+func minifyWorker(chanTasks <-chan Task, chanFails chan<- int) {
 	fails := 0
 	for task := range chanTasks {
-		if ok := minify(mimetype, task); !ok {
+		if ok := minify(task); !ok {
 			fails++
 		}
 	}
@@ -484,6 +488,8 @@ func sanitizePath(p string) string {
 func fileMatches(filename string) bool {
 	if pattern != nil && !pattern.MatchString(filename) {
 		return false
+	} else if mimetype != "" {
+		return true
 	}
 
 	ext := path.Ext(filename)
@@ -553,7 +559,12 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 			walkFn = func(path string, d fs.DirEntry, err error) error {
 				if err != nil {
 					return err
-				} else if len(d.Name()) == 0 || !hidden && d.Name()[0] == '.' || d.Name() == "." || d.Name() == ".." {
+				} else if d.Name() == "." || d.Name() == ".." {
+					return nil
+				} else if len(d.Name()) == 0 || !hidden && d.Name()[0] == '.' {
+					if d.IsDir() {
+						return fs.SkipDir
+					}
 					return nil
 				}
 				path = sanitizePath(path)
@@ -593,7 +604,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 				}
 				return nil
 			}
-			if err := fs.WalkDir(os.DirFS(input), ".", walkFn); err != nil {
+			if err := fs.WalkDir(os.DirFS("."), filepath.Clean(input), walkFn); err != nil {
 				return nil, nil, err
 			}
 		} else {
@@ -640,7 +651,7 @@ func openOutputFile(output string) (*os.File, error) {
 	return w, nil
 }
 
-func minify(mimetype string, t Task) bool {
+func minify(t Task) bool {
 	// synchronizing files that are not minified but just copied to the same directory, no action needed
 	if t.sync {
 		if t.srcs[0] == t.dst {
@@ -665,6 +676,7 @@ func minify(mimetype string, t Task) bool {
 		}
 	}
 
+	fileMimetype := mimetype
 	if mimetype == "" && !t.sync {
 		for _, src := range t.srcs {
 			ext := path.Ext(src)
@@ -676,10 +688,10 @@ func minify(mimetype string, t Task) bool {
 				Error.Println("cannot infer mimetype from extension in", src, ", set --type or --mime explicitly")
 				return false
 			}
-			if mimetype == "" {
-				mimetype = srcMimetype
-			} else if srcMimetype != mimetype {
-				Error.Println("inferred mimetype", srcMimetype, "of", src, "for concatenation unequal to previous mimetypes, set --type or --mime explicitly", mimetype)
+			if fileMimetype == "" {
+				fileMimetype = srcMimetype
+			} else if srcMimetype != fileMimetype {
+				Error.Println("inferred mimetype", srcMimetype, "of", src, "for concatenation unequal to previous mimetypes, set --type or --mime explicitly")
 				return false
 			}
 		}
@@ -718,7 +730,7 @@ func minify(mimetype string, t Task) bool {
 		Error.Println(err)
 		return false
 	}
-	if mimetype == filetypeMime["js"] {
+	if fileMimetype == filetypeMime["js"] {
 		fr.SetSeparator([]byte("\n"))
 	}
 	fw, err := openOutputFile(t.dst)
@@ -751,7 +763,7 @@ func minify(mimetype string, t Task) bool {
 
 	success := true
 	startTime := time.Now()
-	if err = m.Minify(mimetype, w, r); err != nil {
+	if err = m.Minify(fileMimetype, w, r); err != nil {
 		if t.dst == "" {
 			fmt.Fprintf(os.Stdout, "\n\n")
 		}
