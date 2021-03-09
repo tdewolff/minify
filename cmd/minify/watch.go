@@ -61,7 +61,7 @@ func (w *Watcher) AddPath(root string) error {
 				return err
 			}
 			if info.Mode().IsDir() {
-				if !validDir(info) || w.paths[path] {
+				if w.paths[path] {
 					return filepath.SkipDir
 				}
 				if err := w.watcher.Add(path); err != nil {
@@ -87,13 +87,13 @@ func (w *Watcher) Run() chan string {
 					break
 				}
 				if info, err := os.Stat(event.Name); err == nil {
-					if validDir(info) {
+					if info.Mode().IsDir() {
 						if event.Op&fsnotify.Create == fsnotify.Create {
 							if err := w.AddPath(event.Name); err != nil {
 								Error.Println(err)
 							}
 						}
-					} else if validFile(info) {
+					} else if info.Mode().IsRegular() {
 						if event.Op&fsnotify.Write == fsnotify.Write {
 							if t, ok := changetimes[event.Name]; !ok || 100*time.Millisecond < time.Now().Sub(t) {
 								files <- event.Name

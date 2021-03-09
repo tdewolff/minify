@@ -79,8 +79,9 @@ sudo apt-get install minify
       -l, --list                             List all accepted filetypes
           --match string                     Filename pattern matching using regular expressions
           --memprofile string                Export memory profile
-          --mime string                      Mimetype (eg. text/css), optional for input filenames, has precedence over -type
+          --mime string                      Mimetype (eg. text/css), optional for input filenames, has precedence over --type
       -o, --output string                    Output file or directory (must have trailing slash), leave blank to use stdout
+	  -p, --preserve-links                   Copy symbolic links without dereferencing and without minifying the referenced file (only with --sync)
       -r, --recursive                        Recursively minify directories
           --svg-precision int                Number of significant digits to preserve in numbers, 0 is all (default 0)
 	  -s, --sync                             Copy all files to destination directory and minify when filetype matches

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -44,17 +45,18 @@ var filetypeMime = map[string]string{
 }
 
 var (
-	help      bool
-	hidden    bool
-	list      bool
-	m         *min.M
-	pattern   *regexp.Regexp
-	recursive bool
-	verbose   bool
-	version   bool
-	watch     bool
-	sync      bool
-	bundle    bool
+	help             bool
+	hidden           bool
+	list             bool
+	m                *min.M
+	pattern          *regexp.Regexp
+	recursive        bool
+	verbose          bool
+	version          bool
+	watch            bool
+	sync             bool
+	bundle           bool
+	preserveSymlinks bool
 )
 
 // Task is a minify task.
@@ -114,7 +116,7 @@ func run() int {
 
 	flag.BoolVarP(&help, "help", "h", false, "Show usage")
 	flag.StringVarP(&output, "output", "o", "", "Output file or directory (must have trailing slash), leave blank to use stdout")
-	flag.StringVar(&mimetype, "mime", "", "Mimetype (eg. text/css), optional for input filenames, has precedence over -type")
+	flag.StringVar(&mimetype, "mime", "", "Mimetype (eg. text/css), optional for input filenames, has precedence over --type")
 	flag.StringVar(&filetype, "type", "", "Filetype (eg. css), optional for input filenames")
 	flag.StringVar(&match, "match", "", "Filename pattern matching using regular expressions")
 	flag.BoolVarP(&recursive, "recursive", "r", false, "Recursively minify directories")
@@ -123,6 +125,7 @@ func run() int {
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose")
 	flag.BoolVarP(&watch, "watch", "w", false, "Watch files and minify upon changes")
 	flag.BoolVarP(&sync, "sync", "s", false, "Copy all files to destination directory and minify when filetype matches")
+	flag.BoolVarP(&preserveSymlinks, "preserve-links", "p", false, "Copy symbolic links without dereferencing and without minifying the referenced file (only with --sync)")
 	flag.BoolVarP(&bundle, "bundle", "b", false, "Bundle files by concatenation into a single file")
 	flag.BoolVarP(&version, "version", "", false, "Version")
 
@@ -472,18 +475,10 @@ func sanitizePath(p string) string {
 	p = path.Clean(p)
 	if isDir {
 		p += "/"
-	} else if info, err := os.Stat(p); err == nil && info.Mode().IsDir() {
+	} else if info, err := os.Lstat(p); err == nil && info.Mode().IsDir() && info.Mode()&fs.ModeSymlink == 0 {
 		p += "/"
 	}
 	return p
-}
-
-func validFile(info os.FileInfo) bool {
-	return info.Mode().IsRegular() && 0 < len(info.Name()) && (hidden || info.Name()[0] != '.')
-}
-
-func validDir(info os.FileInfo) bool {
-	return info.Mode().IsDir() && 0 < len(info.Name()) && (hidden || info.Name()[0] != '.')
 }
 
 func fileMatches(filename string) bool {
@@ -501,16 +496,44 @@ func fileMatches(filename string) bool {
 	return true
 }
 
+type DirEntry struct {
+	fs.FileInfo
+}
+
+func (d DirEntry) Type() fs.FileMode {
+	return d.Mode().Type()
+}
+
+func (d DirEntry) Info() (fs.FileInfo, error) {
+	return d.FileInfo, nil
+}
+
 func createTasks(inputs []string, output string) ([]Task, []string, error) {
 	tasks := []Task{}
 	roots := []string{}
 	for _, input := range inputs {
-		info, err := os.Stat(input)
+		var info fs.FileInfo
+		var err error
+		if !preserveSymlinks {
+			info, err = os.Stat(input)
+		} else {
+			info, err = os.Lstat(input)
+		}
 		if err != nil {
 			return nil, nil, err
 		}
 
-		if info.Mode().IsRegular() {
+		if info.Mode()&fs.ModeSymlink != 0 {
+			if !sync {
+				Warning.Println("--sync not specified, omitting symbolic link", input)
+				continue
+			}
+			task, err := NewTask(filepath.Dir(input), input, output, true)
+			if err != nil {
+				return nil, nil, err
+			}
+			tasks = append(tasks, task)
+		} else if info.Mode().IsRegular() {
 			valid := pattern == nil || pattern.MatchString(info.Name())
 			if valid || sync {
 				task, err := NewTask(filepath.Dir(input), input, output, !valid)
@@ -525,13 +548,41 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 				continue
 			}
 			roots = append(roots, input)
-			err := filepath.Walk(input, func(path string, info os.FileInfo, err error) error {
+
+			var walkFn func(string, fs.DirEntry, error) error
+			walkFn = func(path string, d fs.DirEntry, err error) error {
 				if err != nil {
 					return err
+				} else if len(d.Name()) == 0 || !hidden && d.Name()[0] == '.' || d.Name() == "." || d.Name() == ".." {
+					return nil
 				}
 				path = sanitizePath(path)
-				if validFile(info) {
-					valid := fileMatches(info.Name())
+
+				if !preserveSymlinks && d.Type()&fs.ModeSymlink != 0 {
+					// follow and dereference symlinks
+					info, err := os.Stat(path)
+					if err != nil {
+						return err
+					}
+					if info.IsDir() {
+						return fs.WalkDir(os.DirFS(input), path, walkFn)
+					}
+					d = DirEntry{info}
+				}
+
+				if preserveSymlinks && d.Type()&fs.ModeSymlink != 0 {
+					// copy symlinks as is
+					if !sync {
+						Warning.Println("--sync not specified, omitting symbolic link", path)
+						return nil
+					}
+					task, err := NewTask(input, path, output, true)
+					if err != nil {
+						return err
+					}
+					tasks = append(tasks, task)
+				} else if d.Type().IsRegular() {
+					valid := fileMatches(d.Name())
 					if valid || sync {
 						task, err := NewTask(input, path, output, !valid)
 						if err != nil {
@@ -539,12 +590,10 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 						}
 						tasks = append(tasks, task)
 					}
-				} else if info.Mode().IsDir() && !validDir(info) && info.Name() != "." && info.Name() != ".." { // check for IsDir, so we don't skip the rest of the directory when we have an invalid file
-					return filepath.SkipDir
 				}
 				return nil
-			})
-			if err != nil {
+			}
+			if err := fs.WalkDir(os.DirFS(input), ".", walkFn); err != nil {
 				return nil, nil, err
 			}
 		} else {
@@ -592,6 +641,30 @@ func openOutputFile(output string) (*os.File, error) {
 }
 
 func minify(mimetype string, t Task) bool {
+	// synchronizing files that are not minified but just copied to the same directory, no action needed
+	if t.sync {
+		if t.srcs[0] == t.dst {
+			return true
+		} else if info, err := os.Lstat(t.srcs[0]); err == nil && info.Mode()&fs.ModeSymlink != 0 {
+			src, err := os.Readlink(t.srcs[0])
+			if err != nil {
+				Error.Println(err)
+				return false
+			}
+			if _, err := os.Stat(t.dst); err == nil {
+				if err = os.Remove(t.dst); err != nil {
+					Error.Println(err)
+					return false
+				}
+			}
+			if err := os.Symlink(src, t.dst); err != nil {
+				Error.Println(err)
+				return false
+			}
+			return true
+		}
+	}
+
 	if mimetype == "" && !t.sync {
 		for _, src := range t.srcs {
 			ext := path.Ext(src)
@@ -610,11 +683,6 @@ func minify(mimetype string, t Task) bool {
 				return false
 			}
 		}
-	}
-
-	// synchronizing files that are not minified but just copied to the same directory, no action needed
-	if t.sync && t.srcs[0] == t.dst {
-		return true
 	}
 
 	srcName := strings.Join(t.srcs, " + ")
