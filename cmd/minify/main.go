@@ -370,7 +370,6 @@ func run() int {
 		go minifyWorker(chanTasks, chanFails)
 	}
 
-	fmt.Println(watch)
 	if !watch {
 		for _, task := range tasks {
 			chanTasks <- task
@@ -393,7 +392,6 @@ func run() int {
 		if !recursive {
 			files = inputs
 		}
-		fmt.Println(files)
 		for _, filename := range files {
 			watcher.AddPath(filename)
 			if filename == output {
@@ -675,6 +673,12 @@ func minify(t Task) bool {
 		}
 	}
 
+	srcInfo, err := os.Stat(t.srcs[0])
+	if err != nil {
+		Error.Println(err)
+		return false
+	}
+
 	fileMimetype := mimetype
 	if mimetype == "" && !t.sync {
 		for _, src := range t.srcs {
@@ -738,6 +742,8 @@ func minify(t Task) bool {
 		fr.Close()
 		return false
 	}
+
+	os.Chmod(t.dst, srcInfo.Mode().Perm())
 
 	// synchronize file
 	if t.sync {
