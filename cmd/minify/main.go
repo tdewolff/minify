@@ -636,6 +636,21 @@ func openOutputFile(output string) (*os.File, error) {
 	return w, nil
 }
 
+func createSymlink(input, output string) error {
+	if _, err := os.Stat(output); err == nil {
+		if err = os.Remove(output); err != nil {
+			return err
+		}
+	}
+	if err := os.MkdirAll(path.Dir(output), 0777); err != nil {
+		return err
+	}
+	if err := os.Symlink(input, output); err != nil {
+		return err
+	}
+	return nil
+}
+
 func minify(t Task) bool {
 	// synchronizing files that are not minified but just copied to the same directory, no action needed
 	if t.sync {
@@ -647,13 +662,7 @@ func minify(t Task) bool {
 				Error.Println(err)
 				return false
 			}
-			if _, err := os.Stat(t.dst); err == nil {
-				if err = os.Remove(t.dst); err != nil {
-					Error.Println(err)
-					return false
-				}
-			}
-			if err := os.Symlink(src, t.dst); err != nil {
+			if err := createSymlink(src, t.dst); err != nil {
 				Error.Println(err)
 				return false
 			}
