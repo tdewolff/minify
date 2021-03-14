@@ -12,5 +12,3 @@ RUN apk add --update --update-cache --no-cache git ca-certificates && \
 FROM alpine:3
 
 COPY --from=compiler /bin/minify /bin/minify
-
-ENTRYPOINT ["/bin/minify"]
