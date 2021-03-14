@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -75,7 +74,7 @@ func NewTask(root, input, output string, sync bool) (Task, error) {
 		if err != nil {
 			return Task{}, err
 		}
-		t.dst = path.Clean(filepath.ToSlash(path.Join(output, rel)))
+		t.dst = path.Join(output, path.Base(root), rel)
 	}
 	return t, nil
 }
@@ -285,12 +284,6 @@ func run() int {
 			return 1
 		}
 	}
-	if !dirDst && sync {
-		if sync {
-			Error.Println("--sync requires destination to be a directory")
-		}
-		return 1
-	}
 	if verbose {
 		if output == "" {
 			Info.Println("minify to stdout")
@@ -472,12 +465,19 @@ func minifyWorker(chanTasks <-chan Task, chanFails chan<- int) {
 
 func sanitizePath(p string) string {
 	p = filepath.ToSlash(p) // replace \ with / for Windows
-	isDir := p[len(p)-1] == '/'
+	isCur := path.Base(p) == "."
+	isDir := p[len(p)-1] == '/' || isCur
 	p = path.Clean(p)
+	if p == "." {
+		return "./"
+	}
 	if isDir {
 		p += "/"
-	} else if info, err := os.Lstat(p); err == nil && info.Mode().IsDir() && info.Mode()&fs.ModeSymlink == 0 {
+	} else if info, err := os.Lstat(p); err == nil && info.Mode().IsDir() && info.Mode()&os.ModeSymlink == 0 {
 		p += "/"
+	}
+	if isCur {
+		p += "./"
 	}
 	return p
 }
@@ -499,23 +499,11 @@ func fileMatches(filename string) bool {
 	return true
 }
 
-type DirEntry struct {
-	fs.FileInfo
-}
-
-func (d DirEntry) Type() fs.FileMode {
-	return d.Mode().Type()
-}
-
-func (d DirEntry) Info() (fs.FileInfo, error) {
-	return d.FileInfo, nil
-}
-
 func createTasks(inputs []string, output string) ([]Task, []string, error) {
 	tasks := []Task{}
 	roots := []string{}
 	for _, input := range inputs {
-		var info fs.FileInfo
+		var info os.FileInfo
 		var err error
 		if !preserveSymlinks {
 			info, err = os.Stat(input)
@@ -526,12 +514,12 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 			return nil, nil, err
 		}
 
-		if info.Mode()&fs.ModeSymlink != 0 {
+		if info.Mode()&os.ModeSymlink != 0 {
 			if !sync {
 				Warning.Println("--sync not specified, omitting symbolic link", input)
 				continue
 			}
-			task, err := NewTask(filepath.Dir(input), input, output, true)
+			task, err := NewTask(path.Dir(input), input, output, true)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -539,7 +527,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 		} else if info.Mode().IsRegular() {
 			valid := pattern == nil || pattern.MatchString(info.Name())
 			if valid || sync {
-				task, err := NewTask(filepath.Dir(input), input, output, !valid)
+				task, err := NewTask(path.Dir(input), input, output, !valid)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -552,33 +540,33 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 			}
 			roots = append(roots, input)
 
-			var walkFn func(string, fs.DirEntry, error) error
-			walkFn = func(path string, d fs.DirEntry, err error) error {
+			var walkFn func(string, os.DirEntry, error) error
+			walkFn = func(path string, d os.DirEntry, err error) error {
 				if err != nil {
 					return err
 				} else if d.Name() == "." || d.Name() == ".." {
 					return nil
 				} else if len(d.Name()) == 0 || !hidden && d.Name()[0] == '.' {
 					if d.IsDir() {
-						return fs.SkipDir
+						return filepath.SkipDir
 					}
 					return nil
 				}
 				path = sanitizePath(path)
 
-				if !preserveSymlinks && d.Type()&fs.ModeSymlink != 0 {
+				if !preserveSymlinks && d.Type()&os.ModeSymlink != 0 {
 					// follow and dereference symlinks
 					info, err := os.Stat(path)
 					if err != nil {
 						return err
 					}
 					if info.IsDir() {
-						return fs.WalkDir(os.DirFS(input), path, walkFn)
+						return WalkDir(input, path, walkFn)
 					}
-					d = DirEntry{info}
+					d = &statDirEntry{info}
 				}
 
-				if preserveSymlinks && d.Type()&fs.ModeSymlink != 0 {
+				if preserveSymlinks && d.Type()&os.ModeSymlink != 0 {
 					// copy symlinks as is
 					if !sync {
 						Warning.Println("--sync not specified, omitting symbolic link", path)
@@ -601,7 +589,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 				}
 				return nil
 			}
-			if err := fs.WalkDir(os.DirFS("."), filepath.Clean(input), walkFn); err != nil {
+			if err := WalkDir(".", input, walkFn); err != nil {
 				return nil, nil, err
 			}
 		} else {
@@ -653,7 +641,7 @@ func minify(t Task) bool {
 	if t.sync {
 		if t.srcs[0] == t.dst {
 			return true
-		} else if info, err := os.Lstat(t.srcs[0]); err == nil && info.Mode()&fs.ModeSymlink != 0 {
+		} else if info, err := os.Lstat(t.srcs[0]); preserveSymlinks && err == nil && info.Mode()&os.ModeSymlink != 0 {
 			src, err := os.Readlink(t.srcs[0])
 			if err != nil {
 				Error.Println(err)
