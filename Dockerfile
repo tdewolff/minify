@@ -1,5 +1,5 @@
 # Use this image to build the executable
-FROM golang:1.13-alpine AS compiler
+FROM golang:1.16-alpine AS compiler
 
 WORKDIR $GOPATH/src/minify
 COPY . .
