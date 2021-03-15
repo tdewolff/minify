@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/parse/v2"
@@ -1217,6 +1219,100 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			values[0].TokenType = css.NumberToken
 			values[0].Data = oneBytes
 			values[0].Ident = 0
+		}
+	case Unicode_Range:
+		ranges := [][2]int{}
+		for _, value := range values {
+			if value.TokenType == css.CommaToken {
+				continue
+			} else if value.TokenType != css.UnicodeRangeToken {
+				return values
+			}
+
+			i := 2
+			iWildcard := 0
+			start := 0
+			for i < len(value.Data) && value.Data[i] != '-' {
+				start *= 16
+				if '0' <= value.Data[i] && value.Data[i] <= '9' {
+					start += int(value.Data[i] - '0')
+				} else if 'a' <= value.Data[i]|32 && value.Data[i]|32 <= 'f' {
+					start += int(value.Data[i]|32-'a') + 10
+				} else if iWildcard == 0 && value.Data[i] == '?' {
+					iWildcard = i
+				}
+				i++
+			}
+			end := start
+			if iWildcard != 0 {
+				end = start + int(math.Pow(16.0, float64(len(value.Data)-iWildcard))) - 1
+			} else if i < len(value.Data) && value.Data[i] == '-' {
+				i++
+				end = 0
+				for i < len(value.Data) {
+					end *= 16
+					if '0' <= value.Data[i] && value.Data[i] <= '9' {
+						end += int(value.Data[i] - '0')
+					} else if 'a' <= value.Data[i]|32 && value.Data[i]|32 <= 'f' {
+						end += int(value.Data[i]|32-'a') + 10
+					}
+					i++
+				}
+				if end <= start {
+					end = start
+				}
+			}
+			ranges = append(ranges, [2]int{start, end})
+		}
+
+		// sort and remove overlapping ranges
+		sort.Slice(ranges, func(i, j int) bool { return ranges[i][0] < ranges[j][0] })
+		for i := 0; i < len(ranges)-1; i++ {
+			if ranges[i+1][1] <= ranges[i][1] {
+				// next range is fully contained in the current range
+				ranges = append(ranges[:i+1], ranges[i+2:]...)
+			} else if ranges[i+1][0] <= ranges[i][1]+1 {
+				// next range is partially covering the current range
+				ranges[i][1] = ranges[i+1][1]
+				ranges = append(ranges[:i+1], ranges[i+2:]...)
+			}
+		}
+
+		values = values[:0]
+		for i, ran := range ranges {
+			if i != 0 {
+				values = append(values, Token{css.CommaToken, commaBytes, nil, 0, None})
+			}
+			if ran[0] == ran[1] {
+				urange := []byte(fmt.Sprintf("U+%X", ran[0]))
+				values = append(values, Token{css.UnicodeRangeToken, urange, nil, 0, None})
+			} else if ran[0] == 0 && ran[1] == 0x10FFFF {
+				values = append(values, Token{css.IdentToken, initialBytes, nil, 0, None})
+			} else {
+				k := 0
+				for k < 6 && (ran[0]>>(k*4))&0xF == 0 && (ran[1]>>(k*4))&0xF == 0xF {
+					k++
+				}
+				wildcards := k
+				for k < 6 {
+					if (ran[0]>>(k*4))&0xF != (ran[1]>>(k*4))&0xF {
+						wildcards = 0
+						break
+					}
+					k++
+				}
+				var urange []byte
+				if wildcards != 0 {
+					if ran[0]>>(wildcards*4) == 0 {
+						urange = []byte(fmt.Sprintf("U+%s", strings.Repeat("?", wildcards)))
+					} else {
+						urange = []byte(fmt.Sprintf("U+%X%s", ran[0]>>(wildcards*4), strings.Repeat("?", wildcards)))
+					}
+				} else {
+					urange = []byte(fmt.Sprintf("U+%X-%X", ran[0], ran[1]))
+				}
+				values = append(values, Token{css.UnicodeRangeToken, urange, nil, 0, None})
+			}
 		}
 	}
 	return values

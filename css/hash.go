@@ -404,7 +404,7 @@ const (
 	Turn                        Hash = 0xd1f04 // turn
 	Turquoise                   Hash = 0xa8209 // turquoise
 	Unicode_Bidi                Hash = 0xcc40c // unicode-bidi
-	UnicodeRange                Hash = 0xd230d // unicode-range
+	Unicode_Range               Hash = 0xd230d // unicode-range
 	Unset                       Hash = 0xd3005 // unset
 	Url                         Hash = 0x3f403 // url
 	Var                         Hash = 0x64503 // var
