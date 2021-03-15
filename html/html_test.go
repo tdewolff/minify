@@ -148,8 +148,8 @@ func TestHTML(t *testing.T) {
 		{`<script><!--<`, `<script><!--<`},
 
 		// bugs
-		{`<i></i> Text`, `<i></i> Text`},                                                                         // #390
-		{`<i> </i> Text`, `<i></i>Text`},                                                                         // #390
+		{`<i class="fas"></i> Text`, `<i class=fas></i> Text`},                                                   // #390
+		{`<i class="fas"> </i> Text`, `<i class=fas></i>Text`},                                                   // #390
 		{`<span translate="no">`, `<span translate=no>`},                                                         // #352
 		{`<input title=""><input lang="">`, `<input title><input lang>`},                                         // #331
 		{`<amp-analytics type=adobeanalytics_nativeConfig>`, `<amp-analytics type=adobeanalytics_nativeConfig>`}, // #270

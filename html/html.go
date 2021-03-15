@@ -224,10 +224,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							rawTagHash = 0
 						}
 					}
-				} else if t.Hash == I {
-					if next := tb.Peek(1); next.Hash == I && next.TokenType == html.EndTagToken {
-						omitSpace = false
-					}
 				}
 			} else if t.Hash == Template {
 				omitSpace = true // EndTagToken
@@ -501,6 +497,13 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			if t.Hash == Select || t.Hash == Optgroup {
 				if next := tb.Peek(0); next.TokenType == html.TextToken {
 					tb.Shift()
+				}
+			}
+
+			// keep space after <i></i> for FontAwesome etc.
+			if t.TokenType == html.StartTagToken && t.Hash == I {
+				if next := tb.Peek(0); next.Hash == I && next.TokenType == html.EndTagToken {
+					omitSpace = false
 				}
 			}
 		}
