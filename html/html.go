@@ -224,6 +224,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							rawTagHash = 0
 						}
 					}
+				} else if t.Hash == I {
+					if next := tb.Peek(1); next.Hash == I && next.TokenType == html.EndTagToken {
+						omitSpace = false
+					}
 				}
 			} else if t.Hash == Template {
 				omitSpace = true // EndTagToken
