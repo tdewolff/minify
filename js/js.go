@@ -47,6 +47,8 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			if comment[1] == '/' {
 				w.Write(newlineBytes)
 			}
+		} else if 2 < len(comment) && comment[0] == '#' && comment[1] == '!' {
+			w.Write(comment)
 		}
 	}
 

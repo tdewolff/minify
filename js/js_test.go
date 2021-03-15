@@ -19,6 +19,7 @@ func TestJS(t *testing.T) {
 		js       string
 		expected string
 	}{
+		{`#!shebang`, `#!shebang`},
 		{`/*comment*/a`, `a`},
 		{`/*!comment*/a`, `/*!comment*/a`},
 		{"//!comment1\n\n//!comment2\na", "//!comment1\n//!comment2\na"},
