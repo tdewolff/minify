@@ -602,7 +602,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 				}
 				return nil
 			}
-			if err := fs.WalkDir(os.DirFS("."), input, walkFn); err != nil {
+			if err := fs.WalkDir(os.DirFS("."), path.Clean(input), walkFn); err != nil {
 				return nil, nil, err
 			}
 		} else {
