@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/fs"
 	"os"
 	"path/filepath"
 	"time"
@@ -50,13 +49,13 @@ func (w *Watcher) AddPath(root string) error {
 		}
 		w.dirs[root] = true
 	} else if info.Mode().IsDir() && w.recursive {
-		return fs.WalkDir(os.DirFS("."), filepath.Clean(root), func(path string, d fs.DirEntry, err error) error {
+		return WalkDir(DirFS("."), filepath.Clean(root), func(path string, d DirEntry, err error) error {
 			if err != nil {
 				return err
 			}
 			if d.IsDir() {
 				if w.dirs[path] {
-					return fs.SkipDir
+					return SkipDir
 				}
 				if err := w.watcher.Add(path); err != nil {
 					return err
