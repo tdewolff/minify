@@ -683,12 +683,6 @@ func minify(t Task) bool {
 		}
 	}
 
-	srcInfo, err := os.Stat(t.srcs[0])
-	if err != nil {
-		Error.Println(err)
-		return false
-	}
-
 	fileMimetype := mimetype
 	if mimetype == "" && !t.sync {
 		for _, src := range t.srcs {
@@ -753,7 +747,14 @@ func minify(t Task) bool {
 		return false
 	}
 
-	os.Chmod(t.dst, srcInfo.Mode().Perm())
+	if t.srcs[0] != "" {
+		srcInfo, err := os.Stat(t.srcs[0])
+		if err != nil {
+			Error.Println(err)
+			return false
+		}
+		os.Chmod(t.dst, srcInfo.Mode().Perm())
+	}
 
 	// synchronize file
 	if t.sync {
