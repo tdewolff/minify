@@ -83,7 +83,7 @@ func (w *Watcher) Run() chan string {
 
 				// check if changed file is being watched (as a file or indirectly in a dir)
 				watched := false
-				for path, _ := range w.paths {
+				for path := range w.paths {
 					if 0 < len(path) && path[len(path)-1] != '/' {
 						// file in w.paths
 						if path == filepath.Clean(event.Name) {
@@ -109,7 +109,7 @@ func (w *Watcher) Run() chan string {
 						}
 					} else if info.Mode().IsRegular() {
 						if event.Op&fsnotify.Write == fsnotify.Write {
-							if t, ok := changetimes[event.Name]; !ok || 100*time.Millisecond < time.Now().Sub(t) {
+							if t, ok := changetimes[event.Name]; !ok || 100*time.Millisecond < time.Since(t) {
 								time.Sleep(100 * time.Millisecond) // wait to make sure write is finished
 								files <- event.Name
 								changetimes[event.Name] = time.Now()
