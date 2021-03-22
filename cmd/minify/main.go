@@ -558,7 +558,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 					return err
 				} else if d.Name() == "." || d.Name() == ".." {
 					return nil
-				} else if len(d.Name()) == 0 || !hidden && d.Name()[0] == '.' {
+				} else if d.Name() == "" || !hidden && d.Name()[0] == '.' {
 					if d.IsDir() {
 						return SkipDir
 					}
