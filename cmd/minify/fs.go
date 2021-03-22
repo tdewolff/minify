@@ -59,17 +59,6 @@ func DirFS(dir string) FS {
 	return dirFS(dir)
 }
 
-func containsAny(s, chars string) bool {
-	for i := 0; i < len(s); i++ {
-		for j := 0; j < len(chars); j++ {
-			if s[i] == chars[j] {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 type dirFS string
 
 func (dir dirFS) Open(name string) (*os.File, error) {

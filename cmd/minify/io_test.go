@@ -32,10 +32,10 @@ func TestConcat(t *testing.T) {
 }
 
 func TestConcatErr(t *testing.T) {
-	r, err := newConcatFileReader([]string{"err"}, testOpener)
+	_, err := newConcatFileReader([]string{"err"}, testOpener)
 	test.T(t, err, test.ErrPlain)
 
-	r, err = newConcatFileReader([]string{"test", "err"}, testOpener)
+	r, err := newConcatFileReader([]string{"test", "err"}, testOpener)
 	test.T(t, err, nil)
 
 	buf := make([]byte, 10)

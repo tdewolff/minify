@@ -324,9 +324,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						if name := attrs[3]; name != nil {
 							name.AttrVal = parse.TrimWhitespace(name.AttrVal)
 							if parse.EqualFold(name.AttrVal, []byte("keywords")) {
-								content.AttrVal = bytes.Replace(content.AttrVal, []byte(", "), []byte(","), -1)
+								content.AttrVal = bytes.ReplaceAll(content.AttrVal, []byte(", "), []byte(","))
 							} else if parse.EqualFold(name.AttrVal, []byte("viewport")) {
-								content.AttrVal = bytes.Replace(content.AttrVal, []byte(" "), []byte(""), -1)
+								content.AttrVal = bytes.ReplaceAll(content.AttrVal, []byte(" "), []byte(""))
 								for i := 0; i < len(content.AttrVal); i++ {
 									if content.AttrVal[i] == '=' && i+2 < len(content.AttrVal) {
 										i++

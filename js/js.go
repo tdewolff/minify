@@ -260,8 +260,6 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.writeSpaceBeforeIdent()
 		m.minifyExpr(stmt.Value, js.OpAssign)
 		m.write(closeParenBytes)
-		if len(stmt.Body.List) == 1 {
-		}
 		m.minifyBlockAsStmt(&stmt.Body, iterationBlock)
 	case *js.SwitchStmt:
 		m.write(switchOpenBytes)

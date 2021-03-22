@@ -317,15 +317,16 @@ func TestHelperProcess(*testing.T) {
 			os.Exit(1)
 			return
 		}
-		defer w.Close()
 
 		b, err := ioutil.ReadFile(in)
 		if err != nil {
 			w.WriteString(err.Error())
+			w.Close()
 			os.Exit(1)
 			return
 		}
 		_, _ = w.Write(b)
+		w.Close()
 	case "dummy/err":
 		fmt.Fprint(os.Stderr, "error")
 		os.Exit(1)
@@ -347,7 +348,7 @@ func ExampleM_Minify_custom() {
 			if err != nil && err != io.EOF {
 				return err
 			}
-			if _, errws := io.WriteString(w, strings.Replace(line, " ", "", -1)); errws != nil {
+			if _, errws := io.WriteString(w, strings.ReplaceAll(line, " ", "")); errws != nil {
 				return errws
 			}
 			if err == io.EOF {
