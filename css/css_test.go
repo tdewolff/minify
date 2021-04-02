@@ -300,6 +300,7 @@ func TestCSSInline(t *testing.T) {
 		{"background:url('data:\\'\",text')", "background:url('data:\\'\",text')"},
 		{"margin:0 0 18px 0;", "margin:0 0 18px"},
 		{"z-index:1000", "z-index:1000"},
+		{"z-index:calc(1000)", "z-index:calc(1000)"},
 		//{"flex:0px", "flex:0q"}, // TODO
 		{"g:url('abc\\\ndef')", "g:url(abcdef)"},
 		{"url:local('abc\\\ndef')", "url:local(abcdef)"},

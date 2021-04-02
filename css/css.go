@@ -398,7 +398,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 		return
 	}
 
-	values = c.minifyTokens(prop, values)
+	values = c.minifyTokens(prop, 0, values)
 	if len(values) > 0 {
 		values = c.minifyProperty(prop, values)
 	}
@@ -440,7 +440,7 @@ func (c *cssMinifier) writeDeclaration(values []Token, important bool) {
 	}
 }
 
-func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
+func (c *cssMinifier) minifyTokens(prop Hash, fun Hash, values []Token) []Token {
 	for i, value := range values {
 		tt := value.TokenType
 		switch tt {
@@ -464,7 +464,7 @@ func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
 		case css.DimensionToken:
 			var dim []byte
 			values[i], dim = c.minifyDimension(values[i])
-			if 1 < len(values[i].Data) && values[i].Data[0] == '0' && optionalZeroDimension[string(dim)] && prop != Flex && prop != Function {
+			if 1 < len(values[i].Data) && values[i].Data[0] == '0' && optionalZeroDimension[string(dim)] && prop != Flex && fun == 0 {
 				// cut dimension for zero value, TODO: don't hardcode check for Flex and remove the dimension in minifyDimension
 				values[i].Data = values[i].Data[:1]
 			}
@@ -489,7 +489,7 @@ func (c *cssMinifier) minifyTokens(prop Hash, values []Token) []Token {
 				}
 			}
 		case css.FunctionToken:
-			values[i].Args = c.minifyTokens(Function, values[i].Args)
+			values[i].Args = c.minifyTokens(prop, values[i].Fun, values[i].Args)
 
 			fun := values[i].Fun
 			args := values[i].Args
