@@ -435,6 +435,7 @@ func TestCSSKeepCSS2(t *testing.T) {
 		{`margin:5000%`, `margin:5000%`},
 		{`margin:5000em`, `margin:5000em`},
 		{`color:transparent`, `color:transparent`},
+		{`background-color:transparent`, `background-color:transparent`},
 	}
 
 	m := minify.New()

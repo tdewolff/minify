@@ -1096,9 +1096,11 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 		values[0] = minifyColor(values[0])
 	case Background_Color:
 		values[0] = minifyColor(values[0])
-		if values[0].Ident == Transparent {
-			values[0].Data = initialBytes
-			values[0].Ident = Initial
+		if !c.o.KeepCSS2 {
+			if values[0].Ident == Transparent {
+				values[0].Data = initialBytes
+				values[0].Ident = Initial
+			}
 		}
 	case Border_Color:
 		sameValues := true
