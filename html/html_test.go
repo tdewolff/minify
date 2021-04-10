@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/tdewolff/minify/v2"
@@ -434,6 +435,35 @@ func TestMinifyErrors(t *testing.T) {
 			w := &bytes.Buffer{}
 			err := Minify(m, w, r, nil)
 			test.T(t, err, tt.err)
+		})
+	}
+}
+
+func TestMinifyErrorPropagation(t *testing.T) {
+	errorTests := []struct {
+		html string
+		err  string
+	}{
+		{"line\n<script><</script>", "unexpected < in expression on line 2 and column 9"},
+		{"line\n<script> <</script>", "unexpected < in expression on line 2 and column 10"},
+		{"<div onclick='<'>", "unexpected < in expression on line 1 and column 15"},
+	}
+
+	m := minify.New()
+	m.AddFunc("application/javascript", js.Minify)
+	for _, tt := range errorTests {
+		t.Run(tt.html, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.html)
+			w := &bytes.Buffer{}
+			err := Minify(m, w, r, nil)
+			if err == nil {
+				test.Fail(t)
+			}
+			errMessage := err.Error()
+			if i := strings.IndexByte(errMessage, '\n'); i != -1 {
+				errMessage = errMessage[:i]
+			}
+			test.String(t, errMessage, tt.err)
 		})
 	}
 }

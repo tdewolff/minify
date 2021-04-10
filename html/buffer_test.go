@@ -11,7 +11,8 @@ import (
 func TestBuffer(t *testing.T) {
 	//    0 12  3           45   6   7   8             9   0
 	s := `<p><a href="//url">text</a>text<!--comment--></p>`
-	z := NewTokenBuffer(html.NewLexer(parse.NewInputString(s)))
+	r := parse.NewInputString(s)
+	z := NewTokenBuffer(r, html.NewLexer(r))
 
 	tok := z.Shift()
 	test.That(t, tok.Hash == P, "first token is <p>")

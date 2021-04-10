@@ -57,7 +57,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	defer z.Restore()
 
 	l := xml.NewLexer(z)
-	tb := NewTokenBuffer(l)
+	tb := NewTokenBuffer(z, l)
 	for {
 		t := *tb.Shift()
 		switch t.TokenType {
@@ -80,7 +80,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			if tag == Style && len(t.Data) > 0 {
 				if err := m.MinifyMimetype(defaultStyleType, w, buffer.NewReader(t.Data), defaultStyleParams); err != nil {
 					if err != minify.ErrNotExist {
-						return err
+						return minify.UpdateErrorPosition(err, z, t.Offset)
 					}
 					w.Write(t.Data)
 				}
@@ -95,7 +95,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					t.Text = t.Data[9:]
 					t.Data = append(t.Data, cdataEndBytes...)
 				} else if err != minify.ErrNotExist {
-					return err
+					return minify.UpdateErrorPosition(err, z, t.Offset)
 				}
 			}
 			var useText bool
@@ -159,7 +159,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				if err := m.MinifyMimetype(defaultStyleType, minifyBuffer, buffer.NewReader(val), defaultInlineStyleParams); err == nil {
 					val = minifyBuffer.Bytes()
 				} else if err != minify.ErrNotExist {
-					return err
+					return minify.UpdateErrorPosition(err, z, t.Offset)
 				}
 			} else if attr == D {
 				val = p.ShortenPathData(val)

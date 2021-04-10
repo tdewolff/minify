@@ -12,7 +12,8 @@ import (
 func TestBuffer(t *testing.T) {
 	//    0   12     3            4 5   6   7 8   9    01
 	s := `<svg><path d="M0 0L1 1z"/>text<tag/>text</svg>`
-	z := NewTokenBuffer(xml.NewLexer(parse.NewInputString(s)))
+	r := parse.NewInputString(s)
+	z := NewTokenBuffer(r, xml.NewLexer(r))
 
 	tok := z.Shift()
 	test.That(t, tok.Hash == Svg, "first token is <svg>")
@@ -38,8 +39,9 @@ func TestBuffer(t *testing.T) {
 }
 
 func TestAttributes(t *testing.T) {
-	l := xml.NewLexer(parse.NewInputString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`))
-	tb := NewTokenBuffer(l)
+	r := parse.NewInputString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
+	l := xml.NewLexer(r)
+	tb := NewTokenBuffer(r, l)
 	tb.Shift()
 	for k := 0; k < 2; k++ { // run twice to ensure similar results
 		attrs := tb.Attributes(X, Y, Width, Height, Rx, Ry)
@@ -55,8 +57,9 @@ func TestAttributes(t *testing.T) {
 ////////////////////////////////////////////////////////////////
 
 func BenchmarkAttributes(b *testing.B) {
-	l := xml.NewLexer(parse.NewInputString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`))
-	tb := NewTokenBuffer(l)
+	r := parse.NewInputString(`<rect x="0" y="1" width="2" height="3" rx="4" ry="5"/>`)
+	l := xml.NewLexer(r)
+	tb := NewTokenBuffer(r, l)
 	tb.Shift()
 	tb.Peek(6)
 	for i := 0; i < b.N; i++ {

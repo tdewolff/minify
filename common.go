@@ -1,6 +1,7 @@
 package minify
 
 import (
+	"bytes"
 	"encoding/base64"
 
 	"github.com/tdewolff/parse/v2"
@@ -500,4 +501,15 @@ func Number(num []byte, prec int) []byte {
 		num[start] = '-'
 	}
 	return num[start:end]
+}
+
+func UpdateErrorPosition(err error, input *parse.Input, offset int) error {
+	if perr, ok := err.(*parse.Error); ok {
+		r := bytes.NewBuffer(input.Bytes())
+		line, column, _ := parse.Position(r, offset)
+		perr.Line += line - 1
+		perr.Column += column - 1
+		return perr
+	}
+	return err
 }

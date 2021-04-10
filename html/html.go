@@ -75,7 +75,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	defer z.Restore()
 
 	l := html.NewLexer(z)
-	tb := NewTokenBuffer(l)
+	tb := NewTokenBuffer(z, l)
 	for {
 		t := *tb.Shift()
 		switch t.TokenType {
@@ -100,7 +100,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					end := len(t.Data) - len("<![endif]-->")
 					w.Write(t.Data[:begin])
 					if err := o.Minify(m, w, buffer.NewReader(t.Data[begin:end]), nil); err != nil {
-						return err
+						return minify.UpdateErrorPosition(err, z, t.Offset)
 					}
 					w.Write(t.Data[end:])
 				} else {
@@ -113,14 +113,14 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		case html.SvgToken:
 			if err := m.MinifyMimetype(svgMimeBytes, w, buffer.NewReader(t.Data), nil); err != nil {
 				if err != minify.ErrNotExist {
-					return err
+					return minify.UpdateErrorPosition(err, z, t.Offset)
 				}
 				w.Write(t.Data)
 			}
 		case html.MathToken:
 			if err := m.MinifyMimetype(mathMimeBytes, w, buffer.NewReader(t.Data), nil); err != nil {
 				if err != minify.ErrNotExist {
-					return err
+					return minify.UpdateErrorPosition(err, z, t.Offset)
 				}
 				w.Write(t.Data)
 			}
@@ -141,7 +141,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					}
 					if err := m.MinifyMimetype(mimetype, w, buffer.NewReader(t.Data), params); err != nil {
 						if err != minify.ErrNotExist {
-							return err
+							return minify.UpdateErrorPosition(err, z, t.Offset)
 						}
 						w.Write(t.Data)
 					}
@@ -431,7 +431,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							if err := m.MinifyMimetype(cssMimeBytes, attrMinifyBuffer, buffer.NewReader(val), inlineParams); err == nil {
 								val = attrMinifyBuffer.Bytes()
 							} else if err != minify.ErrNotExist {
-								return err
+								return minify.UpdateErrorPosition(err, z, attr.Offset)
 							}
 							if len(val) == 0 {
 								continue
@@ -446,7 +446,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							if err := m.MinifyMimetype(jsMimeBytes, attrMinifyBuffer, buffer.NewReader(val), nil); err == nil {
 								val = attrMinifyBuffer.Bytes()
 							} else if err != minify.ErrNotExist {
-								return err
+								return minify.UpdateErrorPosition(err, z, attr.Offset)
 							}
 							if len(val) == 0 {
 								continue
