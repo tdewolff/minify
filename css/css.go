@@ -1175,26 +1175,24 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			}
 		} else if len(values) == 3 && values[0].TokenType == css.NumberToken && values[1].TokenType == css.NumberToken {
 			if len(values[0].Data) == 1 && len(values[1].Data) == 1 {
-				grow := values[0].Data[0] == '1'
-				shrink := values[1].Data[0] == '1'
 				if values[2].Ident == Auto {
-					if !grow && shrink {
+					if values[0].Data[0] == '0' && values[1].Data[0] == '1' {
 						values = values[:1]
 						values[0].TokenType = css.IdentToken
 						values[0].Data = initialBytes
 						values[0].Ident = Initial
-					} else if grow && shrink {
+					} else if values[0].Data[0] == '1' && values[1].Data[0] == '1' {
 						values = values[:1]
 						values[0].TokenType = css.IdentToken
 						values[0].Data = autoBytes
 						values[0].Ident = Auto
-					} else if !grow && !shrink {
+					} else if values[0].Data[0] == '0' && values[1].Data[0] == '0' {
 						values = values[:1]
 						values[0].TokenType = css.IdentToken
 						values[0].Data = noneBytes
 						values[0].Ident = None
 					}
-				} else if shrink && values[2].IsZero() {
+				} else if values[1].Data[0] == '1' && values[2].IsZero() {
 					values = values[:1] // remove <flex-shrink> and <flex-basis> if they are 1 and 0 respectively
 				} else if values[2].IsZero() {
 					values = values[:2] // remove auto to write 2-value syntax of <flex-grow> <flex-shrink>
