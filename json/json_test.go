@@ -55,7 +55,7 @@ func TestJSON_IgnoreNumbers(t *testing.T) {
 		{"1.0", "1.0"},
 		{"10000", "10000"},
 	}
-	m := Minifier{SkipNumbers: true}
+	m := Minifier{KeepNumbers: true}
 	for _, tt := range jsonTests {
 		t.Run(tt.json, func(t *testing.T) {
 			r := bytes.NewBufferString(tt.json)

@@ -23,7 +23,7 @@ var DefaultMinifier = &Minifier{}
 
 // Minifier is a JSON minifier.
 type Minifier struct {
-	SkipNumbers bool // do not minify numbers if set to true
+	KeepNumbers bool // do not minify numbers if set to true
 	Precision   int  // number of significant digits
 }
 
@@ -62,7 +62,7 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		}
 		skipComma = gt == json.StartObjectGrammar || gt == json.StartArrayGrammar
 
-		if !o.SkipNumbers && 0 < len(text) && ('0' <= text[0] && text[0] <= '9' || text[0] == '-') {
+		if !o.KeepNumbers && 0 < len(text) && ('0' <= text[0] && text[0] <= '9' || text[0] == '-') {
 			text = minify.Number(text, o.Precision)
 			if text[0] == '.' {
 				w.Write(zeroBytes)
