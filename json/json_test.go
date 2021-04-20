@@ -38,6 +38,35 @@ func TestJSON(t *testing.T) {
 	}
 }
 
+func TestJSON_IgnoreNumbers(t *testing.T) {
+	jsonTests := []struct {
+		json     string
+		expected string
+	}{
+		{"", ""},
+		{"{ \"a\": [1, 2] }", "{\"a\":[1,2]}"},
+		{"[{ \"a\": [{\"x\": null}, true] }]", "[{\"a\":[{\"x\":null},true]}]"},
+		{"{ \"a\": 1, \"b\": 2 }", "{\"a\":1,\"b\":2}"},
+		{"{ \"a\": 1           , \"b\": 2 }", "{\"a\":1,\"b\":2}"},
+		{"1.3e1", "1.3e1"},
+		{"1E+03", "1E+03"},
+		{"0.1", "0.1"},
+		{"-0.1", "-0.1"},
+		{"1.0", "1.0"},
+		{"10000", "10000"},
+	}
+	m := Minifier{SkipNumbers: true}
+	for _, tt := range jsonTests {
+		t.Run(tt.json, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.json)
+			w := &bytes.Buffer{}
+			err := m.Minify(nil, w, r, nil)
+			test.Minify(t, tt.json, err, w.String(), tt.expected)
+		})
+	}
+
+}
+
 func TestReaderErrors(t *testing.T) {
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}
