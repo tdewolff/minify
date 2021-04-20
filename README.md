@@ -303,7 +303,7 @@ The JSON minifier only removes whitespace, which is the only thing that can be l
 Options:
 
 - `Precision` number of significant digits to preserve for numbers, `0` means no trimming
-- `SkipNumbers` do not minify numbers if set to `true`, by default numbers will be minified
+- `KeepNumbers` do not minify numbers if set to `true`, by default numbers will be minified
 
 ## SVG
 
