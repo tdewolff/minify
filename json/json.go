@@ -23,8 +23,8 @@ var DefaultMinifier = &Minifier{}
 
 // Minifier is a JSON minifier.
 type Minifier struct {
-	KeepNumbers bool // do not minify numbers if set to true
 	Precision   int  // number of significant digits
+	KeepNumbers bool // prevent numbers from being minified
 }
 
 // Minify minifies JSON data, it reads from r and writes to w.
