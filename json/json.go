@@ -62,7 +62,8 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		skipComma = gt == json.StartObjectGrammar || gt == json.StartArrayGrammar
 
 		if 0 < len(text) && ('0' <= text[0] && text[0] <= '9' || text[0] == '-') {
-			text = minify.Number(text, o.Precision)
+			// TODO: don't convert 1000 to 1e3 as it cannot be interpreted as an int by deserializers
+			//text = minify.Number(text, o.Precision)
 			if text[0] == '.' {
 				w.Write(zeroBytes)
 			} else if 1 < len(text) && text[0] == '-' && text[1] == '.' {
