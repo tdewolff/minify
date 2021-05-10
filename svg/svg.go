@@ -8,9 +8,9 @@ import (
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/css"
 	minifyXML "github.com/tdewolff/minify/v2/xml"
-	"github.com/tdewolff/parse/v2"
-	"github.com/tdewolff/parse/v2/buffer"
-	"github.com/tdewolff/parse/v2/xml"
+	"github.com/tdewolff/minify/v2/parse"
+	"github.com/tdewolff/minify/v2/parse/buffer"
+	"github.com/tdewolff/minify/v2/parse/xml"
 )
 
 var (

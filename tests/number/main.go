@@ -4,7 +4,7 @@ package fuzz
 
 import (
 	"github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/parse/v2"
+	"github.com/tdewolff/minify/v2/parse"
 )
 
 // Fuzz is a fuzz test.

@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/tdewolff/minify/v2/minify"
-	"github.com/tdewolff/parse/v2"
-	"github.com/tdewolff/parse/v2/buffer"
+	"github.com/tdewolff/minify/v2/parse"
+	"github.com/tdewolff/minify/v2/parse/buffer"
 )
 
 func benchmark(b *testing.B, mediatype string, sample string) {

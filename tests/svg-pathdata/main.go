@@ -3,8 +3,8 @@
 package fuzz
 
 import (
+	"github.com/tdewolff/minify/v2/parse"
 	"github.com/tdewolff/minify/v2/svg"
-	"github.com/tdewolff/parse/v2"
 )
 
 // Fuzz is a fuzz test.
