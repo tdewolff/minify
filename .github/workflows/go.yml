@@ -16,10 +16,15 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v2
       with:
-        go-version: 1.15
+        go-version: 1.16
 
     - name: Build
       run: go build -v ./...
 
-    - name: Test
-      run: go test -v ./...
+    - name: Tests with coverage
+      run: go test -race -v -count=1 -coverprofile=coverage.out ./...
+    - name: Upload Code Coverage
+      uses: codecov/codecov-action@v1
+      with:
+        name: codecov
+        fail_ci_if_error: true
