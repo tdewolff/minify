@@ -1,14 +1,16 @@
 linters:
   enable:
-  - megacheck
-  - govet
-  - unparam
-  - unconvert
-  - misspell
-  - lll
+  - depguard
+  - dogsled
   - gofmt
+  - goimports
   - golint
   - gosec
+  - govet
+  - megacheck
+  - misspell
   - nakedret
-  - dogsled
-  - depguard
+  - prealloc
+  - unconvert
+  - unparam
+  - wastedassign
