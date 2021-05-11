@@ -5,6 +5,8 @@
 **[Command line tool](https://github.com/tdewolff/minify/tree/master/cmd/minify) that minifies concurrently and watches file changes.**
 
 **[Releases](https://github.com/tdewolff/minify/releases) of CLI for various platforms.** See [CLI](https://github.com/tdewolff/minify/tree/master/cmd/minify) for more installation instructions.
+
+**[Parse](https://github.com/tdewolff/minify/tree/master/parse) subpackage on which minify depends.**
  
 ---
 

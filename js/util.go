@@ -521,11 +521,11 @@ func endsInIf(istmt js.IStmt) bool {
 	case *js.WhileStmt:
 		return endsInIf(stmt.Body)
 	case *js.ForStmt:
-		return endsInIf(&stmt.Body)
+		return endsInIf(stmt.Body)
 	case *js.ForInStmt:
-		return endsInIf(&stmt.Body)
+		return endsInIf(stmt.Body)
 	case *js.ForOfStmt:
-		return endsInIf(&stmt.Body)
+		return endsInIf(stmt.Body)
 	}
 	return false
 }

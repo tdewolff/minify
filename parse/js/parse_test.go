@@ -842,11 +842,11 @@ func (sv *ScopeVars) AddStmt(istmt IStmt) {
 	case *ThrowStmt:
 		sv.AddExpr(stmt.Value)
 	case *ForStmt:
-		sv.AddStmt(&stmt.Body)
+		sv.AddStmt(stmt.Body)
 	case *ForInStmt:
-		sv.AddStmt(&stmt.Body)
+		sv.AddStmt(stmt.Body)
 	case *ForOfStmt:
-		sv.AddStmt(&stmt.Body)
+		sv.AddStmt(stmt.Body)
 	case *IfStmt:
 		sv.AddStmt(stmt.Body)
 		if stmt.Else != nil {
@@ -854,7 +854,7 @@ func (sv *ScopeVars) AddStmt(istmt IStmt) {
 		}
 	case *TryStmt:
 		if 0 < len(stmt.Body.List) {
-			sv.AddStmt(&stmt.Body)
+			sv.AddStmt(stmt.Body)
 		}
 		if stmt.Catch != nil {
 			sv.AddStmt(stmt.Catch)

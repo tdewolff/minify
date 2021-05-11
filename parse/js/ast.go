@@ -62,7 +62,7 @@ func (decl DeclType) String() string {
 // Var is a variable, where Decl is the type of declaration and can be var|function for function scoped variables, let|const|class for block scoped variables.
 type Var struct {
 	Data []byte
-	Link *Var // is set when merging variable uses, as in:  {a} {var a}  where the first lins to the second
+	Link *Var // is set when merging variable uses, as in:  {a} {var a}  where the first links to the second, only used for undeclared variables
 	Uses uint16
 	Decl DeclType
 }
@@ -307,6 +307,17 @@ func (s *Scope) UndeclareScope() {
 	s.Undeclared = s.Undeclared[:0]
 }
 
+// Unscope moves all declared variables of the current scope to the parent scope. Undeclared variables are already in the parent scope.
+func (s *Scope) Unscope() {
+	for _, vorig := range s.Declared {
+		// no need to evaluate vorig.Link as vorig.Data stays the same, and Link is always nil in Declared
+		// vorig.Uses will be atleast 1
+		s.Parent.Declared = append(s.Parent.Declared, vorig)
+	}
+	s.Declared = s.Declared[:0]
+	s.Undeclared = s.Undeclared[:0]
+}
+
 ////////////////////////////////////////////////////////////////
 
 // IStmt is a dummy interface for statements.
@@ -404,7 +415,7 @@ type ForStmt struct {
 	Init IExpr // can be nil
 	Cond IExpr // can be nil
 	Post IExpr // can be nil
-	Body BlockStmt
+	Body *BlockStmt
 }
 
 func (n ForStmt) String() string {
@@ -427,7 +438,7 @@ func (n ForStmt) String() string {
 type ForInStmt struct {
 	Init  IExpr
 	Value IExpr
-	Body  BlockStmt
+	Body  *BlockStmt
 }
 
 func (n ForInStmt) String() string {
@@ -439,7 +450,7 @@ type ForOfStmt struct {
 	Await bool
 	Init  IExpr
 	Value IExpr
-	Body  BlockStmt
+	Body  *BlockStmt
 }
 
 func (n ForOfStmt) String() string {
@@ -536,7 +547,7 @@ func (n ThrowStmt) String() string {
 
 // TryStmt is a try statement.
 type TryStmt struct {
-	Body    BlockStmt
+	Body    *BlockStmt
 	Binding IBinding   // can be nil
 	Catch   *BlockStmt // can be nil
 	Finally *BlockStmt // can be nil
@@ -907,7 +918,7 @@ type ClassDecl struct {
 	Name        *Var  // can be nil
 	Extends     IExpr // can be nil
 	Definitions []FieldDefinition
-	Methods     []MethodDecl
+	Methods     []*MethodDecl
 }
 
 func (n ClassDecl) String() string {

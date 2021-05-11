@@ -223,10 +223,11 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) *js.VarDecl {
 		} else if whileStmt, ok := body.List[declStart].(*js.WhileStmt); ok {
 			// TODO: only merge statements that don't have 'in' or 'of' keywords (slow to check?)
 			decl = &js.VarDecl{TokenType: js.VarToken, List: nil}
-			var forBody js.BlockStmt
+			var forBody *js.BlockStmt
 			if blockStmt, ok := whileStmt.Body.(*js.BlockStmt); ok {
-				forBody = *blockStmt
+				forBody = blockStmt
 			} else {
+				forBody = &js.BlockStmt{}
 				forBody.List = []js.IStmt{whileStmt.Body}
 			}
 			body.List[declStart] = &js.ForStmt{Init: decl, Cond: whileStmt.Cond, Post: nil, Body: forBody}
