@@ -472,6 +472,7 @@ type CaseClause struct {
 type SwitchStmt struct {
 	Init IExpr
 	List []CaseClause
+	Scope
 }
 
 func (n SwitchStmt) String() string {

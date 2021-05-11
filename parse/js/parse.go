@@ -426,7 +426,8 @@ func (p *Parser) parseStmt(allowDeclaration bool) (stmt IStmt) {
 			return
 		}
 
-		clauses := []CaseClause{}
+		switchStmt := &SwitchStmt{Init: init}
+		parent := p.enterScope(&switchStmt.Scope, false)
 		for {
 			if p.tt == ErrorToken {
 				p.fail("switch statement")
@@ -455,9 +456,10 @@ func (p *Parser) parseStmt(allowDeclaration bool) (stmt IStmt) {
 			for p.tt != CaseToken && p.tt != DefaultToken && p.tt != CloseBraceToken && p.tt != ErrorToken {
 				stmts = append(stmts, p.parseStmt(true))
 			}
-			clauses = append(clauses, CaseClause{clause, list, stmts})
+			switchStmt.List = append(switchStmt.List, CaseClause{clause, list, stmts})
 		}
-		stmt = &SwitchStmt{init, clauses}
+		p.exitScope(parent)
+		stmt = switchStmt
 	case FunctionToken:
 		if !allowDeclaration {
 			p.fail("statement")

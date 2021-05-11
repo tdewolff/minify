@@ -270,6 +270,10 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.write(closeParenOpenBracketBytes)
 		m.needsSemicolon = false
 		for _, clause := range stmt.List {
+			clause.List = m.optimizeStmtList(clause.List, defaultBlock)
+		}
+		m.renamer.renameScope(stmt.Scope)
+		for _, clause := range stmt.List {
 			m.writeSemicolon()
 			m.write(clause.TokenType.Bytes())
 			if clause.Cond != nil {
@@ -277,7 +281,6 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 				m.minifyExpr(clause.Cond, js.OpExpr)
 			}
 			m.write(colonBytes)
-			clause.List = m.optimizeStmtList(clause.List, defaultBlock) // TODO: optimize whole switch, add scope for switch, then rename vars
 			for _, item := range clause.List {
 				m.writeSemicolon()
 				m.minifyStmt(item)
