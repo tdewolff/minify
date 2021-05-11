@@ -74,7 +74,7 @@ func NewTask(root, input, output string, sync bool) (Task, error) {
 		if err != nil {
 			return Task{}, err
 		}
-		t.dst = path.Join(output, path.Base(root), rel)
+		t.dst = path.Join(output, path.Base(root), filepath.ToSlash(rel))
 	}
 	return t, nil
 }
