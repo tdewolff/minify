@@ -630,6 +630,10 @@ func TestJS(t *testing.T) {
 		{`1.5.a`, `1.5.a`},
 		{`1e4.a`, `1e4.a`},
 		{`t0.a`, `t0.a`},
+		{`for(;a < !--script;);`, `for(;a<! --script;);`},
+		{`for(;a < /script>/;);`, `for(;a< /script>/;);`},
+		{`a<<!--script`, `a<<! --script`},
+		{`a<</script>/`, `a<< /script>/`},
 
 		// bugs
 		{`({"":a})`, `({"":a})`},                 // go-fuzz

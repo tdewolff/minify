@@ -82,6 +82,7 @@ var (
 	notOneBytes                = []byte("!1")
 	groupedNotOneBytes         = []byte("(!1)")
 	debuggerBytes              = []byte("debugger")
+	regExpScriptBytes          = []byte("/script>")
 )
 
 // precedence maps for the precedence inside the operation

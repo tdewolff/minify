@@ -107,6 +107,7 @@ func (m *jsMinifier) write(b []byte) {
 }
 
 func (m *jsMinifier) writeSpaceAfterIdent() {
+	// space after identifier and after regular expression (to prevent confusion with its tag)
 	if js.IsIdentifierEnd(m.prev) || 1 < len(m.prev) && m.prev[0] == '/' {
 		m.w.Write(spaceBytes)
 	}
@@ -870,6 +871,12 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			}
 		} else if expr.TokenType == js.StringToken {
 			m.write(minifyString(expr.Data))
+		} else if expr.TokenType == js.RegExpToken {
+			// </script>/ => < /script>/
+			if 0 < len(m.prev) && m.prev[len(m.prev)-1] == '<' && bytes.HasPrefix(expr.Data, regExpScriptBytes) {
+				m.write(spaceBytes)
+			}
+			m.write(expr.Data)
 		} else {
 			m.write(expr.Data)
 		}
@@ -903,6 +910,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			}
 		} else {
 			m.minifyExpr(expr.X, precLeft)
+			// 0 < len(m.prev) always
 			if expr.Op == js.GtToken && m.prev[len(m.prev)-1] == '-' {
 				m.write(spaceBytes)
 			} else if expr.Op == js.EqEqEqToken || expr.Op == js.NotEqEqToken {
@@ -942,7 +950,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			m.minifyExpr(expr.X, unaryPrecMap[expr.Op])
 			m.write(expr.Op.Bytes())
 		} else {
-			isLtNot := expr.Op == js.NotToken && len(m.prev) == 1 && m.prev[0] == '<'
+			isLtNot := expr.Op == js.NotToken && 0 < len(m.prev) && m.prev[len(m.prev)-1] == '<'
 			m.write(expr.Op.Bytes())
 			if expr.Op == js.DeleteToken || expr.Op == js.VoidToken || expr.Op == js.TypeofToken || expr.Op == js.AwaitToken {
 				m.writeSpaceBeforeIdent()
@@ -997,6 +1005,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		} else {
 			m.minifyExpr(expr.X, js.OpMember)
 		}
+		// 0 < len(m.prev) always
 		if last := m.prev[len(m.prev)-1]; '0' <= last && last <= '9' {
 			isInteger := true
 			for _, c := range m.prev[:len(m.prev)-1] {
