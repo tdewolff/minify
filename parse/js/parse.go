@@ -1398,6 +1398,10 @@ func (p *Parser) parseAsyncArrowFunc() (arrowFunc *ArrowFunc) {
 		arrowFunc.Params.List = []BindingElement{{Binding: ref}}
 	} else {
 		arrowFunc.Params = p.parseFuncParams("arrow function")
+
+		// could be CallExpression of: async(params)
+		if p.tt != ArrowToken {
+		}
 	}
 
 	arrowFunc.Async = true
@@ -1477,14 +1481,15 @@ func (p *Parser) parseAsyncExpression(prec OpPrec, async []byte) IExpr {
 		if p.tt == AwaitToken {
 			p.fail("arrow function")
 			return nil
+		} else if p.tt == OpenParenToken {
+			return p.parseParenthesizedExpressionOrArrowFunc(prec, async)
 		}
 		left = p.parseAsyncArrowFunc()
 		precLeft = OpAssign
 	} else {
 		left = p.scope.Use(async)
 	}
-	left = p.parseExpressionSuffix(left, prec, precLeft)
-	return left
+	return p.parseExpressionSuffix(left, prec, precLeft)
 }
 
 // parseExpression parses an expression that has a precedence of prec or higher.
@@ -1551,7 +1556,7 @@ func (p *Parser) parseExpression(prec OpPrec) IExpr {
 			}
 			break
 		}
-		suffix := p.parseParenthesizedExpressionOrArrowFunc(prec)
+		suffix := p.parseParenthesizedExpressionOrArrowFunc(prec, nil)
 		p.exprLevel--
 		return suffix
 	case NotToken, BitNotToken, TypeofToken, VoidToken, DeleteToken:
@@ -2052,26 +2057,32 @@ func (p *Parser) parseAssignmentExpression() IExpr {
 	return p.parseExpression(OpAssign)
 }
 
-func (p *Parser) parseParenthesizedExpressionOrArrowFunc(prec OpPrec) IExpr {
+func (p *Parser) parseParenthesizedExpressionOrArrowFunc(prec OpPrec, async []byte) IExpr {
 	var left IExpr
 	precLeft := OpPrimary
 
 	// expect to be at (
 	p.next()
 
+	isAsync := async != nil
 	arrowFunc := &ArrowFunc{}
 	parent := p.enterScope(&arrowFunc.Body.Scope, true)
 	parentAssumeArrowFunc, parentInFor := p.assumeArrowFunc, p.inFor
 	p.assumeArrowFunc, p.inFor = true, false
 
-	// parse a parenthesized expression but assume we might be parsing an arrow function. If this is really an arrow function, parsing as a parenthesized expression cannot fail as AssignmentExpression, ArrayLiteral, and ObjectLiteral are supersets of SingleNameBinding, ArrayBindingPattern, and ObjectBindingPattern respectively. Any identifier that would be a BindingIdentifier in case of an arrow function, will be added as such. If finally this is not an arrow function, we will demote those variables an undeclared and merge them with the parent scope.
+	// parse a parenthesized expression but assume we might be parsing an (async) arrow function. If this is really an arrow function, parsing as a parenthesized expression cannot fail as AssignmentExpression, ArrayLiteral, and ObjectLiteral are supersets of SingleNameBinding, ArrayBindingPattern, and ObjectBindingPattern respectively. Any identifier that would be a BindingIdentifier in case of an arrow function, will be added as such. If finally this is not an arrow function, we will demote those variables an undeclared and merge them with the parent scope.
 
 	var list []IExpr
 	var rest IExpr
 	for p.tt != CloseParenToken && p.tt != ErrorToken {
 		if p.tt == EllipsisToken && p.assumeArrowFunc {
 			p.next()
-			if p.isIdentifierReference(p.tt) {
+			if isAsync {
+				rest = p.parseAssignmentExpression()
+				if p.tt == CommaToken {
+					p.next()
+				}
+			} else if p.isIdentifierReference(p.tt) {
 				rest, _ = p.scope.Declare(ArgumentDecl, p.data) // cannot fail
 				p.next()
 			} else if p.tt == OpenBracketToken {
@@ -2103,13 +2114,14 @@ func (p *Parser) parseParenthesizedExpressionOrArrowFunc(prec OpPrec) IExpr {
 
 	if isArrowFunc {
 		parentAsync, parentGenerator := p.async, p.generator
-		p.async, p.generator = false, false
+		p.async, p.generator = isAsync, false
 
 		// arrow function
 		arrowFunc.Params = Params{List: make([]BindingElement, len(list))}
 		for i, item := range list {
 			arrowFunc.Params.List[i] = p.exprToBindingElement(item) // can not fail when assumArrowFunc is set
 		}
+		arrowFunc.Async = isAsync
 		arrowFunc.Params.Rest = p.exprToBinding(rest)
 		arrowFunc.Body.List = p.parseArrowFuncBody()
 
@@ -2118,7 +2130,7 @@ func (p *Parser) parseParenthesizedExpressionOrArrowFunc(prec OpPrec) IExpr {
 
 		left = arrowFunc
 		precLeft = OpAssign
-	} else if len(list) == 0 || rest != nil {
+	} else if len(list) == 0 || !isAsync && rest != nil || isAsync && OpCall < prec {
 		p.fail("arrow function", ArrowToken)
 		return nil
 	} else {
@@ -2128,12 +2140,26 @@ func (p *Parser) parseParenthesizedExpressionOrArrowFunc(prec OpPrec) IExpr {
 		// Here we move all declared ArgumentDecls (in case of an arrow function) to its parent scope as undeclared variables (identifiers used in a parenthesized expression).
 		arrowFunc.Body.Scope.UndeclareScope()
 
-		// parenthesized expression
-		left = list[0]
-		for _, item := range list[1:] {
-			left = &BinaryExpr{CommaToken, left, item}
+		if isAsync {
+			// call expression
+			args := Args{}
+			for _, item := range list {
+				args.List = append(args.List, Arg{Value: item, Rest: false})
+			}
+			if rest != nil {
+				args.List = append(args.List, Arg{Value: rest, Rest: true})
+			}
+			left = p.scope.Use(async)
+			left = &CallExpr{left, args}
+			precLeft = OpCall
+		} else {
+			// parenthesized expression
+			left = list[0]
+			for _, item := range list[1:] {
+				left = &BinaryExpr{CommaToken, left, item}
+			}
+			left = &GroupExpr{left}
 		}
-		left = &GroupExpr{left}
 	}
 	return p.parseExpressionSuffix(left, prec, precLeft)
 }
