@@ -10,7 +10,7 @@ import (
 
 var (
 	textMimeBytes     = []byte("text/plain")
-	charsetAsciiBytes = []byte("charset=us-ascii")
+	charsetASCIIBytes = []byte("charset=us-ascii")
 	dataBytes         = []byte("data:")
 	base64Bytes       = []byte(";base64")
 )
@@ -77,7 +77,7 @@ func DataURI(m *M, dataURI []byte) []byte {
 	}
 	for i := 0; i+len(";charset=us-ascii") <= len(mediatype); i++ {
 		// must start with semicolon and be followed by end of mediatype or semicolon
-		if mediatype[i] == ';' && parse.EqualFold(mediatype[i+1:i+len(";charset=us-ascii")], charsetAsciiBytes) && (i+len(";charset=us-ascii") >= len(mediatype) || mediatype[i+len(";charset=us-ascii")] == ';') {
+		if mediatype[i] == ';' && parse.EqualFold(mediatype[i+1:i+len(";charset=us-ascii")], charsetASCIIBytes) && (i+len(";charset=us-ascii") >= len(mediatype) || mediatype[i+len(";charset=us-ascii")] == ';') {
 			mediatype = append(mediatype[:i], mediatype[i+len(";charset=us-ascii"):]...)
 			break
 		}

@@ -83,10 +83,10 @@ func (t Token) String() string {
 }
 
 // Equal returns true if both tokens are equal.
-func (a Token) Equal(b Token) bool {
-	if a.TokenType == b.TokenType && bytes.Equal(a.Data, b.Data) && len(a.Args) == len(b.Args) {
-		for i := 0; i < len(a.Args); i++ {
-			if a.Args[i].TokenType != b.Args[i].TokenType || !bytes.Equal(a.Args[i].Data, b.Args[i].Data) {
+func (t1 Token) Equal(t2 Token) bool {
+	if t1.TokenType == t2.TokenType && bytes.Equal(t1.Data, t2.Data) && len(t1.Args) == len(t2.Args) {
+		for i := 0; i < len(t1.Args); i++ {
+			if t1.Args[i].TokenType != t2.Args[i].TokenType || !bytes.Equal(t1.Args[i].Data, t2.Args[i].Data) {
 				return false
 			}
 		}
@@ -885,7 +885,7 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			}
 
 			if end-start == 0 {
-				values = append(values[:start], append([]Token{{css.NumberToken, zeroBytes, nil, 0, 0}, Token{css.NumberToken, zeroBytes, nil, 0, 0}}, values[end:]...)...)
+				values = append(values[:start], append([]Token{{css.NumberToken, zeroBytes, nil, 0, 0}, {css.NumberToken, zeroBytes, nil, 0, 0}}, values[end:]...)...)
 				end += 2
 			}
 			start = end + 1
@@ -1532,5 +1532,5 @@ func (c *cssMinifier) minifyDimension(value Token) (Token, []byte) {
 	//	}
 	//	value.Data = append(num, dim...)
 	//}
-	return value, dim
+	//return value, dim
 }
