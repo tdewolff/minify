@@ -27,7 +27,7 @@ func TestEscapeAttrVal(t *testing.T) {
 			if len(b) > 1 && (b[0] == '"' || b[0] == '\'') && b[0] == b[len(b)-1] {
 				b = b[1 : len(b)-1]
 			}
-			val := EscapeAttrVal(&buf, []byte(b))
+			val := EscapeAttrVal(&buf, b)
 			test.String(t, string(val), tt.expected)
 		})
 	}
