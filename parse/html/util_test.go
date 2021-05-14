@@ -33,7 +33,7 @@ func TestEscapeAttrVal(t *testing.T) {
 			if len(b) > 1 && (b[0] == '"' || b[0] == '\'') && b[0] == b[len(b)-1] {
 				b = b[1 : len(b)-1]
 			}
-			val := EscapeAttrVal(&buf, orig, []byte(b), false)
+			val := EscapeAttrVal(&buf, orig, b, false)
 			test.String(t, string(val), tt.expected)
 		})
 	}
@@ -55,7 +55,7 @@ func TestEscapeAttrValXML(t *testing.T) {
 			if len(b) > 1 && (b[0] == '"' || b[0] == '\'') && b[0] == b[len(b)-1] {
 				b = b[1 : len(b)-1]
 			}
-			val := EscapeAttrVal(&buf, orig, []byte(b), true)
+			val := EscapeAttrVal(&buf, orig, b, true)
 			test.String(t, string(val), tt.expected)
 		})
 	}
