@@ -602,12 +602,12 @@ func minifyString(b []byte) []byte {
 				}
 			} else if '0' <= c && c <= '7' {
 				// octal escapes (legacy), \0 already handled
-				num := byte(c - '0')
+				num := c - '0'
 				if i+2 < len(b)-1 && '0' <= b[i+2] && b[i+2] <= '7' {
-					num = num*8 + byte(b[i+2]-'0')
+					num = num*8 + b[i+2] - '0'
 					n++
 					if num < 32 && i+3 < len(b)-1 && '0' <= b[i+3] && b[i+3] <= '7' {
-						num = num*8 + byte(b[i+3]-'0')
+						num = num*8 + b[i+3] - '0'
 						n++
 					}
 				}

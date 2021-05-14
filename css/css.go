@@ -83,10 +83,10 @@ func (t Token) String() string {
 }
 
 // Equal returns true if both tokens are equal.
-func (t1 Token) Equal(t2 Token) bool {
-	if t1.TokenType == t2.TokenType && bytes.Equal(t1.Data, t2.Data) && len(t1.Args) == len(t2.Args) {
-		for i := 0; i < len(t1.Args); i++ {
-			if t1.Args[i].TokenType != t2.Args[i].TokenType || !bytes.Equal(t1.Args[i].Data, t2.Args[i].Data) {
+func (t Token) Equal(t2 Token) bool {
+	if t.TokenType == t2.TokenType && bytes.Equal(t.Data, t2.Data) && len(t.Args) == len(t2.Args) {
+		for i := 0; i < len(t.Args); i++ {
+			if t.Args[i].TokenType != t2.Args[i].TokenType || !bytes.Equal(t.Args[i].Data, t2.Args[i].Data) {
 				return false
 			}
 		}
