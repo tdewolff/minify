@@ -35,7 +35,7 @@ var m *M
 func init() {
 	m = New()
 	m.AddFunc("dummy/copy", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
-		io.Copy(w, r)
+		_, _ = io.Copy(w, r)
 		return nil
 	})
 	m.AddFunc("dummy/nil", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
@@ -45,22 +45,22 @@ func init() {
 		return errDummy
 	})
 	m.AddFunc("dummy/charset", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
-		w.Write([]byte(params["charset"]))
+		_, _ = w.Write([]byte(params["charset"]))
 		return nil
 	})
 	m.AddFunc("dummy/params", func(m *M, w io.Writer, r io.Reader, params map[string]string) error {
 		return m.Minify(params["type"]+"/"+params["sub"], w, r)
 	})
 	m.AddFunc("type/sub", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
-		w.Write([]byte("type/sub"))
+		_, _ = w.Write([]byte("type/sub"))
 		return nil
 	})
 	m.AddFuncRegexp(regexp.MustCompile("^type/.+$"), func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
-		w.Write([]byte("type/*"))
+		_, _ = w.Write([]byte("type/*"))
 		return nil
 	})
 	m.AddFuncRegexp(regexp.MustCompile("^.+/.+$"), func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
-		w.Write([]byte("*/*"))
+		_, _ = w.Write([]byte("*/*"))
 		return nil
 	})
 }
@@ -305,7 +305,7 @@ func TestHelperProcess(*testing.T) {
 
 	switch args[0] {
 	case "dummy/copy":
-		io.Copy(os.Stdout, os.Stdin)
+		_, _ = io.Copy(os.Stdout, os.Stdin)
 	case "dummy/file":
 		// extract filenames
 		in := args[1][5:]
@@ -320,13 +320,13 @@ func TestHelperProcess(*testing.T) {
 
 		b, err := ioutil.ReadFile(in)
 		if err != nil {
-			w.WriteString(err.Error())
-			w.Close()
+			_, _ = w.WriteString(err.Error())
+			_ = w.Close()
 			os.Exit(1)
 			return
 		}
 		_, _ = w.Write(b)
-		w.Close()
+		_ = w.Close()
 	case "dummy/err":
 		fmt.Fprint(os.Stderr, "error")
 		os.Exit(1)
