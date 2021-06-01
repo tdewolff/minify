@@ -1,6 +1,6 @@
 # compile_go_fuzzer can be found in the oss-fuzz repository
 root=$(pwd)
-find minify/parse/tests/* -maxdepth 0 -type d | while read target
+find parse/tests/* -maxdepth 0 -type d | while read target
 do
     cd $root/$target
     fuzz_target=`echo $target | rev | cut -d'/' -f 1 | rev`

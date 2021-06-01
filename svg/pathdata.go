@@ -5,8 +5,8 @@ import (
 	strconvStdlib "strconv"
 
 	"github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/minify/v2/parse"
-	"github.com/tdewolff/minify/v2/parse/strconv"
+	"github.com/tdewolff/parse/v2"
+	"github.com/tdewolff/parse/v2/strconv"
 )
 
 // PathData represents a path data string.

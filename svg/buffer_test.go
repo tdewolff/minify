@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/tdewolff/minify/v2/parse"
-	"github.com/tdewolff/minify/v2/parse/xml"
+	"github.com/tdewolff/parse/v2"
+	"github.com/tdewolff/parse/v2/xml"
 	"github.com/tdewolff/test"
 )
 
