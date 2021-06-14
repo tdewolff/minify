@@ -76,7 +76,7 @@ Minifiers or bindings to minifiers exist in almost all programming languages. So
 This minifier proves to be that fast and extensive minifier that can handle HTML and any other filetype it may contain (CSS, JS, ...). It is usually orders of magnitude faster than existing minifiers.
 
 ## Installation
-Make sure you have [Git](https://git-scm.com/) and [Go](https://golang.org/dl/) (1.13 or higher) installed. With modules enabled (`GO111MODULES=auto` or `GO111MODULES=on`), run
+Make sure you have [Git](https://git-scm.com/) and [Go](https://golang.org/dl/) (1.13 or higher) installed, run
 ```
 mkdir Project
 cd Project
@@ -96,6 +96,8 @@ import (
 	"github.com/tdewolff/minify/v2/xml"
 )
 ```
+
+You can optionally run `go mod tidy` to clean up the `go.mod` and `go.sum` files.
 
 See [CLI tool](https://github.com/tdewolff/minify/tree/master/cmd/minify) for installation instructions of the binary.
 
