@@ -1,22 +1,28 @@
-#!/bin/bash
+#!/bin/sh
 
-_minify_complete()
-{
-    local cur_word prev_word flags mimes types
+if [ ! -z "$ZSH_NAME" ]; then 
+    # zsh sets $ZSH_NAME variable so it can be used to detect zsh
+    # following enables using bash-completion under zsh
+    autoload bashcompinit
+    bashcompinit
+fi
 
-    cur_word="${COMP_WORDS[COMP_CWORD]}"
-    prev_word="${COMP_WORDS[COMP_CWORD-1]}"
+_minify_complete() {
+    local cur prev flags mimes types
+
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
     flags="-a --all --bundle --cpuprofile -l --list --match --memprofile --mime -o --output -p --preserve-links -r --recursive --type --url -v --verbose --version -w --watch --css-precision --html-keep-comments --html-keep-conditional-comments --html-keep-default-attrvals --html-keep-document-tags --html-keep-end-tags --html-keep-quotes --html-keep-whitespace --js-precision --js-keep-var-names --json-precision --json-keep-numbers --svg-precision -s --sync --xml-keep-whitespace"
     mimes="text/css text/html text/javascript application/javascript application/json image/svg+xml text/xml application/xml"
     types="css html js json svg xml"
 
-    if [[ ${cur_word} == -* ]] ; then
-        COMPREPLY=( $(compgen -W "${flags}" -- ${cur_word}) )
-    elif [[ ${prev_word} =~ ^--mime$ ]] ; then
-        COMPREPLY=( $(compgen -W "${mimes}" -- ${cur_word}) )
-    elif [[ ${prev_word} =~ ^--type$ ]] ; then
-        COMPREPLY=( $(compgen -W "${types}" -- ${cur_word}) )
-    elif [[ ${prev_word} =~ ^--(match|url|css-precision|js-precision|json-precision|svg-precision|cpuprofile|memprofile)$ ]] ; then
+    if [[ ${cur} == -* ]] ; then
+        COMPREPLY=( $(compgen -W "${flags}" -- ${cur}) )
+    elif [[ ${prev} =~ ^--mime$ ]] ; then
+        COMPREPLY=( $(compgen -W "${mimes}" -- ${cur}) )
+    elif [[ ${prev} =~ ^--type$ ]] ; then
+        COMPREPLY=( $(compgen -W "${types}" -- ${cur}) )
+    elif [[ ${prev} =~ ^--(match|url|css-precision|js-precision|json-precision|svg-precision|cpuprofile|memprofile)$ ]] ; then
         compopt +o default
         COMPREPLY=()
     else
