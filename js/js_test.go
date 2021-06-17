@@ -721,7 +721,7 @@ func TestJSVarRenaming(t *testing.T) {
 		{`for(;;){let b=0;if(a===0){return 0}else{let b=3;return b}}`, `for(;;){let c=0;if(a===0)return 0;let b=3;return b}`},             // #405
 		{`try{let b=0;if(a===0){return 0}else{let b=3;return b}}catch{}`, `try{let c=0;if(a===0)return 0;let b=3;return b}catch{}`},       // #405
 		{`let a=0;switch(a){case 0:let b=1;case 1:let c=2}`, `let a=0;switch(a){case 0:let a=1;case 1:let b=2}`},
-		{`({a:b=1}={})=>b`, `({a:a=1}={})=>a`}, // #422
+		{`({a:b=1}={})=>b`, `({a=1}={})=>a`}, // #422
 	}
 
 	m := minify.New()
