@@ -70,6 +70,7 @@ func TestCSS(t *testing.T) {
 		{"{d:url( \n  \n\t0", "{d:url()}"},
 		{"{d:urL(     '0", `{d:url("'")}`},
 		{`{-ms-filter:"`, `{-ms-filter:"}`},
+		{"@import url(", "@import url("},
 	}
 
 	m := minify.New()
