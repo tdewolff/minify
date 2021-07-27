@@ -149,6 +149,9 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 	case *js.IfStmt:
 		hasIf := !m.isEmptyStmt(stmt.Body)
 		hasElse := !m.isEmptyStmt(stmt.Else)
+		if !hasIf && !hasElse {
+			break
+		}
 
 		m.write(ifOpenBytes)
 		m.minifyExpr(stmt.Cond, js.OpExpr)

@@ -656,6 +656,7 @@ func TestJS(t *testing.T) {
 		{`if(!a)debugger;`, `if(!a)debugger`},                                                           // #370
 		{`export function a(b){}`, `export function a(b){}`},                                            // #375
 		{`switch(a){case 0:b=c;d=e}`, `switch(a){case 0:b=c,d=e}`},                                      // #426
+		{`if(a){const b=0}`, ``},                                                                        // #428
 	}
 
 	m := minify.New()
