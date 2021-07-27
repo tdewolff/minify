@@ -270,8 +270,8 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.minifyExpr(stmt.Init, js.OpExpr)
 		m.write(closeParenOpenBracketBytes)
 		m.needsSemicolon = false
-		for _, clause := range stmt.List {
-			clause.List = m.optimizeStmtList(clause.List, defaultBlock)
+		for i, _ := range stmt.List {
+			stmt.List[i].List = m.optimizeStmtList(stmt.List[i].List, defaultBlock)
 		}
 		m.renamer.renameScope(stmt.Scope)
 		for _, clause := range stmt.List {
