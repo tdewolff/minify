@@ -197,10 +197,14 @@ func (c *cssMinifier) minifyGrammar() {
 						a++
 					}
 					b := len(url) - 2
-					for parse.IsWhitespace(url[b]) || parse.IsNewline(url[b]) {
+					for a < b && (parse.IsWhitespace(url[b]) || parse.IsNewline(url[b])) {
 						b--
 					}
-					url = url[a-1 : b+2]
+					if a == b {
+						url = url[:2]
+					} else {
+						url = url[a-1 : b+2]
+					}
 					url[0] = '"'
 					url[len(url)-1] = '"'
 				} else {
