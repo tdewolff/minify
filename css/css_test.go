@@ -262,6 +262,7 @@ func TestCSSInline(t *testing.T) {
 		{"flex:5 0 0%", "flex:5 0"},
 		{"flex:5 0 0px", "flex:5 0"},
 		{"flex:0 1 auto", "flex:initial"},
+		{"flex:0 5 auto", "flex:0 5 auto"},
 		{"flex:1 1 auto", "flex:auto"},
 		{"flex:0 0 auto", "flex:none"},
 		{"flex:3 1 auto", "flex:3 1 auto"},
