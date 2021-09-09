@@ -16,8 +16,10 @@ import (
 	"runtime/pprof"
 	"sort"
 	"strings"
+	"syscall"
 	"time"
 
+	"github.com/djherbis/atime"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/matryer/try"
 	flag "github.com/spf13/pflag"
@@ -44,19 +46,23 @@ var filetypeMime = map[string]string{
 }
 
 var (
-	help             bool
-	hidden           bool
-	list             bool
-	m                *min.M
-	pattern          *regexp.Regexp
-	recursive        bool
-	verbose          bool
-	version          bool
-	watch            bool
-	sync             bool
-	bundle           bool
-	preserveSymlinks bool
-	mimetype         string
+	help               bool
+	hidden             bool
+	list               bool
+	m                  *min.M
+	pattern            *regexp.Regexp
+	recursive          bool
+	verbose            bool
+	version            bool
+	watch              bool
+	sync               bool
+	bundle             bool
+	preserve           []string
+	preserveMode       bool
+	preserveOwnership  bool
+	preserveTimestamps bool
+	preserveLinks      bool
+	mimetype           string
 )
 
 // Task is a minify task.
@@ -124,9 +130,11 @@ func run() int {
 	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose")
 	flag.BoolVarP(&watch, "watch", "w", false, "Watch files and minify upon changes")
 	flag.BoolVarP(&sync, "sync", "s", false, "Copy all files to destination directory and minify when filetype matches")
-	flag.BoolVarP(&preserveSymlinks, "preserve-links", "p", false, "Copy symbolic links without dereferencing and without minifying the referenced file (only with --sync)")
+	flag.StringSliceVarP(&preserve, "preserve", "p", nil, "Preserve options (mode, ownership, timestamps, links)")
+	flag.Lookup("preserve").NoOptDefVal = "mode,ownership,timestamps"
+	flag.BoolVar(&preserveLinks, "preserve-links", false, "Copy symbolic links without dereferencing and without minifying the referenced file (only with --sync)")
 	flag.BoolVarP(&bundle, "bundle", "b", false, "Bundle files by concatenation into a single file")
-	flag.BoolVarP(&version, "version", "", false, "Version")
+	flag.BoolVar(&version, "version", false, "Version")
 
 	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
 	flag.StringVar(&cpuprofile, "cpuprofile", "", "Export CPU profile")
@@ -264,6 +272,27 @@ func run() int {
 			Info.Println("use mimetype", mimetype)
 		}
 	}
+	if len(preserve) != 0 {
+		if bundle {
+			Error.Println("--preserve cannot be used together with --bundle")
+			return 1
+		} else if useStdin || output == "" {
+			Error.Println("--preserve cannot be used together with stdin or stdout")
+			return 1
+		}
+	}
+	for _, option := range preserve {
+		switch option {
+		case "mode":
+			preserveMode = true
+		case "ownership":
+			preserveOwnership = true
+		case "timestamps":
+			preserveTimestamps = true
+		case "links":
+			preserveLinks = true
+		}
+	}
 
 	////////////////
 
@@ -284,6 +313,9 @@ func run() int {
 			Error.Println("--bundle requires destination to be stdout or a file")
 			return 1
 		}
+	} else if 1 < len(inputs) {
+		Error.Println("must specify --bundle for multiple input files with stdout destination")
+		return 1
 	}
 	if verbose {
 		if output == "" {
@@ -518,7 +550,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 	for _, input := range inputs {
 		var info os.FileInfo
 		var err error
-		if !preserveSymlinks {
+		if !preserveLinks {
 			info, err = os.Stat(input)
 		} else {
 			info, err = os.Lstat(input)
@@ -567,7 +599,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 				}
 				path = sanitizePath(path)
 
-				if !preserveSymlinks && d.Type()&os.ModeSymlink != 0 {
+				if !preserveLinks && d.Type()&os.ModeSymlink != 0 {
 					// follow and dereference symlinks
 					info, err := os.Stat(path)
 					if err != nil {
@@ -579,7 +611,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 					d = &statDirEntry{info}
 				}
 
-				if preserveSymlinks && d.Type()&os.ModeSymlink != 0 {
+				if preserveLinks && d.Type()&os.ModeSymlink != 0 {
 					// copy symlinks as is
 					if !sync {
 						Warning.Println("--sync not specified, omitting symbolic link", path)
@@ -669,7 +701,7 @@ func minify(t Task) bool {
 	if t.sync {
 		if t.srcs[0] == t.dst {
 			return true
-		} else if info, err := os.Lstat(t.srcs[0]); preserveSymlinks && err == nil && info.Mode()&os.ModeSymlink != 0 {
+		} else if info, err := os.Lstat(t.srcs[0]); preserveLinks && err == nil && info.Mode()&os.ModeSymlink != 0 {
 			src, err := os.Readlink(t.srcs[0])
 			if err != nil {
 				Error.Println(err)
@@ -713,7 +745,7 @@ func minify(t Task) bool {
 	}
 	dstName := t.dst
 	if dstName == "" {
-		dstName = "stdin"
+		dstName = "stdout"
 	} else {
 		// rename original when overwriting
 		for i := range t.srcs {
@@ -747,15 +779,6 @@ func minify(t Task) bool {
 		return false
 	}
 
-	if t.srcs[0] != "" {
-		srcInfo, err := os.Stat(t.srcs[0])
-		if err != nil {
-			Error.Println(err)
-			return false
-		}
-		os.Chmod(t.dst, srcInfo.Mode().Perm())
-	}
-
 	// synchronize file
 	if t.sync {
 		_, err = io.Copy(fw, fr)
@@ -765,6 +788,7 @@ func minify(t Task) bool {
 			Error.Println(err)
 			return false
 		}
+		preserveAttributes(t.srcs[0], t.dst)
 		Info.Println("copy", srcName, "to", dstName)
 		return true
 	}
@@ -832,5 +856,40 @@ func minify(t Task) bool {
 			break
 		}
 	}
+	preserveAttributes(t.srcs[0], t.dst)
 	return success
+}
+
+func preserveAttributes(src, dst string) {
+	if src != "" && dst != "" {
+		srcInfo, err := os.Stat(src)
+		if err != nil {
+			Warning.Println(err)
+			return
+		}
+
+		if preserveMode {
+			err = os.Chmod(dst, srcInfo.Mode().Perm())
+			if err != nil {
+				Warning.Println(err)
+			}
+		}
+		if preserveOwnership {
+			if stat_t, ok := srcInfo.Sys().(*syscall.Stat_t); ok {
+				err = os.Chown(dst, int(stat_t.Uid), int(stat_t.Gid))
+				if err != nil {
+					Warning.Println(err)
+				}
+			} else {
+				Warning.Println(fmt.Errorf("preserve ownership not supported on platform"))
+			}
+		}
+		if preserveTimestamps {
+			fmt.Println(atime.Get(srcInfo), srcInfo.ModTime())
+			err = os.Chtimes(dst, atime.Get(srcInfo), srcInfo.ModTime())
+			if err != nil {
+				Warning.Println(err)
+			}
+		}
+	}
 }
