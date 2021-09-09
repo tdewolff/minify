@@ -173,6 +173,10 @@ func run() int {
 		Info = log.New(ioutil.Discard, "", 0)
 	}
 
+	if preserveLinks {
+		Warning.Println(fmt.Errorf("--preserveLinks is deprecated, use --preserve=links instead"))
+	}
+
 	if help {
 		flag.Usage()
 		return 0
