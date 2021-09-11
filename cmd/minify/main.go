@@ -808,7 +808,7 @@ func minify(t Task) bool {
 	success := true
 	startTime := time.Now()
 	if err = m.Minify(fileMimetype, w, r); err != nil {
-		if t.dst == "" {
+		if t.dst == "" && 0 < w.N {
 			fmt.Fprintf(os.Stdout, "\n\n")
 		}
 		Error.Println("cannot minify "+srcName+":", err)
