@@ -4,6 +4,7 @@ TARGETS=linux_amd64 darwin_amd64 freebsd_amd64 netbsd_amd64 openbsd_amd64 window
 VERSION=`git describe --tags`
 FLAGS=-ldflags "-s -w -X 'main.Version=${VERSION}'" -trimpath
 ENVS=GO111MODULES=on CGO_ENABLED=0
+SHELL=/usr/bin/env bash
 
 all: install
 
