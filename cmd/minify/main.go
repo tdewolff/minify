@@ -16,7 +16,6 @@ import (
 	"runtime/pprof"
 	"sort"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/djherbis/atime"
@@ -879,8 +878,8 @@ func preserveAttributes(src, dst string) {
 			}
 		}
 		if preserveOwnership {
-			if stat_t, ok := srcInfo.Sys().(*syscall.Stat_t); ok {
-				err = os.Chown(dst, int(stat_t.Uid), int(stat_t.Gid))
+			if uid, gid, ok := getOwnership(srcInfo); ok {
+				err = os.Chown(dst, uid, gid)
 				if err != nil {
 					Warning.Println(err)
 				}
