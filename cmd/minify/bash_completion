@@ -1,6 +1,7 @@
-#!/bin/sh
+# If not running interactively, don't do anything
+[[ $- != *i* ]] && return 0
 
-if [ ! -z "$ZSH_NAME" ]; then 
+if [[ -n "${ZSH_NAME:-}" ]]; then
     # zsh sets $ZSH_NAME variable so it can be used to detect zsh
     # following enables using bash-completion under zsh
     autoload bashcompinit
@@ -17,11 +18,11 @@ _minify_complete() {
     types="css html js json svg xml"
 
     if [[ ${cur} == -* ]] ; then
-        COMPREPLY=( $(compgen -W "${flags}" -- ${cur}) )
+        COMPREPLY=( $(compgen -W "${flags}" -- "${cur}") )
     elif [[ ${prev} =~ ^--mime$ ]] ; then
-        COMPREPLY=( $(compgen -W "${mimes}" -- ${cur}) )
+        COMPREPLY=( $(compgen -W "${mimes}" -- "${cur}") )
     elif [[ ${prev} =~ ^--type$ ]] ; then
-        COMPREPLY=( $(compgen -W "${types}" -- ${cur}) )
+        COMPREPLY=( $(compgen -W "${types}" -- "${cur}") )
     elif [[ ${prev} =~ ^--(match|url|css-precision|js-precision|json-precision|svg-precision|cpuprofile|memprofile)$ ]] ; then
         compopt +o default
         COMPREPLY=()
@@ -33,3 +34,4 @@ _minify_complete() {
 }
 
 complete -F _minify_complete minify
+
