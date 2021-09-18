@@ -888,7 +888,6 @@ func preserveAttributes(src, dst string) {
 			}
 		}
 		if preserveTimestamps {
-			fmt.Println(atime.Get(srcInfo), srcInfo.ModTime())
 			err = os.Chtimes(dst, atime.Get(srcInfo), srcInfo.ModTime())
 			if err != nil {
 				Warning.Println(err)
