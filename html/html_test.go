@@ -151,17 +151,18 @@ func TestHTML(t *testing.T) {
 		{`<script><!--<`, `<script><!--<`},
 
 		// bugs
-		{`a <span></span> b`, `a <span></span> b`},                                                               // #427
-		{`<i class="fas"></i> Text`, `<i class=fas></i> Text`},                                                   // #390
-		{`<i class="fas"> </i> Text`, `<i class=fas></i>Text`},                                                   // #390
-		{`<span translate="no">`, `<span translate=no>`},                                                         // #352
-		{`<input title=""><input lang="">`, `<input title><input lang>`},                                         // #331
-		{`<amp-analytics type=adobeanalytics_nativeConfig>`, `<amp-analytics type=adobeanalytics_nativeConfig>`}, // #270
-		{`<p>text</p><br>text`, `<p>text</p><br>text`},                                                           // #122
-		{`text <img> text`, `text <img> text`},                                                                   // #89
-		{`text <progress></progress> text`, `text <progress></progress> text`},                                   // #89
-		{`<pre> <x> a  b </x> </pre>`, `<pre> <x> a  b </x> </pre>`},                                             // #82
 		{`<svg id="1"></svg>`, `<svg id="1"></svg>`},                                                             // #67
+		{`<pre> <x> a  b </x> </pre>`, `<pre> <x> a  b </x> </pre>`},                                             // #82
+		{`text <progress></progress> text`, `text <progress></progress> text`},                                   // #89
+		{`text <img> text`, `text <img> text`},                                                                   // #89
+		{`<p>text</p><br>text`, `<p>text</p><br>text`},                                                           // #122
+		{`<amp-analytics type=adobeanalytics_nativeConfig>`, `<amp-analytics type=adobeanalytics_nativeConfig>`}, // #270
+		{`<input title=""><input lang="">`, `<input title><input lang>`},                                         // #331
+		{`<span translate="no">`, `<span translate=no>`},                                                         // #352
+		{`<i class="fas"> </i> Text`, `<i class=fas></i>Text`},                                                   // #390
+		{`<i class="fas"></i> Text`, `<i class=fas></i> Text`},                                                   // #390
+		{`a <span></span> b`, `a <span></span> b`},                                                               // #427
+		{`<canvas><p>test</p></canvas>`, `<canvas><p>test</p></canvas>`},                                         // #440
 	}
 
 	m := minify.New()
