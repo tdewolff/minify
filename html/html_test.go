@@ -279,6 +279,7 @@ func TestHTMLKeepWhitespace(t *testing.T) {
 		{"abc\n</body>\ndef", "abc\ndef"},
 		{"<x>\n<!--y-->\n</x>", "<x>\n</x>"},
 		{"<style>lala{color:red}</style>", "<style>lala{color:red}</style>"},
+		{"<li>one\n</li>\n<li>two", "<li>one\n<li>two"}, // #442
 	}
 
 	m := minify.New()
