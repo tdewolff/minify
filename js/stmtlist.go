@@ -127,7 +127,13 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 		list[i] = m.optimizeStmt(list[i])
 
 		if _, ok := list[i].(*js.EmptyStmt); ok {
-			list = append(list[:i], list[i+1:]...)
+			k := i + 1
+			for ; k < len(list); k++ {
+				if _, ok := list[k].(*js.EmptyStmt); !ok {
+					break
+				}
+			}
+			list = append(list[:i], list[k:]...)
 			i--
 			continue
 		}
