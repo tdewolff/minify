@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -79,7 +78,7 @@ func NewTask(root, input, output string, sync bool) (Task, error) {
 		if err != nil {
 			return Task{}, err
 		}
-		t.dst = path.Join(output, path.Base(root), filepath.ToSlash(rel))
+		t.dst = filepath.Join(output, rel)
 	}
 	return t, nil
 }
@@ -300,21 +299,30 @@ func run() int {
 	////////////////
 
 	for i, input := range inputs {
-		inputs[i] = sanitizePath(input)
+		inputs[i] = filepath.Clean(input)
 	}
 
 	// set output, empty means stdout, ending in slash means a directory, otherwise a file
 	dirDst := false
 	if output != "" {
-		dirSrc := 1 < len(inputs) || len(inputs) == 1 && inputs[0][len(inputs[0])-1] == '/'
-		if !bundle && dirSrc && output[len(output)-1] != '/' {
-			output += "/"
+		dirDst := output[len(output)-1] == '/'
+		if !dirDst {
+			if 1 < len(inputs) && !bundle {
+				dirDst = true
+			} else if info, err := os.Lstat(inputs[0]); err == nil && !bundle && info.Mode().IsDir() && info.Mode()&os.ModeSymlink == 0 {
+				dirDst = true
+			} else if info, err := os.Lstat(output); err == nil && info.Mode().IsDir() && info.Mode()&os.ModeSymlink == 0 {
+				dirDst = true
+			}
 		}
-		output = sanitizePath(output)
-		dirDst = output[len(output)-1] == '/'
 		if dirDst && bundle {
 			Error.Println("--bundle requires destination to be stdout or a file")
 			return 1
+		}
+
+		output = filepath.Clean(output)
+		if dirDst {
+			output += "/"
 		}
 	} else if 1 < len(inputs) {
 		Error.Println("must specify --bundle for multiple input files with stdout destination")
@@ -440,7 +448,7 @@ func run() int {
 					changes = nil
 					break
 				}
-				file = sanitizePath(file)
+				file = filepath.Clean(file)
 
 				// find longest common path among roots
 				root := ""
@@ -499,25 +507,6 @@ func minifyWorker(chanTasks <-chan Task, chanFails chan<- int) {
 	chanFails <- fails
 }
 
-func sanitizePath(p string) string {
-	p = filepath.ToSlash(p) // replace \ with / for Windows
-	isCur := path.Base(p) == "."
-	isDir := p[len(p)-1] == '/' || isCur
-	p = path.Clean(p)
-	if p == "." {
-		return "./"
-	}
-	if isDir {
-		p += "/"
-	} else if info, err := os.Lstat(p); err == nil && info.Mode().IsDir() && info.Mode()&os.ModeSymlink == 0 {
-		p += "/"
-	}
-	if isCur {
-		p += "./"
-	}
-	return p
-}
-
 func fileMatches(filename string) bool {
 	if pattern != nil && !pattern.MatchString(filename) {
 		return false
@@ -525,7 +514,7 @@ func fileMatches(filename string) bool {
 		return true
 	}
 
-	ext := path.Ext(filename)
+	ext := filepath.Ext(filename)
 	if 0 < len(ext) {
 		ext = ext[1:]
 	}
@@ -535,22 +524,12 @@ func fileMatches(filename string) bool {
 	return true
 }
 
-//type DirEntry struct {
-//	fs.FileInfo
-//}
-//
-//func (d DirEntry) Type() fs.FileMode {
-//	return d.Mode().Type()
-//}
-//
-//func (d DirEntry) Info() (fs.FileInfo, error) {
-//	return d.FileInfo, nil
-//}
-
 func createTasks(inputs []string, output string) ([]Task, []string, error) {
 	tasks := []Task{}
 	roots := []string{}
 	for _, input := range inputs {
+		root := filepath.Dir(input)
+
 		var info os.FileInfo
 		var err error
 		if !preserveLinks {
@@ -567,7 +546,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 				Warning.Println("--sync not specified, omitting symbolic link", input)
 				continue
 			}
-			task, err := NewTask(path.Dir(input), input, output, true)
+			task, err := NewTask(root, input, output, true)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -575,7 +554,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 		} else if info.Mode().IsRegular() {
 			valid := pattern == nil || pattern.MatchString(info.Name())
 			if valid || sync {
-				task, err := NewTask(path.Dir(input), input, output, !valid)
+				task, err := NewTask(root, input, output, !valid)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -600,7 +579,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 					}
 					return nil
 				}
-				path = sanitizePath(path)
+				path = filepath.Clean(path)
 
 				if !preserveLinks && d.Type()&os.ModeSymlink != 0 {
 					// follow and dereference symlinks
@@ -620,7 +599,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 						Warning.Println("--sync not specified, omitting symbolic link", path)
 						return nil
 					}
-					task, err := NewTask(input, path, output, true)
+					task, err := NewTask(root, path, output, true)
 					if err != nil {
 						return err
 					}
@@ -628,7 +607,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 				} else if d.Type().IsRegular() {
 					valid := fileMatches(d.Name())
 					if valid || sync {
-						task, err := NewTask(input, path, output, !valid)
+						task, err := NewTask(root, path, output, !valid)
 						if err != nil {
 							return err
 						}
@@ -637,7 +616,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 				}
 				return nil
 			}
-			if err := WalkDir(DirFS("."), path.Clean(input), walkFn); err != nil {
+			if err := WalkDir(DirFS("."), input, walkFn); err != nil {
 				return nil, nil, err
 			}
 		} else {
@@ -669,7 +648,7 @@ func openOutputFile(output string) (*os.File, error) {
 	if output == "" {
 		w = os.Stdout
 	} else {
-		if err := os.MkdirAll(path.Dir(output), 0777); err != nil {
+		if err := os.MkdirAll(filepath.Dir(output), 0777); err != nil {
 			return nil, err
 		}
 		err := try.Do(func(attempt int) (bool, error) {
@@ -690,7 +669,7 @@ func createSymlink(input, output string) error {
 			return err
 		}
 	}
-	if err := os.MkdirAll(path.Dir(output), 0777); err != nil {
+	if err := os.MkdirAll(filepath.Dir(output), 0777); err != nil {
 		return err
 	}
 	if err := os.Symlink(input, output); err != nil {
@@ -721,7 +700,7 @@ func minify(t Task) bool {
 	fileMimetype := mimetype
 	if mimetype == "" && !t.sync {
 		for _, src := range t.srcs {
-			ext := path.Ext(src)
+			ext := filepath.Ext(src)
 			if 0 < len(ext) {
 				ext = ext[1:]
 			}
