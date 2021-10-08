@@ -7,8 +7,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/minify/v2/css"
+	"github.com/ezoic/minify/v2"
+	"github.com/ezoic/minify/v2/css"
 	"github.com/tdewolff/test"
 )
 

@@ -19,15 +19,15 @@ import (
 	"time"
 
 	humanize "github.com/dustin/go-humanize"
+	min "github.com/ezoic/minify/v2"
+	"github.com/ezoic/minify/v2/css"
+	"github.com/ezoic/minify/v2/html"
+	"github.com/ezoic/minify/v2/js"
+	"github.com/ezoic/minify/v2/json"
+	"github.com/ezoic/minify/v2/svg"
+	"github.com/ezoic/minify/v2/xml"
 	"github.com/matryer/try"
 	flag "github.com/spf13/pflag"
-	min "github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/minify/v2/css"
-	"github.com/tdewolff/minify/v2/html"
-	"github.com/tdewolff/minify/v2/js"
-	"github.com/tdewolff/minify/v2/json"
-	"github.com/tdewolff/minify/v2/svg"
-	"github.com/tdewolff/minify/v2/xml"
 )
 
 var Version = "built from source"

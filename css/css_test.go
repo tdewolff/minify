@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/tdewolff/minify/v2"
+	"github.com/ezoic/minify/v2"
 	"github.com/tdewolff/parse/v2/css"
 	"github.com/tdewolff/test"
 )
@@ -376,8 +376,6 @@ func TestCSSInline(t *testing.T) {
 		{`d:hsl(0033333333333333333333333333333333333333333333333333333333333333333333333333333200,040000199823736,2444)`, `d:hsl(33333333333333333333333333333333333333333333333333333333333333333333333333333200,40000199823736,2444)`},
 		{`d:hsl(-360000000000000000000000000000,50%,50%)`, `d:#bf4040`},
 		{`d:hsl(360000000000000000000000000000,50%,50%)`, `d:#bf4040`},
-		{`background:none,,,,,,,,,,,,,,,#00ff00`, `background:0 0,,,,,,,,,,,,,,,#0f0`},
-		{`background:rgba(100%)`, `background:rgba(100%)`},
 	}
 
 	m := minify.New()

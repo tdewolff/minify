@@ -8,7 +8,7 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/tdewolff/minify/v2"
+	"github.com/ezoic/minify/v2"
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/css"
 	strconvParse "github.com/tdewolff/parse/v2/strconv"
@@ -996,12 +996,12 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			if values[0].Ident == Top || values[0].Ident == Bottom {
 				if len(values) == 1 {
 					// we can't make this smaller, and converting to a number will break it
-					// (https://github.com/tdewolff/minify/issues/221#issuecomment-415419918)
+					// (https://github.com/ezoic/minify/issues/221#issuecomment-415419918)
 					break
 				}
 				// if it's a vertical position keyword, swap it with the next element
 				// since otherwise converted number positions won't be valid anymore
-				// (https://github.com/tdewolff/minify/issues/221#issue-353067229)
+				// (https://github.com/ezoic/minify/issues/221#issue-353067229)
 				values[0], values[1] = values[1], values[0]
 			}
 			// transform keywords to lengths|percentages
