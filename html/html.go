@@ -12,31 +12,32 @@ import (
 )
 
 var (
-	gtBytes         = []byte(">")
-	isBytes         = []byte("=")
-	spaceBytes      = []byte(" ")
-	doctypeBytes    = []byte("<!doctype html>")
-	jsMimeBytes     = []byte("application/javascript")
-	cssMimeBytes    = []byte("text/css")
-	htmlMimeBytes   = []byte("text/html")
-	svgMimeBytes    = []byte("image/svg+xml")
-	formMimeBytes   = []byte("application/x-www-form-urlencoded")
-	mathMimeBytes   = []byte("application/mathml+xml")
-	dataSchemeBytes = []byte("data:")
-	jsSchemeBytes   = []byte("javascript:")
-	httpBytes       = []byte("http")
-	radioBytes      = []byte("radio")
-	onBytes         = []byte("on")
-	textBytes       = []byte("text")
-	noneBytes       = []byte("none")
-	submitBytes     = []byte("submit")
-	allBytes        = []byte("all")
-	rectBytes       = []byte("rect")
-	dataBytes       = []byte("data")
-	getBytes        = []byte("get")
-	autoBytes       = []byte("auto")
-	oneBytes        = []byte("one")
-	inlineParams    = map[string]string{"inline": "1"}
+	gtBytes          = []byte(">")
+	selfClosingBytes = []byte("/>")
+	isBytes          = []byte("=")
+	spaceBytes       = []byte(" ")
+	doctypeBytes     = []byte("<!doctype html>")
+	jsMimeBytes      = []byte("application/javascript")
+	cssMimeBytes     = []byte("text/css")
+	htmlMimeBytes    = []byte("text/html")
+	svgMimeBytes     = []byte("image/svg+xml")
+	formMimeBytes    = []byte("application/x-www-form-urlencoded")
+	mathMimeBytes    = []byte("application/mathml+xml")
+	dataSchemeBytes  = []byte("data:")
+	jsSchemeBytes    = []byte("javascript:")
+	httpBytes        = []byte("http")
+	radioBytes       = []byte("radio")
+	onBytes          = []byte("on")
+	textBytes        = []byte("text")
+	noneBytes        = []byte("none")
+	submitBytes      = []byte("submit")
+	allBytes         = []byte("all")
+	rectBytes        = []byte("rect")
+	dataBytes        = []byte("data")
+	getBytes         = []byte("get")
+	autoBytes        = []byte("auto")
+	oneBytes         = []byte("one")
+	inlineParams     = map[string]string{"inline": "1"}
 )
 
 ////////////////////////////////////////////////////////////////
@@ -53,6 +54,7 @@ type Minifier struct {
 	KeepEndTags             bool
 	KeepQuotes              bool
 	KeepWhitespace          bool
+	KeepSelfClosingTags     bool
 }
 
 // Minify minifies HTML data, it reads from r and writes to w.
@@ -305,6 +307,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 			w.Write(t.Data)
 
+			endToken := *tb.Peek(0)
 			if hasAttributes {
 				if t.Hash == Meta {
 					attrs := tb.Attributes(Content, Http_Equiv, Charset, Name)
@@ -372,6 +375,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				// write attributes
 				for {
 					attr := *tb.Shift()
+					endToken = attr
 					if attr.TokenType != html.AttributeToken {
 						break
 					} else if attr.Text == nil {
@@ -491,7 +495,12 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			} else {
 				_ = tb.Shift() // StartTagClose
 			}
-			w.Write(gtBytes)
+
+			if o.KeepSelfClosingTags && bytes.Compare(endToken.Data, selfClosingBytes) == 0 {
+				w.Write(selfClosingBytes)
+			} else {
+				w.Write(gtBytes)
+			}
 
 			// skip text in select and optgroup tags
 			if t.Hash == Select || t.Hash == Optgroup {

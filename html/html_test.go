@@ -525,3 +525,29 @@ func ExampleMinify_writer() {
 	w.Close()
 	// Output: <h1>Example</h1>
 }
+
+func TestHTMLKeepSelfClosingTags(t *testing.T) {
+	htmlTests := []struct {
+		html     string
+		expected string
+	}{
+		{`<br />`, `<br/>`},
+		{`<br/>`, `<br/>`},
+		{`<img src="example"/>`, `<img src=example/>`},
+		{`<h1><img src="example" alt="example" /></h1>`, `<h1><img src=example alt=example/></h1>`},
+		{`<h1><br /><br /></h1>`, `<h1><br/><br/></h1>`},
+		{`<foo><bar><br /><br /></bar></foo>`, `<foo><bar><br/><br/></bar></foo>`},
+		{`<foo><bar><br /><img src=example /></bar></foo>`, `<foo><bar><br/><img src=example/></bar></foo>`},
+	}
+
+	m := minify.New()
+	htmlMinifier := &Minifier{KeepSelfClosingTags: true}
+	for _, tt := range htmlTests {
+		t.Run(tt.html, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.html)
+			w := &bytes.Buffer{}
+			err := htmlMinifier.Minify(m, w, r, nil)
+			test.Minify(t, tt.html, err, w.String(), tt.expected)
+		})
+	}
+}
