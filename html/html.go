@@ -307,7 +307,20 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 			w.Write(t.Data)
 
-			endToken := *tb.Peek(0)
+			isSelfClosing := false
+			i := 0
+			for {
+				next := tb.Peek(i)
+				if next.TokenType == html.StartTagCloseToken {
+					break
+				} else if next.TokenType == html.StartTagVoidToken {
+					isSelfClosing = true
+				} else if next.TokenType == html.ErrorToken {
+					break
+				}
+				i += 1
+			}
+
 			if hasAttributes {
 				if t.Hash == Meta {
 					attrs := tb.Attributes(Content, Http_Equiv, Charset, Name)
@@ -375,7 +388,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				// write attributes
 				for {
 					attr := *tb.Shift()
-					endToken = attr
 					if attr.TokenType != html.AttributeToken {
 						break
 					} else if attr.Text == nil {
@@ -496,7 +508,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				_ = tb.Shift() // StartTagClose
 			}
 
-			if o.KeepSelfClosingTags && bytes.Compare(endToken.Data, selfClosingBytes) == 0 {
+			if o.KeepSelfClosingTags && isSelfClosing {
 				w.Write(selfClosingBytes)
 			} else {
 				w.Write(gtBytes)
