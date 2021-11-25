@@ -6,8 +6,8 @@ import (
 	"bytes"
 	"io/ioutil"
 
-	"github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/minify/v2/svg"
+	"github.com/lpha/minify/v2"
+	"github.com/lpha/minify/v2/svg"
 )
 
 // Fuzz is a fuzz test.

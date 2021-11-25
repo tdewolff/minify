@@ -4,7 +4,7 @@ package xml
 import (
 	"io"
 
-	"github.com/tdewolff/minify/v2"
+	"github.com/lpha/minify/v2"
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/xml"
 )

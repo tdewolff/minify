@@ -5,12 +5,12 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/minify/v2/css"
+	"github.com/lpha/minify/v2"
+	"github.com/lpha/minify/v2/css"
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/buffer"
 	"github.com/tdewolff/parse/v2/xml"
-	minifyXML "github.com/tdewolff/minify/v2/xml"
+	minifyXML "github.com/lpha/minify/v2/xml"
 )
 
 var (

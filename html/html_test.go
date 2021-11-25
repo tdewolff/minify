@@ -11,12 +11,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/minify/v2/css"
-	"github.com/tdewolff/minify/v2/js"
-	"github.com/tdewolff/minify/v2/json"
-	"github.com/tdewolff/minify/v2/svg"
-	"github.com/tdewolff/minify/v2/xml"
+	"github.com/lpha/minify/v2"
+	"github.com/lpha/minify/v2/css"
+	"github.com/lpha/minify/v2/js"
+	"github.com/lpha/minify/v2/json"
+	"github.com/lpha/minify/v2/svg"
+	"github.com/lpha/minify/v2/xml"
 	"github.com/tdewolff/test"
 )
 

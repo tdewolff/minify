@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 
-	"github.com/tdewolff/minify/v2"
+	"github.com/lpha/minify/v2"
 	"github.com/tdewolff/parse/v2/js"
 	"github.com/tdewolff/parse/v2/strconv"
 )

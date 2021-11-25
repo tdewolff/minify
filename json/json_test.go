@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/tdewolff/minify/v2"
+	"github.com/lpha/minify/v2"
 	"github.com/tdewolff/test"
 )
 

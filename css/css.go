@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/tdewolff/minify/v2"
+	"github.com/lpha/minify/v2"
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/css"
 	strconvParse "github.com/tdewolff/parse/v2/strconv"
