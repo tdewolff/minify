@@ -23,6 +23,7 @@ var DefaultMinifier = &Minifier{}
 // Minifier is an XML minifier.
 type Minifier struct {
 	KeepWhitespace bool
+        KeepCDATA      bool
 }
 
 // Minify minifies XML data, it reads from r and writes to w.
@@ -44,6 +45,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	for {
 		t := *tb.Shift()
 		if t.TokenType == xml.CDATAToken {
+			if o.KeepCDATA {
+				continue
+                        }
 			if len(t.Text) == 0 {
 				continue
 			}

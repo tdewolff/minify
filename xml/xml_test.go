@@ -87,6 +87,34 @@ func TestXMLKeepWhitespace(t *testing.T) {
 	}
 }
 
+func TestXMLKeepCDATA(t *testing.T) {
+	xmlTests := []struct {
+		xml      string
+		expected string
+	}{
+		{`cats  and 	dogs `, `cats and dogs`},
+		{` <div> <i> test </i> <b> test </b> </div> `, `<div> <i> test </i> <b> test </b> </div>`},
+		{"text\n<!--comment-->\ntext", "text\ntext"},
+		{"text\n<!--comment-->text<!--comment--> text", "text\ntext text"},
+		{"<x>\n<!--y-->\n</x>", "<x>\n</x>"},
+		{`<style>lala{color:red}</style>`, `<style>lala{color:red}</style>`},
+		{`<x> <?xml?> </x>`, `<x><?xml?> </x>`},
+		{`<x> <![CDATA[ x ]]> </x>`, `<x><![CDATA[ x ]]</x>`},
+		{`<x> <![CDATA[ <<<<< ]]> </x>`, `<x><![CDATA[ <<<<< ]]></x>`},
+	}
+
+	m := minify.New()
+	xmlMinifier := &Minifier{KeepWhitespace: true}
+	for _, tt := range xmlTests {
+		t.Run(tt.xml, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.xml)
+			w := &bytes.Buffer{}
+			err := xmlMinifier.Minify(m, w, r, nil)
+			test.Minify(t, tt.xml, err, w.String(), tt.expected)
+		})
+	}
+}
+
 func TestReaderErrors(t *testing.T) {
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}
