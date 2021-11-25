@@ -1,4 +1,4 @@
-module github.com/tdewolff/minify/v2
+module github.com/lpha/minify/v2
 
 go 1.13
 
