@@ -530,7 +530,6 @@ func (m *jsMinifier) minifyFuncDecl(decl *js.FuncDecl, inExpr bool) {
 	parentRename := m.renamer.rename
 	m.renamer.rename = !decl.Body.Scope.HasWith && !m.o.KeepVarNames
 	m.hoistVars(&decl.Body)
-
 	decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
 
 	if decl.Async {
@@ -552,9 +551,9 @@ func (m *jsMinifier) minifyFuncDecl(decl *js.FuncDecl, inExpr bool) {
 	if !inExpr {
 		m.renamer.renameScope(decl.Body.Scope)
 	}
+
 	m.minifyParams(decl.Params)
 	m.minifyBlockStmt(&decl.Body)
-
 	m.renamer.rename = parentRename
 }
 
@@ -562,7 +561,6 @@ func (m *jsMinifier) minifyMethodDecl(decl *js.MethodDecl) {
 	parentRename := m.renamer.rename
 	m.renamer.rename = !decl.Body.Scope.HasWith && !m.o.KeepVarNames
 	m.hoistVars(&decl.Body)
-
 	decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
 
 	if decl.Static {
@@ -589,7 +587,6 @@ func (m *jsMinifier) minifyMethodDecl(decl *js.MethodDecl) {
 	m.renamer.renameScope(decl.Body.Scope)
 	m.minifyParams(decl.Params)
 	m.minifyBlockStmt(&decl.Body)
-
 	m.renamer.rename = parentRename
 }
 
@@ -597,7 +594,6 @@ func (m *jsMinifier) minifyArrowFunc(decl *js.ArrowFunc) {
 	parentRename := m.renamer.rename
 	m.renamer.rename = !decl.Body.Scope.HasWith && !m.o.KeepVarNames
 	m.hoistVars(&decl.Body)
-
 	decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
 
 	m.renamer.renameScope(decl.Body.Scope)
@@ -664,7 +660,6 @@ func (m *jsMinifier) minifyArrowFunc(decl *js.ArrowFunc) {
 	if !removeBraces {
 		m.minifyBlockStmt(&decl.Body)
 	}
-
 	m.renamer.rename = parentRename
 }
 

@@ -220,7 +220,11 @@ func mergeVarDeclExprStmt(decl *js.VarDecl, exprStmt *js.ExprStmt) bool {
 	return false
 }
 
-func countHoistLength(ibinding js.IBinding) int {
+func (m *jsMinifier) countHoistLength(ibinding js.IBinding) int {
+	if !m.o.KeepVarNames {
+		return len(bindingVars(ibinding)) * 2 // assume that var name will be of length one, +1 for the comma
+	}
+
 	n := 0
 	for _, v := range bindingVars(ibinding) {
 		n += len(v.Data) + 1 // +1 for the comma
@@ -258,7 +262,7 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) {
 							}
 							nArrays++
 						}
-						score[i] -= countHoistLength(item.Binding) // var names and commas
+						score[i] -= m.countHoistLength(item.Binding) // var names and commas
 						hasDefinitions = true
 						n++
 					}
@@ -293,13 +297,10 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) {
 		hoist[best] = false
 
 		// get original declarations
-		vs := []*js.Var{}
-		vsOffset := []int{}
+		orig := []*js.Var{}
 		for _, item := range decl.List {
-			vsOffset = append(vsOffset, len(vs))
-			vs = append(vs, bindingVars(item.Binding)...)
+			orig = append(orig, bindingVars(item.Binding)...)
 		}
-		vsOffset = append(vsOffset, len(vs))
 
 		// hoist other variable declarations in this function scope but don't initialize yet
 		j := 0
@@ -308,62 +309,55 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) {
 				varDecl.TokenType = js.ErrorToken
 				for _, item := range varDecl.List {
 					refs := bindingVars(item.Binding)
+					bindingElements := make([]js.BindingElement, 0, len(refs))
 				DeclaredLoop:
 					for _, ref := range refs {
-						for _, v := range vs {
+						for _, v := range orig {
 							if ref == v {
 								continue DeclaredLoop
 							}
 						}
-						if i < best {
-							// prepend
-							decl.List = append(decl.List[:j], append([]js.BindingElement{{Binding: ref, Default: nil}}, decl.List[j:]...)...)
-						} else {
-							// append
-							decl.List = append(decl.List, js.BindingElement{Binding: ref, Default: nil})
-						}
+						bindingElements = append(bindingElements, js.BindingElement{Binding: ref, Default: nil})
+						orig = append(orig, ref)
 					}
 					if i < best {
-						vs = append(vs[:vsOffset[j]], append(refs, vs[vsOffset[j]:]...)...)
-						vsOffset = append(vsOffset[:j+1], append([]int{vsOffset[j]}, vsOffset[j+1:]...)...)
-						n := len(refs)
-						for k := j + 1; k < len(vsOffset); k++ {
-							vsOffset[k] += n
-						}
-						j++
+						// prepend
+						decl.List = append(decl.List[:j], append(bindingElements, decl.List[j:]...)...)
+						j += len(bindingElements)
 					} else {
-						vs = append(vs, refs...)
-						vsOffset = append(vsOffset, len(vs))
+						// append
+						decl.List = append(decl.List, bindingElements...)
 					}
 				}
 			}
 		}
 
 		// rearrange to put array/object first
-		beginArrayObject := false
+		var prevRefs []*js.Var
+	BeginArrayObject:
 		for i, item := range decl.List {
-			if !beginArrayObject {
-				if _, ok := item.Binding.(*js.Var); !ok {
-					if i != 0 {
-						interferes := false
-					InterferenceLoop:
-						for _, ref := range vs[vsOffset[i]:vsOffset[i+1]] {
-							for _, v := range vs[:vsOffset[i]] {
-								if ref == v {
-									interferes = true
-									break InterferenceLoop
-								}
+			refs := bindingVars(item.Binding)
+			if _, ok := item.Binding.(*js.Var); !ok {
+				if i != 0 {
+					interferes := false
+				InterferenceLoop:
+					for _, ref := range refs {
+						for _, v := range prevRefs {
+							if ref == v {
+								interferes = true
+								break InterferenceLoop
 							}
 						}
-						if !interferes {
-							decl.List[0], decl.List[i] = decl.List[i], decl.List[0]
-							beginArrayObject = true
-						}
-					} else {
-						beginArrayObject = true
 					}
+					if !interferes {
+						decl.List[0], decl.List[i] = decl.List[i], decl.List[0]
+						break BeginArrayObject
+					}
+				} else {
+					break BeginArrayObject
 				}
 			}
+			prevRefs = append(prevRefs, refs...)
 		}
 	}
 }
