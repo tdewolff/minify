@@ -57,13 +57,13 @@ func TestJS(t *testing.T) {
 		{`let a = 5,b;a,b`, `let a=5,b;a,b`},
 		{`let a,b = 5;a,b`, `let a,b=5;a,b`},
 		{`function a(){}`, `function a(){}`},
-		{`function a(b){}`, `function a(b){}`},
+		{`function a(b){b}`, `function a(b){b}`},
 		{`function a(b, c, ...d){}`, `function a(b,c,...d){}`},
 		{`function * a(){}`, `function*a(){}`},
 		{`function a(){}; return 5`, `function a(){}return 5`},
 		{`x = function (){}`, `x=function(){}`},
 		{`x = function a(){}`, `x=function(){}`},
-		{`x = function (a){}`, `x=function(a){}`},
+		{`x = function (a){a}`, `x=function(a){a}`},
 		{`x = function (a, b, ...c){}`, `x=function(a,b,...c){}`},
 		{`x = function (){};y=z`, `x=function(){},y=z`},
 		{`return 5`, `return 5`},
@@ -102,8 +102,8 @@ func TestJS(t *testing.T) {
 		{`class a {}`, `class a{}`},
 		{`class a extends b {}`, `class a extends b{}`},
 		{`class a extends(!b){}`, `class a extends(!b){}`},
-		{`class a { f(a) {} }`, `class a{f(a){}}`},
-		{`class a { f(a) {}; static g(b) {} }`, `class a{f(a){}static g(b){}}`},
+		{`class a { f(a) {a} }`, `class a{f(a){a}}`},
+		{`class a { f(a) {a}; static g(b) {b} }`, `class a{f(a){a}static g(b){b}}`},
 		{`for (var a = 5; a < 10; a++){a}`, `for(var a=5;a<10;a++)a`},
 		{`for (a,b = 5; a < 10; a++){a}`, `for(a,b=5;a<10;a++)a`},
 		{`async function f(){for await (var a of b){a}}`, `async function f(){for await(var a of b)a}`},
@@ -195,7 +195,7 @@ func TestJS(t *testing.T) {
 		{`if(a){ if(b) c; else {for(x;y;z){f=g}}} else e`, `if(a)if(b)c;else for(x;y;z)f=g;else e`},
 		{`if(a)a={b};else e`, `a?a={b}:e`},
 		{`if(a) a; else [e]=4`, `a?a:[e]=4`},
-		{`if(a){ a = b?c:function(d){f} } else e`, `a?a=b?c:function(d){f}:e`},
+		{`if(a){ a = b?c:function(d){d} } else e`, `a?a=b?c:function(d){d}:e`},
 		{`if(a)while(b){if(c)d; else e}else f`, `if(a)for(;b;)c?d:e;else f`},
 		{`if(a)b=c`, `a&&(b=c)`},
 		{`if(!a)b=c`, `a||(b=c)`},
@@ -390,13 +390,13 @@ func TestJS(t *testing.T) {
 
 		// arrow functions
 		{`() => {}`, `()=>{}`},
-		{`(a) => {}`, `a=>{}`},
+		{`(a) => {a}`, `a=>{a}`},
 		{`(...a) => {}`, `(...a)=>{}`},
-		{`(a=0) => {}`, `(a=0)=>{}`},
-		{`(a,b) => {}`, `(a,b)=>{}`},
+		{`(a=0) => {a}`, `(a=0)=>{a}`},
+		{`(a,b) => {a,b}`, `(a,b)=>{a,b}`},
 		{`a => {a++}`, `a=>{a++}`},
-		{`x=(a) => {}`, `x=a=>{}`},
-		{`x=(a) => {return}`, `x=a=>{}`},
+		{`x=(a) => {a}`, `x=a=>{a}`},
+		{`x=() => {return}`, `x=()=>{}`},
 		{`x=(a) => {return a}`, `x=a=>a`},
 		{`x=(a) => {a++;return a}`, `x=a=>(a++,a)`},
 		{`x=(a) => {while(b);return}`, `x=a=>{for(;b;);}`},
@@ -485,7 +485,7 @@ func TestJS(t *testing.T) {
 		{`(2e-8).toFixed(0)`, `2e-8.toFixed(0)`},
 		{`(-2).toFixed(0)`, `(-2).toFixed(0)`},
 		{`(a)=>((b)=>c)`, `a=>b=>c`},
-		{`function f(a=(3+2)){}`, `function f(a=3+2){}`},
+		{`function f(a=(3+2)){a}`, `function f(a=3+2){a}`},
 		{`function*a(){yield a.b}`, `function*a(){yield a.b}`},
 		{`function*a(){(yield a).b}`, `function*a(){(yield a).b}`},
 		{`function*a(){yield a["-"]}`, `function*a(){yield a["-"]}`},
@@ -611,7 +611,7 @@ func TestJS(t *testing.T) {
 		{`a=b.#c`, `a=b.#c`},
 		{`a=b().#c`, `a=b().#c`},
 		{`a=b?.#c`, `a=b?.#c`},
-		{`a={b(c){d}}`, `a={b(c){d}}`},
+		{`a={b(c){c}}`, `a={b(c){c}}`},
 		{`a(b,...c)`, `a(b,...c)`},
 		{`let a="string";a`, `let a="string";a`},
 		{`f((a,b)||d)`, `f((a,b)||d)`},
@@ -648,6 +648,21 @@ func TestJS(t *testing.T) {
 		{`a=5;with(b=4){}`, `with(a=5,b=4);`},
 		{`(function(){})();(function(){})()`, `(function(){})(),function(){}()`},
 
+		// regexps
+		{`/\\\/\[/`, `/\\\/\[/`},
+		{`/[\\\]]/`, `/[\\\]]/`},
+		{`/[\[]/`, `/[[]/`},
+		{`/\.\cA\x10\u0010\p{x}\P{x}\0\f\v\n\r\t\S\s\W\w\D\d\b\B\k/`, `/\.\cA\x10\u0010\p{x}\P{x}\0\f\v\n\r\t\S\s\W\w\D\d\b\B\k/`},
+		{`/\^\|\(\)\1\*\+\?\{\$/`, `/\^\|\(\)\1\*\+\?\{\$/`},
+		{`/[^\-]/`, `/[^-]/`},
+		{`/[^\-\-]/`, `/[^--]/`},
+		{`/[\^\-\-]/`, `/[\^\--]/`},
+		{`/[^\-\-\-]/`, `/[^-\--]/`},
+		{`/[^a-b\-]/`, `/[^a-b-]/`},
+		{`/[^a-b\-\-]/`, `/[^a-b--]/`},
+		{`/[^a-b\-\-\-]/`, `/[^a-b-\--]/`},
+		{`/[^a\-\--\-\-\-]/`, `/[^a\-\-----]/`},
+
 		// edge-cases
 		{`let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`, `let o=null;try{o=o?.a.b||"FAIL"}catch(x){}console.log(o||"PASS")`},
 		{`1..a`, `1..a`},
@@ -678,7 +693,7 @@ func TestJS(t *testing.T) {
 		{`if(e?0:n=1,o=2){o.a}`, `(e?0:n=1,o=2)&&o.a`},                                                  // #347
 		{`const a=(a,b)=>({...a,b})`, `const a=(a,b)=>({...a,b})`},                                      // #369
 		{`if(!a)debugger;`, `if(!a)debugger`},                                                           // #370
-		{`export function a(b){}`, `export function a(b){}`},                                            // #375
+		{`export function a(b){b}`, `export function a(b){b}`},                                          // #375
 		{`switch(a){case 0:b=c;d=e}`, `switch(a){case 0:b=c,d=e}`},                                      // #426
 		{`if(a){const b=0}`, ``},                                                                        // #428
 		{`()=>({a(){b=!b}})`, `()=>({a(){b=!b}})`},                                                      // #429
@@ -731,7 +746,7 @@ func TestJSVarRenaming(t *testing.T) {
 		{`function a(){var name,z;z;try{}catch(arg){var name}}`, `function a(){var a,b;b;try{}catch(b){}}`},
 		{`function a(b){function c(d){b[d]}}`, `function a(a){function b(b){a[b]}}`},
 		{`function r(o){function l(t){if(!z[t]){if(!o[t]);}}}`, `function r(a){function b(b){z[b]||!a[b]}}`},
-		{`!function(a){for(var b=0;;);};var c;var d;`, `!function(a){for(var b=0;;);};var c,d`},
+		{`!function(a){a;for(var b=0;;);};var c;var d;`, `!function(a){a;for(var b=0;;);};var c,d`},
 		{`!function(){var b;b;{(T=x),T}{var T}}`, `!function(){var b,a;b,a=x,a}`},
 		{`var T;T;!function(){var b;b;{(T=x),T}{var T}}`, `var T;T,!function(){var b,a;b,a=x,a}`},
 		{`!function(){let a=b,b=c,c=d,d=e,e=f,f=g,g=h,h=a,j;for(let i=0;;)j=4}`, `!function(){let a=b,b=c,c=d,d=e,e=f,f=g,g=h,h=a,i;for(let a=0;;)i=4}`},

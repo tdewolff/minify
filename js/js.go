@@ -468,8 +468,18 @@ func (m *jsMinifier) minifyAlias(alias js.Alias) {
 }
 
 func (m *jsMinifier) minifyParams(params js.Params) {
+	// remove unused parameters from the end
+	j := len(params.List)
+	if params.Rest == nil {
+		for ; 0 < j; j-- {
+			if v, ok := params.List[j-1].Binding.(*js.Var); !ok || ok && 1 < v.Uses {
+				break
+			}
+		}
+	}
+
 	m.write(openParenBytes)
-	for i, item := range params.List {
+	for i, item := range params.List[:j] {
 		if i != 0 {
 			m.write(commaBytes)
 		}
@@ -871,7 +881,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			if 0 < len(m.prev) && m.prev[len(m.prev)-1] == '<' && bytes.HasPrefix(expr.Data, regExpScriptBytes) {
 				m.write(spaceBytes)
 			}
-			m.write(expr.Data)
+			m.write(minifyRegExp(expr.Data))
 		} else {
 			m.write(expr.Data)
 		}
