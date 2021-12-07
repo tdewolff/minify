@@ -35,7 +35,7 @@ func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) err
 // Minify minifies JS data, it reads from r and writes to w.
 func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
 	z := parse.NewInput(r)
-	ast, err := js.Parse(z)
+	ast, err := js.Parse(z, js.Options{WhileToFor: true})
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,6 @@ type jsMinifier struct {
 	groupedStmt    bool       // avoid ambiguous syntax by grouping the expression statement
 	inFor          bool
 	spaceBefore    byte
-	varsHoisted    *js.VarDecl // set when variables are hoisted to this declaration
 
 	renamer *renamer
 }
@@ -219,7 +218,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.write(forOpenBytes)
 		m.inFor = true
 		if decl, ok := stmt.Init.(*js.VarDecl); ok {
-			m.minifyVarDecl(decl, false)
+			m.minifyVarDecl(decl, true)
 		} else {
 			m.minifyExpr(stmt.Init, js.OpLHS)
 		}
@@ -411,7 +410,6 @@ func (m *jsMinifier) minifyBlockStmt(stmt *js.BlockStmt) {
 		m.writeSemicolon()
 		m.minifyStmt(item)
 	}
-
 	m.write(closeBraceBytes)
 	m.needsSemicolon = false
 }
@@ -502,7 +500,9 @@ func (m *jsMinifier) minifyArguments(args js.Args) {
 }
 
 func (m *jsMinifier) minifyVarDecl(decl *js.VarDecl, onlyDefines bool) {
-	if decl.TokenType == js.VarToken && m.varsHoisted != nil && decl != m.varsHoisted {
+	if len(decl.List) == 0 {
+		return
+	} else if decl.TokenType == js.ErrorToken {
 		// remove 'var' when hoisting variables
 		first := true
 		for _, item := range decl.List {
@@ -529,7 +529,7 @@ func (m *jsMinifier) minifyVarDecl(decl *js.VarDecl, onlyDefines bool) {
 func (m *jsMinifier) minifyFuncDecl(decl *js.FuncDecl, inExpr bool) {
 	parentRename := m.renamer.rename
 	m.renamer.rename = !decl.Body.Scope.HasWith && !m.o.KeepVarNames
-	parentVarsHoisted := m.hoistVars(&decl.Body)
+	m.hoistVars(&decl.Body)
 
 	decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
 
@@ -555,14 +555,13 @@ func (m *jsMinifier) minifyFuncDecl(decl *js.FuncDecl, inExpr bool) {
 	m.minifyParams(decl.Params)
 	m.minifyBlockStmt(&decl.Body)
 
-	m.varsHoisted = parentVarsHoisted
 	m.renamer.rename = parentRename
 }
 
 func (m *jsMinifier) minifyMethodDecl(decl *js.MethodDecl) {
 	parentRename := m.renamer.rename
 	m.renamer.rename = !decl.Body.Scope.HasWith && !m.o.KeepVarNames
-	parentVarsHoisted := m.hoistVars(&decl.Body)
+	m.hoistVars(&decl.Body)
 
 	decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
 
@@ -591,14 +590,13 @@ func (m *jsMinifier) minifyMethodDecl(decl *js.MethodDecl) {
 	m.minifyParams(decl.Params)
 	m.minifyBlockStmt(&decl.Body)
 
-	m.varsHoisted = parentVarsHoisted
 	m.renamer.rename = parentRename
 }
 
 func (m *jsMinifier) minifyArrowFunc(decl *js.ArrowFunc) {
 	parentRename := m.renamer.rename
 	m.renamer.rename = !decl.Body.Scope.HasWith && !m.o.KeepVarNames
-	parentVarsHoisted := m.hoistVars(&decl.Body)
+	m.hoistVars(&decl.Body)
 
 	decl.Body.List = m.optimizeStmtList(decl.Body.List, functionBlock)
 
@@ -667,7 +665,6 @@ func (m *jsMinifier) minifyArrowFunc(decl *js.ArrowFunc) {
 		m.minifyBlockStmt(&decl.Body)
 	}
 
-	m.varsHoisted = parentVarsHoisted
 	m.renamer.rename = parentRename
 }
 

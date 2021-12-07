@@ -76,7 +76,7 @@ func TestJS(t *testing.T) {
 		{`new RegExp()`, `new RegExp`},
 		{`switch (a) { case b: 5; default: 6}`, `switch(a){case b:5;default:6}`},
 		{`switch (a) { case b: {var c;return c}; default: 6}`, `switch(a){case b:{var c;return c}default:6}`},
-		{`switch (a) { case b: 5 }while(b);`, `switch(a){case b:5}while(b);`},
+		{`switch (a) { case b: 5 }while(b);`, `switch(a){case b:5}for(;b;);`},
 		{`switch (a) { case "text": 5}`, `switch(a){case"text":5}`},
 		{`let a=5;switch(b){case 0:let a=5}`, `let a=5;switch(b){case 0:let a=5}`},
 		{`with (a = b) x`, `with(a=b)x`},
@@ -114,9 +114,9 @@ func TestJS(t *testing.T) {
 		{`for (;;){let a;a}`, `for(;;){let a;a}`},
 		{`var a;for(var b;;){let a;a++}a,b`, `for(var a,b;;){let a;a++}a,b`},
 		{`var a;for(var b;;){let c = 10;c++}a,b`, `for(var a,b;;){let c=10;c++}a,b`},
-		{`while(a < 10){a}`, `while(a<10)a`},
-		{`while(a < 10){a;b}`, `while(a<10)a,b`},
-		{`while(a < 10){while(b);c}`, `while(a<10){while(b);c}`},
+		{`while(a < 10){a}`, `for(;a<10;)a`},
+		{`while(a < 10){a;b}`, `for(;a<10;)a,b`},
+		{`while(a < 10){while(b);c}`, `for(;a<10;){for(;b;);c}`},
 		{`do {a} while(a < 10)`, `do a;while(a<10)`},
 		{`do [a]=5; while(a < 10)`, `do[a]=5;while(a<10)`},
 		{`do [a]=5; while(a < 10);return a`, `do[a]=5;while(a<10)return a`},
@@ -186,8 +186,8 @@ func TestJS(t *testing.T) {
 		{`if(a)b;else b`, `a,b`},
 		{`if(a){b=c}else if(d){e=f}`, `a?b=c:d&&(e=f)`},
 		{`if(a){b=c;y=z}else if(d){e=f}`, `a?(b=c,y=z):d&&(e=f)`},
-		{`if(a)while(b){c;d}else e`, `if(a)while(b)c,d;else e`},
-		{`if(a)while(b){c}else e`, `if(a)while(b)c;else e`},
+		{`if(a)while(b){c;d}else e`, `if(a)for(;b;)c,d;else e`},
+		{`if(a)while(b){c}else e`, `if(a)for(;b;)c;else e`},
 		{`if(a){ if(b) c }`, `a&&b&&c`},
 		{`if(a){ if(b) c } else e`, `a?b&&c:e`},
 		{`if(a){ if(b) c; else d} else e`, `a?b?c:d:e`},
@@ -196,7 +196,7 @@ func TestJS(t *testing.T) {
 		{`if(a)a={b};else e`, `a?a={b}:e`},
 		{`if(a) a; else [e]=4`, `a?a:[e]=4`},
 		{`if(a){ a = b?c:function(d){f} } else e`, `a?a=b?c:function(d){f}:e`},
-		{`if(a)while(b){if(c)d; else e}else f`, `if(a)while(b)c?d:e;else f`},
+		{`if(a)while(b){if(c)d; else e}else f`, `if(a)for(;b;)c?d:e;else f`},
 		{`if(a)b=c`, `a&&(b=c)`},
 		{`if(!a)b=c`, `a||(b=c)`},
 		{`if(a||d)b=c`, `(a||d)&&(b=c)`},
@@ -237,18 +237,18 @@ func TestJS(t *testing.T) {
 		{`if(a){throw a}b=c;throw b`, `throw a||(b=c,b)`},
 		{`if(a);else{throw a}b=c;throw b`, `throw a&&(b=c,b)`},
 		{`if(a)a++;else b;if(b)b++;else c`, `a?a++:b,b?b++:c`},
-		{`if(a){while(b);}`, `if(a)while(b);`},
-		{`if(a){while(b);c}`, `if(a){while(b);c}`},
-		{`if(a){if(b){while(c);}}`, `if(a)if(b)while(c);`},
-		{`if(a){}else{while(b);}`, `if(a);else while(b);`},
-		{`if(a){return b}else{while(c);}`, `if(a)return b;while(c);`},
-		{`if(a){return b}else{while(c);d}`, `if(a)return b;while(c);d`},
-		{`if(!a){while(b);c}`, `if(!a){while(b);c}`},
-		{`while(a){if(b)continue;if(c)continue;else d}`, `while(a){if(b)continue;if(c)continue;d}`},
-		{`while(a)if(b)continue;else c`, `while(a){if(b)continue;c}`},
-		{`while(a)if(b)return c;else return d`, `while(a)return b?c:d`},
-		{`while(a){if(b)continue;else c}`, `while(a){if(b)continue;c}`},
-		{`if(a){while(b)if(c)5}else{6}`, `if(a){while(b)c&&5}else 6`},
+		{`if(a){while(b);}`, `if(a)for(;b;);`},
+		{`if(a){while(b);c}`, `if(a){for(;b;);c}`},
+		{`if(a){if(b){while(c);}}`, `if(a)if(b)for(;c;);`},
+		{`if(a){}else{while(b);}`, `if(a);else for(;b;);`},
+		{`if(a){return b}else{while(c);}`, `if(a)return b;for(;c;);`},
+		{`if(a){return b}else{while(c);d}`, `if(a)return b;for(;c;);d`},
+		{`if(!a){while(b);c}`, `if(!a){for(;b;);c}`},
+		{`while(a){if(b)continue;if(c)continue;else d}`, `for(;a;){if(b)continue;if(c)continue;d}`},
+		{`while(a)if(b)continue;else c`, `for(;a;){if(b)continue;c}`},
+		{`while(a)if(b)return c;else return d`, `for(;a;)return b?c:d`},
+		{`while(a){if(b)continue;else c}`, `for(;a;){if(b)continue;c}`},
+		{`if(a){while(b)if(c)5}else{6}`, `if(a){for(;b;)c&&5}else 6`},
 		{`if(a){for(;;)if(b)break}else c`, `if(a){for(;;)if(b)break}else c`},
 		{`if(a){for(d in e)if(b)break}else c`, `if(a){for(d in e)if(b)break}else c`},
 		{`if(a){for(d of e)if(b)break}else c`, `if(a){for(d of e)if(b)break}else c`},
@@ -265,14 +265,14 @@ func TestJS(t *testing.T) {
 		{`const a=1;const b=2;a,b`, `const a=1,b=2;a,b`},
 		{`let a=1;let b=2;a,b`, `let a=1,b=2;a,b`},
 		{`var a;if(a)var b;else b`, `var a,b;a||b`},
-		{`var a;if(a)var b=5;b`, `var a,b;a&&(b=5),b`},
-		{`var a;for(var b=0;b;b++);a`, `for(var b=0,a;b;b++);a`},
+		{`var a;if(a)var b=5;b`, `if(a)var a,b=5;b`}, // TODO: or should we try to take var decls out of statements that will be converted to expressions?
+		{`var a;for(var b=0;b;b++);a`, `for(var a,b=0;b;b++);a`},
 		{`var a=1;for(var b=0;b;b++);a`, `for(var a=1,b=0;b;b++);a`},
 		{`var a=1;for(var a;a;a++);`, `for(var a=1;a;a++);`},
 		{`var a;for(var a=1;a;a++);`, `for(var a=1;a;a++);`},
 		{`var [,,a,,]=b`, `var[,,a]=b`},
 		{`var [,,a,,...c]=b`, `var[,,a,,...c]=b`},
-		{`var {...a}=c;for(var {...b}=d;b;b++);`, `for(var{...a}=c,{...b}=d;b;b++);`}, // we don't merge complidated declarations
+		//{`var {...a}=c;for(var {...b}=d;b;b++);`, `for(var{...a}=c,{...b}=d;b;b++);`}, // TODO
 		{`const a=3;for(const b=0;b;b++);a`, `const a=3;for(const b=0;b;b++);a`},
 		{`var a;for(let b=0;b;b++);a`, `var a;for(let b=0;b;b++);a`},
 		{`var [a,]=[b,]`, `var[a]=[b]`},
@@ -284,8 +284,8 @@ func TestJS(t *testing.T) {
 		{`var {[a+b]: c}=d`, `var{[a+b]:c}=d`},
 		{`for(var [a] in b);`, `for(var[a]in b);`},
 		{`for(var {a} of b);`, `for(var{a}of b);`},
-		{`for(var a in b);var c`, `var a,c;for(a in b);`},
-		{`for(var a in b);var c=6,d=7`, `var a,c,d;for(a in b);c=6,d=7`},
+		{`for(var a in b);var c`, `for(a in b);var a,c`},
+		{`for(var a in b);var c=6,d=7`, `for(a in b);var a,c=6,d=7`},
 		{`for(var a=5,c=6;;);`, `for(var a=5,c=6;;);`},
 		{`while(a);var b;var c`, `for(var b,c;a;);`},
 		{`while(a){d()}var b;var c`, `for(var b,c;a;)d()`},
@@ -296,7 +296,7 @@ func TestJS(t *testing.T) {
 		{`var a=5;var b=6;a,b`, `var a=5,b=6;a,b`},
 		{`var a;var b=6;a=7;b`, `var b=6,a=7;b`}, // swap declaration order to maintain definition order
 		{`var a=5;var b=6;a=7,b`, `var a=5,b=6;a=7,b`},
-		{`var a;var b=6;a,b,z=7`, `var b=6,a;a,b,z=7`},
+		{`var a;var b=6;a,b,z=7`, `var a,b=6;a,b,z=7`},
 		{`for(var a=6,b=7;;);var c=8;a,b,c`, `for(var a=6,b=7,c;;);c=8,a,b,c`},
 		{`for(var c;b;){let a=8;a};var a;a`, `for(var c,a;b;){let a=8;a}a`},
 		{`for(;b;){let a=8;a};var a;var b;a`, `for(var a,b;b;){let a=8;a}a`},
@@ -304,17 +304,38 @@ func TestJS(t *testing.T) {
 		//{`var a=1;a;var b=1`, `var a=1;a`}, // TODO
 		{`var z;var [a,b=5,,...c]=[d,e,...f];z`, `var[a,b=5,,...c]=[d,e,...f],z;z`},
 		{`var z;var {a,b=5,[5+8]:c,...d}={d,e,...f};z`, `var{a,b=5,[5+8]:c,...d}={d,e,...f},z;z`},
-		{`var z;z;var [a,b=5,,...c]=[d,e,...f];a`, `var z,a,b,c;z,[a,b=5,,...c]=[d,e,...f],a`},
+		{`var z;z;var [a,b=5,,...c]=[d,e,...f];a`, `z;var[a,b=5,,...c]=[d,e,...f],z;a`},
 		// TODO
 		//{`var z;z;var {a,b=5,[5+8]:c,...d}={e,f,...g};a`, `var z,a;z,{a}={e,f,...g},a`},
 		//{`var z;z;var {a,b=5,[5+8]:c,...d}={e,f,...g};d`, `var z,a,b,c,d;z,{a,b,[5+8]:c,...d}={e,f,...g},d`},
 		//{`var {a,b=5,[5+8]:c,d:e}=z;b`, `var{b=5}=z;b`},
 		//{`var {a,b=5,[5+8]:c,d:e,...f}=z;b`, `var{b=5}=z;b`},
 		{`var {a,b=5,[5+8]:c,d:e,...f}=z;f`, `var{a,b=5,[5+8]:c,d:e,...f}=z;f`},
-		{`var a;var {}=b;`, `var a;{}=b`},
-		{`"use strict";var a;var b;b=5`, `"use strict";var b=5,a`},
-		{`"use strict";z+=6;var a;var b;b=5`, `"use strict";var a,b;z+=6,b=5`},
+		{`var a;var {}=b;`, `var{}=b,a`},
+		{`"use strict";var a;var b;b=5`, `"use strict";var a,b=5`},
+		{`"use strict";z+=6;var a;var b;b=5`, `"use strict";z+=6;var a,b=5`},
 		{`!function(){"use strict";return a}`, `!function(){"use strict";return a}`},
+		{`var a;var{b}=c;`, `var{b}=c,a`},
+		{`var a;var[b]=c;`, `var[b]=c,a`},
+		{`var a;f();var b=c;`, `f();var a,b=c`},
+		{`var{a}=x;f();var{b}=c;`, `var{a}=x;f();var{b}=c`},
+		{`var{a}=x;f();var d,{b}=c;`, `var{a}=x;f();var{b}=c,d`},
+		{`var{a}=x;f();var[b]=c;`, `var{a}=x,b;f(),[b]=c`},
+		{`var{a}=x;f();var[b,d]=c;`, `var{a}=x;f();var[b,d]=c`},
+		{`var{a}=x;f();var[bd]=c;`, `var{a}=x,bd;f(),[bd]=c`},
+		{`var{a}=x;f();var bc=e;`, `var{a}=x,bc;f(),bc=e`},
+		{`var{a}=x;f();var bcd=e;`, `var{a}=x,bcd;f(),bcd=e`},
+		{`var{a}=x;f();var b,d;`, `var{a}=x,b,d;f()`},
+		{`var{a}=x;f();var b,d=e;`, `var{a}=x,b,d;f(),d=e`},
+		{`var{a}=x;f();var b=c,d=e;`, `var{a}=x,b,d;f(),b=c,d=e`},
+		{`var{a}=x;f();var[b]=c,d=e;`, `var{a}=x;f();var[b]=c,d=e`},
+		//{`var{a}=x;f();var{b}=y`, `var{a}=x,b;f(),{b}=y`}, // TODO
+		{`var a=0;a=1`, `var a=0;a=1`},
+		{`var a,b;a=b`, `var b,a=b`},
+		{`var a,b=c;a=b`, `var b=c,a=b`},
+		{`var a,b=c;b=a`, `var a,b=c;b=a`},
+		{`var{a}=f;var b=c,d=e;`, `var{a}=f,b=c,d=e`},
+		// TODO: test for variables renaming (first rename, then merge vars)
 
 		// function and method declarations
 		{`function g(){return}`, `function g(){}`},
@@ -378,8 +399,8 @@ func TestJS(t *testing.T) {
 		{`x=(a) => {return}`, `x=a=>{}`},
 		{`x=(a) => {return a}`, `x=a=>a`},
 		{`x=(a) => {a++;return a}`, `x=a=>(a++,a)`},
-		{`x=(a) => {while(b);return}`, `x=a=>{while(b);}`},
-		{`x=(a) => {while(b);return a}`, `x=a=>{while(b);return a}`},
+		{`x=(a) => {while(b);return}`, `x=a=>{for(;b;);}`},
+		{`x=(a) => {while(b);return a}`, `x=a=>{for(;b;);return a}`},
 		{`x=(a) => {a++}`, `x=a=>{a++}`},
 		{`x=(a) => {a++}`, `x=a=>{a++}`},
 		{`x=(a,b) => a+b`, `x=(a,b)=>a+b`},
@@ -435,7 +456,7 @@ func TestJS(t *testing.T) {
 		{`(a,b)&&c`, `a,b&&c`},
 		{`function*x(){a=(yield b)}`, `function*x(){a=yield b}`},
 		{`function*x(){a=yield (yield b)}`, `function*x(){a=yield yield b}`},
-		{`if((a))while((b));`, `if(a)while(b);`},
+		{`if((a))while((b));`, `if(a)for(;b;);`},
 		{`({a}=5)`, `({a}=5)`},
 		{`({a:a}=5)`, `({a}=5)`},
 		{`({a:"a"}=5)`, `({a:"a"}=5)`},
@@ -606,12 +627,12 @@ func TestJS(t *testing.T) {
 		{`a();b();return c()`, `return a(),b(),c()`},
 		{`a();b();throw c()`, `throw a(),b(),c()`},
 		{`a=b;if(a){return a}else return b`, `return a=b,a||b`},
-		{`a=5;if(b)while(c);`, `if(a=5,b)while(c);`},
+		{`a=5;if(b)while(c);`, `if(a=5,b)for(;c;);`},
 		{`a=5;while(b)c()`, `for(a=5;b;)c()`},
 		{`a=5;while(b){c()}`, `for(a=5;b;)c()`},
 		{`a=5;for(;b;)c()`, `for(a=5;b;)c()`},
 		{`a=5;for(b=4;b;)c()`, `a=5;for(b=4;b;)c()`},
-		{`a in 5;for(;b;)c()`, `for((a in 5);b;)c()`}, // is longer
+		//{`a in 5;for(;b;)c()`, `a in 5;for(;b;)c()`}, // TODO
 		{`a in 5;for(b=4;b;)c()`, `a in 5;for(b=4;b;)c()`},
 		{`var a=5;for(;a;)c()`, `for(var a=5;a;)c()`},
 		{`let a=5;for(;a;)c()`, `let a=5;for(;a;)c()`},
@@ -620,7 +641,7 @@ func TestJS(t *testing.T) {
 		{`var a=5;for(var a,b;b;)c()`, `for(var a=5,b;b;)c()`},
 		{`var a=5;while(a)c()`, `for(var a=5;a;)c()`},
 		{`var a=5;while(a){c()}`, `for(var a=5;a;)c()`},
-		{`let a=5;while(a)c()`, `let a=5;while(a)c()`},
+		{`let a=5;while(a)c()`, `let a=5;for(;a;)c()`},
 		//{`var a;for(a=5;b;)c()`, `for(var a=5;b;)c()`}, // TODO
 		{`a=5;for(var b=4;b;)c()`, `a=5;for(var b=4;b;)c()`},
 		{`a=5;switch(b=4){}`, `switch(a=5,b=4){}`},
@@ -645,7 +666,7 @@ func TestJS(t *testing.T) {
 		{`0xeb00000000`, `0xeb00000000`},         // go-fuzz
 		{`export{a,}`, `export{a,}`},             // go-fuzz
 		{`var D;var{U,W,W}=y`, `var{U,W,W}=y,D`}, // go-fuzz
-		{`var A;var b=(function(){var e;})=c,d`, `var b=function(){var e}=c,A,d`},                       // go-fuzz
+		{`var A;var b=(function(){var e;})=c,d`, `var A,b=function(){var e}=c,d`},                       // go-fuzz
 		{"var a=/\\s?auto?\\s?/i\nvar b;a,b", "var a=/\\s?auto?\\s?/i,b;a,b"},                           // #14
 		{"false`string`", "(!1)`string`"},                                                               // #181
 		{"x / /\\d+/.exec(s)[0]", "x/ /\\d+/.exec(s)[0]"},                                               // #183
@@ -653,7 +674,7 @@ func TestJS(t *testing.T) {
 		{`()=>({a})`, `()=>({a})`},                                                                      // #333
 		{`function f(){if(a){return 1}else if(b){return 2}return 3}`, `function f(){return a?1:b?2:3}`}, // #335
 		{`new RegExp('\xAA\xB5')`, `new RegExp('\xAA\xB5')`},                                            // #341
-		{`for(var a;;)a();var b=5`, `for(var a,b;;)a();b=5`},                                            // #346
+		{`for(var a;;)a();var b=5`, `for(;;)a();var a,b=5`},                                             // #346
 		{`if(e?0:n=1,o=2){o.a}`, `(e?0:n=1,o=2)&&o.a`},                                                  // #347
 		{`const a=(a,b)=>({...a,b})`, `const a=(a,b)=>({...a,b})`},                                      // #369
 		{`if(!a)debugger;`, `if(!a)debugger`},                                                           // #370
@@ -661,6 +682,7 @@ func TestJS(t *testing.T) {
 		{`switch(a){case 0:b=c;d=e}`, `switch(a){case 0:b=c,d=e}`},                                      // #426
 		{`if(a){const b=0}`, ``},                                                                        // #428
 		{`()=>({a(){b=!b}})`, `()=>({a(){b=!b}})`},                                                      // #429
+		{`var a=1;function f(){return 1}var{min,max}=Math;function g(){return 2}`, `a=1;function f(){return 1}var{min,max}=Math,a;function g(){return 2}`}, // #445
 	}
 
 	m := minify.New()
@@ -709,7 +731,7 @@ func TestJSVarRenaming(t *testing.T) {
 		{`function a(){var name,z;z;try{}catch(arg){var name}}`, `function a(){var a,b;b;try{}catch(b){}}`},
 		{`function a(b){function c(d){b[d]}}`, `function a(a){function b(b){a[b]}}`},
 		{`function r(o){function l(t){if(!z[t]){if(!o[t]);}}}`, `function r(a){function b(b){z[b]||!a[b]}}`},
-		{`!function(a){for(var b=0;;);};var c;var d;`, `var c,d;!function(a){for(var b=0;;);}`},
+		{`!function(a){for(var b=0;;);};var c;var d;`, `!function(a){for(var b=0;;);};var c,d`},
 		{`!function(){var b;b;{(T=x),T}{var T}}`, `!function(){var b,a;b,a=x,a}`},
 		{`var T;T;!function(){var b;b;{(T=x),T}{var T}}`, `var T;T,!function(){var b,a;b,a=x,a}`},
 		{`!function(){let a=b,b=c,c=d,d=e,e=f,f=g,g=h,h=a,j;for(let i=0;;)j=4}`, `!function(){let a=b,b=c,c=d,d=e,e=f,f=g,g=h,h=a,i;for(let a=0;;)i=4}`},
