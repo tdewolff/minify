@@ -731,7 +731,7 @@ var regexpClassEscapeTable = [256]bool{
 	false, false, false, false, false, false, false, false,
 
 	false, false, false, false, false, false, false, false,
-	false, false, false, false, false, false, false, true, // /
+	false, false, false, false, false, false, false, false,
 	true, true, true, true, true, true, true, true, // 0, 1, 2, 3, 4, 5, 6, 7
 	true, true, false, false, false, false, false, false, // 8, 9
 
