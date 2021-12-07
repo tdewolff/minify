@@ -33,6 +33,7 @@ var (
 	andBytes                   = []byte("&&")
 	orBytes                    = []byte("||")
 	optChainBytes              = []byte("?.")
+	nullishBytes               = []byte("??")
 	arrowBytes                 = []byte("=>")
 	zeroBytes                  = []byte("0")
 	oneBytes                   = []byte("1")
