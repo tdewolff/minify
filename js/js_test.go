@@ -672,6 +672,7 @@ func TestJS(t *testing.T) {
 		{`for(;a < /script>/;);`, `for(;a< /script>/;);`},
 		{`a<<!--script`, `a<<! --script`},
 		{`a<</script>/`, `a<< /script>/`},
+		{`function f(a,b){a();for(const c of b){const b=0}}`, `function f(a,b){a();for(const c of b){const b=0}}`},
 
 		// bugs
 		{`({"":a})`, `({"":a})`},                 // go-fuzz
@@ -764,6 +765,7 @@ func TestJSVarRenaming(t *testing.T) {
 		{`try{let b=0;if(a===0){return 0}else{let b=3;return b}}catch{}`, `try{let c=0;if(a===0)return 0;let b=3;return b}catch{}`},       // #405
 		{`let a=0;switch(a){case 0:let b=1;case 1:let c=2}`, `let a=0;switch(a){case 0:let a=1;case 1:let b=2}`},
 		{`({a:b=1}={})=>b`, `({a=1}={})=>a`}, // #422
+		{`()=>{var a;if(x){const b=0;while(true);}}`, `()=>{if(x){const b=0;for(var a;!0;);}}`},
 	}
 
 	m := minify.New()

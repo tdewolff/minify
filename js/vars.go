@@ -319,6 +319,12 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) {
 						}
 						bindingElements = append(bindingElements, js.BindingElement{Binding: ref, Default: nil})
 						orig = append(orig, ref)
+
+						s := decl.Scope
+						for s != nil && s != s.Func {
+							s.AddUndeclared(ref)
+							s = s.Parent
+						}
 					}
 					if i < best {
 						// prepend

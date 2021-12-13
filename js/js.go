@@ -419,7 +419,7 @@ func (m *jsMinifier) minifyBlockAsStmt(blockStmt *js.BlockStmt, blockType blockT
 	// minify block when statement is expected, i.e. semicolon if empty or remove braces for single statement
 	// assume we already renamed the scope
 	hasLexicalVars := false
-	for _, v := range blockStmt.Scope.Declared[blockStmt.Scope.NumForInit:] {
+	for _, v := range blockStmt.Scope.Declared[blockStmt.Scope.NumForDeclared:] {
 		if v.Decl == js.LexicalDecl {
 			hasLexicalVars = true
 			break
