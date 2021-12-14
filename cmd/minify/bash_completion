@@ -12,7 +12,7 @@ _minify_complete() {
 
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    flags="-a --all --bundle --cpuprofile -l --list --match --memprofile --mime -o --output -p --preserve --preserve-links -r --recursive --type --url -v --verbose --version -w --watch --css-precision --html-keep-comments --html-keep-conditional-comments --html-keep-default-attrvals --html-keep-document-tags --html-keep-end-tags --html-keep-quotes --html-keep-whitespace --js-precision --js-keep-var-names --json-precision --json-keep-numbers --svg-precision -s --sync --xml-keep-whitespace"
+    flags="-a --all --bundle --cpuprofile -l --list --match --memprofile --mime -o --output -p --preserve --preserve-links -r --recursive --type --url -v --verbose --version -w --watch --css-precision --html-keep-comments --html-keep-conditional-comments --html-keep-default-attrvals --html-keep-document-tags --html-keep-end-tags --html-keep-quotes --html-keep-whitespace --js-precision --js-keep-var-names --js-no-nullish-operator --json-precision --json-keep-numbers --svg-precision -s --sync --xml-keep-whitespace"
     mimes="text/css text/html text/javascript application/javascript application/json image/svg+xml text/xml application/xml"
     types="css html js json svg xml"
 
