@@ -312,10 +312,12 @@ func run() int {
 		if !dirDst {
 			if 1 < len(inputs) && !bundle {
 				dirDst = true
-			} else if info, err := os.Lstat(inputs[0]); err == nil && !bundle && info.Mode().IsDir() && info.Mode()&os.ModeSymlink == 0 {
-				dirDst = true
 			} else if info, err := os.Lstat(output); err == nil && info.Mode().IsDir() && info.Mode()&os.ModeSymlink == 0 {
 				dirDst = true
+			} else if len(inputs) == 1 {
+				if info, err := os.Lstat(inputs[0]); err == nil && !bundle && info.Mode().IsDir() && info.Mode()&os.ModeSymlink == 0 {
+					dirDst = true
+				}
 			}
 		}
 		if dirDst && bundle {
