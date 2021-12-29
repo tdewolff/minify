@@ -785,12 +785,7 @@ func minify(t Task) bool {
 	}
 
 	r := newCountingReader(fr)
-	var w *countingWriter
-	if fw == os.Stdout {
-		w = newCountingWriter(bufio.NewWriter(fw))
-	} else {
-		w = newCountingWriter(bufio.NewWriter(fw))
-	}
+	w := newCountingWriter(bufio.NewWriter(fw))
 
 	success := true
 	startTime := time.Now()

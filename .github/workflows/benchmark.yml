@@ -19,3 +19,5 @@ jobs:
         go install ./cmd/minify
         time minify benchmarks/sample_antd.js -o out
         time minify benchmarks/sample_antd.js > out
+        time minify -o out < benchmarks/sample_antd.js
+        time minify < benchmarks/sample_antd.js > out
