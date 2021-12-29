@@ -1,16 +1,16 @@
 name: Benchmark tdewolff/minify
-
 on:
   push:
-    branches: [master]
-  workflow_dispatch:
+    branches:
+      - master
 
 jobs:
   benchmark:
     runs-on: ubuntu-latest
     steps:
-      - name: Benchmark tdewolff/minify
-        run: |
-          make install
-          time minify benchmarks/sample_antd.js -o out
-          time minify benchmarks/sample_antd.js > out
+    - name: Benchmark tdewolff/minify
+      run: |
+        pwd
+        go install ./cmd/minify
+        time minify benchmarks/sample_antd.js -o out
+        time minify benchmarks/sample_antd.js > out
