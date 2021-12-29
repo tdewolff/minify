@@ -787,9 +787,9 @@ func minify(t Task) bool {
 	r := newCountingReader(fr)
 	var w *countingWriter
 	if fw == os.Stdout {
-		w = newCountingWriter(fw)
+		w = newCountingWriter(bufio.NewWriter(fw))
 	} else {
-		w = newCountingWriter(bufio.NewWriterSize(fw, 1024000))
+		w = newCountingWriter(bufio.NewWriter(fw))
 	}
 
 	success := true
