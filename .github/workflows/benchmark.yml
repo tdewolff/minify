@@ -11,6 +11,6 @@ jobs:
     steps:
       - name: Benchmark tdewolff/minify
         run: |
-          go install .
+          make install
           time minify benchmarks/sample_antd.js -o out
           time minify benchmarks/sample_antd.js > out
