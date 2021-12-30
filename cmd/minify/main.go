@@ -55,7 +55,6 @@ var (
 	watch              bool
 	sync               bool
 	bundle             bool
-	sequential         bool
 	preserve           []string
 	preserveMode       bool
 	preserveOwnership  bool
@@ -133,7 +132,6 @@ func run() int {
 	flag.Lookup("preserve").NoOptDefVal = "mode,ownership,timestamps"
 	flag.BoolVar(&preserveLinks, "preserve-links", false, "Copy symbolic links without dereferencing and without minifying the referenced file (only with --sync)")
 	flag.BoolVarP(&bundle, "bundle", "b", false, "Bundle files by concatenation into a single file")
-	flag.BoolVarP(&sequential, "sequential", "", false, "Minify files sequentially, not concurrently")
 	flag.BoolVar(&version, "version", false, "Version")
 
 	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
@@ -396,107 +394,101 @@ func run() int {
 		return 1
 	}
 
-	fails := 0
+	numWorkers := 1
+	if !verbose && len(tasks) > 1 {
+		numWorkers = 4
+		if n := runtime.NumCPU(); n > numWorkers {
+			numWorkers = n
+		}
+	}
+
 	start := time.Now()
-	if !watch && (verbose || len(tasks) == 1 || sequential) {
+
+	chanTasks := make(chan Task, 100)
+	chanFails := make(chan int, numWorkers)
+	for n := 0; n < numWorkers; n++ {
+		go minifyWorker(chanTasks, chanFails)
+	}
+
+	if !watch {
 		for _, task := range tasks {
-			if ok := minify(task); !ok {
-				fails++
-			}
+			chanTasks <- task
 		}
 	} else {
-		numWorkers := runtime.NumCPU()
-		if verbose || len(tasks) == 1 || sequential {
-			numWorkers = 1
-		} else if numWorkers < 4 {
-			numWorkers = 4
+		watcher, err := NewWatcher(recursive)
+		if err != nil {
+			Error.Println(err)
+			return 1
+		}
+		defer watcher.Close()
+
+		changes := watcher.Run()
+		for _, task := range tasks {
+			chanTasks <- task
 		}
 
-		chanTasks := make(chan Task, 100)
-		chanFails := make(chan int, numWorkers)
-		for n := 0; n < numWorkers; n++ {
-			go minifyWorker(chanTasks, chanFails)
+		autoDir := false
+		files := roots
+		if !recursive {
+			files = inputs
 		}
+		for _, filename := range files {
+			watcher.AddPath(filename)
+			if filename == output {
+				autoDir = true
+			}
+		}
+		skip := map[string]bool{}
 
-		if !watch {
-			for _, task := range tasks {
-				chanTasks <- task
-			}
-		} else {
-			watcher, err := NewWatcher(recursive)
-			if err != nil {
-				Error.Println(err)
-				return 1
-			}
-			defer watcher.Close()
-
-			changes := watcher.Run()
-			for _, task := range tasks {
-				chanTasks <- task
-			}
-
-			autoDir := false
-			files := roots
-			if !recursive {
-				files = inputs
-			}
-			for _, filename := range files {
-				watcher.AddPath(filename)
-				if filename == output {
-					autoDir = true
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		for changes != nil {
+			select {
+			case <-c:
+				watcher.Close()
+			case file, ok := <-changes:
+				if !ok {
+					changes = nil
+					break
 				}
-			}
-			skip := map[string]bool{}
+				file = filepath.Clean(file)
 
-			c := make(chan os.Signal, 1)
-			signal.Notify(c, os.Interrupt)
-			for changes != nil {
-				select {
-				case <-c:
-					watcher.Close()
-				case file, ok := <-changes:
-					if !ok {
-						changes = nil
+				// find longest common path among roots
+				root := ""
+				for _, path := range roots {
+					pathRel, err1 := filepath.Rel(path, file)
+					rootRel, err2 := filepath.Rel(root, file)
+					if err2 != nil || err1 == nil && len(pathRel) < len(rootRel) {
+						root = path
+					}
+				}
+
+				if autoDir && root == output {
+					// skip files in output directory (which is also an input directory) for the first change
+					// skips files that are not minified and stay put as they are not explicitly copied, but that's ok
+					if _, ok := skip[file]; !ok {
+						skip[file] = true
 						break
 					}
-					file = filepath.Clean(file)
-
-					// find longest common path among roots
-					root := ""
-					for _, path := range roots {
-						pathRel, err1 := filepath.Rel(path, file)
-						rootRel, err2 := filepath.Rel(root, file)
-						if err2 != nil || err1 == nil && len(pathRel) < len(rootRel) {
-							root = path
-						}
-					}
-
-					if autoDir && root == output {
-						// skip files in output directory (which is also an input directory) for the first change
-						// skips files that are not minified and stay put as they are not explicitly copied, but that's ok
-						if _, ok := skip[file]; !ok {
-							skip[file] = true
-							break
-						}
-					}
-
-					if !verbose {
-						Info.Println(file, "changed")
-					}
-					task, err := NewTask(root, file, output, !fileMatches(file))
-					if err != nil {
-						Error.Println(err)
-						return 1
-					}
-					chanTasks <- task
 				}
+
+				if !verbose {
+					Info.Println(file, "changed")
+				}
+				task, err := NewTask(root, file, output, !fileMatches(file))
+				if err != nil {
+					Error.Println(err)
+					return 1
+				}
+				chanTasks <- task
 			}
 		}
+	}
 
-		close(chanTasks)
-		for n := 0; n < numWorkers; n++ {
-			fails += <-chanFails
-		}
+	fails := 0
+	close(chanTasks)
+	for n := 0; n < numWorkers; n++ {
+		fails += <-chanFails
 	}
 
 	if verbose && !watch {
