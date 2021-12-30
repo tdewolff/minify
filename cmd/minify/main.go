@@ -394,27 +394,37 @@ func run() int {
 		return 1
 	}
 
-	numWorkers := 1
-	if !verbose && len(tasks) > 1 {
-		numWorkers = 4
-		if n := runtime.NumCPU(); n > numWorkers {
-			numWorkers = n
-		}
-	}
-
+	fails := 0
 	start := time.Now()
+	if len(tasks) == 1 || verbose {
+		for _, task := range tasks {
+			if ok := minify(task); !ok {
+				fails++
+			}
+		}
+	} else {
+		numWorkers := runtime.NumCPU()
+		if numWorkers < 4 {
+			numWorkers = 4
+		}
 
-	chanTasks := make(chan Task, 100)
-	chanFails := make(chan int, numWorkers)
-	for n := 0; n < numWorkers; n++ {
-		go minifyWorker(chanTasks, chanFails)
-	}
+		chanTasks := make(chan Task, 20)
+		chanFails := make(chan int, numWorkers)
+		for n := 0; n < numWorkers; n++ {
+			go minifyWorker(chanTasks, chanFails)
+		}
 
-	if !watch {
 		for _, task := range tasks {
 			chanTasks <- task
 		}
-	} else {
+
+		close(chanTasks)
+		for n := 0; n < numWorkers; n++ {
+			fails += <-chanFails
+		}
+	}
+
+	if watch {
 		watcher, err := NewWatcher(recursive)
 		if err != nil {
 			Error.Println(err)
@@ -423,10 +433,6 @@ func run() int {
 		defer watcher.Close()
 
 		changes := watcher.Run()
-		for _, task := range tasks {
-			chanTasks <- task
-		}
-
 		autoDir := false
 		files := roots
 		if !recursive {
@@ -483,12 +489,6 @@ func run() int {
 				chanTasks <- task
 			}
 		}
-	}
-
-	fails := 0
-	close(chanTasks)
-	for n := 0; n < numWorkers; n++ {
-		fails += <-chanFails
 	}
 
 	if verbose && !watch {
