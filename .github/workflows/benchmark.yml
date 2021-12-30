@@ -1,4 +1,4 @@
-name: Benchmark tdewolff/minify
+name: Benchmark
 on:
   push:
     branches:
@@ -9,15 +9,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Go
-      uses: actions/setup-go@v2
+    - uses: actions/setup-go@v2
       with:
         go-version: 1.17
-    - name: Benchmark tdewolff/minify
+    - name: Benchmark
       run: |
-        pwd
         go install ./cmd/minify
+        echo "file => file"
         time minify benchmarks/sample_antd.js -o out
+        echo "file => stream"
         time minify benchmarks/sample_antd.js > out
+        echo "stream => file"
         time minify --type js -o out < benchmarks/sample_antd.js
+        echo "stream => stream"
         time minify --type js < benchmarks/sample_antd.js > out
