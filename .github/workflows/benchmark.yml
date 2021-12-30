@@ -15,11 +15,7 @@ jobs:
     - name: Benchmark
       run: |
         go install ./cmd/minify
-        echo "file => file"
         time minify benchmarks/sample_antd.js -o out
-        echo "file => stream"
         time minify benchmarks/sample_antd.js > out
-        echo "stream => file"
         time minify --type js -o out < benchmarks/sample_antd.js
-        echo "stream => stream"
         time minify --type js < benchmarks/sample_antd.js > out
