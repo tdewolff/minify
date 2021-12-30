@@ -396,7 +396,7 @@ func run() int {
 
 	fails := 0
 	start := time.Now()
-	if len(tasks) == 1 || verbose {
+	if !watch && (len(tasks) == 1 || verbose) {
 		for _, task := range tasks {
 			if ok := minify(task); !ok {
 				fails++
@@ -404,7 +404,9 @@ func run() int {
 		}
 	} else {
 		numWorkers := runtime.NumCPU()
-		if numWorkers < 4 {
+		if verbose {
+			numWorkers = 1
+		} else if numWorkers < 4 {
 			numWorkers = 4
 		}
 
@@ -413,81 +415,80 @@ func run() int {
 		for n := 0; n < numWorkers; n++ {
 			go minifyWorker(chanTasks, chanFails)
 		}
-
 		for _, task := range tasks {
 			chanTasks <- task
+		}
+
+		if watch {
+			watcher, err := NewWatcher(recursive)
+			if err != nil {
+				Error.Println(err)
+				return 1
+			}
+			defer watcher.Close()
+
+			changes := watcher.Run()
+			autoDir := false
+			files := roots
+			if !recursive {
+				files = inputs
+			}
+			for _, filename := range files {
+				watcher.AddPath(filename)
+				if filename == output {
+					autoDir = true
+				}
+			}
+			skip := map[string]bool{}
+
+			c := make(chan os.Signal, 1)
+			signal.Notify(c, os.Interrupt)
+			for changes != nil {
+				select {
+				case <-c:
+					watcher.Close()
+				case file, ok := <-changes:
+					if !ok {
+						changes = nil
+						break
+					}
+					file = filepath.Clean(file)
+
+					// find longest common path among roots
+					root := ""
+					for _, path := range roots {
+						pathRel, err1 := filepath.Rel(path, file)
+						rootRel, err2 := filepath.Rel(root, file)
+						if err2 != nil || err1 == nil && len(pathRel) < len(rootRel) {
+							root = path
+						}
+					}
+
+					if autoDir && root == output {
+						// skip files in output directory (which is also an input directory) for the first change
+						// skips files that are not minified and stay put as they are not explicitly copied, but that's ok
+						if _, ok := skip[file]; !ok {
+							skip[file] = true
+							break
+						}
+					}
+
+					if !verbose {
+						Info.Println(file, "changed")
+					}
+					task, err := NewTask(root, file, output, !fileMatches(file))
+					if err != nil {
+						Error.Println(err)
+						return 1
+					}
+					chanTasks <- task
+				}
+			}
 		}
 
 		close(chanTasks)
 		for n := 0; n < numWorkers; n++ {
 			fails += <-chanFails
-		}
-	}
-
-	if watch {
-		watcher, err := NewWatcher(recursive)
-		if err != nil {
-			Error.Println(err)
-			return 1
-		}
-		defer watcher.Close()
-
-		changes := watcher.Run()
-		autoDir := false
-		files := roots
-		if !recursive {
-			files = inputs
-		}
-		for _, filename := range files {
-			watcher.AddPath(filename)
-			if filename == output {
-				autoDir = true
-			}
-		}
-		skip := map[string]bool{}
-
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)
-		for changes != nil {
-			select {
-			case <-c:
-				watcher.Close()
-			case file, ok := <-changes:
-				if !ok {
-					changes = nil
-					break
-				}
-				file = filepath.Clean(file)
-
-				// find longest common path among roots
-				root := ""
-				for _, path := range roots {
-					pathRel, err1 := filepath.Rel(path, file)
-					rootRel, err2 := filepath.Rel(root, file)
-					if err2 != nil || err1 == nil && len(pathRel) < len(rootRel) {
-						root = path
-					}
-				}
-
-				if autoDir && root == output {
-					// skip files in output directory (which is also an input directory) for the first change
-					// skips files that are not minified and stay put as they are not explicitly copied, but that's ok
-					if _, ok := skip[file]; !ok {
-						skip[file] = true
-						break
-					}
-				}
-
-				if !verbose {
-					Info.Println(file, "changed")
-				}
-				task, err := NewTask(root, file, output, !fileMatches(file))
-				if err != nil {
-					Error.Println(err)
-					return 1
-				}
-				chanTasks <- task
-			}
 		}
 	}
 
@@ -749,15 +750,23 @@ func minify(t Task) bool {
 		}
 	}
 
-	fr, err := newConcatFileReader(t.srcs, openInputFile)
+	var err error
+	var fr io.ReadCloser
+	var fw io.WriteCloser
+	if len(t.srcs) == 1 {
+		fr, err = openInputFile(t.srcs[0])
+	} else {
+		fr, err = newConcatFileReader(t.srcs, openInputFile)
+		if err == nil && fileMimetype == filetypeMime["js"] {
+			fr.(*concatFileReader).SetSeparator([]byte("\n"))
+		}
+	}
 	if err != nil {
 		Error.Println(err)
 		return false
 	}
-	if fileMimetype == filetypeMime["js"] {
-		fr.SetSeparator([]byte("\n"))
-	}
-	fw, err := openOutputFile(t.dst)
+
+	fw, err = openOutputFile(t.dst)
 	if err != nil {
 		Error.Println(err)
 		fr.Close()
@@ -779,17 +788,25 @@ func minify(t Task) bool {
 	}
 
 	r := newCountingReader(fr)
-	w := newCountingWriter(bufio.NewWriter(fw))
+	w := newCountingWriter(fw)
+	bw := bufio.NewWriter(w)
 
 	success := true
 	startTime := time.Now()
-	if err = m.Minify(fileMimetype, w, r); err != nil {
+	if err = m.Minify(fileMimetype, bw, r); err != nil {
+		bw.Flush()
 		if t.dst == "" && 0 < w.N {
 			fmt.Fprintf(os.Stdout, "\n\n")
 		}
 		Error.Println("cannot minify "+srcName+":", err)
 		success = false
+	} else {
+		bw.Flush()
 	}
+
+	fr.Close()
+	fw.Close()
+
 	if verbose {
 		dur := time.Since(startTime)
 		speed := "Inf MB"
@@ -801,19 +818,13 @@ func minify(t Task) bool {
 			ratio = float64(w.N) / float64(r.N)
 		}
 
-		stats := fmt.Sprintf("(%9v, %6v, %6v, %5.1f%%, %6v/s)", dur, humanize.Bytes(uint64(r.N)), humanize.Bytes(uint64(w.N)), ratio*100, speed)
+		stats := fmt.Sprintf("(%9v, %6v, %6v, %5.1f%%, %6v/s)", dur, humanize.Bytes(r.N), humanize.Bytes(w.N), ratio*100, speed)
 		if srcName != dstName {
 			Info.Println(stats, "-", srcName, "to", dstName)
 		} else {
 			Info.Println(stats, "-", srcName)
 		}
 	}
-
-	fr.Close()
-	if bw, ok := w.Writer.(*bufio.Writer); ok {
-		bw.Flush()
-	}
-	fw.Close()
 
 	// remove original that was renamed, when overwriting files
 	for i := range t.srcs {

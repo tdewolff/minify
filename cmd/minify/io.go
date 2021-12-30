@@ -6,7 +6,7 @@ import (
 
 type countingReader struct {
 	io.Reader
-	N int
+	N uint64
 }
 
 func newCountingReader(r io.Reader) *countingReader {
@@ -15,13 +15,13 @@ func newCountingReader(r io.Reader) *countingReader {
 
 func (r *countingReader) Read(p []byte) (int, error) {
 	n, err := r.Reader.Read(p)
-	r.N += n
+	r.N += uint64(n)
 	return n, err
 }
 
 type countingWriter struct {
 	io.Writer
-	N int
+	N uint64
 }
 
 func newCountingWriter(w io.Writer) *countingWriter {
@@ -30,7 +30,7 @@ func newCountingWriter(w io.Writer) *countingWriter {
 
 func (w *countingWriter) Write(p []byte) (int, error) {
 	n, err := w.Writer.Write(p)
-	w.N += n
+	w.N += uint64(n)
 	return n, err
 }
 
