@@ -26,6 +26,10 @@ var (
 	initialBytes      = []byte("initial")
 	noneBytes         = []byte("none")
 	autoBytes         = []byte("auto")
+	leftBytes         = []byte("left")
+	topBytes          = []byte("top")
+	n50pBytes         = []byte("50%")
+	n100pBytes        = []byte("100%")
 	importantBytes    = []byte("!important")
 	dataSchemeBytes   = []byte("data:")
 )
@@ -932,110 +936,128 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			}
 		}
 	case Background_Position:
-		if len(values) == 3 || len(values) == 4 {
-			// remove zero offsets
-			for _, i := range []int{len(values) - 1, 1} {
-				if 2 < len(values) && values[i].IsZero() {
-					values = append(values[:i], values[i+1:]...)
+		start := 0
+		for end := 0; end <= len(values); end++ { // loop over comma-separated lists
+			if end != len(values) && values[end].TokenType != css.CommaToken {
+				continue
+			} else if start == end {
+				start++
+				continue
+			}
+
+			if end-start == 3 || end-start == 4 {
+				// remove zero offsets
+				for _, i := range []int{end - start - 1, start + 1} {
+					if 2 < end-start && values[i].IsZero() {
+						values = append(values[:i], values[i+1:]...)
+						end--
+					}
 				}
-			}
 
-			j := 1 // position of second set of horizontal/vertical values
-			if 2 < len(values) && values[2].TokenType == css.IdentToken {
-				j = 2
-			}
+				j := start + 1 // position of second set of horizontal/vertical values
+				if 2 < end-start && values[start+2].TokenType == css.IdentToken {
+					j = start + 2
+				}
 
-			b := make([]byte, 0, 4)
-			offsets := make([]Token, 2)
-			for _, i := range []int{j, 0} {
-				if i+1 < len(values) && i+1 != j {
-					if values[i+1].TokenType == css.PercentageToken {
-						// change right or bottom with percentage offset to left or top respectively
-						if values[i].Ident == Right || values[i].Ident == Bottom {
-							n, _ := strconvParse.ParseInt(values[i+1].Data[:len(values[i+1].Data)-1])
-							b = strconv.AppendInt(b[:0], 100-n, 10)
-							b = append(b, '%')
-							values[i+1].Data = b
-							if values[i].Ident == Right {
-								values[i].Data = []byte("left")
-								values[i].Ident = Left
-							} else {
-								values[i].Data = []byte("top")
-								values[i].Ident = Top
+				b := make([]byte, 0, 4)
+				offsets := make([]Token, 2)
+				for _, i := range []int{j, start} {
+					if i+1 < end && i+1 != j {
+						if values[i+1].TokenType == css.PercentageToken {
+							// change right or bottom with percentage offset to left or top respectively
+							if values[i].Ident == Right || values[i].Ident == Bottom {
+								n, _ := strconvParse.ParseInt(values[i+1].Data[:len(values[i+1].Data)-1])
+								b = strconv.AppendInt(b[:0], 100-n, 10)
+								b = append(b, '%')
+								values[i+1].Data = b
+								if values[i].Ident == Right {
+									values[i].Data = leftBytes
+									values[i].Ident = Left
+								} else {
+									values[i].Data = topBytes
+									values[i].Ident = Top
+								}
 							}
 						}
-					}
-					if values[i].Ident == Left {
-						offsets[0] = values[i+1]
-					} else if values[i].Ident == Top {
-						offsets[1] = values[i+1]
-					}
-				} else if values[i].Ident == Left {
-					offsets[0] = Token{css.NumberToken, []byte("0"), nil, 0, 0}
-				} else if values[i].Ident == Top {
-					offsets[1] = Token{css.NumberToken, []byte("0"), nil, 0, 0}
-				} else if values[i].Ident == Right {
-					offsets[0] = Token{css.PercentageToken, []byte("100%"), nil, 0, 0}
-					values[i].Ident = Left
-				} else if values[i].Ident == Bottom {
-					offsets[1] = Token{css.PercentageToken, []byte("100%"), nil, 0, 0}
-					values[i].Ident = Top
-				}
-			}
-
-			if values[0].Ident == Center || values[j].Ident == Center {
-				if values[0].Ident == Left || values[j].Ident == Left {
-					offsets = offsets[:1]
-				} else if values[0].Ident == Top || values[j].Ident == Top {
-					offsets[0] = Token{css.NumberToken, []byte("50%"), nil, 0, 0}
-				}
-			}
-
-			if offsets[0].Data != nil && (len(offsets) == 1 || offsets[1].Data != nil) {
-				values = offsets
-			}
-		}
-		// removing zero offsets in the previous loop might make it eligible for the next loop
-		if len(values) == 1 || len(values) == 2 {
-			if values[0].Ident == Top || values[0].Ident == Bottom {
-				if len(values) == 1 {
-					// we can't make this smaller, and converting to a number will break it
-					// (https://github.com/ezoic/minify/issues/221#issuecomment-415419918)
-					break
-				}
-				// if it's a vertical position keyword, swap it with the next element
-				// since otherwise converted number positions won't be valid anymore
-				// (https://github.com/ezoic/minify/issues/221#issue-353067229)
-				values[0], values[1] = values[1], values[0]
-			}
-			// transform keywords to lengths|percentages
-			for i := 0; i < len(values); i++ {
-				if values[i].TokenType == css.IdentToken {
-					if values[i].Ident == Left || values[i].Ident == Top {
-						values[i].TokenType = css.NumberToken
-						values[i].Data = []byte("0")
-						values[i].Ident = 0
-					} else if values[i].Ident == Right || values[i].Ident == Bottom {
-						values[i].TokenType = css.PercentageToken
-						values[i].Data = []byte("100%")
-						values[i].Ident = 0
-					} else if values[i].Ident == Center {
-						if i == 0 {
-							values[i].TokenType = css.PercentageToken
-							values[i].Data = []byte("50%")
-							values[i].Ident = 0
-						} else {
-							values = values[:1]
+						if values[i].Ident == Left {
+							offsets[0] = values[i+1]
+						} else if values[i].Ident == Top {
+							offsets[1] = values[i+1]
 						}
+					} else if values[i].Ident == Left {
+						offsets[0] = Token{css.NumberToken, zeroBytes, nil, 0, 0}
+					} else if values[i].Ident == Top {
+						offsets[1] = Token{css.NumberToken, zeroBytes, nil, 0, 0}
+					} else if values[i].Ident == Right {
+						offsets[0] = Token{css.PercentageToken, n100pBytes, nil, 0, 0}
+						values[i].Ident = Left
+					} else if values[i].Ident == Bottom {
+						offsets[1] = Token{css.PercentageToken, n100pBytes, nil, 0, 0}
+						values[i].Ident = Top
 					}
-				} else if i == 1 && values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, []byte("50%")) {
-					values = values[:1]
-				} else if values[i].TokenType == css.PercentageToken && values[i].Data[0] == '0' {
-					values[i].TokenType = css.NumberToken
-					values[i].Data = []byte("0")
-					values[i].Ident = 0
+				}
+
+				if values[start].Ident == Center || values[j].Ident == Center {
+					if values[start].Ident == Left || values[j].Ident == Left {
+						offsets = offsets[:1]
+					} else if values[start].Ident == Top || values[j].Ident == Top {
+						offsets[0] = Token{css.NumberToken, n50pBytes, nil, 0, 0}
+					}
+				}
+
+				if offsets[0].Data != nil && (len(offsets) == 1 || offsets[1].Data != nil) {
+					values = append(append(values[:start], offsets...), values[end:]...)
+					end -= end - start - len(offsets)
 				}
 			}
+			// removing zero offsets in the previous loop might make it eligible for the next loop
+			if end-start == 1 || end-start == 2 {
+				// check if first position keyword is vertical
+				// note: center can be vertical if the other keyword is left or right
+				if values[start].Ident == Top || values[start].Ident == Bottom ||
+					(end-start == 2 && values[start].Ident == Center && (values[start+1].Ident == Left || values[start+1].Ident == Right)) {
+					if end-start == 1 {
+						// we can't make this smaller, and converting to a number will break it
+						// (https://github.com/tdewolff/minify/issues/221#issuecomment-415419918)
+						break
+					}
+					// if it's a vertical position keyword, swap it with the next element
+					// since otherwise converted number positions won't be valid anymore
+					// (https://github.com/tdewolff/minify/issues/221#issue-353067229)
+					values[start], values[start+1] = values[start+1], values[start]
+				}
+				// transform keywords to lengths|percentages
+				for i := start; i < end; i++ {
+					if values[i].TokenType == css.IdentToken {
+						if values[i].Ident == Left || values[i].Ident == Top {
+							values[i].TokenType = css.NumberToken
+							values[i].Data = zeroBytes
+							values[i].Ident = 0
+						} else if values[i].Ident == Right || values[i].Ident == Bottom {
+							values[i].TokenType = css.PercentageToken
+							values[i].Data = n100pBytes
+							values[i].Ident = 0
+						} else if values[i].Ident == Center {
+							if i == start {
+								values[i].TokenType = css.PercentageToken
+								values[i].Data = n50pBytes
+								values[i].Ident = 0
+							} else {
+								values = append(values[:start+1], values[start+2:]...)
+								end--
+							}
+						}
+					} else if i == start+1 && values[i].TokenType == css.PercentageToken && bytes.Equal(values[i].Data, n50pBytes) {
+						values = append(values[:start+1], values[start+2:]...)
+						end--
+					} else if values[i].TokenType == css.PercentageToken && values[i].Data[0] == '0' {
+						values[i].TokenType = css.NumberToken
+						values[i].Data = zeroBytes
+						values[i].Ident = 0
+					}
+				}
+			}
+			start = end + 1
 		}
 	case Box_Shadow:
 		if len(values) == 1 && (values[0].Ident == None || values[0].Ident == Initial) {
