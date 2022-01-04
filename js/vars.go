@@ -7,8 +7,6 @@ import (
 	"github.com/tdewolff/parse/v2/js"
 )
 
-// TODO: use character frequency for variable name mangling to improve gzip compression
-
 type renamer struct {
 	identStart    []byte
 	identContinue []byte
@@ -16,14 +14,21 @@ type renamer struct {
 	rename        bool
 }
 
-func newRenamer(rename bool) *renamer {
+func newRenamer(rename, useCharFreq bool) *renamer {
 	reserved := make(map[string]struct{}, len(js.Keywords))
 	for name := range js.Keywords {
 		reserved[name] = struct{}{}
 	}
+	identStart := []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$")
+	identContinue := []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$0123456789")
+	if useCharFreq {
+		// sorted based on character frequency of a collection of JS samples (incl. the var names!)
+		identStart = []byte("etnsoiarclduhmfpgvbjy_wOxCEkASMFTzDNLRPHIBV$WUKqYGXQZJ")
+		identContinue = []byte("etnsoiarcldu14023hm8f6pg57v9bjy_wOxCEkASMFTzDNLRPHIBV$WUKqYGXQZJ")
+	}
 	return &renamer{
-		identStart:    []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$"),
-		identContinue: []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$0123456789"),
+		identStart:    identStart,
+		identContinue: identContinue,
 		reserved:      reserved,
 		rename:        rename,
 	}

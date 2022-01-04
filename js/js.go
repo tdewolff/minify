@@ -23,9 +23,10 @@ var DefaultMinifier = &Minifier{}
 
 // Minifier is a JS minifier.
 type Minifier struct {
-	Precision         int // number of significant digits
-	KeepVarNames      bool
-	NoNullishOperator bool
+	Precision           int // number of significant digits
+	KeepVarNames        bool
+	useAlphabetVarNames bool
+	NoNullishOperator   bool
 }
 
 // Minify minifies JS data, it reads from r and writes to w.
@@ -56,7 +57,7 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	m := &jsMinifier{
 		o:       o,
 		w:       w,
-		renamer: newRenamer(!o.KeepVarNames),
+		renamer: newRenamer(!o.KeepVarNames, !o.useAlphabetVarNames),
 	}
 	m.hoistVars(&ast.BlockStmt)
 	ast.List = m.optimizeStmtList(ast.List, functionBlock)

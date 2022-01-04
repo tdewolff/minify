@@ -776,7 +776,7 @@ func TestJSVarRenaming(t *testing.T) {
 	}
 
 	m := minify.New()
-	o := Minifier{}
+	o := Minifier{useAlphabetVarNames: true}
 	for _, tt := range jsTests {
 		t.Run(tt.js, func(t *testing.T) {
 			r := bytes.NewBufferString(tt.js)
@@ -804,7 +804,7 @@ func TestWriterError(t *testing.T) {
 }
 
 func TestRenamerIndices(t *testing.T) {
-	renamer := newRenamer(true)
+	renamer := newRenamer(true, true)
 	for _, i := range []int{0, 1, 2, 53, 54, 55, 117, 118} {
 		name := renamer.getName([]byte{' '}, i)
 		j := renamer.getIndex(name)
