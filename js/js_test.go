@@ -222,9 +222,9 @@ func TestJS(t *testing.T) {
 		{`if(a){a++;return a}else a=b`, `if(a)return a++,a;a=b`},
 		{`if(a){a++;return a}else if(b)a=b`, `if(a)return a++,a;b&&(a=b)`},
 		{`if(a){a++;return}else a=b`, `if(a){a++;return}a=b`},
-		//{`if(a){a++;return}else return`, `if(a){a++}return`},
-		//{`if(a){a++;return}return`, `if(a){a++}return`},
-		//{`if(a){return}else {a=b;while(c){}}`, `if(a)return;for(a=b;c;);`},
+		//{`if(a){a++;return}else return`, `if(a){a++}return`}, // TODO
+		//{`if(a){a++;return}return`, `if(a){a++}return`}, // TODO
+		{`if(a){return}else {a=b;while(c){}}`, `if(a)return;for(a=b;c;);`},
 		{`if(a){a++;return a}else return`, `if(a)return a++,a`},
 		{`if(a){a++;return a}return`, `if(a)return a++,a`},
 		{`if(a){return a}return b`, `return a||b`},
@@ -260,7 +260,6 @@ func TestJS(t *testing.T) {
 		{`if(a=b)a;else b`, `(a=b)||b`},
 
 		// var declarations
-		//{`{let a}`, ``}, // TODO
 		{`var a;var b;a,b`, `var a,b;a,b`},
 		{`const a=1;const b=2;a,b`, `const a=1,b=2;a,b`},
 		{`let a=1;let b=2;a,b`, `let a=1,b=2;a,b`},
@@ -301,7 +300,6 @@ func TestJS(t *testing.T) {
 		{`for(var c;b;){let a=8;a};var a;a`, `for(var c,a;b;){let a=8;a}a`},
 		{`for(;b;){let a=8;a};var a;var b;a`, `for(var a,b;b;){let a=8;a}a`},
 		{`var a=1,b=2;while(c);var d=3,e=4;a,b,d,e`, `for(var a=1,b=2,d,e;c;);d=3,e=4,a,b,d,e`},
-		//{`var a=1;a;var b=1`, `var a=1;a`}, // TODO
 		{`var z;var [a,b=5,,...c]=[d,e,...f];z`, `var[a,b=5,,...c]=[d,e,...f],z;z`},
 		{`var z;var {a,b=5,[5+8]:c,...d}={d,e,...f};z`, `var{a,b=5,[5+8]:c,...d}={d,e,...f},z;z`},
 		{`var z;z;var [a,b=5,,...c]=[d,e,...f];a`, `z;var[a,b=5,,...c]=[d,e,...f],z;a`},
@@ -407,16 +405,6 @@ func TestJS(t *testing.T) {
 		{`async a => await b`, `async a=>await b`},
 		{`([])=>5`, `([])=>5`},
 		{`({})=>5`, `({})=>5`},
-		//{`var a=function(){return 5}`, `var a=()=>5`},
-		//{`var a=async function(b){b=6;return 5}`, `var a=async b=>(b=6,5)`},
-		//{`(function(){return 5})()`, `(()=>5)()`},
-		//{`class c{a(){return 5}}`, `class c{a:()=>5}`},
-		//{`export default{a(){return 5}}`, `export default{a:()=>5}`},
-		//{`var v={async [[1]](a){return a}}`, `var v={[[1]]:async a=>a}`},
-		//{`var a={b:()=>c=5}`, `var a={b(){c=5}}`},
-		//{`var a={b:function(){c=5}}`, `var a={b(){c=5}}`},
-		//{`var a={b:async function(){c=5}}`, `var a={async b(){c=5}}`},
-		//{`var a={b:function*(){c=5}}`, `var a={*b(){c=5}}`},
 
 		// remove groups
 		{`a=(b+c)+d`, `a=b+c+d`},
@@ -614,11 +602,6 @@ func TestJS(t *testing.T) {
 		{`a(b,...c)`, `a(b,...c)`},
 		{`let a="string";a`, `let a="string";a`},
 		{`f((a,b)||d)`, `f((a,b)||d)`},
-		//{`{let a="string"}a`, `a`},
-		//{`!function(){var a}`, `!function(){}`}, // TODO
-		//{`const a=6;f(a)`, `f(6)`},             // TODO: inline single-use variables that are literals
-		//{`let a="string";f(a)`, `f("string")`}, // TODO: inline single-use variables that are literals
-		//{`'a b c'.split(' ')`, `['a','b','c']`}, // TODO?
 
 		// merge expressions
 		{`b=5;return a+b`, `return b=5,a+b`},
@@ -638,6 +621,7 @@ func TestJS(t *testing.T) {
 		{`var a=b in c;for(;a;)c()`, `for(var a=(b in c);a;)c()`},
 		{`var a=5;for(var a=6,b;b;)c()`, `var a=5,b;for(a=6;b;)c()`},
 		{`var a=5;for(var a,b;b;)c()`, `for(var a=5,b;b;)c()`},
+		//{`var a=5;for(var b=6,c=7;;);`, `for(var a=5,b=6,c=7;;);`}, // TODO
 		{`var a=5;while(a)c()`, `for(var a=5;a;)c()`},
 		{`var a=5;while(a){c()}`, `for(var a=5;a;)c()`},
 		{`let a=5;while(a)c()`, `let a=5;for(;a;)c()`},
@@ -646,6 +630,29 @@ func TestJS(t *testing.T) {
 		{`a=5;switch(b=4){}`, `switch(a=5,b=4){}`},
 		{`a=5;with(b=4){}`, `with(a=5,b=4);`},
 		{`(function(){})();(function(){})()`, `(function(){})(),function(){}()`},
+
+		// collapse functions
+		//{`var a=function(){return 5}`, `var a=()=>5`},
+		//{`var a=async function(b){b=6;return 5}`, `var a=async b=>(b=6,5)`},
+		//{`(function(){return 5})()`, `(()=>5)()`},
+		//{`class c{a(){return 5}}`, `class c{a:()=>5}`},
+		//{`export default{a(){return 5}}`, `export default{a:()=>5}`},
+		//{`var v={async [[1]](a){return a}}`, `var v={[[1]]:async a=>a}`},
+		//{`var a={b:()=>c=5}`, `var a={b(){c=5}}`},
+		//{`var a={b:function(){c=5}}`, `var a={b(){c=5}}`},
+		//{`var a={b:async function(){c=5}}`, `var a={async b(){c=5}}`},
+		//{`var a={b:function*(){c=5}}`, `var a={*b(){c=5}}`},
+		//{`a=function(){return 5}()`, `a=5`}, // TODO
+		//{`a=function(){if(b){return 3}return 5}()`, `a=b?3:5`}, // TODO
+
+		// collapse variables
+		//{`{let a}`, ``}, // TODO
+		//{`a=5;b=a;c=b+4`, `c=5+4`}, // TODO
+		//{`const a=6;f(a)`, `f(6)`},             // TODO: inline single-use variables that are literals
+		//{`let a="string";f(a)`, `f("string")`}, // TODO: inline single-use variables that are literals
+		//{`{let a="string"}a`, `a`},
+		//{`!function(){var a}`, `!function(){}`}, // TODO
+		//{`'a b c'.split(' ')`, `['a','b','c']`}, // TODO?
 
 		// regexps
 		{`/\\\/\[/`, `/\\\/\[/`},
@@ -752,8 +759,8 @@ func TestJSVarRenaming(t *testing.T) {
 		{`!function(){let a=b,b=c,c=d,d=e,e=f,f=g,g=h,h=a,j;for(let i=0;;)j=4}`, `!function(){let a=b,b=c,c=d,d=e,e=f,f=g,g=h,h=a,i;for(let a=0;;)i=4}`},
 		{`function a(){var name;with(z){name}} function b(){var name;name}`, `function a(){var name;with(z)name}function b(){var a;a}`},
 		{`!function(){var name;{name;!function(){name;var other;other}}}`, `!function(){var a;a,!function(){a;var b;b}}`},
-		{`name=function(){var a001,a002,a003,a004,a005,a006,a007,a008,a009,a010,a011,a012,a013,a014,a015,a016,a017,a018,a019,a020,a021,a022,a023,a024,a025,a026,a027,a028,a029,a030,a031,a032,a033,a034,a035,a036,a037,a038,a039,a040,a041,a042,a043,a044,a045,a046,a047,a048,a049,a050,a051,a052,a053,a054,a055,a056,a057,a058,a059,a060,a061,a062,a063,a064,a065,a066,a067,a068,a069,a070,a071,a072,a073,a074,a075,a076,a077,a078,a079,a080,a081,a082,a083,a084,a085,a086,a087,a088,a089,a090,a091,a092,a093,a094,a095,a096,a097,a098,a099,a100,a101,a102,a103,a104,a105,a106,a107,a108,a109;a001,a002,a003,a004,a005,a006,a007,a008,a009,a010,a011,a012,a013,a014,a015,a016,a017,a018,a019,a020,a021,a022,a023,a024,a025,a026,a027,a028,a029,a030,a031,a032,a033,a034,a035,a036,a037,a038,a039,a040,a041,a042,a043,a044,a045,a046,a047,a048,a049,a050,a051,a052,a053,a054,a055,a056,a057,a058,a059,a060,a061,a062,a063,a064,a065,a066,a067,a068,a069,a070,a071,a072,a073,a074,a075,a076,a077,a078,a079,a080,a081,a082,a083,a084,a085,a086,a087,a088,a089,a090,a091,a092,a093,a094,a095,a096,a097,a098,a099,a100,a101,a102,a103,a104,a105,a106,a107,a108,a109}`,
-			`name=function(){var a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,_,$,aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak,al,am,an,ao,ap,aq,ar,at,au,av,aw,ax,ay,az,aA,aB,aC,aD,aE,aF,aG,aH,aI,aJ,aK,aL,aM,aN,aO,aP,aQ,aR,aS,aT,aU,aV,aW,aX,aY,aZ,a_,a$,ba,bb;a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,_,$,aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak,al,am,an,ao,ap,aq,ar,at,au,av,aw,ax,ay,az,aA,aB,aC,aD,aE,aF,aG,aH,aI,aJ,aK,aL,aM,aN,aO,aP,aQ,aR,aS,aT,aU,aV,aW,aX,aY,aZ,a_,a$,ba,bb}`}, // 'as' is a keyword
+		{`name=function(){var a001,a002,a003,a004,a005,a006,a007,a008,a009,a010,a011,a012,a013,a014,a015,a016,a017,a018,a019,a020,a021,a022,a023,a024,a025,a026,a027,a028,a029,a030,a031,a032,a033,a034,a035,a036,a037,a038,a039,a040,a041,a042,a043,a044,a045,a046,a047,a048,a049,a050,a051,a052,a053,a054,a055,a056,a057,a058,a059,a060,a061,a062,a063,a064,a065,a066,a067,a068,a069,a070,a071,a072,a073,a074,a075,a076,a077,a078,a079,a080,a081,a082,a083,a084,a085,a086,a087,a088,a089,a090,a091,a092,a093,a094,a095,a096,a097,a098,a099,a100,a101,a102,a103,a104,a105,a106,a107,a108,a109,a110,a111,a112,a113,a114,a115,a116,a117,a118,a119;a001,a002,a003,a004,a005,a006,a007,a008,a009,a010,a011,a012,a013,a014,a015,a016,a017,a018,a019,a020,a021,a022,a023,a024,a025,a026,a027,a028,a029,a030,a031,a032,a033,a034,a035,a036,a037,a038,a039,a040,a041,a042,a043,a044,a045,a046,a047,a048,a049,a050,a051,a052,a053,a054,a055,a056,a057,a058,a059,a060,a061,a062,a063,a064,a065,a066,a067,a068,a069,a070,a071,a072,a073,a074,a075,a076,a077,a078,a079,a080,a081,a082,a083,a084,a085,a086,a087,a088,a089,a090,a091,a092,a093,a094,a095,a096,a097,a098,a099,a100,a101,a102,a103,a104,a105,a106,a107,a108,a109,a110,a111,a112,a113,a114,a115,a116,a117,a118,a119}`,
+			`name=function(){var a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,_,$,aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak,al,am,an,ao,ap,aq,ar,at,au,av,aw,ax,ay,az,aA,aB,aC,aD,aE,aF,aG,aH,aI,aJ,aK,aL,aM,aN,aO,aP,aQ,aR,aS,aT,aU,aV,aW,aX,aY,aZ,a_,a$,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,ba,bb;a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,_,$,aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak,al,am,an,ao,ap,aq,ar,at,au,av,aw,ax,ay,az,aA,aB,aC,aD,aE,aF,aG,aH,aI,aJ,aK,aL,aM,aN,aO,aP,aQ,aR,aS,aT,aU,aV,aW,aX,aY,aZ,a_,a$,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,ba,bb}`}, // 'as' is a keyword
 		{`a=>{for(let b of c){b,a;{var d}}}`, `a=>{for(let d of c){d,a;var b}}`}, // #334
 		//{`({x,y,z})=>x+y+z`, `({x,y,z})=>x+y+z`},
 		{`function f(a){let b=0;if(a===0){return 0}else{let b=3;return b}}`, `function f(a){let c=0;if(a===0)return 0;let b=3;return b}`}, // #405
@@ -794,6 +801,20 @@ func TestWriterError(t *testing.T) {
 	m := minify.New()
 	err := Minify(m, w, r, nil)
 	test.T(t, err, test.ErrPlain)
+}
+
+func TestRenamerIndices(t *testing.T) {
+	renamer := newRenamer(true)
+	for _, i := range []int{0, 1, 2, 53, 54, 55, 117, 118} {
+		name := renamer.getName([]byte{' '}, i)
+		j := renamer.getIndex(name)
+		test.T(t, j, i, string(name))
+	}
+	for i := 0; i < 100000; i++ {
+		name := renamer.getName([]byte{' '}, i)
+		j := renamer.getIndex(name)
+		test.T(t, j, i, string(name))
+	}
 }
 
 func BenchmarkJQuery(b *testing.B) {

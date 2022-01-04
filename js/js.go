@@ -56,7 +56,7 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	m := &jsMinifier{
 		o:       o,
 		w:       w,
-		renamer: newRenamer(ast, ast.Undeclared, !o.KeepVarNames),
+		renamer: newRenamer(!o.KeepVarNames),
 	}
 	m.hoistVars(&ast.BlockStmt)
 	ast.List = m.optimizeStmtList(ast.List, functionBlock)
