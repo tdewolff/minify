@@ -569,7 +569,8 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 				Warning.Println("--recursive not specified, omitting directory", input)
 				continue
 			}
-			roots = append(roots, input)
+			root = input
+			roots = append(roots, root)
 
 			var walkFn func(string, DirEntry, error) error
 			walkFn = func(path string, d DirEntry, err error) error {
