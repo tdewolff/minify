@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"os"
-	"path"
+	"path/filepath"
 	"sort"
 )
 
@@ -152,7 +152,7 @@ func walkDir(fsys FS, name string, d DirEntry, walkDirFn WalkDirFunc) error {
 	}
 
 	for _, d1 := range dirs {
-		name1 := path.Join(name, d1.Name())
+		name1 := filepath.Join(name, d1.Name())
 		if err := walkDir(fsys, name1, d1, walkDirFn); err != nil {
 			if err == SkipDir {
 				break
