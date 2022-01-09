@@ -640,8 +640,9 @@ func openInputFile(input string) (io.ReadCloser, error) {
 			r, ferr = os.Open(input)
 			return attempt < 5, ferr
 		})
+
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("open input file %q: %w", input, err)
 		}
 	}
 	return r, nil
@@ -652,16 +653,19 @@ func openOutputFile(output string) (*os.File, error) {
 	if output == "" {
 		w = os.Stdout
 	} else {
-		if err := os.MkdirAll(filepath.Dir(output), 0777); err != nil {
-			return nil, err
+		dir := filepath.Dir(output)
+		if err := os.MkdirAll(dir, 0777); err != nil {
+			return nil, fmt.Errorf("creating directory %q: %w", dir, err)
 		}
+
 		err := try.Do(func(attempt int) (bool, error) {
 			var ferr error
 			w, ferr = os.OpenFile(output, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
 			return attempt < 5, ferr
 		})
+
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("open output file %q: %w", output, err)
 		}
 	}
 	return w, nil
