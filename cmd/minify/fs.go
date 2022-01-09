@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -65,19 +66,29 @@ func (dir dirFS) Open(name string) (*os.File, error) {
 	//if !fs.ValidPath(name) || runtime.GOOS == "windows" && containsAny(name, `\:`) {
 	//	return nil, &PathError{Op: "open", Path: name, Err: ErrInvalid}
 	//}
-	f, err := os.Open(string(dir) + "/" + name)
+	f, err := os.Open(dir.resolve(name))
 	if err != nil {
 		return nil, err
 	}
+
 	return f, nil
 }
 
 func (dir dirFS) Stat(name string) (os.FileInfo, error) {
-	info, err := os.Stat(string(dir) + "/" + name)
+	info, err := os.Stat(dir.resolve(name))
 	if err != nil {
 		return info, err
 	}
+
 	return info, nil
+}
+
+func (dir dirFS) resolve(name string) string {
+	if filepath.IsAbs(name) {
+		return name
+	}
+
+	return filepath.Join(string(dir), name)
 }
 
 // SkipDir is used as a return value from WalkDirFuncs to indicate that
