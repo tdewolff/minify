@@ -735,7 +735,13 @@ func minify(t Task) bool {
 	} else {
 		// rename original when overwriting
 		for i := range t.srcs {
-			if t.srcs[i] == t.dst {
+			sameFile, err := SameFile(t.srcs[i], t.dst)
+			if err != nil {
+				Error.Println(err)
+				return false
+			}
+
+			if sameFile {
 				t.srcs[i] += ".bak"
 				err := try.Do(func(attempt int) (bool, error) {
 					ferr := os.Rename(t.dst, t.srcs[i])
