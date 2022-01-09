@@ -220,3 +220,9 @@ func (d *statDirEntry) Name() string               { return d.info.Name() }
 func (d *statDirEntry) IsDir() bool                { return d.info.IsDir() }
 func (d *statDirEntry) Type() os.FileMode          { return d.info.Mode() & os.ModeType }
 func (d *statDirEntry) Info() (os.FileInfo, error) { return d.info, nil }
+
+// IsDir returns true if the passed string looks like it specifies a directory, false otherwise.
+// It doesn't look at the file system, so is safe to use if the directory doesn't yet exist
+func IsDir(dir string) bool {
+	return 0 < len(dir) && dir[len(dir)-1] == os.PathSeparator
+}

@@ -73,7 +73,7 @@ type Task struct {
 // NewTask returns a new Task.
 func NewTask(root, input, output string, sync bool) (Task, error) {
 	t := Task{[]string{input}, output, sync}
-	if 0 < len(output) && output[len(output)-1] == '/' {
+	if IsDir(output) {
 		rel, err := filepath.Rel(root, input)
 		if err != nil {
 			return Task{}, err
@@ -306,7 +306,7 @@ func run() int {
 	// set output, empty means stdout, ending in slash means a directory, otherwise a file
 	dirDst := false
 	if output != "" {
-		dirDst := output[len(output)-1] == '/'
+		dirDst := IsDir(output)
 		if !dirDst {
 			if 1 < len(inputs) && !bundle {
 				dirDst = true
