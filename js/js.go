@@ -651,10 +651,10 @@ func (m *jsMinifier) minifyArrowFunc(decl *js.ArrowFunc) {
 			if removeBraces {
 				list = append(list, returnStmt.Value)
 				expr := list[0]
-				for _, right := range list[1:] {
-					expr = &js.BinaryExpr{Op: js.CommaToken, X: expr, Y: right}
-				}
 				if 0 < len(list) {
+					if 1 < len(list) {
+						expr = &js.CommaExpr{list}
+					}
 					expr = &js.GroupExpr{X: expr}
 				}
 				m.expectExpr = expectExprBody
@@ -896,7 +896,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		// convert (a,b)&&c into a,b&&c but not a=(b,c)&&d into a=(b,c&&d)
 		if prec <= js.OpExpr {
 			if group, ok := expr.X.(*js.GroupExpr); ok {
-				if binary, ok := group.X.(*js.BinaryExpr); ok && binary.Op == js.CommaToken && js.OpAnd <= exprPrec(binary.Y) {
+				if comma, ok := group.X.(*js.CommaExpr); ok && js.OpAnd <= exprPrec(comma.List[len(comma.List)-1]) {
 					expr.X = group.X
 					precLeft = js.OpExpr
 				}
@@ -1250,7 +1250,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				// convert  (a,b)?c:d  =>  a,b?c:d
 				if prec <= js.OpExpr {
 					if group, ok := expr.Cond.(*js.GroupExpr); ok {
-						if binary, ok := group.X.(*js.BinaryExpr); ok && binary.Op == js.CommaToken && js.OpCoalesce <= exprPrec(binary.Y) {
+						if comma, ok := group.X.(*js.CommaExpr); ok && js.OpCoalesce <= exprPrec(comma.List[len(comma.List)-1]) {
 							expr.Cond = group.X
 						}
 					}
@@ -1302,5 +1302,12 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.inFor = false
 		m.minifyClassDecl(expr)
 		m.inFor = parentInFor
+	case *js.CommaExpr:
+		for i, item := range expr.List {
+			if i != 0 {
+				m.write(commaBytes)
+			}
+			m.minifyExpr(item, js.OpAssign)
+		}
 	}
 }

@@ -680,6 +680,7 @@ func TestJS(t *testing.T) {
 		{`a<<!--script`, `a<<! --script`},
 		{`a<</script>/`, `a<< /script>/`},
 		{`function f(a,b){a();for(const c of b){const b=0}}`, `function f(a,b){a();for(const c of b){const b=0}}`},
+		{`return a,b,void 0`, `return a,b`},
 
 		// bugs
 		{`({"":a})`, `({"":a})`},                 // go-fuzz
