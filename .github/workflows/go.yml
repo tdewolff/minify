@@ -24,9 +24,10 @@ jobs:
         name: codecov
         fail_ci_if_error: true
     - name: Benchmark
-      run: go test -bench=. ./benchmarks
-      run: git checkout f6e6203648801e229f78fc084caadb46ff795fc1
-      run: go test -bench=. ./benchmarks
+      run: |
+        go test -bench=. ./benchmarks
+        git checkout f6e6203648801e229f78fc084caadb46ff795fc1
+        go test -bench=. ./benchmarks
   golangci:
     name: lint
     runs-on: ubuntu-latest
