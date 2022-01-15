@@ -15,13 +15,13 @@ jobs:
       with:
         go-version: 1.17
     - run: |
-      go test -bench=JS$ ./benchmarks
-      go test -bench=JS$ ./benchmarks
-      go test -bench=JS$ ./benchmarks
+        go test -bench=JS$ ./benchmarks
+        go test -bench=JS$ ./benchmarks
+        go test -bench=JS$ ./benchmarks
     - uses: actions/checkout@v2
       with:
         ref: f6e6203648801e229f78fc084caadb46ff795fc1
     - run: |
-      go test -bench=JS$ ./benchmarks
-      go test -bench=JS$ ./benchmarks
-      go test -bench=JS$ ./benchmarks
+        go test -bench=JS$ ./benchmarks
+        go test -bench=JS$ ./benchmarks
+        go test -bench=JS$ ./benchmarks
