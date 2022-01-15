@@ -23,6 +23,8 @@ jobs:
       with:
         name: codecov
         fail_ci_if_error: true
+    - name: Benchmark
+      run: go test -bench=. ./benchmark
   golangci:
     name: lint
     runs-on: ubuntu-latest
