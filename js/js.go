@@ -916,6 +916,15 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				m.write(closeParenBytes)
 			}
 		} else {
+			// switch < and <= for > and >=
+			if expr.Op == js.LtToken {
+				expr.Op = js.GtToken
+				expr.X, expr.Y = expr.Y, expr.X
+			} else if expr.Op == js.LtEqToken {
+				expr.Op = js.GtEqToken
+				expr.X, expr.Y = expr.Y, expr.X
+			}
+
 			m.minifyExpr(expr.X, precLeft)
 			// 0 < len(m.prev) always
 			if expr.Op == js.GtToken && m.prev[len(m.prev)-1] == '-' {
