@@ -9,7 +9,7 @@ import (
 	"github.com/tdewolff/test"
 )
 
-func TestIsDir_Windos(t *testing.T) {
+func TestIsDir_Windows(t *testing.T) {
 	cases := []struct {
 		name     string
 		dir      string
