@@ -2,9 +2,8 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"os"
-	"path/filepath"
+	"path"
 	"sort"
 )
 
@@ -66,29 +65,19 @@ func (dir dirFS) Open(name string) (*os.File, error) {
 	//if !fs.ValidPath(name) || runtime.GOOS == "windows" && containsAny(name, `\:`) {
 	//	return nil, &PathError{Op: "open", Path: name, Err: ErrInvalid}
 	//}
-	f, err := os.Open(dir.resolve(name))
+	f, err := os.Open(string(dir) + "/" + name)
 	if err != nil {
 		return nil, err
 	}
-
 	return f, nil
 }
 
 func (dir dirFS) Stat(name string) (os.FileInfo, error) {
-	info, err := os.Stat(dir.resolve(name))
+	info, err := os.Stat(string(dir) + "/" + name)
 	if err != nil {
 		return info, err
 	}
-
 	return info, nil
-}
-
-func (dir dirFS) resolve(name string) string {
-	if filepath.IsAbs(name) {
-		return name
-	}
-
-	return filepath.Join(string(dir), name)
 }
 
 // SkipDir is used as a return value from WalkDirFuncs to indicate that
@@ -163,7 +152,7 @@ func walkDir(fsys FS, name string, d DirEntry, walkDirFn WalkDirFunc) error {
 	}
 
 	for _, d1 := range dirs {
-		name1 := filepath.Join(name, d1.Name())
+		name1 := path.Join(name, d1.Name())
 		if err := walkDir(fsys, name1, d1, walkDirFn); err != nil {
 			if err == SkipDir {
 				break
@@ -231,26 +220,3 @@ func (d *statDirEntry) Name() string               { return d.info.Name() }
 func (d *statDirEntry) IsDir() bool                { return d.info.IsDir() }
 func (d *statDirEntry) Type() os.FileMode          { return d.info.Mode() & os.ModeType }
 func (d *statDirEntry) Info() (os.FileInfo, error) { return d.info, nil }
-
-// IsDir returns true if the passed string looks like it specifies a directory, false otherwise.
-// It doesn't look at the file system, so is safe to use if the directory doesn't yet exist
-func IsDir(dir string) bool {
-	return 0 < len(dir) && dir[len(dir)-1] == os.PathSeparator
-}
-
-// SameFile returns true if the two file paths specify the same path.
-// While Linux is case-preserving case-sensitive (and therefore a string comparison will work),
-// Windows is case-preserving case-insensitive; we use os.SameFile() to work cross-platform.
-func SameFile(left string, right string) (bool, error) {
-	lft, err := os.Stat(left)
-	if err != nil {
-		return false, fmt.Errorf("reading FileInfo for %q: %w", left, err)
-	}
-
-	rht, err := os.Stat(right)
-	if err != nil {
-		return false, fmt.Errorf("reading FileInfo for %q: %w", right, err)
-	}
-
-	return os.SameFile(lft, rht), nil
-}
