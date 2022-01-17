@@ -584,7 +584,14 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 					}
 					return nil
 				}
-				path = filepath.Clean(path)
+
+				if filepath.IsAbs(path) {
+					// path is absolute, clean it
+					path = filepath.Clean(path)
+				} else {
+					// path is relative, make an absolute path - Join() returns a clean result
+					path = filepath.Join(root, path)
+				}
 
 				if !preserveLinks && d.Type()&os.ModeSymlink != 0 {
 					// follow and dereference symlinks
@@ -621,7 +628,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 				}
 				return nil
 			}
-			if err := WalkDir(DirFS("."), input, walkFn); err != nil {
+			if err := WalkDir(DirFS(input), ".", walkFn); err != nil {
 				return nil, nil, err
 			}
 		} else {
