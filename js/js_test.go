@@ -333,6 +333,7 @@ func TestJS(t *testing.T) {
 		{`var a,b=c;a=b`, `var b=c,a=b`},
 		{`var a,b=c;b=a`, `var a,b=c;b=a`},
 		{`var{a}=f;var b=c,d=e;`, `var{a}=f,b=c,d=e`},
+		{`var a,b;a=1,b=2,c=3`, `var a=1,b=2;c=3`},
 		// TODO: test for variables renaming (first rename, then merge vars)
 
 		// function and method declarations
