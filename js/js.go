@@ -458,14 +458,22 @@ func (m *jsMinifier) minifyStmtOrBlock(i js.IStmt, blockType blockType) {
 
 func (m *jsMinifier) minifyAlias(alias js.Alias) {
 	if alias.Name != nil {
-		m.write(alias.Name)
+		if alias.Name[0] == '"' || alias.Name[0] == '\'' {
+			m.write(minifyString(alias.Name))
+		} else {
+			m.write(alias.Name)
+		}
 		if !bytes.Equal(alias.Name, starBytes) {
 			m.write(spaceBytes)
 		}
 		m.write(asSpaceBytes)
 	}
 	if alias.Binding != nil {
-		m.write(alias.Binding)
+		if alias.Binding[0] == '"' || alias.Binding[0] == '\'' {
+			m.write(minifyString(alias.Binding))
+		} else {
+			m.write(alias.Binding)
+		}
 	}
 }
 
