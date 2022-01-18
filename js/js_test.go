@@ -567,8 +567,8 @@ func TestJS(t *testing.T) {
 		{`!42`, `!1`},
 		{`!"str"`, `!1`},
 		{`!/regexp/`, `!1`},
-		{`typeof a==='object'`, `typeof a=="object"`},
-		{`typeof a!=='object'`, `typeof a!="object"`},
+		{`typeof a==='object'`, `"object"==typeof a`},
+		{`typeof a!=='object'`, `"object"!=typeof a`},
 		{`'object'===typeof a`, `"object"==typeof a`},
 		{`'object'!==typeof a`, `"object"!=typeof a`},
 		{`typeof a===b`, `typeof a===b`},
@@ -586,6 +586,8 @@ func TestJS(t *testing.T) {
 		{`a&&=b`, `a&&=b`},
 		{`a||=b`, `a||=b`},
 		{`a??=b`, `a??=b`},
+		{`a==false`, `!1==a`},
+		{`a===false`, `!1===a`},
 
 		// other
 		{`async function g(){await x+y}`, `async function g(){await x+y}`},
@@ -767,13 +769,13 @@ func TestJSVarRenaming(t *testing.T) {
 			`name=function(){var a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,_,$,aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak,al,am,an,ao,ap,aq,ar,at,au,av,aw,ax,ay,az,aA,aB,aC,aD,aE,aF,aG,aH,aI,aJ,aK,aL,aM,aN,aO,aP,aQ,aR,aS,aT,aU,aV,aW,aX,aY,aZ,a_,a$,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,ba,bb;a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,_,$,aa,ab,ac,ad,ae,af,ag,ah,ai,aj,ak,al,am,an,ao,ap,aq,ar,at,au,av,aw,ax,ay,az,aA,aB,aC,aD,aE,aF,aG,aH,aI,aJ,aK,aL,aM,aN,aO,aP,aQ,aR,aS,aT,aU,aV,aW,aX,aY,aZ,a_,a$,a0,a1,a2,a3,a4,a5,a6,a7,a8,a9,ba,bb}`}, // 'as' is a keyword
 		{`a=>{for(let b of c){b,a;{var d}}}`, `a=>{for(let d of c){d,a;var b}}`}, // #334
 		//{`({x,y,z})=>x+y+z`, `({x,y,z})=>x+y+z`},
-		{`function f(a){let b=0;if(a===0){return 0}else{let b=3;return b}}`, `function f(a){let c=0;if(a===0)return 0;let b=3;return b}`}, // #405
-		{`!function(a){let b=0;if(a===0){return 0}else{let b=3;return b}}`, `!function(a){let c=0;if(a===0)return 0;let b=3;return b}`},   // #405
-		{`a=>{let b=0;if(a===0){return 0}else{let b=3;return b}}`, `a=>{let c=0;if(a===0)return 0;let b=3;return b}`},                     // #405
-		{`{let b=0;if(a===0){return 0}else{let b=3;return b}}`, `{let c=0;if(a===0)return 0;let b=3;return b}`},                           // #405
-		{`class x{f(a){let b=0;if(a===0){return 0}else{let b=3;return b}}}`, `class x{f(a){let c=0;if(a===0)return 0;let b=3;return b}}`}, // #405
-		{`for(;;){let b=0;if(a===0){return 0}else{let b=3;return b}}`, `for(;;){let c=0;if(a===0)return 0;let b=3;return b}`},             // #405
-		{`try{let b=0;if(a===0){return 0}else{let b=3;return b}}catch{}`, `try{let c=0;if(a===0)return 0;let b=3;return b}catch{}`},       // #405
+		{`function f(a){let b=0;if(a===0){return 0}else{let b=3;return b}}`, `function f(a){let c=0;if(0===a)return 0;let b=3;return b}`}, // #405
+		{`!function(a){let b=0;if(a===0){return 0}else{let b=3;return b}}`, `!function(a){let c=0;if(0===a)return 0;let b=3;return b}`},   // #405
+		{`a=>{let b=0;if(a===0){return 0}else{let b=3;return b}}`, `a=>{let c=0;if(0===a)return 0;let b=3;return b}`},                     // #405
+		{`{let b=0;if(a===0){return 0}else{let b=3;return b}}`, `{let c=0;if(0===a)return 0;let b=3;return b}`},                           // #405
+		{`class x{f(a){let b=0;if(a===0){return 0}else{let b=3;return b}}}`, `class x{f(a){let c=0;if(0===a)return 0;let b=3;return b}}`}, // #405
+		{`for(;;){let b=0;if(a===0){return 0}else{let b=3;return b}}`, `for(;;){let c=0;if(0===a)return 0;let b=3;return b}`},             // #405
+		{`try{let b=0;if(a===0){return 0}else{let b=3;return b}}catch{}`, `try{let c=0;if(0===a)return 0;let b=3;return b}catch{}`},       // #405
 		{`let a=0;switch(a){case 0:let b=1;case 1:let c=2}`, `let a=0;switch(a){case 0:let a=1;case 1:let b=2}`},
 		{`({a:b=1}={})=>b`, `({a=1}={})=>a`}, // #422
 		{`()=>{var a;if(x){const b=0;while(true);}}`, `()=>{if(x){const b=0;for(var a;!0;);}}`},
