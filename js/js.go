@@ -358,7 +358,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		if stmt.Default != nil || len(stmt.List) != 0 {
 			m.write(fromBytes)
 		}
-		m.write(stmt.Module)
+		m.write(minifyString(stmt.Module))
 		m.requireSemicolon()
 	case *js.ExportStmt:
 		m.write(exportBytes)
@@ -395,7 +395,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			}
 			if stmt.Module != nil {
 				m.write(fromBytes)
-				m.write(stmt.Module)
+				m.write(minifyString(stmt.Module))
 			}
 			m.requireSemicolon()
 		}
