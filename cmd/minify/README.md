@@ -59,6 +59,26 @@ Install minify deb package:
 sudo apt-get install minify
 ```
 
+### Docker
+Pull the image:
+
+```
+docker pull tdewolff/minify
+```
+
+and run the image, for example in interactive mode:
+
+```
+docker run -i tdewolff/minify
+echo "(function(){ if (a == false) { return 0; } else { return 1; } })();" | minify --type js
+```
+
+which will output
+
+```
+(function(){return a==!1?0:1})()
+```
+
 ## Usage
     Usage: minify [options] [input]
 
