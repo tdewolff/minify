@@ -74,6 +74,9 @@ type Task struct {
 func NewTask(root, input, output string, sync bool) (Task, error) {
 	t := Task{[]string{input}, output, sync}
 	if IsDir(output) {
+		root = filepath.Dir(root)
+	}
+	if 0 < len(output) && output[len(output)-1] == os.PathSeparator {
 		rel, err := filepath.Rel(root, input)
 		if err != nil {
 			return Task{}, err
@@ -310,8 +313,6 @@ func run() int {
 		if !dirDst {
 			if 1 < len(inputs) && !bundle {
 				dirDst = true
-			} else if info, err := os.Lstat(output); err == nil && info.Mode().IsDir() && info.Mode()&os.ModeSymlink == 0 {
-				dirDst = true
 			} else if len(inputs) == 1 {
 				if info, err := os.Lstat(inputs[0]); err == nil && !bundle && info.Mode().IsDir() && info.Mode()&os.ModeSymlink == 0 {
 					dirDst = true
@@ -345,12 +346,6 @@ func run() int {
 			Info.Println("minify from stdin")
 		}
 	}
-	if dirDst {
-		if err := os.MkdirAll(output, 0777); err != nil {
-			Error.Println(err)
-			return 1
-		}
-	}
 
 	var tasks []Task
 	var roots []string
@@ -377,6 +372,14 @@ func run() int {
 			tasks[0].srcs = append(tasks[0].srcs, task.srcs[0])
 		}
 		tasks = tasks[:1]
+	}
+
+	// make output directory
+	if dirDst {
+		if err := os.MkdirAll(output, 0777); err != nil {
+			Error.Println(err)
+			return 1
+		}
 	}
 
 	////////////////
@@ -532,8 +535,6 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 	tasks := []Task{}
 	roots := []string{}
 	for _, input := range inputs {
-		root := filepath.Dir(input)
-
 		var info os.FileInfo
 		var err error
 		if !preserveLinks {
@@ -545,6 +546,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 			return nil, nil, err
 		}
 
+		root := filepath.Dir(input) + string(os.PathSeparator) + "."
 		if info.Mode()&os.ModeSymlink != 0 {
 			if !sync {
 				Warning.Println("--sync not specified, omitting symbolic link", input)
@@ -585,22 +587,23 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 					return nil
 				}
 
-				if filepath.IsAbs(path) {
+				input := path
+				if filepath.IsAbs(input) {
 					// path is absolute, clean it
-					path = filepath.Clean(path)
+					input = filepath.Clean(input)
 				} else {
 					// path is relative, make an absolute path - Join() returns a clean result
-					path = filepath.Join(root, path)
+					input = filepath.Join(root, input)
 				}
 
 				if !preserveLinks && d.Type()&os.ModeSymlink != 0 {
 					// follow and dereference symlinks
-					info, err := os.Stat(path)
+					info, err := os.Stat(input)
 					if err != nil {
 						return err
 					}
 					if info.IsDir() {
-						return WalkDir(DirFS(input), path, walkFn)
+						return WalkDir(DirFS(root), path, walkFn)
 					}
 					d = &statDirEntry{info}
 				}
@@ -611,7 +614,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 						Warning.Println("--sync not specified, omitting symbolic link", path)
 						return nil
 					}
-					task, err := NewTask(root, path, output, true)
+					task, err := NewTask(root, input, output, true)
 					if err != nil {
 						return err
 					}
@@ -619,7 +622,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 				} else if d.Type().IsRegular() {
 					valid := fileMatches(d.Name())
 					if valid || sync {
-						task, err := NewTask(root, path, output, !valid)
+						task, err := NewTask(root, input, output, !valid)
 						if err != nil {
 							return err
 						}
@@ -628,7 +631,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 				}
 				return nil
 			}
-			if err := WalkDir(DirFS(input), ".", walkFn); err != nil {
+			if err := WalkDir(DirFS(root), ".", walkFn); err != nil {
 				return nil, nil, err
 			}
 		} else {
@@ -897,9 +900,9 @@ func preserveAttributes(src, dst string) {
 }
 
 // IsDir returns true if the passed string looks like it specifies a directory, false otherwise.
-// It doesn't look at the file system, so is safe to use if the directory doesn't yet exist
 func IsDir(dir string) bool {
-	return 0 < len(dir) && dir[len(dir)-1] == os.PathSeparator
+	info, err := os.Lstat(dir)
+	return err == nil && info.Mode().IsDir() && info.Mode()&os.ModeSymlink == 0
 }
 
 // SameFile returns true if the two file paths specify the same path.
