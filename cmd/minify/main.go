@@ -306,7 +306,7 @@ func run() int {
 	// set output, empty means stdout, ending in slash means a directory, otherwise a file
 	dirDst := false
 	if output != "" {
-		dirDst := IsDir(output)
+		dirDst = IsDir(output)
 		if !dirDst {
 			if 1 < len(inputs) && !bundle {
 				dirDst = true
@@ -747,13 +747,7 @@ func minify(t Task) bool {
 	} else {
 		// rename original when overwriting
 		for i := range t.srcs {
-			sameFile, err := SameFile(t.srcs[i], t.dst)
-			if err != nil {
-				Error.Println(err)
-				return false
-			}
-
-			if sameFile {
+			if sameFile, _ := SameFile(t.srcs[i], t.dst); sameFile {
 				t.srcs[i] += ".bak"
 				err := try.Do(func(attempt int) (bool, error) {
 					ferr := os.Rename(t.dst, t.srcs[i])
@@ -911,16 +905,15 @@ func IsDir(dir string) bool {
 // SameFile returns true if the two file paths specify the same path.
 // While Linux is case-preserving case-sensitive (and therefore a string comparison will work),
 // Windows is case-preserving case-insensitive; we use os.SameFile() to work cross-platform.
-func SameFile(left string, right string) (bool, error) {
-	lft, err := os.Stat(left)
+func SameFile(filename1 string, filename2 string) (bool, error) {
+	fi1, err := os.Stat(filename1)
 	if err != nil {
-		return false, fmt.Errorf("reading FileInfo for %q: %w", left, err)
+		return false, err
 	}
 
-	rht, err := os.Stat(right)
+	fi2, err := os.Stat(filename2)
 	if err != nil {
-		return false, fmt.Errorf("reading FileInfo for %q: %w", right, err)
+		return false, err
 	}
-
-	return os.SameFile(lft, rht), nil
+	return os.SameFile(fi1, fi2), nil
 }
