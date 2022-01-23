@@ -84,7 +84,7 @@ func (w *Watcher) Run() chan string {
 				// check if changed file is being watched (as a file or indirectly in a dir)
 				watched := false
 				for path := range w.paths {
-					if 0 < len(path) && path[len(path)-1] != '/' {
+					if IsDir(path) {
 						// file in w.paths
 						if path == filepath.Clean(event.Name) {
 							watched = true

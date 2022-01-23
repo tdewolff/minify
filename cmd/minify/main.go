@@ -73,7 +73,7 @@ type Task struct {
 // NewTask returns a new Task.
 func NewTask(root, input, output string, sync bool) (Task, error) {
 	t := Task{[]string{input}, output, sync}
-	if 0 < len(output) && output[len(output)-1] == '/' {
+	if IsDir(output) {
 		rel, err := filepath.Rel(root, input)
 		if err != nil {
 			return Task{}, err
@@ -306,7 +306,7 @@ func run() int {
 	// set output, empty means stdout, ending in slash means a directory, otherwise a file
 	dirDst := false
 	if output != "" {
-		dirDst := output[len(output)-1] == '/'
+		dirDst := IsDir(output)
 		if !dirDst {
 			if 1 < len(inputs) && !bundle {
 				dirDst = true
@@ -325,7 +325,7 @@ func run() int {
 
 		output = filepath.Clean(output)
 		if dirDst {
-			output += "/"
+			output += string(os.PathSeparator)
 		}
 	} else if 1 < len(inputs) {
 		Error.Println("must specify --bundle for multiple input files with stdout destination")
@@ -569,7 +569,8 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 				Warning.Println("--recursive not specified, omitting directory", input)
 				continue
 			}
-			roots = append(roots, input)
+			root = input
+			roots = append(roots, root)
 
 			var walkFn func(string, DirEntry, error) error
 			walkFn = func(path string, d DirEntry, err error) error {
@@ -583,7 +584,14 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 					}
 					return nil
 				}
-				path = filepath.Clean(path)
+
+				if filepath.IsAbs(path) {
+					// path is absolute, clean it
+					path = filepath.Clean(path)
+				} else {
+					// path is relative, make an absolute path - Join() returns a clean result
+					path = filepath.Join(root, path)
+				}
 
 				if !preserveLinks && d.Type()&os.ModeSymlink != 0 {
 					// follow and dereference symlinks
@@ -620,7 +628,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 				}
 				return nil
 			}
-			if err := WalkDir(DirFS("."), input, walkFn); err != nil {
+			if err := WalkDir(DirFS(input), ".", walkFn); err != nil {
 				return nil, nil, err
 			}
 		} else {
@@ -640,8 +648,9 @@ func openInputFile(input string) (io.ReadCloser, error) {
 			r, ferr = os.Open(input)
 			return attempt < 5, ferr
 		})
+
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("open input file %q: %w", input, err)
 		}
 	}
 	return r, nil
@@ -652,16 +661,19 @@ func openOutputFile(output string) (*os.File, error) {
 	if output == "" {
 		w = os.Stdout
 	} else {
-		if err := os.MkdirAll(filepath.Dir(output), 0777); err != nil {
-			return nil, err
+		dir := filepath.Dir(output)
+		if err := os.MkdirAll(dir, 0777); err != nil {
+			return nil, fmt.Errorf("creating directory %q: %w", dir, err)
 		}
+
 		err := try.Do(func(attempt int) (bool, error) {
 			var ferr error
 			w, ferr = os.OpenFile(output, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
 			return attempt < 5, ferr
 		})
+
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("open output file %q: %w", output, err)
 		}
 	}
 	return w, nil
@@ -735,7 +747,13 @@ func minify(t Task) bool {
 	} else {
 		// rename original when overwriting
 		for i := range t.srcs {
-			if t.srcs[i] == t.dst {
+			sameFile, err := SameFile(t.srcs[i], t.dst)
+			if err != nil {
+				Error.Println(err)
+				return false
+			}
+
+			if sameFile {
 				t.srcs[i] += ".bak"
 				err := try.Do(func(attempt int) (bool, error) {
 					ferr := os.Rename(t.dst, t.srcs[i])
@@ -882,4 +900,27 @@ func preserveAttributes(src, dst string) {
 			}
 		}
 	}
+}
+
+// IsDir returns true if the passed string looks like it specifies a directory, false otherwise.
+// It doesn't look at the file system, so is safe to use if the directory doesn't yet exist
+func IsDir(dir string) bool {
+	return 0 < len(dir) && dir[len(dir)-1] == os.PathSeparator
+}
+
+// SameFile returns true if the two file paths specify the same path.
+// While Linux is case-preserving case-sensitive (and therefore a string comparison will work),
+// Windows is case-preserving case-insensitive; we use os.SameFile() to work cross-platform.
+func SameFile(left string, right string) (bool, error) {
+	lft, err := os.Stat(left)
+	if err != nil {
+		return false, fmt.Errorf("reading FileInfo for %q: %w", left, err)
+	}
+
+	rht, err := os.Stat(right)
+	if err != nil {
+		return false, fmt.Errorf("reading FileInfo for %q: %w", right, err)
+	}
+
+	return os.SameFile(lft, rht), nil
 }
