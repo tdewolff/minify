@@ -67,6 +67,7 @@ func BenchmarkJS(b *testing.B) {
 		"sample_jquery.js",
 		"sample_jqueryui.js",
 		"sample_moment.js",
+		"sample_victory.js",
 	}
 	for _, sample := range samples {
 		benchmark(b, "application/javascript", sample)
