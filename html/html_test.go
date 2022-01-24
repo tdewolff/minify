@@ -191,8 +191,8 @@ func TestHTMLCSSJS(t *testing.T) {
 		expected string
 	}{
 		// bugs
-		{`<script>var a='<\/script>'</script>`, `<script>var a='<\/script>'</script>`},                                                          // #355
-		{`<script>var a='</scr'+'ipt>'</script>`, `<script>var a='<\/script>'</script>`},                                                        // #355
+		{`<script>var a="<\/script>"</script>`, `<script>var a="<\/script>"</script>`},                                                          // #355
+		{`<script>var a="</scr"+"ipt>"</script>`, `<script>var a="<\/script>"</script>`},                                                        // #355
 		{`<div style="font-family: Arial, &#39;sans-serif&#39;; font-size: 22px;">`, `<div style=font-family:Arial,sans-serif;font-size:22px>`}, // #272
 		{`<style amp-boilerplate>body{-webkit-animation:-amp-start 8s    steps(1,end) 0s 1 normal both;}</style>`, `<style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;}</style>`},
 	}
