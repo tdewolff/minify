@@ -924,20 +924,12 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				m.write(closeParenBytes)
 			}
 		} else {
-			if expr.Op == js.LtToken {
-				// switch < for > (GZIP improvement)
-				expr.Op = js.GtToken
-				expr.X, expr.Y = expr.Y, expr.X
-			} else if expr.Op == js.LtEqToken {
-				// switch <= for >= (GZIP improvement)
-				expr.Op = js.GtEqToken
-				expr.X, expr.Y = expr.Y, expr.X
-			} else if expr.Op == js.EqEqToken || expr.Op == js.NotEqToken || expr.Op == js.EqEqEqToken || expr.Op == js.NotEqEqToken {
-				// switch a==const for const==a, such as typeof a=="undefined" for "undefined"==typeof a (GZIP improvement)
-				if _, ok := expr.Y.(*js.LiteralExpr); ok {
-					expr.X, expr.Y = expr.Y, expr.X
-				}
-			}
+			//if expr.Op == js.EqEqToken || expr.Op == js.NotEqToken || expr.Op == js.EqEqEqToken || expr.Op == js.NotEqEqToken {
+			//	// switch a==const for const==a, such as typeof a=="undefined" for "undefined"==typeof a (GZIP improvement)
+			//	if _, ok := expr.Y.(*js.LiteralExpr); ok {
+			//		expr.X, expr.Y = expr.Y, expr.X
+			//	}
+			//}
 
 			m.minifyExpr(expr.X, precLeft)
 			// 0 < len(m.prev) always
