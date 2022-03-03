@@ -1,8 +1,11 @@
 package js
 
 import (
+	"io"
 	"testing"
 
+	"github.com/tdewolff/parse/v2"
+	"github.com/tdewolff/parse/v2/js"
 	"github.com/tdewolff/test"
 )
 
@@ -31,4 +34,46 @@ func TestHexadecimalNumber(t *testing.T) {
 	test.Bytes(t, hexadecimalNumber([]byte("0xe000000000"), 0), []byte("0xe000000000"))
 	test.Bytes(t, hexadecimalNumber([]byte("0xE000000000"), 0), []byte("0xE000000000"))
 	test.Bytes(t, hexadecimalNumber([]byte("0x10000000000"), 0), []byte("0x10000000000"))
+}
+
+func TestHasSideEffects(t *testing.T) {
+	jsTests := []struct {
+		js  string
+		has bool
+	}{
+		{"1", false},
+		{"a", false},
+		{"a++", true},
+		{"a--", true},
+		{"++a", true},
+		{"--a", true},
+		{"delete a", true},
+		{"!a", false},
+		{"a=5", true},
+		{"a+=5", true},
+		{"a+5", false},
+		{"a()", true},
+		{"a.b", false},
+		{"a.b()", true},
+		{"a().b", true},
+		{"a[b]", false},
+		{"a[b()]", true},
+		{"a()[b]", true},
+		{"a?.b", false},
+		{"a()?.b", true},
+		{"a?.b()", true},
+		{"new a", true},
+		{"new a()", true},
+	}
+
+	for _, tt := range jsTests {
+		t.Run(tt.js, func(t *testing.T) {
+			ast, err := js.Parse(parse.NewInputString(tt.js), js.Options{})
+			if err != io.EOF {
+				test.Error(t, err)
+			}
+			expr := ast.List[0].(*js.ExprStmt).Value
+			test.T(t, hasSideEffects(expr), tt.has)
+		})
+	}
 }

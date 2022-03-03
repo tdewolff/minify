@@ -275,7 +275,7 @@ func exprPrec(i js.IExpr) js.OpPrec {
 	case *js.GroupExpr:
 		return exprPrec(expr.X)
 	}
-	return js.OpExpr // does not happen
+	return js.OpExpr // CommaExpr
 }
 
 // TODO: use in more cases
@@ -409,7 +409,7 @@ func (m *jsMinifier) isUndefined(i js.IExpr) bool {
 			return true
 		}
 	} else if unary, ok := i.(*js.UnaryExpr); ok && unary.Op == js.VoidToken {
-		return true
+		return !hasSideEffects(unary.X)
 	}
 	return false
 }
@@ -476,6 +476,64 @@ func (m *jsMinifier) isEqualExpr(a, b js.IExpr) bool {
 	}
 	// TODO: use reflect.DeepEqual?
 	return false
+}
+
+func hasSideEffects(i js.IExpr) bool {
+	// assume that variable usage and that the index operator themselves have no side effects
+	switch expr := i.(type) {
+	case *js.Var, *js.LiteralExpr, *js.FuncDecl, *js.ClassDecl, *js.ArrowFunc, *js.NewTargetExpr, *js.ImportMetaExpr:
+		return false
+	case *js.NewExpr, *js.CallExpr, *js.YieldExpr:
+		return true
+	case *js.GroupExpr:
+		return hasSideEffects(expr.X)
+	case *js.DotExpr:
+		return hasSideEffects(expr.X)
+	case *js.IndexExpr:
+		return hasSideEffects(expr.X) || hasSideEffects(expr.Y)
+	case *js.OptChainExpr:
+		return hasSideEffects(expr.X) || hasSideEffects(expr.Y)
+	case *js.CondExpr:
+		return hasSideEffects(expr.Cond) || hasSideEffects(expr.X) || hasSideEffects(expr.Y)
+	case *js.CommaExpr:
+		for _, item := range expr.List {
+			if hasSideEffects(item) {
+				return true
+			}
+		}
+	case *js.ArrayExpr:
+		for _, item := range expr.List {
+			if hasSideEffects(item.Value) {
+				return true
+			}
+		}
+		return false
+	case *js.ObjectExpr:
+		for _, item := range expr.List {
+			if hasSideEffects(item.Value) || item.Init != nil && hasSideEffects(item.Init) || item.Name != nil && item.Name.IsComputed() && hasSideEffects(item.Name.Computed) {
+				return true
+			}
+		}
+		return false
+	case *js.TemplateExpr:
+		if hasSideEffects(expr.Tag) {
+			return true
+		}
+		for _, item := range expr.List {
+			if hasSideEffects(item.Expr) {
+				return true
+			}
+		}
+		return false
+	case *js.UnaryExpr:
+		if expr.Op == js.DeleteToken || expr.Op == js.PreIncrToken || expr.Op == js.PreDecrToken || expr.Op == js.PostIncrToken || expr.Op == js.PostDecrToken {
+			return true
+		}
+		return hasSideEffects(expr.X)
+	case *js.BinaryExpr:
+		return binaryOpPrecMap[expr.Op] == js.OpAssign
+	}
+	return true
 }
 
 func isBooleanExpr(expr js.IExpr) bool {

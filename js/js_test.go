@@ -711,6 +711,7 @@ func TestJS(t *testing.T) {
 		{`if(a){const b=0}`, ``},                                                                        // #428
 		{`()=>({a(){b=!b}})`, `()=>({a(){b=!b}})`},                                                      // #429
 		{`var a=1;function f(){return 1}var{min,max}=Math;function g(){return 2}`, `a=1;function f(){return 1}var{min,max}=Math,a;function g(){return 2}`}, // #445
+		{`const f=x=>void console.log(x)`, `const f=x=>void console.log(x)`},                                                                               // #463
 	}
 
 	m := minify.New()
