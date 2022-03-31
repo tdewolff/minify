@@ -257,7 +257,8 @@ type minifyWriter struct {
 
 // Write intercepts any writes to the writer.
 func (w *minifyWriter) Write(b []byte) (int, error) {
-	return w.pw.Write(b)
+	n, _ := w.pw.Write(b)
+	return n, w.err
 }
 
 // Close must be called when writing has finished. It returns the error from the minifier.
@@ -278,8 +279,8 @@ func (m *M) Writer(mediatype string, w io.Writer) *minifyWriter {
 		defer mw.wg.Done()
 
 		if err := m.Minify(mediatype, w, pr); err != nil {
-			io.Copy(w, pr)
 			mw.err = err
+			io.Copy(w, pr)
 		}
 		pr.Close()
 	}()
