@@ -600,7 +600,33 @@ func main() {
 	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
 	fs := http.FileServer(http.Dir("www/"))
-	http.Handle("/", m.Middleware(fs))
+	http.Handle("/", m.MiddlewareWithError(fs))
+}
+
+func handleError(w http.ResponseWriter, r *http.Request, err error) {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+}
+```
+
+In order to properly handle minify errors, it is necessary to close the response writer since all writes are concurrently handled. There is no need to check errors on writes since they will be returned on closing.
+
+```go
+func main() {
+	m := minify.New()
+	m.AddFunc("text/html", html.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), js.Minify)
+
+	input := `<script>const i = 1_000_</script>` // Faulty JS
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte(input))
+
+		if err = w.(io.Closer).Close(); err != nil {
+			panic(err)
+		}
+	})).ServeHTTP(rec, req)
 }
 ```
 
