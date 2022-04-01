@@ -7,10 +7,10 @@ import (
 
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/css"
+	minifyXML "github.com/tdewolff/minify/v2/xml"
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/buffer"
 	"github.com/tdewolff/parse/v2/xml"
-	minifyXML "github.com/tdewolff/minify/v2/xml"
 )
 
 var (
@@ -28,6 +28,7 @@ var (
 
 // Minifier is an SVG minifier.
 type Minifier struct {
+	KeepComments bool
 	Precision    int // number of significant digits
 	newPrecision int // precision for new numbers
 }
@@ -69,6 +70,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				return nil
 			}
 			return l.Err()
+		case xml.CommentToken:
+			if o.KeepComments {
+				w.Write(t.Data)
+			}
 		case xml.DOCTYPEToken:
 			if len(t.Text) > 0 && t.Text[len(t.Text)-1] == ']' {
 				w.Write(t.Data)

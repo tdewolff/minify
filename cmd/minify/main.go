@@ -153,6 +153,7 @@ func run() int {
 	flag.BoolVar(&jsMinifier.NoNullishOperator, "js-no-nullish-operator", false, "Don't use the ?? nullish coalescing operator")
 	flag.IntVar(&jsonMinifier.Precision, "json-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
 	flag.BoolVar(&jsonMinifier.KeepNumbers, "json-keep-numbers", false, "Preserve original numbers instead of minifying them")
+	flag.BoolVar(&svgMinifier.KeepComments, "svg-keep-comments", false, "Preserve all comments")
 	flag.IntVar(&svgMinifier.Precision, "svg-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
 	flag.BoolVar(&xmlMinifier.KeepWhitespace, "xml-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
 	if len(os.Args) == 1 {
