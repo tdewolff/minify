@@ -219,7 +219,7 @@ func TestWriter(t *testing.T) {
 	mw = m.Writer("dummy/err", w)
 	_, _ = mw.Write([]byte("test"))
 	test.T(t, mw.Close(), errDummy)
-	test.String(t, w.String(), "test", "equal input after dummy minify writer")
+	test.String(t, w.String(), "")
 
 	w = &bytes.Buffer{}
 	mw = m.Writer("dummy/late-err", w)
@@ -228,18 +228,18 @@ func TestWriter(t *testing.T) {
 	test.String(t, w.String(), "")
 }
 
-type responseWriter struct {
+type testResponseWriter struct {
 	writer io.Writer
 	header http.Header
 }
 
-func (w *responseWriter) Header() http.Header {
+func (w *testResponseWriter) Header() http.Header {
 	return w.header
 }
 
-func (w *responseWriter) WriteHeader(_ int) {}
+func (w *testResponseWriter) WriteHeader(_ int) {}
 
-func (w *responseWriter) Write(b []byte) (int, error) {
+func (w *testResponseWriter) Write(b []byte) (int, error) {
 	return w.writer.Write(b)
 }
 
@@ -251,7 +251,7 @@ func TestResponseWriter(t *testing.T) {
 	})
 
 	b := &bytes.Buffer{}
-	w := &responseWriter{b, http.Header{}}
+	w := &testResponseWriter{b, http.Header{}}
 	r := &http.Request{RequestURI: "/index.html"}
 	mw := m.ResponseWriter(w, r)
 	test.Error(t, mw.Close())
@@ -260,7 +260,7 @@ func TestResponseWriter(t *testing.T) {
 	test.String(t, b.String(), "test", "equal input after dummy minify response writer")
 
 	b = &bytes.Buffer{}
-	w = &responseWriter{b, http.Header{}}
+	w = &testResponseWriter{b, http.Header{}}
 	r = &http.Request{RequestURI: "/index"}
 	mw = m.ResponseWriter(w, r)
 	mw.Header().Add("Content-Type", "text/html")
@@ -278,7 +278,7 @@ func TestMiddleware(t *testing.T) {
 	})
 
 	b := &bytes.Buffer{}
-	w := &responseWriter{b, http.Header{}}
+	w := &testResponseWriter{b, http.Header{}}
 	r := &http.Request{RequestURI: "/index.html"}
 	m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("test"))
