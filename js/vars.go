@@ -183,12 +183,16 @@ func addDefinition(decl *js.VarDecl, binding js.IBinding, value js.IExpr, forwar
 
 			item := decl.List[idx]
 			if v, ok := item.Binding.(*js.Var); ok && v == vbind {
-				if decl.List[idx].Default != nil {
+				if item.Default != nil {
 					return false
 				}
-				decl.List[idx].Default = value
-				decl.List = append(decl.List, decl.List[idx])
+				item.Default = value
 				decl.List = append(decl.List[:idx], decl.List[idx+1:]...)
+				if forward {
+					decl.List = append([]js.BindingElement{item}, decl.List...)
+				} else {
+					decl.List = append(decl.List, item)
+				}
 				return true
 			}
 		}
@@ -227,12 +231,12 @@ func addDefinition(decl *js.VarDecl, binding js.IBinding, value js.IExpr, forwar
 	//return true
 }
 
-func mergeVarDecls(dst, src *js.VarDecl) bool {
+func mergeVarDecls(dst, src *js.VarDecl, forward bool) bool {
 	// this is the second VarDecl, so we are hoisting var declarations, which means the forInit variables are already in 'left'
 	merge := true
 	for j := 0; j < len(src.List); j++ {
 		if src.List[j].Default != nil {
-			if addDefinition(dst, src.List[j].Binding, src.List[j].Default, false) {
+			if addDefinition(dst, src.List[j].Binding, src.List[j].Default, forward) {
 				src.List = append(src.List[:j], src.List[j+1:]...)
 				j--
 			} else {
@@ -246,20 +250,20 @@ func mergeVarDecls(dst, src *js.VarDecl) bool {
 	return merge
 }
 
-func mergeVarDeclExprStmt(decl *js.VarDecl, exprStmt *js.ExprStmt, swapped bool) bool {
+func mergeVarDeclExprStmt(decl *js.VarDecl, exprStmt *js.ExprStmt, forward bool) bool {
 	if src, ok := exprStmt.Value.(*js.VarDecl); ok {
 		// this happens when a variable declarations is converted to an expression
-		return mergeVarDecls(decl, src)
+		return mergeVarDecls(decl, src, forward)
 	} else if commaExpr, ok := exprStmt.Value.(*js.CommaExpr); ok {
 		n := 0
 		for i := 0; i < len(commaExpr.List); i++ {
 			item := commaExpr.List[i]
-			if swapped {
+			if forward {
 				item = commaExpr.List[len(commaExpr.List)-i-1]
 			}
 			if binaryExpr, ok := item.(*js.BinaryExpr); ok && binaryExpr.Op == js.EqToken {
 				if v, ok := binaryExpr.X.(*js.Var); ok && v.Decl == js.VariableDecl {
-					if addDefinition(decl, v, binaryExpr.Y, swapped) {
+					if addDefinition(decl, v, binaryExpr.Y, forward) {
 						n++
 						continue
 					}
@@ -268,7 +272,7 @@ func mergeVarDeclExprStmt(decl *js.VarDecl, exprStmt *js.ExprStmt, swapped bool)
 			break
 		}
 		merge := n == len(commaExpr.List)
-		if !swapped {
+		if !forward {
 			commaExpr.List = commaExpr.List[n:]
 		} else {
 			commaExpr.List = commaExpr.List[:len(commaExpr.List)-n]
@@ -276,7 +280,7 @@ func mergeVarDeclExprStmt(decl *js.VarDecl, exprStmt *js.ExprStmt, swapped bool)
 		return merge
 	} else if binaryExpr, ok := exprStmt.Value.(*js.BinaryExpr); ok && binaryExpr.Op == js.EqToken {
 		if v, ok := binaryExpr.X.(*js.Var); ok && v.Decl == js.VariableDecl {
-			if addDefinition(decl, v, binaryExpr.Y, swapped) {
+			if addDefinition(decl, v, binaryExpr.Y, forward) {
 				return true
 			}
 		}

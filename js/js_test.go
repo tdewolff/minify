@@ -712,6 +712,7 @@ func TestJS(t *testing.T) {
 		{`()=>({a(){b=!b}})`, `()=>({a(){b=!b}})`},                                                      // #429
 		{`var a=1;function f(){return 1}var{min,max}=Math;function g(){return 2}`, `a=1;function f(){return 1}var{min,max}=Math,a;function g(){return 2}`}, // #445
 		{`const f=x=>void console.log(x)`, `const f=x=>void console.log(x)`},                                                                               // #463
+		{`(function(){var a=b;var c=d.x,e=f.y})()`, `(function(){var a=b,c=d.x,e=f.y})()`},                                                                 // #472
 	}
 
 	m := minify.New()
@@ -780,6 +781,7 @@ func TestJSVarRenaming(t *testing.T) {
 		{`let a=0;switch(a){case 0:let b=1;case 1:let c=2}`, `let a=0;switch(a){case 0:let a=1;case 1:let b=2}`},
 		{`({a:b=1}={})=>b`, `({a=1}={})=>a`}, // #422
 		{`()=>{var a;if(x){const b=0;while(true);}}`, `()=>{if(x){const b=0;for(var a;!0;);}}`},
+		{`(e,s)=>{e=>0,s(e(s))}`, `(b,a)=>{a=>0,a(b(a))}`}, // #469
 	}
 
 	m := minify.New()

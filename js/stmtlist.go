@@ -198,7 +198,7 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 							j--
 						} else if ok && (decl.TokenType == js.VarToken || decl.TokenType == js.ErrorToken) {
 							// this is the second VarDecl, so we are hoisting var declarations, which means the forInit variables are already in 'left'
-							merge := mergeVarDecls(left, decl)
+							merge := mergeVarDecls(left, decl, false)
 							if merge {
 								decl.TokenType = js.VarToken
 								forStmt.Init = left
