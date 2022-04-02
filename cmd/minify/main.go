@@ -539,6 +539,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 		var info os.FileInfo
 		var err error
 		if !preserveLinks {
+			// follow and dereference symlinks
 			info, err = os.Stat(input)
 		} else {
 			info, err = os.Lstat(input)
@@ -548,7 +549,8 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 		}
 
 		root := filepath.Dir(input) + string(os.PathSeparator) + "."
-		if info.Mode()&os.ModeSymlink != 0 {
+		if preserveLinks && info.Mode()&os.ModeSymlink != 0 {
+			// copy symlink as is
 			if !sync {
 				Warning.Println("--sync not specified, omitting symbolic link", input)
 				continue
@@ -559,7 +561,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 			}
 			tasks = append(tasks, task)
 		} else if info.Mode().IsRegular() {
-			valid := pattern == nil || pattern.MatchString(info.Name())
+			valid := pattern == nil || pattern.MatchString(info.Name()) // don't filter mimetype
 			if valid || sync {
 				task, err := NewTask(root, input, output, !valid)
 				if err != nil {
@@ -610,7 +612,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 				}
 
 				if preserveLinks && d.Type()&os.ModeSymlink != 0 {
-					// copy symlinks as is
+					// copy symlink as is
 					if !sync {
 						Warning.Println("--sync not specified, omitting symbolic link", path)
 						return nil
