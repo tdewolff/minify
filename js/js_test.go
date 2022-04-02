@@ -334,6 +334,10 @@ func TestJS(t *testing.T) {
 		{`var a,b=c;b=a`, `var a,b=c;b=a`},
 		{`var{a}=f;var b=c,d=e;`, `var{a}=f,b=c,d=e`},
 		{`var a,b;a=1,b=2,c=3`, `var a=1,b=2;c=3`},
+		{`var a=[];var b={};var c=d,e=f`, `var a=[],b={},c=d,e=f`},
+		{`var a=[];var b={};var c=d,e=f`, `var a=[],b={},c=d,e=f`},
+		{`var a=[];var b;var c,e=f`, `var a=[],b,c,e=f`},
+		{`var a=[];f();var b;f();var c;f();var e=f`, `var a=[],b,c,e;f(),f(),f(),e=f`},
 		// TODO: test for variables renaming (first rename, then merge vars)
 
 		// function and method declarations

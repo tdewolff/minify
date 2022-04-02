@@ -261,7 +261,13 @@ func mergeVarDeclExprStmt(decl *js.VarDecl, exprStmt *js.ExprStmt, forward bool)
 			if forward {
 				item = commaExpr.List[len(commaExpr.List)-i-1]
 			}
-			if binaryExpr, ok := item.(*js.BinaryExpr); ok && binaryExpr.Op == js.EqToken {
+			if src, ok := item.(*js.VarDecl); ok {
+				// this happens when a variable declarations is converted to an expression
+				if mergeVarDecls(decl, src, forward) {
+					n++
+					continue
+				}
+			} else if binaryExpr, ok := item.(*js.BinaryExpr); ok && binaryExpr.Op == js.EqToken {
 				if v, ok := binaryExpr.X.(*js.Var); ok && v.Decl == js.VariableDecl {
 					if addDefinition(decl, v, binaryExpr.Y, forward) {
 						n++
