@@ -54,7 +54,7 @@ func TestJS(t *testing.T) {
 		{`/a/ instanceof b`, `/a/ instanceof b`},
 		{`[a] instanceof b`, `[a]instanceof b`},
 		{`let a = 5;a`, `let a=5;a`},
-		{`let a = 5,b;a,b`, `let a=5,b;a,b`},
+		{`let a = 5,b;a,b`, `let b,a=5;a,b`},
 		{`let a,b = 5;a,b`, `let a,b=5;a,b`},
 		{`function a(){}`, `function a(){}`},
 		{`function a(b){b}`, `function a(b){b}`},
@@ -271,7 +271,6 @@ func TestJS(t *testing.T) {
 		{`var a;for(var a=1;a;a++);`, `for(var a=1;a;a++);`},
 		{`var [,,a,,]=b`, `var[,,a]=b`},
 		{`var [,,a,,...c]=b`, `var[,,a,,...c]=b`},
-		//{`var {...a}=c;for(var {...b}=d;b;b++);`, `for(var{...a}=c,{...b}=d;b;b++);`}, // TODO
 		{`const a=3;for(const b=0;b;b++);a`, `const a=3;for(const b=0;b;b++);a`},
 		{`var a;for(let b=0;b;b++);a`, `var a;for(let b=0;b;b++);a`},
 		{`var [a,]=[b,]`, `var[a]=[b]`},
@@ -296,10 +295,10 @@ func TestJS(t *testing.T) {
 		{`var a;var b=6;a=7;b`, `var b=6,a=7;b`}, // swap declaration order to maintain definition order
 		{`var a=5;var b=6;a=7,b`, `var a=5,b=6;a=7,b`},
 		{`var a;var b=6;a,b,z=7`, `var a,b=6;a,b,z=7`},
-		{`for(var a=6,b=7;;);var c=8;a,b,c`, `for(var a=6,b=7,c;;);c=8,a,b,c`},
-		{`for(var c;b;){let a=8;a};var a;a`, `for(var c,a;b;){let a=8;a}a`},
+		{`for(var a=6,b=7;;);var c=8;a,b,c`, `for(var c,a=6,b=7;;);c=8,a,b,c`},
+		{`for(var c;b;){let a=8;a};var a;a`, `for(var a,c;b;){let a=8;a}a`},
 		{`for(;b;){let a=8;a};var a;var b;a`, `for(var a,b;b;){let a=8;a}a`},
-		{`var a=1,b=2;while(c);var d=3,e=4;a,b,d,e`, `for(var a=1,b=2,d,e;c;);d=3,e=4,a,b,d,e`},
+		{`var a=1,b=2;while(c);var d=3,e=4;a,b,d,e`, `for(var d,e,a=1,b=2;c;);d=3,e=4,a,b,d,e`},
 		{`var z;var [a,b=5,,...c]=[d,e,...f];z`, `var[a,b=5,,...c]=[d,e,...f],z;z`},
 		{`var z;var {a,b=5,[5+8]:c,...d}={d,e,...f};z`, `var{a,b=5,[5+8]:c,...d}={d,e,...f},z;z`},
 		{`var z;z;var [a,b=5,,...c]=[d,e,...f];a`, `z;var[a,b=5,,...c]=[d,e,...f],z;a`},
@@ -327,7 +326,7 @@ func TestJS(t *testing.T) {
 		{`var{a}=x;f();var b,d=e;`, `var{a}=x,b,d;f(),d=e`},
 		{`var{a}=x;f();var b=c,d=e;`, `var{a}=x,b,d;f(),b=c,d=e`},
 		{`var{a}=x;f();var[b]=c,d=e;`, `var{a}=x;f();var[b]=c,d=e`},
-		//{`var{a}=x;f();var{b}=y`, `var{a}=x,b;f(),{b}=y`}, // TODO
+		// {`var{a}=x;f();var{b}=y`, `var{a}=x,b;f(),{b}=y`}, // we can't know that {b} doesn't require parentheses
 		{`var a=0;a=1`, `var a=0;a=1`},
 		{`var a,b;a=b`, `var b,a=b`},
 		{`var a,b=c;a=b`, `var b=c,a=b`},
@@ -336,8 +335,10 @@ func TestJS(t *testing.T) {
 		{`var a,b;a=1,b=2,c=3`, `var a=1,b=2;c=3`},
 		{`var a=[];var b={};var c=d,e=f`, `var a=[],b={},c=d,e=f`},
 		{`var a=[];var b={};var c=d,e=f`, `var a=[],b={},c=d,e=f`},
-		{`var a=[];var b;var c,e=f`, `var a=[],b,c,e=f`},
-		{`var a=[];f();var b;f();var c;f();var e=f`, `var a=[],b,c,e;f(),f(),f(),e=f`},
+		{`var a=[];var b;var c,e=f`, `var b,c,a=[],e=f`},
+		{`var a=[];f();var b;f();var c;f();var e=f`, `var b,c,e,a=[];f(),f(),f(),e=f`},
+		{`var {...a}=c;for(var {...b}=d;b;b++);`, `for(var{...a}=c,{...b}=d;b;b++);`},
+
 		// TODO: test for variables renaming (first rename, then merge vars)
 
 		// function and method declarations
@@ -626,8 +627,8 @@ func TestJS(t *testing.T) {
 		{`var a=5;for(;a;)c()`, `for(var a=5;a;)c()`},
 		{`let a=5;for(;a;)c()`, `let a=5;for(;a;)c()`},
 		{`var a=b in c;for(;a;)c()`, `for(var a=(b in c);a;)c()`},
-		{`var a=5;for(var a=6,b;b;)c()`, `var a=5,b;for(a=6;b;)c()`},
-		{`var a=5;for(var a,b;b;)c()`, `for(var a=5,b;b;)c()`},
+		{`var a=5;for(var a=6,b;b;)c()`, `var b,a=5;for(a=6;b;)c()`},
+		{`var a=5;for(var a,b;b;)c()`, `for(var b,a=5;b;)c()`},
 		//{`var a=5;for(var b=6,c=7;;);`, `for(var a=5,b=6,c=7;;);`}, // TODO
 		{`var a=5;while(a)c()`, `for(var a=5;a;)c()`},
 		{`var a=5;while(a){c()}`, `for(var a=5;a;)c()`},
@@ -698,8 +699,8 @@ func TestJS(t *testing.T) {
 		{`0xeb00000000`, `0xeb00000000`},         // go-fuzz
 		{`export{a,}`, `export{a,}`},             // go-fuzz
 		{`var D;var{U,W,W}=y`, `var{U,W,W}=y,D`}, // go-fuzz
-		{`var A;var b=(function(){var e;})=c,d`, `var A,b=function(){var e}=c,d`},                       // go-fuzz
-		{"var a=/\\s?auto?\\s?/i\nvar b;a,b", "var a=/\\s?auto?\\s?/i,b;a,b"},                           // #14
+		{`var A;var b=(function(){var e;})=c,d`, `var d,A,b=function(){var e}=c`},                       // go-fuzz
+		{"var a=/\\s?auto?\\s?/i\nvar b;a,b", "var b,a=/\\s?auto?\\s?/i;a,b"},                           // #14
 		{"false`string`", "(!1)`string`"},                                                               // #181
 		{"x / /\\d+/.exec(s)[0]", "x/ /\\d+/.exec(s)[0]"},                                               // #183
 		{`()=>{return{a}}`, `()=>({a})`},                                                                // #333
@@ -720,7 +721,7 @@ func TestJS(t *testing.T) {
 	}
 
 	m := minify.New()
-	o := Minifier{KeepVarNames: true}
+	o := Minifier{KeepVarNames: true, useAlphabetVarNames: true}
 	for _, tt := range jsTests {
 		t.Run(tt.js, func(t *testing.T) {
 			r := bytes.NewBufferString(tt.js)
@@ -755,8 +756,8 @@ func TestJSVarRenaming(t *testing.T) {
 		{`!function(){var x=function(){return y};const y=5;x,y}`, `!function(){var b=function(){return a};const a=5;b,a}`},
 		{`!function(){if(1){const x=5;x;5}var y=function(){return x};y}`, `!function(){if(1){const a=5;a,5}var a=function(){return x};a}`},
 		{`!function(){var x=function(){return y};x;if(1){const y=5;y;5}}`, `!function(){var a=function(){return y};if(a,1){const a=5;a,5}}`},
-		{`!function(){var x=function(){return y};x;if(z)var y=5}`, `!function(){var a=function(){return b},b;a,z&&(b=5)}`},
-		{`!function(){var x=function(){return y};x;if(z){var y=5;5}}`, `!function(){var a=function(){return b},b;a,z&&(b=5,5)}`},
+		{`!function(){var x=function(){return y};x;if(z)var y=5}`, `!function(){var b,a=function(){return b};a,z&&(b=5)}`},
+		{`!function(){var x=function(){return y};x;if(z){var y=5;5}}`, `!function(){var b,a=function(){return b};a,z&&(b=5,5)}`},
 		{`!function(){var x,y,z=(x,y)=>x+y;x,y,z}`, `!function(){var a,b,c=(a,b)=>a+b;a,b,c}`},
 		{`!function(){var await;print({await});}`, `!function(){var a;print({await:a})}`},
 		{`function a(){var name; return {name}}`, `function a(){var a;return{name:a}}`},
@@ -766,9 +767,9 @@ func TestJSVarRenaming(t *testing.T) {
 		{`function a(b){function c(d){b[d]}}`, `function a(a){function b(b){a[b]}}`},
 		{`function r(o){function l(t){if(!z[t]){if(!o[t]);}}}`, `function r(a){function b(b){z[b]||!a[b]}}`},
 		{`!function(a){a;for(var b=0;;);};var c;var d;`, `!function(a){a;for(var b=0;;);};var c,d`},
-		{`!function(){var b;b;{(T=x),T}{var T}}`, `!function(){var b,a;b,a=x,a}`},
-		{`var T;T;!function(){var b;b;{(T=x),T}{var T}}`, `var T;T,!function(){var b,a;b,a=x,a}`},
-		{`!function(){let a=b,b=c,c=d,d=e,e=f,f=g,g=h,h=a,j;for(let i=0;;)j=4}`, `!function(){let a=b,b=c,c=d,d=e,e=f,f=g,g=h,h=a,i;for(let a=0;;)i=4}`},
+		{`!function(){var b;b;{(T=x),T}{var T}}`, `!function(){var a,b;b,a=x,a}`},
+		{`var T;T;!function(){var b;b;{(T=x),T}{var T}}`, `var T;T,!function(){var a,b;b,a=x,a}`},
+		{`!function(){let a=b,b=c,c=d,d=e,e=f,f=g,g=h,h=a,j;for(let i=0;;)j=4}`, `!function(){let i,a=b,b=c,c=d,d=e,e=f,f=g,g=h,h=a;for(let a=0;;)i=4}`},
 		{`function a(){var name;with(z){name}} function b(){var name;name}`, `function a(){var name;with(z)name}function b(){var a;a}`},
 		{`!function(){var name;{name;!function(){name;var other;other}}}`, `!function(){var a;a,!function(){a;var b;b}}`},
 		{`name=function(){var a001,a002,a003,a004,a005,a006,a007,a008,a009,a010,a011,a012,a013,a014,a015,a016,a017,a018,a019,a020,a021,a022,a023,a024,a025,a026,a027,a028,a029,a030,a031,a032,a033,a034,a035,a036,a037,a038,a039,a040,a041,a042,a043,a044,a045,a046,a047,a048,a049,a050,a051,a052,a053,a054,a055,a056,a057,a058,a059,a060,a061,a062,a063,a064,a065,a066,a067,a068,a069,a070,a071,a072,a073,a074,a075,a076,a077,a078,a079,a080,a081,a082,a083,a084,a085,a086,a087,a088,a089,a090,a091,a092,a093,a094,a095,a096,a097,a098,a099,a100,a101,a102,a103,a104,a105,a106,a107,a108,a109,a110,a111,a112,a113,a114,a115,a116,a117,a118,a119;a001,a002,a003,a004,a005,a006,a007,a008,a009,a010,a011,a012,a013,a014,a015,a016,a017,a018,a019,a020,a021,a022,a023,a024,a025,a026,a027,a028,a029,a030,a031,a032,a033,a034,a035,a036,a037,a038,a039,a040,a041,a042,a043,a044,a045,a046,a047,a048,a049,a050,a051,a052,a053,a054,a055,a056,a057,a058,a059,a060,a061,a062,a063,a064,a065,a066,a067,a068,a069,a070,a071,a072,a073,a074,a075,a076,a077,a078,a079,a080,a081,a082,a083,a084,a085,a086,a087,a088,a089,a090,a091,a092,a093,a094,a095,a096,a097,a098,a099,a100,a101,a102,a103,a104,a105,a106,a107,a108,a109,a110,a111,a112,a113,a114,a115,a116,a117,a118,a119}`,

@@ -10,6 +10,7 @@ import (
 type renamer struct {
 	identStart    []byte
 	identContinue []byte
+	identOrder    map[byte]int
 	reserved      map[string]struct{}
 	rename        bool
 }
@@ -26,9 +27,14 @@ func newRenamer(rename, useCharFreq bool) *renamer {
 		identStart = []byte("etnsoiarclduhmfpgvbjy_wOxCEkASMFTzDNLRPHIBV$WUKqYGXQZJ")
 		identContinue = []byte("etnsoiarcldu14023hm8f6pg57v9bjy_wOxCEkASMFTzDNLRPHIBV$WUKqYGXQZJ")
 	}
+	identOrder := map[byte]int{}
+	for i, c := range identStart {
+		identOrder[c] = i
+	}
 	return &renamer{
 		identStart:    identStart,
 		identContinue: identContinue,
+		identOrder:    identOrder,
 		reserved:      reserved,
 		rename:        rename,
 	}
@@ -173,62 +179,41 @@ func bindingVars(ibinding js.IBinding) (vs []*js.Var) {
 func addDefinition(decl *js.VarDecl, binding js.IBinding, value js.IExpr, forward bool) bool {
 	// see if not already defined in variable declaration list
 	// if forward is set, binding=value comes before decl, otherwise the reverse holds true
-	if vbind, ok := binding.(*js.Var); ok {
-		for i := 0; i < len(decl.List); i++ {
-			idx := i
-			if forward {
-				// reverse lookup order in destinations
-				idx = len(decl.List) - i - 1
-			}
+	vars := bindingVars(binding)
+	if len(vars) == 0 {
+		return false
+	}
 
-			item := decl.List[idx]
+	// find variables in destination
+	for _, vbind := range vars {
+		for _, item := range decl.List {
 			if v, ok := item.Binding.(*js.Var); ok && v == vbind {
 				if item.Default != nil {
 					return false
 				}
-				item.Default = value
-				decl.List = append(decl.List[:idx], decl.List[idx+1:]...)
-				if forward {
-					decl.List = append([]js.BindingElement{item}, decl.List...)
-				} else {
-					decl.List = append(decl.List, item)
-				}
-				return true
+				break
 			}
 		}
-		return false
 	}
-	return false
 
-	//vars := bindingRefs(binding)
-	//if len(vars) == 0 {
-	//	return false
-	//}
-	//locs := make([]int, len(vars))
-	//for i, vdef := range vars {
-	//	locs[i] = -1
-	//	for loc, item := range decl.List {
-	//		if v, ok := item.Binding.(*js.Var); ok && v == vdef {
-	//			locs[i] = loc
-	//			break
-	//		}
-	//	}
-	//	if locs[i] == -1 {
-	//		return false // cannot (probably) happen if we hoist variables
-	//	}
-	//}
-	//sort.Ints(locs)
-	//if locs[0] != 0 {
-	//	decl.List[0], decl.List[locs[0]] = decl.List[locs[0]], decl.List[0]
-	//}
-	//decl.List[0].Binding = binding
-	//decl.List[0].Default = value
-	//for i := len(locs) - 1; 1 <= i; i-- {
-	//	if locs[i] != locs[i-1] { // ignore duplicates, otherwise remove items from hoisted var declaration
-	//		decl.List = append(decl.List[:locs[i]], decl.List[locs[i]+1:]...)
-	//	}
-	//}
-	//return true
+	// remove variables in destination
+	for _, vbind := range vars {
+		for i, item := range decl.List {
+			if v, ok := item.Binding.(*js.Var); ok && v == vbind {
+				decl.List = append(decl.List[:i], decl.List[i+1:]...)
+				break
+			}
+		}
+	}
+
+	// add declaration to destination
+	item := js.BindingElement{Binding: binding, Default: value}
+	if forward {
+		decl.List = append([]js.BindingElement{item}, decl.List...)
+	} else {
+		decl.List = append(decl.List, item)
+	}
+	return true
 }
 
 func mergeVarDecls(dst, src *js.VarDecl, forward bool) bool {
@@ -301,7 +286,7 @@ func (m *jsMinifier) countHoistLength(ibinding js.IBinding) int {
 
 	n := 0
 	for _, v := range bindingVars(ibinding) {
-		n += len(v.Data) + 1 // +1 for the comma
+		n += len(v.Data) + 1 // +1 for the comma when added to other declaration
 	}
 	return n
 }
@@ -420,12 +405,14 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) {
 			if _, ok := item.Binding.(*js.Var); !ok {
 				if i != 0 {
 					interferes := false
-				InterferenceLoop:
-					for _, ref := range refs {
-						for _, v := range prevRefs {
-							if ref == v {
-								interferes = true
-								break InterferenceLoop
+					if item.Default != nil {
+					InterferenceLoop:
+						for _, ref := range refs {
+							for _, v := range prevRefs {
+								if ref == v {
+									interferes = true
+									break InterferenceLoop
+								}
 							}
 						}
 					}
@@ -437,7 +424,9 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) {
 					break BeginArrayObject
 				}
 			}
-			prevRefs = append(prevRefs, refs...)
+			if item.Default != nil {
+				prevRefs = append(prevRefs, refs...)
+			}
 		}
 	}
 }

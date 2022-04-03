@@ -178,7 +178,7 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 				}
 			} else if left, ok := list[i-1].(*js.VarDecl); ok {
 				if right, ok := list[i].(*js.VarDecl); ok && left.TokenType == right.TokenType {
-					// merge const and let declarations
+					// merge const and let declarations, or non-hoisted var declarations
 					right.List = append(left.List, right.List...)
 					j--
 				} else if left.TokenType == js.VarToken {
