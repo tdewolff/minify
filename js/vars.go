@@ -176,13 +176,10 @@ func bindingVars(ibinding js.IBinding) (vs []*js.Var) {
 	return
 }
 
-func addDefinition(decl *js.VarDecl, binding js.IBinding, value js.IExpr, forward bool) bool {
+func addDefinition(decl *js.VarDecl, binding js.IBinding, value js.IExpr, forward bool) {
 	// see if not already defined in variable declaration list
 	// if forward is set, binding=value comes before decl, otherwise the reverse holds true
 	vars := bindingVars(binding)
-	if len(vars) == 0 {
-		return false
-	}
 
 	// remove variables in destination
 RemoveVarsLoop:
@@ -195,13 +192,15 @@ RemoveVarsLoop:
 			}
 		}
 
-		// variable declaration must be somewhere else, find and remove it
-		for _, decl2 := range decl.Scope.Func.VarDecls {
-			for i, item := range decl2.List {
-				if v, ok := item.Binding.(*js.Var); ok && item.Default == nil && v == vbind {
-					v.Uses--
-					decl2.List = append(decl2.List[:i], decl2.List[i+1:]...)
-					continue RemoveVarsLoop
+		if value != nil {
+			// variable declaration must be somewhere else, find and remove it
+			for _, decl2 := range decl.Scope.Func.VarDecls {
+				for i, item := range decl2.List {
+					if v, ok := item.Binding.(*js.Var); ok && item.Default == nil && v == vbind {
+						v.Uses--
+						decl2.List = append(decl2.List[:i], decl2.List[i+1:]...)
+						continue RemoveVarsLoop
+					}
 				}
 			}
 		}
@@ -214,42 +213,30 @@ RemoveVarsLoop:
 	} else {
 		decl.List = append(decl.List, item)
 	}
-	return true
 }
 
-func mergeVarDecls(dst, src *js.VarDecl, forward bool) bool {
+func mergeVarDecls(dst, src *js.VarDecl, forward bool) {
 	// this is the second VarDecl, so we are hoisting var declarations, which means the forInit variables are already in 'left'
-	merge := true
 	for j := 0; j < len(src.List); j++ {
-		if src.List[j].Default != nil {
-			if addDefinition(dst, src.List[j].Binding, src.List[j].Default, forward) {
-				src.List = append(src.List[:j], src.List[j+1:]...)
-				j--
-			} else {
-				merge = false
-			}
-		} else {
-			src.List = append(src.List[:j], src.List[j+1:]...)
-			j--
+		addDefinition(dst, src.List[j].Binding, src.List[j].Default, forward)
+		src.List = append(src.List[:j], src.List[j+1:]...)
+		j--
+	}
+	// remove from vardecls list of scope
+	scope := src.Scope.Func
+	for i, decl := range scope.VarDecls {
+		if src == decl {
+			scope.VarDecls = append(scope.VarDecls[:i], scope.VarDecls[i+1:]...)
+			break
 		}
 	}
-	if merge {
-		// remove from vardecls list of scope
-		scope := src.Scope.Func
-		for i, decl := range scope.VarDecls {
-			if src == decl {
-				scope.VarDecls = append(scope.VarDecls[:i], scope.VarDecls[i+1:]...)
-				break
-			}
-		}
-	}
-	return merge
 }
 
 func mergeVarDeclExprStmt(decl *js.VarDecl, exprStmt *js.ExprStmt, forward bool) bool {
 	if src, ok := exprStmt.Value.(*js.VarDecl); ok {
 		// this happens when a variable declarations is converted to an expression
-		return mergeVarDecls(decl, src, forward)
+		mergeVarDecls(decl, src, forward)
+		return true
 	} else if commaExpr, ok := exprStmt.Value.(*js.CommaExpr); ok {
 		n := 0
 		for i := 0; i < len(commaExpr.List); i++ {
@@ -259,16 +246,14 @@ func mergeVarDeclExprStmt(decl *js.VarDecl, exprStmt *js.ExprStmt, forward bool)
 			}
 			if src, ok := item.(*js.VarDecl); ok {
 				// this happens when a variable declarations is converted to an expression
-				if mergeVarDecls(decl, src, forward) {
-					n++
-					continue
-				}
+				mergeVarDecls(decl, src, forward)
+				n++
+				continue
 			} else if binaryExpr, ok := item.(*js.BinaryExpr); ok && binaryExpr.Op == js.EqToken {
 				if v, ok := binaryExpr.X.(*js.Var); ok && v.Decl == js.VariableDecl {
-					if addDefinition(decl, v, binaryExpr.Y, forward) {
-						n++
-						continue
-					}
+					addDefinition(decl, v, binaryExpr.Y, forward)
+					n++
+					continue
 				}
 			}
 			break
@@ -282,9 +267,8 @@ func mergeVarDeclExprStmt(decl *js.VarDecl, exprStmt *js.ExprStmt, forward bool)
 		return merge
 	} else if binaryExpr, ok := exprStmt.Value.(*js.BinaryExpr); ok && binaryExpr.Op == js.EqToken {
 		if v, ok := binaryExpr.X.(*js.Var); ok && v.Decl == js.VariableDecl {
-			if addDefinition(decl, v, binaryExpr.Y, forward) {
-				return true
-			}
+			addDefinition(decl, v, binaryExpr.Y, forward)
+			return true
 		}
 	}
 	return false

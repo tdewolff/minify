@@ -343,6 +343,7 @@ func TestJS(t *testing.T) {
 		{`var a=[];f();var b;f();var c;f();var e=f`, `var b,c,e,a=[];f(),f(),f(),e=f`},
 		{`var {...a}=c;for(var {...b}=d;b;b++);`, `for(var{...a}=c,{...b}=d;b;b++);`},
 		{`var o=8,p=9,x=0,y=1;x=x+2;y=y+3;var b=1,c=2,d=3`, `var o=8,p=9,x=0,y=1,x=x+2,y=y+3,b=1,c=2,d=3`},
+		{`var result=[];for(var a=0,array=d;a<array.length;a++){var v=array[a]}`, `for(var v,result=[],a=0,array=d;a<array.length;a++)v=array[a]`},
 		//{`var name=function name(){name()}`, `var name=function(){name()}`}, // TODO
 
 		// TODO: test for variables renaming (first rename, then merge vars)

@@ -238,12 +238,10 @@ func optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 							j--
 						} else if ok && (decl.TokenType == js.VarToken || decl.TokenType == js.ErrorToken) {
 							// this is the second VarDecl, so we are hoisting var declarations, which means the forInit variables are already in 'left'
-							merge := mergeVarDecls(left, decl, false)
-							if merge {
-								decl.TokenType = js.VarToken
-								forStmt.Init = left
-								j--
-							}
+							mergeVarDecls(left, decl, false)
+							decl.TokenType = js.VarToken
+							forStmt.Init = left
+							j--
 						}
 					} else if whileStmt, ok := list[i].(*js.WhileStmt); ok {
 						// TODO: only merge statements that don't have 'in' or 'of' keywords (slow to check?)
