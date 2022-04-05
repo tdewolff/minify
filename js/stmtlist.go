@@ -4,11 +4,11 @@ import (
 	"github.com/tdewolff/parse/v2/js"
 )
 
-func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
+func optimizeStmt(i js.IStmt) js.IStmt {
 	// convert if/else into expression statement, and optimize blocks
 	if ifStmt, ok := i.(*js.IfStmt); ok {
-		hasIf := !m.isEmptyStmt(ifStmt.Body)
-		hasElse := !m.isEmptyStmt(ifStmt.Else)
+		hasIf := !isEmptyStmt(ifStmt.Body)
+		hasElse := !isEmptyStmt(ifStmt.Else)
 		if unaryExpr, ok := ifStmt.Cond.(*js.UnaryExpr); ok && unaryExpr.Op == js.NotToken && hasElse {
 			ifStmt.Cond = unaryExpr.X
 			ifStmt.Body, ifStmt.Else = ifStmt.Else, ifStmt.Body
@@ -17,7 +17,7 @@ func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 		if !hasIf && !hasElse {
 			return &js.ExprStmt{Value: ifStmt.Cond}
 		} else if hasIf && !hasElse {
-			ifStmt.Body = m.optimizeStmt(ifStmt.Body)
+			ifStmt.Body = optimizeStmt(ifStmt.Body)
 			if X, isExprBody := ifStmt.Body.(*js.ExprStmt); isExprBody {
 				if unaryExpr, ok := ifStmt.Cond.(*js.UnaryExpr); ok && unaryExpr.Op == js.NotToken {
 					left := groupExpr(unaryExpr.X, binaryLeftPrecMap[js.OrToken])
@@ -29,15 +29,15 @@ func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 				return &js.ExprStmt{Value: &js.BinaryExpr{Op: js.AndToken, X: left, Y: right}}
 			}
 		} else if !hasIf && hasElse {
-			ifStmt.Else = m.optimizeStmt(ifStmt.Else)
+			ifStmt.Else = optimizeStmt(ifStmt.Else)
 			if X, isExprElse := ifStmt.Else.(*js.ExprStmt); isExprElse {
 				left := groupExpr(ifStmt.Cond, binaryLeftPrecMap[js.OrToken])
 				right := groupExpr(X.Value, binaryRightPrecMap[js.OrToken])
 				return &js.ExprStmt{Value: &js.BinaryExpr{Op: js.OrToken, X: left, Y: right}}
 			}
 		} else if hasIf && hasElse {
-			ifStmt.Body = m.optimizeStmt(ifStmt.Body)
-			ifStmt.Else = m.optimizeStmt(ifStmt.Else)
+			ifStmt.Body = optimizeStmt(ifStmt.Body)
+			ifStmt.Else = optimizeStmt(ifStmt.Else)
 			XExpr, isExprBody := ifStmt.Body.(*js.ExprStmt)
 			YExpr, isExprElse := ifStmt.Else.(*js.ExprStmt)
 			if isExprBody && isExprElse {
@@ -85,12 +85,12 @@ func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 		return decl
 	} else if blockStmt, ok := i.(*js.BlockStmt); ok {
 		// merge body and remove braces if it is not a lexical declaration
-		blockStmt.List = m.optimizeStmtList(blockStmt.List, defaultBlock)
+		blockStmt.List = optimizeStmtList(blockStmt.List, defaultBlock)
 		if len(blockStmt.List) == 1 {
 			varDecl, isVarDecl := blockStmt.List[0].(*js.VarDecl)
 			_, isClassDecl := blockStmt.List[0].(*js.ClassDecl)
 			if !isClassDecl && (!isVarDecl || varDecl.TokenType == js.VarToken) {
-				return m.optimizeStmt(blockStmt.List[0])
+				return optimizeStmt(blockStmt.List[0])
 			}
 			return &js.EmptyStmt{}
 		} else if len(blockStmt.List) == 0 {
@@ -101,14 +101,14 @@ func (m *jsMinifier) optimizeStmt(i js.IStmt) js.IStmt {
 	return i
 }
 
-func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
+func optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 	// merge expression statements as well as if/else statements followed by flow control statements
 	if len(list) == 0 {
 		return list
 	}
 	j := 0                           // write index
 	for i := 0; i < len(list); i++ { // read index
-		if ifStmt, ok := list[i].(*js.IfStmt); ok && !m.isEmptyStmt(ifStmt.Else) && isFlowStmt(lastStmt(ifStmt.Body)) {
+		if ifStmt, ok := list[i].(*js.IfStmt); ok && !isEmptyStmt(ifStmt.Else) && isFlowStmt(lastStmt(ifStmt.Body)) {
 			// if body ends in flow statement (return, throw, break, continue), so we can remove the else statement and put its body in the current scope
 			if blockStmt, ok := ifStmt.Else.(*js.BlockStmt); ok {
 				blockStmt.Scope.Unscope()
@@ -119,7 +119,7 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 			ifStmt.Else = nil
 		}
 
-		list[i] = m.optimizeStmt(list[i])
+		list[i] = optimizeStmt(list[i])
 
 		if _, ok := list[i].(*js.EmptyStmt); ok {
 			k := i + 1
@@ -235,7 +235,7 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 	MergeIfReturnThrow:
 		if 0 < j {
 			// separate from expression merging in case of:  if(a)return b;b=c;return d
-			if ifStmt, ok := list[j-1].(*js.IfStmt); ok && m.isEmptyStmt(ifStmt.Body) != m.isEmptyStmt(ifStmt.Else) {
+			if ifStmt, ok := list[j-1].(*js.IfStmt); ok && isEmptyStmt(ifStmt.Body) != isEmptyStmt(ifStmt.Else) {
 				// either the if body is empty or the else body is empty. In case where both bodies have return/throw, we already rewrote that if statement to an return/throw statement
 				if returnStmt, ok := list[j].(*js.ReturnStmt); ok {
 					if returnStmt.Value == nil {
@@ -279,9 +279,9 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 	if 0 < j {
 		if blockType == functionBlock {
 			if returnStmt, ok := list[j-1].(*js.ReturnStmt); ok {
-				if returnStmt.Value == nil || m.isUndefined(returnStmt.Value) {
+				if returnStmt.Value == nil || isUndefined(returnStmt.Value) {
 					j--
-				} else if commaExpr, ok := returnStmt.Value.(*js.CommaExpr); ok && m.isUndefined(commaExpr.List[len(commaExpr.List)-1]) {
+				} else if commaExpr, ok := returnStmt.Value.(*js.CommaExpr); ok && isUndefined(commaExpr.List[len(commaExpr.List)-1]) {
 					// rewrite function f(){return a,void 0} => function f(){a}
 					if len(commaExpr.List) == 2 {
 						list[j-1] = &js.ExprStmt{Value: commaExpr.List[0]}

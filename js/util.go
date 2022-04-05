@@ -309,7 +309,7 @@ func commaExpr(x, y js.IExpr) js.IExpr {
 	return comma
 }
 
-func (m *jsMinifier) isEmptyStmt(stmt js.IStmt) bool {
+func isEmptyStmt(stmt js.IStmt) bool {
 	if stmt == nil {
 		return true
 	} else if _, ok := stmt.(*js.EmptyStmt); ok {
@@ -323,7 +323,7 @@ func (m *jsMinifier) isEmptyStmt(stmt js.IStmt) bool {
 		return true
 	} else if block, ok := stmt.(*js.BlockStmt); ok {
 		for _, item := range block.List {
-			if ok := m.isEmptyStmt(item); !ok {
+			if ok := isEmptyStmt(item); !ok {
 				return false
 			}
 		}
@@ -363,27 +363,27 @@ func lastStmt(stmt js.IStmt) js.IStmt {
 	return stmt
 }
 
-func (m *jsMinifier) isTrue(i js.IExpr) bool {
+func isTrue(i js.IExpr) bool {
 	if lit, ok := i.(*js.LiteralExpr); ok && lit.TokenType == js.TrueToken {
 		return true
 	} else if unary, ok := i.(*js.UnaryExpr); ok && unary.Op == js.NotToken {
-		ret, _ := m.isFalsy(unary.X)
+		ret, _ := isFalsy(unary.X)
 		return ret
 	}
 	return false
 }
 
-func (m *jsMinifier) isFalse(i js.IExpr) bool {
+func isFalse(i js.IExpr) bool {
 	if lit, ok := i.(*js.LiteralExpr); ok {
 		return lit.TokenType == js.FalseToken
 	} else if unary, ok := i.(*js.UnaryExpr); ok && unary.Op == js.NotToken {
-		ret, _ := m.isTruthy(unary.X)
+		ret, _ := isTruthy(unary.X)
 		return ret
 	}
 	return false
 }
 
-func (m *jsMinifier) toNullishExpr(condExpr *js.CondExpr) (js.IExpr, js.IExpr, bool) {
+func toNullishExpr(condExpr *js.CondExpr) (js.IExpr, js.IExpr, bool) {
 	// convert conditional expression to nullish:  a!=null?a:b  =>  a??b
 	if binaryExpr, ok := condExpr.Cond.(*js.BinaryExpr); ok && (binaryExpr.Op == js.EqEqToken || binaryExpr.Op == js.NotEqToken) {
 		var left, right js.IExpr
@@ -394,16 +394,16 @@ func (m *jsMinifier) toNullishExpr(condExpr *js.CondExpr) (js.IExpr, js.IExpr, b
 			left = condExpr.X
 			right = condExpr.Y
 		}
-		if lit, ok := binaryExpr.X.(*js.LiteralExpr); ((ok && lit.TokenType == js.NullToken) || m.isUndefined(binaryExpr.X)) && m.isEqualExpr(binaryExpr.Y, left) {
+		if lit, ok := binaryExpr.X.(*js.LiteralExpr); ((ok && lit.TokenType == js.NullToken) || isUndefined(binaryExpr.X)) && isEqualExpr(binaryExpr.Y, left) {
 			return left, right, true
-		} else if lit, ok := binaryExpr.Y.(*js.LiteralExpr); ((ok && lit.TokenType == js.NullToken) || m.isUndefined(binaryExpr.Y)) && m.isEqualExpr(binaryExpr.X, left) {
+		} else if lit, ok := binaryExpr.Y.(*js.LiteralExpr); ((ok && lit.TokenType == js.NullToken) || isUndefined(binaryExpr.Y)) && isEqualExpr(binaryExpr.X, left) {
 			return left, right, true
 		}
 	}
 	return nil, nil, false
 }
 
-func (m *jsMinifier) isUndefined(i js.IExpr) bool {
+func isUndefined(i js.IExpr) bool {
 	if v, ok := i.(*js.Var); ok {
 		if bytes.Equal(v.Name(), undefinedBytes) { // TODO: only if not defined
 			return true
@@ -415,15 +415,15 @@ func (m *jsMinifier) isUndefined(i js.IExpr) bool {
 }
 
 // returns whether truthy and whether it could be coerced to a boolean (i.e. when returns (false,true) this means it is falsy)
-func (m *jsMinifier) isTruthy(i js.IExpr) (bool, bool) {
-	if falsy, ok := m.isFalsy(i); ok {
+func isTruthy(i js.IExpr) (bool, bool) {
+	if falsy, ok := isFalsy(i); ok {
 		return !falsy, true
 	}
 	return false, false
 }
 
 // returns whether falsy and whether it could be coerced to a boolean (i.e. when returns (false,true) this means it is truthy)
-func (m *jsMinifier) isFalsy(i js.IExpr) (bool, bool) {
+func isFalsy(i js.IExpr) (bool, bool) {
 	negated := false
 	group, isGroup := i.(*js.GroupExpr)
 	unary, isUnary := i.(*js.UnaryExpr)
@@ -454,7 +454,7 @@ func (m *jsMinifier) isFalsy(i js.IExpr) (bool, bool) {
 			}
 			return !negated, true // falsy
 		}
-	} else if m.isUndefined(i) {
+	} else if isUndefined(i) {
 		return !negated, true // falsy
 	} else if v, ok := i.(*js.Var); ok && bytes.Equal(v.Name(), nanBytes) {
 		return !negated, true // falsy
@@ -462,7 +462,7 @@ func (m *jsMinifier) isFalsy(i js.IExpr) (bool, bool) {
 	return false, false // unknown
 }
 
-func (m *jsMinifier) isEqualExpr(a, b js.IExpr) bool {
+func isEqualExpr(a, b js.IExpr) bool {
 	if group, ok := a.(*js.GroupExpr); ok {
 		a = group.X
 	}
