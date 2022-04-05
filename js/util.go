@@ -569,22 +569,27 @@ func isBooleanExpr(expr js.IExpr) bool {
 	return false
 }
 
+func invertBooleanOp(op js.TokenType) js.TokenType {
+	if op == js.EqEqToken {
+		return js.NotEqToken
+	} else if op == js.NotEqToken {
+		return js.EqEqToken
+	} else if op == js.EqEqEqToken {
+		return js.NotEqEqToken
+	} else if op == js.NotEqEqToken {
+		return js.EqEqEqToken
+	}
+	return js.ErrorToken
+}
+
 func optimizeBooleanExpr(expr js.IExpr, invert bool, prec js.OpPrec) js.IExpr {
 	if invert {
 		// unary !(boolean) has already been handled
 		if binaryExpr, ok := expr.(*js.BinaryExpr); ok && binaryOpPrecMap[binaryExpr.Op] == js.OpEquals {
-			if binaryExpr.Op == js.EqEqToken {
-				binaryExpr.Op = js.NotEqToken
-			} else if binaryExpr.Op == js.NotEqToken {
-				binaryExpr.Op = js.EqEqToken
-			} else if binaryExpr.Op == js.EqEqEqToken {
-				binaryExpr.Op = js.NotEqEqToken
-			} else if binaryExpr.Op == js.NotEqEqToken {
-				binaryExpr.Op = js.EqEqEqToken
-			}
+			binaryExpr.Op = invertBooleanOp(binaryExpr.Op)
 			return expr
 		} else {
-			return &js.UnaryExpr{js.NotToken, groupExpr(expr, js.OpUnary)}
+			return optimizeUnaryExpr(&js.UnaryExpr{js.NotToken, groupExpr(expr, js.OpUnary)}, prec)
 		}
 	} else if isBooleanExpr(expr) {
 		return groupExpr(expr, prec)
@@ -594,26 +599,40 @@ func optimizeBooleanExpr(expr js.IExpr, invert bool, prec js.OpPrec) js.IExpr {
 }
 
 func optimizeUnaryExpr(expr *js.UnaryExpr, prec js.OpPrec) js.IExpr {
-	// rewrite !(a||b) to !a&&!b and similar conversions
 	if group, ok := expr.X.(*js.GroupExpr); ok && expr.Op == js.NotToken {
 		if binary, ok := group.X.(*js.BinaryExpr); ok && (binary.Op == js.AndToken || binary.Op == js.OrToken) {
 			op := js.AndToken
 			if binary.Op == js.AndToken {
 				op = js.OrToken
 			}
-			unaryX, notX := binary.X.(*js.UnaryExpr)
-			if notX {
-				notX = unaryX.Op == js.NotToken
-			}
-			unaryY, notY := binary.Y.(*js.UnaryExpr)
-			if notY {
-				notY = unaryY.Op == js.NotToken
-			}
 			precInside := binaryOpPrecMap[op]
-			if (prec <= precInside || precInside == js.OpCoalesce && prec == js.OpBitOr) && !notX && !notY {
+
+			// rewrite !(a||b) to !a&&!b
+			// rewrite !(a==0||b==0) to a!=0&&b!=0
+			var isNotX, isNotY, isEqX, isEqY bool
+			if unaryExpr, ok := binary.X.(*js.UnaryExpr); ok {
+				isNotX = unaryExpr.Op == js.NotToken
+			} else if binaryExpr, ok := binary.X.(*js.BinaryExpr); ok {
+				isEqX = binaryOpPrecMap[binaryExpr.Op] == js.OpEquals
+			}
+			if unaryExpr, ok := binary.Y.(*js.UnaryExpr); ok {
+				isNotY = unaryExpr.Op == js.NotToken
+			} else if binaryExpr, ok := binary.Y.(*js.BinaryExpr); ok {
+				isEqY = binaryOpPrecMap[binaryExpr.Op] == js.OpEquals
+			}
+			if !isNotX && !isNotY && (isEqX || isEqY || (prec <= precInside || precInside == js.OpCoalesce && prec == js.OpBitOr)) {
 				binary.Op = op
-				binary.X = &js.UnaryExpr{js.NotToken, binary.X}
-				binary.Y = &js.UnaryExpr{js.NotToken, binary.Y}
+				if isEqX {
+					binary.X.(*js.BinaryExpr).Op = invertBooleanOp(binary.X.(*js.BinaryExpr).Op)
+				} else {
+					binary.X = &js.UnaryExpr{js.NotToken, binary.X}
+				}
+				if isEqY {
+
+					binary.Y.(*js.BinaryExpr).Op = invertBooleanOp(binary.Y.(*js.BinaryExpr).Op)
+				} else {
+					binary.Y = &js.UnaryExpr{js.NotToken, binary.Y}
+				}
 				return binary
 			}
 		}
