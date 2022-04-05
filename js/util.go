@@ -580,7 +580,8 @@ func endsInIf(istmt js.IStmt) bool {
 	switch stmt := istmt.(type) {
 	case *js.IfStmt:
 		if stmt.Else == nil {
-			return true
+			_, ok := optimizeStmt(stmt).(*js.IfStmt)
+			return ok
 		}
 		return endsInIf(stmt.Else)
 	case *js.BlockStmt:
