@@ -239,7 +239,7 @@ func TestJS(t *testing.T) {
 		{`if(a)a++;else b;if(b)b++;else c`, `a?a++:b,b?b++:c`},
 		{`if(a){while(b);}`, `if(a)for(;b;);`},
 		{`if(a){while(b);c}`, `if(a){for(;b;);c}`},
-		{`if(a){if(b){while(c);}}`, `if(a)if(b)for(;c;);`},
+		{`if(a){if(b){while(c);}}`, `if(a&&b)for(;c;);`},
 		{`if(a){}else{while(b);}`, `if(a);else for(;b;);`},
 		{`if(a){return b}else{while(c);}`, `if(a)return b;for(;c;);`},
 		{`if(a){return b}else{while(c);d}`, `if(a)return b;for(;c;);d`},
@@ -261,6 +261,7 @@ func TestJS(t *testing.T) {
 		{`if(a=b)a;else b`, `(a=b)||b`},
 		{`if(!a&&!b){return true}else if(!a||!b){return false}return c&&d`, `return!a&&!b||!(!a||!b)&&c&&d`},
 		{`if(!a){if(b){throw c}else{return c}}else{return a}`, `if(a)return a;if(b)throw c;return c`},
+		{`if(!a){return y}else if(b){if(c){return x}}return z`, `return a?b&&c?x:z:y`},
 
 		// var declarations
 		{`var a;var b;a,b`, `var a,b;a,b`},

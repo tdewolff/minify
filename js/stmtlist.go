@@ -22,18 +22,24 @@ func optimizeStmt(i js.IStmt) js.IStmt {
 				if unaryExpr, ok := ifStmt.Cond.(*js.UnaryExpr); ok && unaryExpr.Op == js.NotToken {
 					left := groupExpr(unaryExpr.X, binaryLeftPrecMap[js.OrToken])
 					right := groupExpr(X.Value, binaryRightPrecMap[js.OrToken])
-					return &js.ExprStmt{Value: &js.BinaryExpr{Op: js.OrToken, X: left, Y: right}}
+					return &js.ExprStmt{&js.BinaryExpr{js.OrToken, left, right}}
 				}
 				left := groupExpr(ifStmt.Cond, binaryLeftPrecMap[js.AndToken])
 				right := groupExpr(X.Value, binaryRightPrecMap[js.AndToken])
-				return &js.ExprStmt{Value: &js.BinaryExpr{Op: js.AndToken, X: left, Y: right}}
+				return &js.ExprStmt{&js.BinaryExpr{js.AndToken, left, right}}
+			} else if X, isIfStmt := ifStmt.Body.(*js.IfStmt); isIfStmt && isEmptyStmt(X.Else) {
+				left := groupExpr(ifStmt.Cond, binaryLeftPrecMap[js.AndToken])
+				right := groupExpr(X.Cond, binaryRightPrecMap[js.AndToken])
+				ifStmt.Cond = &js.BinaryExpr{js.AndToken, left, right}
+				ifStmt.Body = X.Body
+				return ifStmt
 			}
 		} else if !hasIf && hasElse {
 			ifStmt.Else = optimizeStmt(ifStmt.Else)
 			if X, isExprElse := ifStmt.Else.(*js.ExprStmt); isExprElse {
 				left := groupExpr(ifStmt.Cond, binaryLeftPrecMap[js.OrToken])
 				right := groupExpr(X.Value, binaryRightPrecMap[js.OrToken])
-				return &js.ExprStmt{Value: &js.BinaryExpr{Op: js.OrToken, X: left, Y: right}}
+				return &js.ExprStmt{&js.BinaryExpr{js.OrToken, left, right}}
 			}
 		} else if hasIf && hasElse {
 			ifStmt.Body = optimizeStmt(ifStmt.Body)
@@ -41,25 +47,25 @@ func optimizeStmt(i js.IStmt) js.IStmt {
 			XExpr, isExprBody := ifStmt.Body.(*js.ExprStmt)
 			YExpr, isExprElse := ifStmt.Else.(*js.ExprStmt)
 			if isExprBody && isExprElse {
-				return &js.ExprStmt{Value: condExpr(ifStmt.Cond, XExpr.Value, YExpr.Value)}
+				return &js.ExprStmt{condExpr(ifStmt.Cond, XExpr.Value, YExpr.Value)}
 			}
 			XReturn, isReturnBody := ifStmt.Body.(*js.ReturnStmt)
 			YReturn, isReturnElse := ifStmt.Else.(*js.ReturnStmt)
 			if isReturnBody && isReturnElse {
 				if XReturn.Value == nil && YReturn.Value == nil {
-					return &js.ReturnStmt{Value: commaExpr(ifStmt.Cond, &js.UnaryExpr{
+					return &js.ReturnStmt{commaExpr(ifStmt.Cond, &js.UnaryExpr{
 						Op: js.VoidToken,
-						X:  &js.LiteralExpr{TokenType: js.NumericToken, Data: zeroBytes},
+						X:  &js.LiteralExpr{js.NumericToken, zeroBytes},
 					})}
 				} else if XReturn.Value != nil && YReturn.Value != nil {
-					return &js.ReturnStmt{Value: condExpr(ifStmt.Cond, XReturn.Value, YReturn.Value)}
+					return &js.ReturnStmt{condExpr(ifStmt.Cond, XReturn.Value, YReturn.Value)}
 				}
 				return ifStmt
 			}
 			XThrow, isThrowBody := ifStmt.Body.(*js.ThrowStmt)
 			YThrow, isThrowElse := ifStmt.Else.(*js.ThrowStmt)
 			if isThrowBody && isThrowElse {
-				return &js.ThrowStmt{Value: condExpr(ifStmt.Cond, XThrow.Value, YThrow.Value)}
+				return &js.ThrowStmt{condExpr(ifStmt.Cond, XThrow.Value, YThrow.Value)}
 			}
 		}
 	} else if decl, ok := i.(*js.VarDecl); ok {
@@ -126,20 +132,22 @@ func optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 	}
 	j := 0                           // write index
 	for i := 0; i < len(list); i++ { // read index
-		if ifStmt, ok := list[i].(*js.IfStmt); ok && !isEmptyStmt(ifStmt.Else) && isFlowStmt(lastStmt(ifStmt.Body)) {
+		if ifStmt, ok := list[i].(*js.IfStmt); ok && !isEmptyStmt(ifStmt.Else) {
 			// if(!a)b;else c  =>  if(a)c; else b
-			if unary, ok := ifStmt.Cond.(*js.UnaryExpr); ok && unary.Op == js.NotToken {
+			if unary, ok := ifStmt.Cond.(*js.UnaryExpr); ok && unary.Op == js.NotToken && isFlowStmt(lastStmt(ifStmt.Else)) {
 				ifStmt.Cond = unary.X
 				ifStmt.Body, ifStmt.Else = ifStmt.Else, ifStmt.Body
 			}
-			// if body ends in flow statement (return, throw, break, continue), we can remove the else statement and put its body in the current scope
-			if blockStmt, ok := ifStmt.Else.(*js.BlockStmt); ok {
-				blockStmt.Scope.Unscope()
-				list = append(list[:i+1], append(blockStmt.List, list[i+1:]...)...)
-			} else {
-				list = append(list[:i+1], append([]js.IStmt{ifStmt.Else}, list[i+1:]...)...)
+			if isFlowStmt(lastStmt(ifStmt.Body)) {
+				// if body ends in flow statement (return, throw, break, continue), we can remove the else statement and put its body in the current scope
+				if blockStmt, ok := ifStmt.Else.(*js.BlockStmt); ok {
+					blockStmt.Scope.Unscope()
+					list = append(list[:i+1], append(blockStmt.List, list[i+1:]...)...)
+				} else {
+					list = append(list[:i+1], append([]js.IStmt{ifStmt.Else}, list[i+1:]...)...)
+				}
+				ifStmt.Else = nil
 			}
-			ifStmt.Else = nil
 		}
 
 		list[i] = optimizeStmt(list[i])
