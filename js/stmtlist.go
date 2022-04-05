@@ -181,6 +181,15 @@ func (m *jsMinifier) optimizeStmtList(list []js.IStmt, blockType blockType) []js
 					// merge const and let declarations, or non-hoisted var declarations
 					right.List = append(left.List, right.List...)
 					j--
+
+					// remove from vardecls list of scope
+					scope := left.Scope.Func
+					for i, decl := range scope.VarDecls {
+						if left == decl {
+							scope.VarDecls = append(scope.VarDecls[:i], scope.VarDecls[i+1:]...)
+							break
+						}
+					}
 				} else if left.TokenType == js.VarToken {
 					if exprStmt, ok := list[i].(*js.ExprStmt); ok {
 						// pull in assignments to variables into the declaration, e.g. var a;a=5  =>  var a=5

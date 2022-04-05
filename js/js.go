@@ -535,31 +535,33 @@ func (m *jsMinifier) minifyVarDecl(decl *js.VarDecl, onlyDefines bool) {
 			}
 		}
 	} else {
-		m.write(decl.TokenType.Bytes())
-		m.writeSpaceBeforeIdent()
-
-		// move single var decls forward and order for GZIP optimization
-		start := 0
-		if _, ok := decl.List[0].Binding.(*js.Var); !ok {
-			start++
-		}
-		for i, item := range decl.List {
-			if v, ok := item.Binding.(*js.Var); ok && item.Default == nil && len(v.Data) == 1 {
-				for j := start; j < len(decl.List); j++ {
-					if v2, ok := decl.List[j].Binding.(*js.Var); ok && decl.List[j].Default == nil && len(v2.Data) == 1 {
-						if m.renamer.identOrder[v2.Data[0]] < m.renamer.identOrder[v.Data[0]] {
-							continue
-						} else if m.renamer.identOrder[v2.Data[0]] == m.renamer.identOrder[v.Data[0]] {
-							break
+		if decl.TokenType == js.VarToken {
+			// move single var decls forward and order for GZIP optimization
+			start := 0
+			if _, ok := decl.List[0].Binding.(*js.Var); !ok {
+				start++
+			}
+			for i := 0; i < len(decl.List); i++ {
+				item := decl.List[i]
+				if v, ok := item.Binding.(*js.Var); ok && item.Default == nil && len(v.Data) == 1 {
+					for j := start; j < len(decl.List); j++ {
+						if v2, ok := decl.List[j].Binding.(*js.Var); ok && decl.List[j].Default == nil && len(v2.Data) == 1 {
+							if m.renamer.identOrder[v2.Data[0]] < m.renamer.identOrder[v.Data[0]] {
+								continue
+							} else if m.renamer.identOrder[v2.Data[0]] == m.renamer.identOrder[v.Data[0]] {
+								break
+							}
 						}
+						decl.List = append(decl.List[:i], decl.List[i+1:]...)
+						decl.List = append(decl.List[:j], append([]js.BindingElement{item}, decl.List[j:]...)...)
+						break
 					}
-					decl.List = append(decl.List[:i], decl.List[i+1:]...)
-					decl.List = append(decl.List[:j], append([]js.BindingElement{item}, decl.List[j:]...)...)
-					break
 				}
 			}
 		}
 
+		m.write(decl.TokenType.Bytes())
+		m.writeSpaceBeforeIdent()
 		for i, item := range decl.List {
 			if i != 0 {
 				m.write(commaBytes)

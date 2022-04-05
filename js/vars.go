@@ -197,11 +197,23 @@ func addDefinition(decl *js.VarDecl, binding js.IBinding, value js.IExpr, forwar
 	}
 
 	// remove variables in destination
+RemoveVarsLoop:
 	for _, vbind := range vars {
 		for i, item := range decl.List {
 			if v, ok := item.Binding.(*js.Var); ok && v == vbind {
+				// item.Default == nil
 				decl.List = append(decl.List[:i], decl.List[i+1:]...)
-				break
+				continue RemoveVarsLoop
+			}
+		}
+
+		// variable declaration must be somewhere else, find and remove it
+		for _, decl2 := range decl.Scope.Func.VarDecls {
+			for i, item := range decl2.List {
+				if v, ok := item.Binding.(*js.Var); ok && item.Default == nil && v == vbind {
+					decl2.List = append(decl2.List[:i], decl2.List[i+1:]...)
+					continue RemoveVarsLoop
+				}
 			}
 		}
 	}
@@ -230,6 +242,16 @@ func mergeVarDecls(dst, src *js.VarDecl, forward bool) bool {
 		} else {
 			src.List = append(src.List[:j], src.List[j+1:]...)
 			j--
+		}
+	}
+	if merge {
+		// remove from vardecls list of scope
+		scope := src.Scope.Func
+		for i, decl := range scope.VarDecls {
+			if src == decl {
+				scope.VarDecls = append(scope.VarDecls[:i], scope.VarDecls[i+1:]...)
+				break
+			}
 		}
 	}
 	return merge

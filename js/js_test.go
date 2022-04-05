@@ -54,7 +54,7 @@ func TestJS(t *testing.T) {
 		{`/a/ instanceof b`, `/a/ instanceof b`},
 		{`[a] instanceof b`, `[a]instanceof b`},
 		{`let a = 5;a`, `let a=5;a`},
-		{`let a = 5,b;a,b`, `let b,a=5;a,b`},
+		{`let a = 5,b;a,b`, `let a=5,b;a,b`},
 		{`let a,b = 5;a,b`, `let a,b=5;a,b`},
 		{`function a(){}`, `function a(){}`},
 		{`function a(b){b}`, `function a(b){b}`},
@@ -689,8 +689,8 @@ func TestJS(t *testing.T) {
 		{`a<</script>/`, `a<< /script>/`},
 		{`function f(a,b){a();for(const c of b){const b=0}}`, `function f(a,b){a();for(const c of b){const b=0}}`},
 		{`return a,b,void 0`, `return a,b`},
-		//{`var arr=[];var slice=arr.slice;var concat=arr.concat;var push=arr.push;var indexOf=arr.indexOf;var class2type={};`, `var arr=[],slice=arr.slice,concat=arr.concat,push=arr.push,indexOf=arr.indexOf,class2type={}`},
-		//{`var arr=[];var class2type={};a=5;var rlocalProtocol=0`, `var arr=[],class2type={};a=5;var rlocalProtocol=0`},
+		{`var arr=[];var slice=arr.slice;var concat=arr.concat;var push=arr.push;var indexOf=arr.indexOf;var class2type={};`, `var arr=[],slice=arr.slice,concat=arr.concat,push=arr.push,indexOf=arr.indexOf,class2type={}`},
+		{`var arr=[];var class2type={};a=5;var rlocalProtocol=0`, `var arr=[],class2type={};a=5;var rlocalProtocol=0`},
 
 		// bugs
 		{`({"":a})`, `({"":a})`},                 // go-fuzz
@@ -769,7 +769,7 @@ func TestJSVarRenaming(t *testing.T) {
 		{`!function(a){a;for(var b=0;;);};var c;var d;`, `!function(a){a;for(var b=0;;);};var c,d`},
 		{`!function(){var b;b;{(T=x),T}{var T}}`, `!function(){var a,b;b,a=x,a}`},
 		{`var T;T;!function(){var b;b;{(T=x),T}{var T}}`, `var T;T,!function(){var a,b;b,a=x,a}`},
-		{`!function(){let a=b,b=c,c=d,d=e,e=f,f=g,g=h,h=a,j;for(let i=0;;)j=4}`, `!function(){let i,a=b,b=c,c=d,d=e,e=f,f=g,g=h,h=a;for(let a=0;;)i=4}`},
+		{`!function(){let a=b,b=c,c=d,d=e,e=f,f=g,g=h,h=a,j;for(let i=0;;)j=4}`, `!function(){let a=b,b=c,c=d,d=e,e=f,f=g,g=h,h=a,i;for(let a=0;;)i=4}`},
 		{`function a(){var name;with(z){name}} function b(){var name;name}`, `function a(){var name;with(z)name}function b(){var a;a}`},
 		{`!function(){var name;{name;!function(){name;var other;other}}}`, `!function(){var a;a,!function(){a;var b;b}}`},
 		{`name=function(){var a001,a002,a003,a004,a005,a006,a007,a008,a009,a010,a011,a012,a013,a014,a015,a016,a017,a018,a019,a020,a021,a022,a023,a024,a025,a026,a027,a028,a029,a030,a031,a032,a033,a034,a035,a036,a037,a038,a039,a040,a041,a042,a043,a044,a045,a046,a047,a048,a049,a050,a051,a052,a053,a054,a055,a056,a057,a058,a059,a060,a061,a062,a063,a064,a065,a066,a067,a068,a069,a070,a071,a072,a073,a074,a075,a076,a077,a078,a079,a080,a081,a082,a083,a084,a085,a086,a087,a088,a089,a090,a091,a092,a093,a094,a095,a096,a097,a098,a099,a100,a101,a102,a103,a104,a105,a106,a107,a108,a109,a110,a111,a112,a113,a114,a115,a116,a117,a118,a119;a001,a002,a003,a004,a005,a006,a007,a008,a009,a010,a011,a012,a013,a014,a015,a016,a017,a018,a019,a020,a021,a022,a023,a024,a025,a026,a027,a028,a029,a030,a031,a032,a033,a034,a035,a036,a037,a038,a039,a040,a041,a042,a043,a044,a045,a046,a047,a048,a049,a050,a051,a052,a053,a054,a055,a056,a057,a058,a059,a060,a061,a062,a063,a064,a065,a066,a067,a068,a069,a070,a071,a072,a073,a074,a075,a076,a077,a078,a079,a080,a081,a082,a083,a084,a085,a086,a087,a088,a089,a090,a091,a092,a093,a094,a095,a096,a097,a098,a099,a100,a101,a102,a103,a104,a105,a106,a107,a108,a109,a110,a111,a112,a113,a114,a115,a116,a117,a118,a119}`,
