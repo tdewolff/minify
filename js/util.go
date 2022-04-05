@@ -366,7 +366,15 @@ func isFlowStmt(stmt js.IStmt) bool {
 
 func lastStmt(stmt js.IStmt) js.IStmt {
 	if block, ok := stmt.(*js.BlockStmt); ok && 0 < len(block.List) {
-		return block.List[len(block.List)-1]
+		return lastStmt(block.List[len(block.List)-1])
+	} else if ifStmt, ok := stmt.(*js.IfStmt); ok {
+		if isEmptyStmt(ifStmt.Else) {
+			if block, ok := ifStmt.Else.(*js.BlockStmt); !ok || len(block.List) == 1 {
+				return lastStmt(ifStmt.Else)
+			}
+		} else if block, ok := ifStmt.Body.(*js.BlockStmt); !ok || len(block.List) == 1 {
+			return lastStmt(ifStmt.Body)
+		}
 	}
 	return stmt
 }

@@ -260,6 +260,7 @@ func TestJS(t *testing.T) {
 		{`if(a,b)b;else d`, `a,b||d`},
 		{`if(a=b)a;else b`, `(a=b)||b`},
 		{`if(!a&&!b){return true}else if(!a||!b){return false}return c&&d`, `return!a&&!b||!(!a||!b)&&c&&d`},
+		{`if(!a){if(b){throw c}else{return c}}else{return a}`, `if(a)return a;if(b)throw c;return c`},
 
 		// var declarations
 		{`var a;var b;a,b`, `var a,b;a,b`},

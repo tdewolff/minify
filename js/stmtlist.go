@@ -109,7 +109,12 @@ func optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 	j := 0                           // write index
 	for i := 0; i < len(list); i++ { // read index
 		if ifStmt, ok := list[i].(*js.IfStmt); ok && !isEmptyStmt(ifStmt.Else) && isFlowStmt(lastStmt(ifStmt.Body)) {
-			// if body ends in flow statement (return, throw, break, continue), so we can remove the else statement and put its body in the current scope
+			// if(!a)b;else c  =>  if(a)c; else b
+			if unary, ok := ifStmt.Cond.(*js.UnaryExpr); ok && unary.Op == js.NotToken {
+				ifStmt.Cond = unary.X
+				ifStmt.Body, ifStmt.Else = ifStmt.Else, ifStmt.Body
+			}
+			// if body ends in flow statement (return, throw, break, continue), we can remove the else statement and put its body in the current scope
 			if blockStmt, ok := ifStmt.Else.(*js.BlockStmt); ok {
 				blockStmt.Scope.Unscope()
 				list = append(list[:i+1], append(blockStmt.List, list[i+1:]...)...)
