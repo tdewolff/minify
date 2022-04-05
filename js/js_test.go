@@ -210,7 +210,7 @@ func TestJS(t *testing.T) {
 		{`if(a){if(b)c;else d}else{d}`, `a&&b?c:d`},
 		{`if(a){if(b)c;else false}else{d}`, `a?!!b&&c:d`},
 		{`if(a){if(b)c;else d}else{false}`, `!!a&&(b?c:d)`},
-		{`if(a){if(b)c;else false}else{false}`, `!!a&&(!!b&&c)`}, // could remove group
+		{`if(a){if(b)c;else false}else{false}`, `!!a&&!!b&&c`},
 		{`if(a)return a;else return b`, `return a||b`},
 		{`if(a)return a;else a++`, `if(a)return a;a++`},
 		{`if(a)return b;else a++`, `if(a)return b;a++`},
@@ -259,6 +259,7 @@ func TestJS(t *testing.T) {
 		{`if(a,b)b`, `a,b&&b`},
 		{`if(a,b)b;else d`, `a,b||d`},
 		{`if(a=b)a;else b`, `(a=b)||b`},
+		{`if(!a&&!b){return true}else if(!a||!b){return false}return c&&d`, `return!a&&!b||!(!a||!b)&&c&&d`},
 
 		// var declarations
 		{`var a;var b;a,b`, `var a,b;a,b`},
@@ -595,6 +596,12 @@ func TestJS(t *testing.T) {
 		{`a??=b`, `a??=b`},
 		{`a==false`, `a==!1`},
 		{`a===false`, `a===!1`},
+		{`!(a||b)`, `!a&&!b`},
+		{`!(a&&b)`, `!a||!b`},
+		//{`!(!a||!b)`, `a&&b`},  // we don't know of a or b are booleans
+		//{`!(!a&&!b)`, `a||b`},
+		//{`!(!a&&b)&&c`, `(a||!b)&&c`},
+		{`!(a&&b)&&c`, `!(a&&b)&&c`},
 
 		// other
 		{`async function g(){await x+y}`, `async function g(){await x+y}`},
@@ -693,6 +700,7 @@ func TestJS(t *testing.T) {
 		{`return a,b,void 0`, `return a,b`},
 		{`var arr=[];var slice=arr.slice;var concat=arr.concat;var push=arr.push;var indexOf=arr.indexOf;var class2type={};`, `var arr=[],slice=arr.slice,concat=arr.concat,push=arr.push,indexOf=arr.indexOf,class2type={}`},
 		{`var arr=[];var class2type={};a=5;var rlocalProtocol=0`, `var arr=[],class2type={};a=5;var rlocalProtocol=0`},
+		{`a=b;if(!o)return c;return d`, `return a=b,o?d:c`},
 
 		// bugs
 		{`({"":a})`, `({"":a})`},                 // go-fuzz

@@ -867,6 +867,12 @@ func (m *jsMinifier) minifyBinaryExpr(expr *js.BinaryExpr) bool {
 }
 
 func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
+	if cond, ok := i.(*js.CondExpr); ok {
+		i = m.optimizeCondExpr(cond, prec)
+	} else if unary, ok := i.(*js.UnaryExpr); ok {
+		i = optimizeUnaryExpr(unary, prec)
+	}
+
 	switch expr := i.(type) {
 	case *js.Var:
 		for expr.Link != nil {
@@ -1070,6 +1076,9 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.write(dotBytes)
 		m.write(expr.Y.Data)
 	case *js.GroupExpr:
+		if cond, ok := expr.X.(*js.CondExpr); ok {
+			expr.X = m.optimizeCondExpr(cond, js.OpExpr)
+		}
 		precInside := exprPrec(expr.X)
 		if prec <= precInside || precInside == js.OpCoalesce && prec == js.OpBitOr {
 			m.minifyExpr(expr.X, prec)
@@ -1208,101 +1217,11 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.write(closeBracketBytes)
 		m.inFor = parentInFor
 	case *js.CondExpr:
-		// remove double negative !! in condition, or switch cases for single negative !
-		if unary1, ok := expr.Cond.(*js.UnaryExpr); ok && unary1.Op == js.NotToken {
-			if unary2, ok := unary1.X.(*js.UnaryExpr); ok && unary2.Op == js.NotToken {
-				if isBooleanExpr(unary2.X) {
-					expr.Cond = unary2.X
-				}
-			} else {
-				expr.Cond = unary1.X
-				expr.X, expr.Y = expr.Y, expr.X
-			}
-		}
-
-		finalCond := finalExpr(expr.Cond)
-		if truthy, ok := isTruthy(expr.Cond); truthy && ok {
-			// if condition is truthy
-			m.minifyExpr(expr.X, prec)
-		} else if !truthy && ok {
-			// if condition is falsy
-			m.minifyExpr(expr.Y, prec)
-		} else if isEqualExpr(finalCond, expr.X) && (exprPrec(finalCond) < js.OpAssign || binaryLeftPrecMap[js.OrToken] <= exprPrec(finalCond)) && (exprPrec(expr.Y) < js.OpAssign || binaryRightPrecMap[js.OrToken] <= exprPrec(expr.Y)) {
-			// if condition is equal to true body
-			// for higher prec we need to add group parenthesis, and for lower prec we have parenthesis anyways. This only is shorter if len(expr.X) >= 3. isEqualExpr only checks for literal variables, which is a name will be minified to a one or two character name.
-			m.minifyExpr(&js.BinaryExpr{js.OrToken, groupExpr(expr.Cond, binaryLeftPrecMap[js.OrToken]), expr.Y}, prec)
-		} else if isEqualExpr(finalCond, expr.Y) && (exprPrec(finalCond) < js.OpAssign || binaryLeftPrecMap[js.AndToken] <= exprPrec(finalCond)) && (exprPrec(expr.X) < js.OpAssign || binaryRightPrecMap[js.AndToken] <= exprPrec(expr.X)) {
-			// if condition is equal to false body
-			// for higher prec we need to add group parenthesis, and for lower prec we have parenthesis anyways. This only is shorter if len(expr.X) >= 3. isEqualExpr only checks for literal variables, which is a name will be minified to a one or two character name.
-			m.minifyExpr(&js.BinaryExpr{js.AndToken, groupExpr(expr.Cond, binaryLeftPrecMap[js.AndToken]), expr.X}, prec)
-		} else if isEqualExpr(expr.X, expr.Y) {
-			// if true and false bodies are equal
-			if prec <= js.OpExpr {
-				m.minifyExpr(expr.Cond, binaryLeftPrecMap[js.CommaToken])
-				m.write(commaBytes)
-				m.minifyExpr(expr.X, binaryRightPrecMap[js.CommaToken])
-			} else {
-				m.write(openParenBytes)
-				m.minifyExpr(expr.Cond, binaryLeftPrecMap[js.CommaToken])
-				m.write(commaBytes)
-				m.minifyExpr(expr.X, binaryRightPrecMap[js.CommaToken])
-				m.write(closeParenBytes)
-			}
-		} else if left, right, ok := toNullishExpr(expr); ok && !m.o.NoNullishOperator {
-			// no need to check whether left/right need to add groups, as the space saving is always more
-			m.minifyExpr(groupExpr(left, binaryLeftPrecMap[js.NullishToken]), binaryLeftPrecMap[js.NullishToken])
-			m.write(nullishBytes)
-			m.minifyExpr(groupExpr(right, binaryRightPrecMap[js.NullishToken]), binaryRightPrecMap[js.NullishToken])
-		} else {
-			// shorten when true and false bodies are true and false
-			trueX, falseX := isTrue(expr.X), isFalse(expr.X)
-			trueY, falseY := isTrue(expr.Y), isFalse(expr.Y)
-			if trueX && falseY || falseX && trueY {
-				m.minifyBooleanExpr(expr.Cond, falseX, prec)
-			} else if trueX || trueY {
-				// trueX != trueY
-				m.minifyBooleanExpr(expr.Cond, trueY, binaryLeftPrecMap[js.OrToken])
-				m.write(orBytes)
-				if trueY {
-					m.minifyExpr(&js.GroupExpr{X: expr.X}, binaryRightPrecMap[js.OrToken])
-				} else {
-					m.minifyExpr(&js.GroupExpr{X: expr.Y}, binaryRightPrecMap[js.OrToken])
-				}
-			} else if falseX || falseY {
-				// falseX != falseY
-				m.minifyBooleanExpr(expr.Cond, falseX, binaryLeftPrecMap[js.AndToken])
-				m.write(andBytes)
-				if falseX {
-					m.minifyExpr(&js.GroupExpr{X: expr.Y}, binaryRightPrecMap[js.AndToken])
-				} else {
-					m.minifyExpr(&js.GroupExpr{X: expr.X}, binaryRightPrecMap[js.AndToken])
-				}
-			} else if condExpr, ok := expr.X.(*js.CondExpr); ok && isEqualExpr(expr.Y, condExpr.Y) {
-				// nested conditional expression with same false bodies
-				m.minifyExpr(&js.GroupExpr{X: expr.Cond}, binaryLeftPrecMap[js.AndToken])
-				m.write(andBytes)
-				m.minifyExpr(&js.GroupExpr{X: condExpr.Cond}, binaryRightPrecMap[js.AndToken])
-				m.write(questionBytes)
-				m.minifyExpr(condExpr.X, js.OpAssign)
-				m.write(colonBytes)
-				m.minifyExpr(expr.Y, js.OpAssign)
-			} else {
-				// regular conditional expression
-				// convert  (a,b)?c:d  =>  a,b?c:d
-				if prec <= js.OpExpr {
-					if group, ok := expr.Cond.(*js.GroupExpr); ok {
-						if comma, ok := group.X.(*js.CommaExpr); ok && js.OpCoalesce <= exprPrec(comma.List[len(comma.List)-1]) {
-							expr.Cond = group.X
-						}
-					}
-				}
-				m.minifyExpr(expr.Cond, js.OpCoalesce)
-				m.write(questionBytes)
-				m.minifyExpr(expr.X, js.OpAssign)
-				m.write(colonBytes)
-				m.minifyExpr(expr.Y, js.OpAssign)
-			}
-		}
+		m.minifyExpr(expr.Cond, js.OpCoalesce)
+		m.write(questionBytes)
+		m.minifyExpr(expr.X, js.OpAssign)
+		m.write(colonBytes)
+		m.minifyExpr(expr.Y, js.OpAssign)
 	case *js.OptChainExpr:
 		m.minifyExpr(expr.X, js.OpCall)
 		m.write(optChainBytes)
