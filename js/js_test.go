@@ -294,7 +294,7 @@ func TestJS(t *testing.T) {
 		{`var {a,b=5,[5+8]:c,...d}={d,e,...f};var z;z`, `var{a,b=5,[5+8]:c,...d}={d,e,...f},z;z`},
 		{`var a=5;var b=6;a,b`, `var a=5,b=6;a,b`},
 		{`var a;var b=6;a=7;b`, `var b=6,a=7;b`}, // swap declaration order to maintain definition order
-		{`var a=5;var b=6;a=7,b`, `var a=5,b=6;a=7,b`},
+		{`var a=5;var b=6;a=7,b`, `var a=5,b=6,a=7;b`},
 		{`var a;var b=6;a,b,z=7`, `var a,b=6;a,b,z=7`},
 		{`for(var a=6,b=7;;);var c=8;a,b,c`, `for(var c,a=6,b=7;;);c=8,a,b,c`},
 		{`for(var c;b;){let a=8;a};var a;a`, `for(var a,c;b;){let a=8;a}a`},
@@ -328,10 +328,10 @@ func TestJS(t *testing.T) {
 		{`var{a}=x;f();var b=c,d=e;`, `var{a}=x,b,d;f(),b=c,d=e`},
 		{`var{a}=x;f();var[b]=c,d=e;`, `var{a}=x;f();var[b]=c,d=e`},
 		// {`var{a}=x;f();var{b}=y`, `var{a}=x,b;f(),{b}=y`}, // we can't know that {b} doesn't require parentheses
-		{`var a=0;a=1`, `var a=0;a=1`},
+		{`var a=0;a=1`, `var a=0,a=1`},
 		{`var a,b;a=b`, `var b,a=b`},
 		{`var a,b=c;a=b`, `var b=c,a=b`},
-		{`var a,b=c;b=a`, `var a,b=c;b=a`},
+		{`var a,b=c;b=a`, `var a,b=c,b=a`},
 		{`var{a}=f;var b=c,d=e;`, `var{a}=f,b=c,d=e`},
 		{`var a,b;a=1,b=2,c=3`, `var a=1,b=2;c=3`},
 		{`var a=[];var b={};var c=d,e=f`, `var a=[],b={},c=d,e=f`},
@@ -339,6 +339,7 @@ func TestJS(t *testing.T) {
 		{`var a=[];var b;var c,e=f`, `var b,c,a=[],e=f`},
 		{`var a=[];f();var b;f();var c;f();var e=f`, `var b,c,e,a=[];f(),f(),f(),e=f`},
 		{`var {...a}=c;for(var {...b}=d;b;b++);`, `for(var{...a}=c,{...b}=d;b;b++);`},
+		{`var o=8,p=9,x=0,y=1;x=x+2;y=y+3;var b=1,c=2,d=3`, `var o=8,p=9,x=0,y=1,x=x+2,y=y+3,b=1,c=2,d=3`},
 
 		// TODO: test for variables renaming (first rename, then merge vars)
 
@@ -628,7 +629,7 @@ func TestJS(t *testing.T) {
 		{`var a=5;for(;a;)c()`, `for(var a=5;a;)c()`},
 		{`let a=5;for(;a;)c()`, `let a=5;for(;a;)c()`},
 		{`var a=b in c;for(;a;)c()`, `for(var a=(b in c);a;)c()`},
-		{`var a=5;for(var a=6,b;b;)c()`, `var b,a=5;for(a=6;b;)c()`},
+		{`var a=5;for(var a=6,b;b;)c()`, `for(var b,a=5,a=6;b;)c()`},
 		{`var a=5;for(var a,b;b;)c()`, `for(var b,a=5;b;)c()`},
 		//{`var a=5;for(var b=6,c=7;;);`, `for(var a=5,b=6,c=7;;);`}, // TODO
 		{`var a=5;while(a)c()`, `for(var a=5;a;)c()`},

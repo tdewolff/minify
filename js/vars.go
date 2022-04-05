@@ -184,24 +184,11 @@ func addDefinition(decl *js.VarDecl, binding js.IBinding, value js.IExpr, forwar
 		return false
 	}
 
-	// find variables in destination
-	for _, vbind := range vars {
-		for _, item := range decl.List {
-			if v, ok := item.Binding.(*js.Var); ok && v == vbind {
-				if item.Default != nil {
-					return false
-				}
-				break
-			}
-		}
-	}
-
 	// remove variables in destination
 RemoveVarsLoop:
 	for _, vbind := range vars {
 		for i, item := range decl.List {
-			if v, ok := item.Binding.(*js.Var); ok && v == vbind {
-				// item.Default == nil
+			if v, ok := item.Binding.(*js.Var); ok && item.Default == nil && v == vbind {
 				decl.List = append(decl.List[:i], decl.List[i+1:]...)
 				continue RemoveVarsLoop
 			}
