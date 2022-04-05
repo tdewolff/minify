@@ -584,6 +584,17 @@ func (m *jsMinifier) minifyFuncDecl(decl *js.FuncDecl, inExpr bool) {
 	if decl.Generator {
 		m.write(starBytes)
 	}
+
+	// TODO: remove function name, really necessary?
+	//if decl.Name != nil && decl.Name.Uses == 1 {
+	//	scope := decl.Body.Scope
+	//	for i, vorig := range scope.Declared {
+	//		if decl.Name == vorig {
+	//			scope.Declared = append(scope.Declared[:i], scope.Declared[i+1:]...)
+	//		}
+	//	}
+	//}
+
 	if inExpr {
 		m.renamer.renameScope(decl.Body.Scope)
 	}

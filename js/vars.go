@@ -189,6 +189,7 @@ RemoveVarsLoop:
 	for _, vbind := range vars {
 		for i, item := range decl.List {
 			if v, ok := item.Binding.(*js.Var); ok && item.Default == nil && v == vbind {
+				v.Uses--
 				decl.List = append(decl.List[:i], decl.List[i+1:]...)
 				continue RemoveVarsLoop
 			}
@@ -198,6 +199,7 @@ RemoveVarsLoop:
 		for _, decl2 := range decl.Scope.Func.VarDecls {
 			for i, item := range decl2.List {
 				if v, ok := item.Binding.(*js.Var); ok && item.Default == nil && v == vbind {
+					v.Uses--
 					decl2.List = append(decl2.List[:i], decl2.List[i+1:]...)
 					continue RemoveVarsLoop
 				}
@@ -392,6 +394,9 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) {
 						for s != nil && s != s.Func {
 							s.AddUndeclared(ref)
 							s = s.Parent
+						}
+						if item.Default != nil {
+							ref.Uses++
 						}
 					}
 					if i < best {

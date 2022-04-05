@@ -342,6 +342,7 @@ func TestJS(t *testing.T) {
 		{`var a=[];f();var b;f();var c;f();var e=f`, `var b,c,e,a=[];f(),f(),f(),e=f`},
 		{`var {...a}=c;for(var {...b}=d;b;b++);`, `for(var{...a}=c,{...b}=d;b;b++);`},
 		{`var o=8,p=9,x=0,y=1;x=x+2;y=y+3;var b=1,c=2,d=3`, `var o=8,p=9,x=0,y=1,x=x+2,y=y+3,b=1,c=2,d=3`},
+		//{`var name=function name(){name()}`, `var name=function(){name()}`}, // TODO
 
 		// TODO: test for variables renaming (first rename, then merge vars)
 
@@ -768,8 +769,8 @@ func TestJSVarRenaming(t *testing.T) {
 		{`!function(){var x=function(){return y};const y=5;x,y}`, `!function(){var b=function(){return a};const a=5;b,a}`},
 		{`!function(){if(1){const x=5;x;5}var y=function(){return x};y}`, `!function(){if(1){const a=5;a,5}var a=function(){return x};a}`},
 		{`!function(){var x=function(){return y};x;if(1){const y=5;y;5}}`, `!function(){var a=function(){return y};if(a,1){const a=5;a,5}}`},
-		{`!function(){var x=function(){return y};x;if(z)var y=5}`, `!function(){var b,a=function(){return b};a,z&&(b=5)}`},
-		{`!function(){var x=function(){return y};x;if(z){var y=5;5}}`, `!function(){var b,a=function(){return b};a,z&&(b=5,5)}`},
+		{`!function(){var x=function(){return y};x;if(z)var y=5}`, `!function(){var a,b=function(){return a};b,z&&(a=5)}`},
+		{`!function(){var x=function(){return y};x;if(z){var y=5;5}}`, `!function(){var a,b=function(){return a};b,z&&(a=5,5)}`},
 		{`!function(){var x,y,z=(x,y)=>x+y;x,y,z}`, `!function(){var a,b,c=(a,b)=>a+b;a,b,c}`},
 		{`!function(){var await;print({await});}`, `!function(){var a;print({await:a})}`},
 		{`function a(){var name; return {name}}`, `function a(){var a;return{name:a}}`},

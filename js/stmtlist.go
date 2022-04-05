@@ -63,6 +63,24 @@ func optimizeStmt(i js.IStmt) js.IStmt {
 			}
 		}
 	} else if decl, ok := i.(*js.VarDecl); ok {
+		// TODO: remove function name in var name=function name(){}
+		//for _, item := range decl.List {
+		//	if v, ok := item.Binding.(*js.Var); ok && item.Default != nil {
+		//		if fun, ok := item.Default.(*js.FuncDecl); ok && fun.Name != nil && bytes.Equal(v.Data, fun.Name.Data) {
+		//			scope := fun.Body.Scope
+		//			for i, vorig := range scope.Declared {
+		//				if fun.Name == vorig {
+		//					scope.Declared = append(scope.Declared[:i], scope.Declared[i+1:]...)
+		//				}
+		//			}
+		//			scope.AddUndeclared(v)
+		//			v.Uses += fun.Name.Uses - 1
+		//			fun.Name.Link = v
+		//			fun.Name = nil
+		//		}
+		//	}
+		//}
+
 		if decl.TokenType == js.ErrorToken {
 			// convert hoisted var declaration to expression or empty (if there are no defines) statement
 			for _, item := range decl.List {
