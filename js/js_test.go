@@ -259,7 +259,7 @@ func TestJS(t *testing.T) {
 		{`if(a,b)b`, `a,b&&b`},
 		{`if(a,b)b;else d`, `a,b||d`},
 		{`if(a=b)a;else b`, `(a=b)||b`},
-		{`if(!a&&!b){return true}else if(!a||!b){return false}return c&&d`, `return!a&&!b||!(!a||!b)&&c&&d`},
+		{`if(!a&&!b){return true}else if(!a||!b){return false}return c&&d`, `return!a&&!b||!!a&&!!b&&c&&d`},
 		{`if(!a){if(b){throw c}else{return c}}else{return a}`, `if(a)return a;if(b)throw c;return c`},
 		{`if(!a){return y}else if(b){if(c){return x}}return z`, `return a?b&&c?x:z:y`},
 
@@ -545,7 +545,7 @@ func TestJS(t *testing.T) {
 		{`a?!0:!1`, `!!a`},
 		{`a?0:1`, `a?0:1`},
 		{`!!a?0:1`, `!!a?0:1`},
-		//{`a&&b?!1:!0`, `!a||!b`}, // TODO
+		{`a&&b?!1:!0`, `!a||!b`},
 		{`a&&b?!0:!1`, `!!(a&&b)`},
 		{`a?true:5`, `!!a||5`},
 		{`a?5:false`, `!!a&&5`},
@@ -600,13 +600,15 @@ func TestJS(t *testing.T) {
 		{`a??=b`, `a??=b`},
 		{`a==false`, `a==!1`},
 		{`a===false`, `a===!1`},
-		//{`!(a||b)`, `!a&&!b`}, // TODO
-		//{`!(a&&b)`, `!a||!b`}, // TODO
-		//{`!(!a||!b)`, `a&&b`},  // we don't know of a or b are booleans
-		//{`!(!a&&!b)`, `a||b`},
-		//{`!(!a&&b)&&c`, `(a||!b)&&c`},
+		{`!(a||b)`, `!a&&!b`},
+		{`!(a&&b)`, `!a||!b`},
 		{`!(a&&b)&&c`, `!(a&&b)&&c`},
-		//{`a===false||b===true?false:true`, `a!==!1&&b!==!0`}, // TODO
+		{`c&&!(a&&b===5)`, `c&&!(a&&b===5)`},
+		{`c&&!(!a&&b!==5)`, `c&&!(!a&&b!==5)`},
+		{`c&&!(a==3&&b!==5)`, `c&&(a!=3||b===5)`},
+		{`!(a>=0&&a<=1||a>=2&&a<=3)`, `!(a>=0&&a<=1||a>=2&&a<=3)`},
+		{`a===false||b===true?false:true`, `a!==!1&&b!==!0`},
+		//{`!(!(a>=0||a<=1)&&!(a>=2||a<=3))`, `!!(a>=0||a<=1||a>=2||a<=3)`}, // TODO
 
 		// other
 		{`async function g(){await x+y}`, `async function g(){await x+y}`},
