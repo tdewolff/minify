@@ -202,7 +202,7 @@ func optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 				} else if ifStmt, ok := list[i].(*js.IfStmt); ok {
 					ifStmt.Cond = commaExpr(left.Value, ifStmt.Cond)
 					j--
-				} else if varDecl, ok := list[i].(*js.VarDecl); ok {
+				} else if varDecl, ok := list[i].(*js.VarDecl); ok && varDecl.TokenType == js.VarToken {
 					if merge := mergeVarDeclExprStmt(varDecl, left, true); merge {
 						j--
 					}
