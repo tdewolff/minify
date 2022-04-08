@@ -6,7 +6,7 @@ RUN apk add --no-cache git ca-certificates make
 WORKDIR $GOPATH/src/minify
 COPY . .
 
-RUN make install
+RUN /usr/bin/env bash -c make install
 
 # Final image containing the executable from the previous step
 FROM alpine:3
