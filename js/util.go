@@ -591,7 +591,6 @@ func optimizeBooleanExpr(expr js.IExpr, invert bool, prec js.OpPrec) js.IExpr {
 }
 
 func optimizeUnaryExpr(expr *js.UnaryExpr, prec js.OpPrec) js.IExpr {
-	return expr
 	if group, ok := expr.X.(*js.GroupExpr); ok && expr.Op == js.NotToken {
 		if binary, ok := group.X.(*js.BinaryExpr); ok && (binary.Op == js.AndToken || binary.Op == js.OrToken) {
 			op := js.AndToken
