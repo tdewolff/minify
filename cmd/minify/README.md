@@ -1,4 +1,4 @@
-# Minify [![Join the chat at https://gitter.im/tdewolff/minify](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/tdewolff/minify?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+# Minify
 
 **[Download binaries](https://github.com/tdewolff/minify/releases) for Windows, Linux and macOS**
 
