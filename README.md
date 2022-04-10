@@ -6,7 +6,7 @@
 
 **[Releases](https://github.com/tdewolff/minify/releases) of CLI for various platforms.** See [CLI](https://github.com/tdewolff/minify/tree/master/cmd/minify) for more installation instructions.
 
-**[NPM package](https://www.npmjs.com/package/tdewolff-minify) of minify
+**[NPM package](https://www.npmjs.com/package/tdewolff-minify) of minify**
 
 **[Parse](https://github.com/tdewolff/minify/tree/master/parse) subpackage on which minify depends.**
  

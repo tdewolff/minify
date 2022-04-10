@@ -907,7 +907,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		}
 	case *js.LiteralExpr:
 		if expr.TokenType == js.DecimalToken {
-			m.write(minify.Number(expr.Data, m.o.Precision))
+			m.write(decimalNumber(expr.Data, m.o.Precision))
 		} else if expr.TokenType == js.BinaryToken {
 			m.write(binaryNumber(expr.Data, m.o.Precision))
 		} else if expr.TokenType == js.OctalToken {

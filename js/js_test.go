@@ -26,10 +26,12 @@ func TestJS(t *testing.T) {
 		{`debugger`, `debugger`},
 		{`"use strict"`, `"use strict"`},
 		{`1.0`, `1`},
+		{`1_2.0_3`, `12.03`},
 		{`1000`, `1e3`},
 		{`1e10`, `1e10`},
 		{`1e-10`, `1e-10`},
 		{`0b1001`, `9`},
+		{`0b10_01`, `9`},
 		{`0o11`, `9`},
 		{`0x0D`, `13`},
 		{`0x0d`, `13`},
@@ -709,14 +711,17 @@ func TestJS(t *testing.T) {
 		{`var arr=[];var class2type={};a=5;var rlocalProtocol=0`, `var arr=[],class2type={};a=5;var rlocalProtocol=0`},
 		{`a=b;if(!o)return c;return d`, `return a=b,o?d:c`},
 
+		// go-fuzz
+		{`({"":a})`, `({"":a})`},
+		{`a[""]`, `a[""]`},
+		{`function f(){;}`, `function f(){}`},
+		{`0xeb00000000`, `0xeb00000000`},
+		{`export{a,}`, `export{a,}`},
+		{`var D;var{U,W,W}=y`, `var{U,W,W}=y,D`},
+		{`var A;var b=(function(){var e;})=c,d`, `var d,A,b=function(){var e}=c`},
+		{`0xB_BBBbAbA`, `3149642426`},
+
 		// bugs
-		{`({"":a})`, `({"":a})`},                 // go-fuzz
-		{`a[""]`, `a[""]`},                       // go-fuzz
-		{`function f(){;}`, `function f(){}`},    // go-fuzz
-		{`0xeb00000000`, `0xeb00000000`},         // go-fuzz
-		{`export{a,}`, `export{a,}`},             // go-fuzz
-		{`var D;var{U,W,W}=y`, `var{U,W,W}=y,D`}, // go-fuzz
-		{`var A;var b=(function(){var e;})=c,d`, `var d,A,b=function(){var e}=c`},                       // go-fuzz
 		{"var a=/\\s?auto?\\s?/i\nvar b;a,b", "var b,a=/\\s?auto?\\s?/i;a,b"},                           // #14
 		{"false`string`", "(!1)`string`"},                                                               // #181
 		{"x / /\\d+/.exec(s)[0]", "x/ /\\d+/.exec(s)[0]"},                                               // #183
