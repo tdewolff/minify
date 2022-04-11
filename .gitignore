@@ -13,3 +13,10 @@ parse/tests/*/crashers
 parse/tests/*/suppressions
 parse/tests/*/corpus/*
 !parse/tests/*/corpus/*.*
+bindings/js/build
+bindings/js/minify.h
+bindings/js/minify.a
+bindings/js/test.min.html
+bindings/py/minify.h
+bindings/py/minify.so
+bindings/py/test.min.html
