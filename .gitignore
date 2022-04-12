@@ -20,3 +20,4 @@ bindings/js/test.min.html
 bindings/py/minify.h
 bindings/py/minify.so
 bindings/py/test.min.html
+bindings/py/tdewolff_minify.egg-info
