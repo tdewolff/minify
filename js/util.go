@@ -619,25 +619,24 @@ func optimizeUnaryExpr(expr *js.UnaryExpr, prec js.OpPrec) js.IExpr {
 				isEqY = true
 			}
 
-			// left and right may need group or can remove group
+			// add group if it wasn't already there
 			var needsGroupX, needsGroupY bool
+			if !isEqX && binaryLeftPrecMap[binary.Op] <= exprPrec(binary.X) && exprPrec(binary.X) < js.OpUnary {
+				score -= 2
+				needsGroupX = true
+			}
+			if !isEqY && binaryRightPrecMap[binary.Op] <= exprPrec(binary.Y) && exprPrec(binary.Y) < js.OpUnary {
+				score -= 2
+				needsGroupY = true
+			}
+
+			// remove group
 			if op == js.OrToken {
-				// remove group
 				if exprPrec(binary.X) == js.OpOr {
 					score += 2
 				}
 				if exprPrec(binary.Y) == js.OpAnd {
 					score += 2
-				}
-			} else {
-				// add group
-				if !isEqX && exprPrec(binary.X) < js.OpUnary {
-					score -= 2
-					needsGroupX = true
-				}
-				if !isEqY && exprPrec(binary.Y) < js.OpUnary {
-					score -= 2
-					needsGroupY = true
 				}
 			}
 

@@ -30,6 +30,7 @@ func TestJS(t *testing.T) {
 		{`1000`, `1e3`},
 		{`1e10`, `1e10`},
 		{`1e-10`, `1e-10`},
+		{`5_000`, `5e3`},
 		{`0b1001`, `9`},
 		{`0b10_01`, `9`},
 		{`0o11`, `9`},
@@ -609,6 +610,10 @@ func TestJS(t *testing.T) {
 		{`c&&!(!a&&b!==5)`, `c&&!(!a&&b!==5)`},
 		{`c&&!(a==3&&b!==5)`, `c&&(a!=3||b===5)`},
 		{`!(a>=0&&a<=1||a>=2&&a<=3)`, `!(a>=0&&a<=1||a>=2&&a<=3)`},
+		{`!(0<1||1<2)`, `!(0<1||1<2)`},
+		{`!(0<1&&1<2)`, `!(0<1&&1<2)`},
+		{`!(a&&b||c&&d)`, `!(a&&b||c&&d)`},
+		{`!((a||b)&&(c||d))`, `!a&&!b||!c&&!d`},
 		{`a===false||b===true?false:true`, `a!==!1&&b!==!0`},
 		//{`!(!(a>=0||a<=1)&&!(a>=2||a<=3))`, `!!(a>=0||a<=1||a>=2||a<=3)`}, // TODO
 
@@ -741,6 +746,7 @@ func TestJS(t *testing.T) {
 		{`const f=x=>void console.log(x)`, `const f=x=>void console.log(x)`},                                                                               // #463
 		{`(function(){var a=b;var c=d.x,e=f.y})()`, `(function(){var a=b,c=d.x,e=f.y})()`},                                                                 // #472
 		{`var a=1;g();a=2;let b=3`, `var a=1;g(),a=2;let b=3`},                                                                                             // #474
+		{`if(!(0<1&&1<2)){throw new Error()}`, `if(!(0<1&&1<2))throw new Error`},                                                                           // #479
 	}
 
 	m := minify.New()
