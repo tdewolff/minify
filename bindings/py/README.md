@@ -1,5 +1,8 @@
 Python bindings for the Go minifiers for web formats `minify`, see [github.com/tdewolff/minify](https://github.com/tdewolff/minify).
 
+## Requisites
+Make sure to have [Go](https://go.dev/doc/install) installed.
+
 ## Usage
 There are two functions available in Python: minify a string and minify a file. Below an example of both:
 

@@ -1,0 +1,37 @@
+{
+  "name": "@tdewolff/minify",
+  "version": "2.11.1",
+  "author": "Taco de Wolff",
+  "description": "Go minifiers for web formats",
+  "main": "./index.js",
+  "dependencies": {
+    "@mapbox/node-pre-gyp": "^1.0.9",
+    "node-pre-gyp-github": "^1.4.3"
+  },
+  "scripts": {
+    "install": "node-pre-gyp install --fallback-to-build",
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tdewolff/minify.git"
+  },
+  "binary": {
+    "module_name": "minify",
+    "module_path": "./build/Release",
+    "host": "https://github.com/tdewolff/minify/releases/download/",
+    "remote_path": "{version}"
+  },
+  "keywords": [
+    "minify",
+    "minifier",
+    "html",
+    "css",
+    "js",
+    "javascript",
+    "svg",
+    "json",
+    "xml",
+    "go"
+  ]
+}
