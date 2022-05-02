@@ -38,6 +38,7 @@ var filetypeMime = map[string]string{
 	"htm":  "text/html",
 	"html": "text/html",
 	"js":   "application/javascript",
+	"mjs":  "application/javascript",
 	"json": "application/json",
 	"svg":  "image/svg+xml",
 	"xml":  "text/xml",
