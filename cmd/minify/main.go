@@ -389,7 +389,7 @@ func run() int {
 	m.Add("text/css", cssMinifier)
 	m.Add("text/html", htmlMinifier)
 	m.Add("image/svg+xml", svgMinifier)
-	m.AddRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), jsMinifier)
+	m.AddRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma|j|live)script(1\\.[0-5])?$|^module$"), jsMinifier)
 	m.AddRegexp(regexp.MustCompile("[/+]json$"), jsonMinifier)
 	m.AddRegexp(regexp.MustCompile("[/+]xml$"), xmlMinifier)
 
