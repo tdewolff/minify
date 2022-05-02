@@ -747,6 +747,7 @@ func TestJS(t *testing.T) {
 		{`(function(){var a=b;var c=d.x,e=f.y})()`, `(function(){var a=b,c=d.x,e=f.y})()`},                                                                 // #472
 		{`var a=1;g();a=2;let b=3`, `var a=1;g(),a=2;let b=3`},                                                                                             // #474
 		{`if(!(0<1&&1<2)){throw new Error()}`, `if(!(0<1&&1<2))throw new Error`},                                                                           // #479
+		{`class A{set x(e){}}`, `class A{set x(e){}}`},                                                                                                     // #481
 	}
 
 	m := minify.New()
