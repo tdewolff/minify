@@ -791,8 +791,10 @@ func minifyString(b []byte) []byte {
 			doubleQuotes++
 		}
 	}
-	quote := byte('"')
-	if singleQuotes < doubleQuotes {
+	quote := b[0]
+	if doubleQuotes < singleQuotes {
+		quote = byte('"')
+	} else if singleQuotes < doubleQuotes {
 		quote = byte('\'')
 	}
 	b[0] = quote
