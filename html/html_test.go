@@ -300,6 +300,8 @@ func TestHTMLKeepQuotes(t *testing.T) {
 		expected string
 	}{
 		{`<p attr="test">`, `<p attr="test">`},
+		{`<p attr='test'>`, `<p attr='test'>`},
+		{`<p attr=test>`, `<p attr=test>`},
 	}
 
 	m := minify.New()
