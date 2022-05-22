@@ -484,9 +484,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						isXML := attr.Hash == Vocab || attr.Hash == Typeof || attr.Hash == Property || attr.Hash == Resource || attr.Hash == Prefix || attr.Hash == Content || attr.Hash == About || attr.Hash == Rev || attr.Hash == Datatype || attr.Hash == Inlist
 
 						// no quotes if possible, else prefer single or double depending on which occurs more often in value
-						quote := attr.Data[len(attr.Data)-1]
-						if quote != '\'' && quote != '"' {
-							quote = 0
+						var quote byte
+
+						if 0 < len(attr.Data) && (attr.Data[len(attr.Data)-1] == '\'' || attr.Data[len(attr.Data)-1] == '"') {
+							quote = attr.Data[len(attr.Data)-1]
 						}
 						val = html.EscapeAttrVal(&attrByteBuffer, val, quote, o.KeepQuotes, isXML)
 						w.Write(val)
