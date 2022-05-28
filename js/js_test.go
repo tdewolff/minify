@@ -142,8 +142,8 @@ func TestJS(t *testing.T) {
 		{`0,"string\0\uFFFFstring"`, `0,"string\0\uFFFFstring"`},
 		{`0,"string\x00\x55\x0A\x0D\x22\x27string"`, `0,"string\0U\n\r\"'string"`},
 		{`0,"string\000\12\015\042\47\411string"`, `0,"string\0\n\r\"'!1string"`},
-		{"0,'string\\n\\rstring'", "0,'string\\n\\rstring'"},
-		{"0,'string\\\r\nstring\\\nstring\\\rstring\\\u2028string\\\u2029string'", "0,'stringstringstringstringstringstring'"},
+		{"0,'string\\n\\rstring'", "0,`string\n\rstring`"},
+		{"0,'string\\\r\nstring\\\nstring\\\rstring\\\u2028string\\\u2029string'", `0,"stringstringstringstringstringstring"`},
 		{`0,"str1ng" + "str2ng"`, `0,"str1ngstr2ng"`},
 		{`0,"str1ng" + "str2ng" + "str3ng"`, `0,"str1ngstr2ngstr3ng"`},
 		{`0,"padding" + this`, `0,"padding"+this`},
@@ -152,8 +152,8 @@ func TestJS(t *testing.T) {
 		{`0,"\""`, `0,'"'`},
 		{`0,'\'""'`, `0,'\'""'`},
 		{`0,"\"\"a'"`, `0,'""a\''`},
-		{`0,"'" + '"'`, `0,"'\""`},
-		{`0,'"' + "'"`, `0,'"\''`},
+		{`0,"'" + '"'`, "0,`'\"`"},
+		{`0,'"' + "'"`, "0,`\"'`"},
 
 		// rename true, false, undefined, Infinity
 		{`x=true`, `x=!0`},

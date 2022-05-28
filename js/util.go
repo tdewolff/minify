@@ -784,18 +784,37 @@ func minifyString(b []byte) []byte {
 	// switch quotes if more optimal
 	singleQuotes := 0
 	doubleQuotes := 0
+	backtickQuotes := 0
+	newlines := 0
+	dollarSigns := 0
+	notEscapes := false
 	for i := 1; i < len(b)-1; i++ {
 		if b[i] == '\'' {
 			singleQuotes++
 		} else if b[i] == '"' {
 			doubleQuotes++
+		} else if b[i] == '`' {
+			backtickQuotes++
+		} else if b[i] == '$' {
+			dollarSigns++
+		} else if b[i] == '\\' && i+1 < len(b) {
+			if b[i+1] == 'n' || b[i+1] == 'r' {
+				newlines++
+			} else {
+				notEscapes = true
+			}
 		}
 	}
 	quote := byte('"') // default to " for better GZIP compression
+	quotes := singleQuotes
 	if doubleQuotes < singleQuotes {
 		quote = byte('"')
+		quotes = doubleQuotes
 	} else if singleQuotes < doubleQuotes {
 		quote = byte('\'')
+	}
+	if !notEscapes && backtickQuotes+dollarSigns < quotes+newlines {
+		quote = byte('`')
 	}
 	b[0] = quote
 	b[len(b)-1] = quote
@@ -806,7 +825,7 @@ func minifyString(b []byte) []byte {
 	for i := 1; i < len(b)-1; i++ {
 		if c := b[i]; c == '\\' {
 			c = b[i+1]
-			if c == '0' && (i+2 == len(b)-1 || b[i+2] < '0' || '7' < b[i+2]) || c == '\\' || c == quote || c == 'n' || c == 'r' || c == 'u' {
+			if c == quote || c == '\\' || c == 'u' || c == '0' && (i+2 == len(b)-1 || b[i+2] < '0' || '7' < b[i+2]) || quote != '`' && (c == 'n' || c == 'r') {
 				// keep escape sequence
 				i++
 				continue
@@ -864,6 +883,10 @@ func minifyString(b []byte) []byte {
 					n--
 					b[i+n] = '\\'
 				}
+			} else if c == 'n' {
+				b[i+1] = '\n' // only for template literals
+			} else if c == 'r' {
+				b[i+1] = '\r' // only for template literals
 			} else if c == 't' {
 				b[i+1] = '\t'
 			} else if c == 'f' {
@@ -881,7 +904,7 @@ func minifyString(b []byte) []byte {
 			}
 			start = i + n
 			i += n - 1
-		} else if c == quote {
+		} else if c == quote || c == '$' && quote == '`' {
 			// may not be escaped properly when changing quotes
 			if j < start {
 				// avoid append

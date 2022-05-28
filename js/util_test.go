@@ -36,6 +36,15 @@ func TestHexadecimalNumber(t *testing.T) {
 	test.Bytes(t, hexadecimalNumber([]byte("0x10000000000"), 0), []byte("0x10000000000"))
 }
 
+func TestString(t *testing.T) {
+	test.Bytes(t, minifyString([]byte(`""`)), []byte(`""`))
+	test.Bytes(t, minifyString([]byte(`"abc"`)), []byte(`"abc"`))
+	test.Bytes(t, minifyString([]byte(`'abc'`)), []byte(`"abc"`))
+	test.Bytes(t, minifyString([]byte(`"\8\9\t"`)), []byte("\"89\t\""))
+	test.Bytes(t, minifyString([]byte(`"\12"`)), []byte(`"\n"`))
+	test.Bytes(t, minifyString([]byte(`"\n\r$"`)), []byte("`\n\r\\$`"))
+}
+
 func TestHasSideEffects(t *testing.T) {
 	jsTests := []struct {
 		js  string
