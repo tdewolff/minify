@@ -776,6 +776,53 @@ func isHexDigit(b byte) bool {
 	return '0' <= b && b <= '9' || 'a' <= b && b <= 'f' || 'A' <= b && b <= 'F'
 }
 
+func mergeBinaryExpr(expr *js.BinaryExpr) {
+	// merge string concatenations which may be intertwined with other additions
+	var ok bool
+	for expr.Op == js.AddToken {
+		if lit, ok := expr.Y.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken {
+			left := expr
+			strings := []*js.LiteralExpr{lit}
+			n := len(lit.Data) - 2
+			for left.Op == js.AddToken {
+				if 50 < len(strings) {
+					return // limit recursion
+				}
+				if lit, ok := left.X.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken {
+					strings = append(strings, lit)
+					n += len(lit.Data) - 2
+					left.X = nil
+				} else if newLeft, ok := left.X.(*js.BinaryExpr); ok {
+					if lit, ok := newLeft.Y.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken {
+						strings = append(strings, lit)
+						n += len(lit.Data) - 2
+						left = newLeft
+						continue
+					}
+				}
+				break
+			}
+
+			if 1 < len(strings) {
+				// unescaped quotes will be repaired in minifyString later on
+				b := make([]byte, 0, n+2)
+				b = append(b, strings[len(strings)-1].Data[:len(strings[len(strings)-1].Data)-1]...)
+				for i := len(strings) - 2; 0 < i; i-- {
+					b = append(b, strings[i].Data[1:len(strings[i].Data)-1]...)
+				}
+				b = append(b, strings[0].Data[1:]...)
+				b[len(b)-1] = b[0]
+
+				expr.X = left.X
+				expr.Y.(*js.LiteralExpr).Data = b
+			}
+		}
+		if expr, ok = expr.X.(*js.BinaryExpr); !ok {
+			break
+		}
+	}
+}
+
 func minifyString(b []byte) []byte {
 	if len(b) < 3 {
 		return []byte("\"\"")

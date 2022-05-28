@@ -842,45 +842,6 @@ func (m *jsMinifier) minifyBinding(ibinding js.IBinding) {
 	}
 }
 
-func (m *jsMinifier) minifyBinaryExpr(expr *js.BinaryExpr) bool {
-	if lit, ok := expr.Y.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken && expr.Op == js.AddToken {
-		// merge strings that are added together
-		n := len(lit.Data) - 2
-		strings := []*js.LiteralExpr{lit}
-
-		left := expr
-		for {
-			if 50 < len(strings) {
-				return false // limit recursion
-			} else if lit, ok := left.X.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken {
-				n += len(lit.Data) - 2
-				strings = append(strings, lit)
-				break
-			} else if left, ok = left.X.(*js.BinaryExpr); ok && left.Op == js.AddToken {
-				if lit, ok := left.Y.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken {
-					n += len(lit.Data) - 2
-					strings = append(strings, lit)
-					continue
-				}
-			}
-			return false
-		}
-
-		b := make([]byte, 0, n+2)
-		b = append(b, strings[len(strings)-1].Data[:len(strings[len(strings)-1].Data)-1]...)
-		for i := len(strings) - 2; 0 < i; i-- {
-			b = append(b, strings[i].Data[1:len(strings[i].Data)-1]...)
-		}
-		b = append(b, strings[0].Data[1:]...)
-		b[len(b)-1] = b[0]
-
-		// unescaped quotes will be repaired in minifyString
-		m.write(minifyString(b))
-		return true
-	}
-	return false
-}
-
 func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 	if cond, ok := i.(*js.CondExpr); ok {
 		i = m.optimizeCondExpr(cond, prec)
@@ -942,7 +903,9 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			m.write(expr.Data)
 		}
 	case *js.BinaryExpr:
-		if m.minifyBinaryExpr(expr) {
+		mergeBinaryExpr(expr)
+		if expr.X == nil {
+			m.minifyExpr(expr.Y, prec)
 			break
 		}
 
