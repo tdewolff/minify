@@ -46,7 +46,8 @@ func (r *renamer) renameScope(scope js.Scope) {
 	}
 
 	i := 0
-	sort.Sort(js.VarsByUses(scope.Declared))
+	// keep function argument declaration order to improve GZIP compression
+	sort.Sort(js.VarsByUses(scope.Declared[scope.NumFuncArgs:]))
 	for _, v := range scope.Declared {
 		v.Data = r.getName(v.Data, i)
 		i++
@@ -111,8 +112,8 @@ func (r *renamer) getName(name []byte, index int) []byte {
 		name[0] = r.identStart[index]
 		return name[:1]
 	}
-
 	index -= len(r.identStart)
+
 	n := 2
 	for {
 		offset := len(r.identStart)

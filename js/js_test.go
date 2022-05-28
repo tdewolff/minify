@@ -820,7 +820,7 @@ func TestJSVarRenaming(t *testing.T) {
 		{`let a=0;switch(a){case 0:let b=1;case 1:let c=2}`, `let a=0;switch(a){case 0:let a=1;case 1:let b=2}`},
 		{`({a:b=1}={})=>b`, `({a=1}={})=>a`}, // #422
 		{`()=>{var a;if(x){const b=0;while(true);}}`, `()=>{if(x){const b=0;for(var a;!0;);}}`},
-		{`(e,s)=>{e=>0,s(e(s))}`, `(b,a)=>{a=>0,a(b(a))}`}, // #469
+		{`(e,s)=>{e=>0,s(e(s))}`, `(a,b)=>{a=>0,b(a(b))}`}, // #469
 	}
 
 	m := minify.New()
