@@ -400,6 +400,8 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			m.requireSemicolon()
 		}
 	case *js.DirectivePrologueStmt:
+		stmt.Value[0] = '"'
+		stmt.Value[len(stmt.Value)-1] = '"'
 		m.write(stmt.Value)
 		m.requireSemicolon()
 	}
@@ -756,6 +758,8 @@ func (m *jsMinifier) minifyPropertyName(name js.PropertyName) {
 		m.write(openBracketBytes)
 		m.minifyExpr(name.Computed, js.OpAssign)
 		m.write(closeBracketBytes)
+	} else if name.Literal.TokenType == js.StringToken {
+		m.write(minifyString(name.Literal.Data))
 	} else {
 		m.write(name.Literal.Data)
 	}

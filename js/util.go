@@ -778,7 +778,7 @@ func isHexDigit(b byte) bool {
 
 func minifyString(b []byte) []byte {
 	if len(b) < 3 {
-		return b
+		return []byte("\"\"")
 	}
 
 	// switch quotes if more optimal
@@ -791,7 +791,7 @@ func minifyString(b []byte) []byte {
 			doubleQuotes++
 		}
 	}
-	quote := b[0]
+	quote := byte('"') // default to " for better GZIP compression
 	if doubleQuotes < singleQuotes {
 		quote = byte('"')
 	} else if singleQuotes < doubleQuotes {
