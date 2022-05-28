@@ -78,15 +78,16 @@ func (r *renamer) isReserved(name []byte, undeclared js.VarArray) bool {
 func (r *renamer) getIndex(name []byte) int {
 	index := 0
 NameLoop:
-	for i, b := range name {
+	for i := len(name) - 1; 0 <= i; i-- {
 		chars := r.identContinue
 		if i == 0 {
 			chars = r.identStart
+			index *= len(r.identStart)
 		} else {
 			index *= len(r.identContinue)
 		}
 		for j, c := range chars {
-			if b == c {
+			if name[i] == c {
 				index += j
 				continue NameLoop
 			}
@@ -132,11 +133,12 @@ func (r *renamer) getName(name []byte, index int) []byte {
 	} else {
 		name = name[:n]
 	}
-	for j := n - 1; 0 < j; j-- {
-		name[j] = r.identContinue[index%len(r.identContinue)]
+	name[0] = r.identStart[index%len(r.identStart)]
+	index /= len(r.identStart)
+	for i := 1; i < n; i++ {
+		name[i] = r.identContinue[index%len(r.identContinue)]
 		index /= len(r.identContinue)
 	}
-	name[0] = r.identStart[index]
 	return name
 }
 
