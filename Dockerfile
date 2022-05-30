@@ -1,7 +1,7 @@
 # Use this image to build the executable
 FROM golang:1.16-alpine AS compiler
 
-RUN apk add --no-cache git ca-certificates make
+RUN apk add --no-cache git ca-certificates make bash
 
 WORKDIR $GOPATH/src/minify
 COPY . .
