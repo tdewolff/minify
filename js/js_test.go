@@ -621,6 +621,12 @@ func TestJS(t *testing.T) {
 		{`!((a||b)&&(c||d))`, `!a&&!b||!c&&!d`},
 		{`a===false||b===true?false:true`, `a!==!1&&b!==!0`},
 		//{`!(!(a>=0||a<=1)&&!(a>=2||a<=3))`, `!!(a>=0||a<=1||a>=2||a<=3)`}, // TODO
+		{`!!(a===null||a===undefined)`, `a==null`},
+		{`a!==null&&a!==undefined`, `a!=null`},
+		{`a===null||a===void 0`, `a==null`},
+		{`!!(a===b||c===d)`, `a===b||c===d`},
+		{`!(a!==null)`, `a===null`},
+		{`a==void 0`, `a==null`},
 
 		// other
 		{`async function g(){await x+y}`, `async function g(){await x+y}`},

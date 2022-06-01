@@ -70,6 +70,7 @@ var (
 	nanBytes                   = []byte("NaN")
 	undefinedBytes             = []byte("undefined")
 	infinityBytes              = []byte("Infinity")
+	nullBytes                  = []byte("null")
 	voidZeroBytes              = []byte("void 0")
 	groupedVoidZeroBytes       = []byte("(void 0)")
 	oneDivZeroBytes            = []byte("1/0")
@@ -407,6 +408,13 @@ func toNullishExpr(condExpr *js.CondExpr) (js.IExpr, js.IExpr, bool) {
 	return nil, nil, false
 }
 
+func isUndefinedOrNull(i js.IExpr) bool {
+	if lit, ok := i.(*js.LiteralExpr); ok {
+		return lit.TokenType == js.NullToken
+	}
+	return isUndefined(i)
+}
+
 func isUndefined(i js.IExpr) bool {
 	if v, ok := i.(*js.Var); ok {
 		if bytes.Equal(v.Name(), undefinedBytes) { // TODO: only if not defined
@@ -587,79 +595,98 @@ func optimizeBooleanExpr(expr js.IExpr, invert bool, prec js.OpPrec) js.IExpr {
 }
 
 func optimizeUnaryExpr(expr *js.UnaryExpr, prec js.OpPrec) js.IExpr {
-	if group, ok := expr.X.(*js.GroupExpr); ok && expr.Op == js.NotToken {
-		if binary, ok := group.X.(*js.BinaryExpr); ok && (binary.Op == js.AndToken || binary.Op == js.OrToken) {
-			op := js.AndToken
-			if binary.Op == js.AndToken {
-				op = js.OrToken
+	if expr.Op == js.NotToken {
+		invert := true
+		var expr2 js.IExpr = expr.X
+		for {
+			if unary, ok := expr2.(*js.UnaryExpr); ok && unary.Op == js.NotToken {
+				invert = !invert
+				expr2 = unary.X
+			} else if group, ok := expr2.(*js.GroupExpr); ok {
+				expr2 = group.X
+			} else {
+				break
 			}
-			precInside := binaryOpPrecMap[op]
-			needsGroup := precInside < prec && (precInside != js.OpCoalesce || prec != js.OpBitOr)
+		}
+		if !invert && isBooleanExpr(expr2) {
+			return groupExpr(expr2, prec)
+		} else if binary, ok := expr2.(*js.BinaryExpr); ok && invert {
+			if binaryOpPrecMap[binary.Op] == js.OpEquals {
+				binary.Op = invertBooleanOp(binary.Op)
+				return groupExpr(binary, prec)
+			} else if binary.Op == js.AndToken || binary.Op == js.OrToken {
+				op := js.AndToken
+				if binary.Op == js.AndToken {
+					op = js.OrToken
+				}
+				precInside := binaryOpPrecMap[op]
+				needsGroup := precInside < prec && (precInside != js.OpCoalesce || prec != js.OpBitOr)
 
-			// rewrite !(a||b) to !a&&!b
-			// rewrite !(a==0||b==0) to a!=0&&b!=0
-			score := 3 // savings if rewritten (group parentheses and not-token)
-			if needsGroup {
-				score -= 2
-			}
-			score -= 2 // add two not-tokens for left and right
-
-			// == and === can become != and !==
-			var isEqX, isEqY bool
-			if binaryExpr, ok := binary.X.(*js.BinaryExpr); ok && binaryOpPrecMap[binaryExpr.Op] == js.OpEquals {
-				score += 1
-				isEqX = true
-			}
-			if binaryExpr, ok := binary.Y.(*js.BinaryExpr); ok && binaryOpPrecMap[binaryExpr.Op] == js.OpEquals {
-				score += 1
-				isEqY = true
-			}
-
-			// add group if it wasn't already there
-			var needsGroupX, needsGroupY bool
-			if !isEqX && binaryLeftPrecMap[binary.Op] <= exprPrec(binary.X) && exprPrec(binary.X) < js.OpUnary {
-				score -= 2
-				needsGroupX = true
-			}
-			if !isEqY && binaryRightPrecMap[binary.Op] <= exprPrec(binary.Y) && exprPrec(binary.Y) < js.OpUnary {
-				score -= 2
-				needsGroupY = true
-			}
-
-			// remove group
-			if op == js.OrToken {
-				if exprPrec(binary.X) == js.OpOr {
-					score += 2
-				}
-				if exprPrec(binary.Y) == js.OpAnd {
-					score += 2
-				}
-			}
-
-			if 0 < score {
-				binary.Op = op
-				if isEqX {
-					binary.X.(*js.BinaryExpr).Op = invertBooleanOp(binary.X.(*js.BinaryExpr).Op)
-				}
-				if isEqY {
-					binary.Y.(*js.BinaryExpr).Op = invertBooleanOp(binary.Y.(*js.BinaryExpr).Op)
-				}
-				if needsGroupX {
-					binary.X = &js.GroupExpr{binary.X}
-				}
-				if needsGroupY {
-					binary.Y = &js.GroupExpr{binary.Y}
-				}
-				if !isEqX {
-					binary.X = &js.UnaryExpr{js.NotToken, binary.X}
-				}
-				if !isEqY {
-					binary.Y = &js.UnaryExpr{js.NotToken, binary.Y}
-				}
+				// rewrite !(a||b) to !a&&!b
+				// rewrite !(a==0||b==0) to a!=0&&b!=0
+				score := 3 // savings if rewritten (group parentheses and not-token)
 				if needsGroup {
-					return &js.GroupExpr{binary}
+					score -= 2
 				}
-				return binary
+				score -= 2 // add two not-tokens for left and right
+
+				// == and === can become != and !==
+				var isEqX, isEqY bool
+				if binaryExpr, ok := binary.X.(*js.BinaryExpr); ok && binaryOpPrecMap[binaryExpr.Op] == js.OpEquals {
+					score += 1
+					isEqX = true
+				}
+				if binaryExpr, ok := binary.Y.(*js.BinaryExpr); ok && binaryOpPrecMap[binaryExpr.Op] == js.OpEquals {
+					score += 1
+					isEqY = true
+				}
+
+				// add group if it wasn't already there
+				var needsGroupX, needsGroupY bool
+				if !isEqX && binaryLeftPrecMap[binary.Op] <= exprPrec(binary.X) && exprPrec(binary.X) < js.OpUnary {
+					score -= 2
+					needsGroupX = true
+				}
+				if !isEqY && binaryRightPrecMap[binary.Op] <= exprPrec(binary.Y) && exprPrec(binary.Y) < js.OpUnary {
+					score -= 2
+					needsGroupY = true
+				}
+
+				// remove group
+				if op == js.OrToken {
+					if exprPrec(binary.X) == js.OpOr {
+						score += 2
+					}
+					if exprPrec(binary.Y) == js.OpAnd {
+						score += 2
+					}
+				}
+
+				if 0 < score {
+					binary.Op = op
+					if isEqX {
+						binary.X.(*js.BinaryExpr).Op = invertBooleanOp(binary.X.(*js.BinaryExpr).Op)
+					}
+					if isEqY {
+						binary.Y.(*js.BinaryExpr).Op = invertBooleanOp(binary.Y.(*js.BinaryExpr).Op)
+					}
+					if needsGroupX {
+						binary.X = &js.GroupExpr{binary.X}
+					}
+					if needsGroupY {
+						binary.Y = &js.GroupExpr{binary.Y}
+					}
+					if !isEqX {
+						binary.X = &js.UnaryExpr{js.NotToken, binary.X}
+					}
+					if !isEqY {
+						binary.Y = &js.UnaryExpr{js.NotToken, binary.Y}
+					}
+					if needsGroup {
+						return &js.GroupExpr{binary}
+					}
+					return binary
+				}
 			}
 		}
 	}

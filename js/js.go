@@ -945,9 +945,46 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			//	}
 			//}
 
+			// change a===null||a===undefined to a==null
+			if expr.Op == js.OrToken || expr.Op == js.AndToken {
+				eqEqOp := js.EqEqToken
+				eqEqEqOp := js.EqEqEqToken
+				if expr.Op == js.AndToken {
+					eqEqOp = js.NotEqToken
+					eqEqEqOp = js.NotEqEqToken
+				}
+
+				left, isBinaryX := expr.X.(*js.BinaryExpr)
+				right, isBinaryY := expr.Y.(*js.BinaryExpr)
+				if isBinaryX && isBinaryY && (left.Op == eqEqOp || left.Op == eqEqEqOp) && (right.Op == eqEqOp || right.Op == eqEqEqOp) {
+					leftSwitched := false
+					var leftVar, rightVar js.IExpr
+					if v, ok := left.X.(*js.Var); ok && isUndefinedOrNull(left.Y) {
+						leftVar = v
+					} else if v, ok := left.Y.(*js.Var); ok && isUndefinedOrNull(left.X) {
+						leftSwitched = true
+						leftVar = v
+					}
+					if v, ok := right.X.(*js.Var); ok && isUndefinedOrNull(right.Y) {
+						rightVar = v
+					} else if v, ok := right.Y.(*js.Var); ok && isUndefinedOrNull(right.X) {
+						rightVar = v
+					}
+					if leftVar != nil && leftVar == rightVar {
+						left.Op = eqEqOp
+						if leftSwitched {
+							left.X = &js.LiteralExpr{js.NullToken, nullBytes}
+						} else {
+							left.Y = &js.LiteralExpr{js.NullToken, nullBytes}
+						}
+						expr = left
+					}
+				}
+			}
+
 			m.minifyExpr(expr.X, precLeft)
-			// 0 < len(m.prev) always
 			if expr.Op == js.GtToken && m.prev[len(m.prev)-1] == '-' {
+				// 0 < len(m.prev) always
 				m.write(spaceBytes)
 			} else if expr.Op == js.EqEqEqToken || expr.Op == js.NotEqEqToken {
 				if left, ok := expr.X.(*js.UnaryExpr); ok && left.Op == js.TypeofToken {
@@ -966,6 +1003,12 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 							expr.Op = js.NotEqToken
 						}
 					}
+				}
+			} else if expr.Op == js.EqEqToken || expr.Op == js.NotEqToken {
+				if isUndefinedOrNull(expr.X) {
+					expr.X = &js.LiteralExpr{js.NullToken, nullBytes}
+				} else if isUndefinedOrNull(expr.Y) {
+					expr.Y = &js.LiteralExpr{js.NullToken, nullBytes}
 				}
 			}
 			m.write(expr.Op.Bytes())
