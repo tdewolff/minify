@@ -38,6 +38,12 @@ yay -Syu minify
 pkg install minify
 ```
 
+### Alpine Linux
+Enable the [https://wiki.alpinelinux.org/wiki/Enable_Community_Repository](community repo) and run
+```
+apk add minify
+```
+
 ### MacOS
 Using Homebrew:
 
