@@ -306,6 +306,10 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		if stmt.Catch != nil {
 			m.write(catchBytes)
 			stmt.Catch.List = optimizeStmtList(stmt.Catch.List, defaultBlock)
+			if v, ok := stmt.Binding.(*js.Var); ok && v.Uses == 1 {
+				stmt.Catch.Scope.Declared = stmt.Catch.Scope.Declared[1:]
+				stmt.Binding = nil
+			}
 			m.renamer.renameScope(stmt.Catch.Scope)
 			if stmt.Binding != nil {
 				m.write(openParenBytes)

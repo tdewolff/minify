@@ -126,9 +126,10 @@ func TestJS(t *testing.T) {
 		{`throw a`, `throw a`},
 		{`throw [a]`, `throw[a]`},
 		{`try {a} catch {b}`, `try{a}catch{b}`},
-		{`try {a} catch(e) {b}`, `try{a}catch(e){b}`},
-		{`try {a} catch(e) {b} finally {c}`, `try{a}catch(e){b}finally{c}`},
+		{`try {a} catch(b) {b}`, `try{a}catch(b){b}`},
+		{`try {a} catch(b) {b} finally {c}`, `try{a}catch(b){b}finally{c}`},
 		{`try {a} finally {c}`, `try{a}finally{c}`},
+		{`try {a} catch(b) {c}`, `try{a}catch{c}`},
 		{`a=b;c=d`, `a=b,c=d`},
 
 		// strings (prepend '0,' to avoid being a directive prologue)
@@ -705,7 +706,7 @@ func TestJS(t *testing.T) {
 		{`/[^a\-\--\-\-\-]/`, `/[^a\-\-----]/`},
 
 		// edge-cases
-		{`let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`, `let o=null;try{o=o?.a.b||"FAIL"}catch(x){}console.log(o||"PASS")`},
+		{`let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`, `let o=null;try{o=o?.a.b||"FAIL"}catch{}console.log(o||"PASS")`},
 		{`1..a`, `1..a`},
 		{`1.5.a`, `1.5.a`},
 		{`1e4.a`, `1e4.a`},
@@ -773,7 +774,7 @@ func TestJSVarRenaming(t *testing.T) {
 	}{
 		{`x=function(){var name;name}`, `x=function(){var a;a}`},
 		{`x=function(){var once,twice;once,twice++}`, `x=function(){var a,b;a,b++}`},
-		{`x=function(){try{var x;x}catch(y){x}}`, `x=function(){try{var a;a}catch(b){a}}`},
+		{`x=function(){try{var x;x}catch(y){x,y}}`, `x=function(){try{var a;a}catch(b){a,b}}`},
 		{`x=function(){try{var x;x}catch(x){x}}`, `x=function(){try{var a;a}catch(a){a}}`},
 		{`x=function(){function name(){}}`, `x=function(){function a(){}}`},
 		{`x=function name(){}`, `x=function(){}`},
@@ -796,8 +797,8 @@ func TestJSVarRenaming(t *testing.T) {
 		{`!function(){var await;print({await});}`, `!function(){var a;print({await:a})}`},
 		{`function a(){var name; return {name}}`, `function a(){var a;return{name:a}}`},
 		{`function a(){try{}catch(arg){arg}}`, `function a(){try{}catch(a){a}}`},
-		{`function a(){var name,z;z;try{}catch(name){var name}}`, `function a(){var a,b;b;try{}catch(b){}}`},
-		{`function a(){var name,z;z;try{}catch(arg){var name}}`, `function a(){var a,b;b;try{}catch(b){}}`},
+		{`function a(){var name,z;z;try{}catch(name){var name}}`, `function a(){var a,b;b;try{}catch{}}`},
+		{`function a(){var name,z;z;try{}catch(arg){var name}}`, `function a(){var a,b;b;try{}catch{}}`},
 		{`function a(b){function c(d){b[d]}}`, `function a(a){function b(b){a[b]}}`},
 		{`function r(o){function l(t){if(!z[t]){if(!o[t]);}}}`, `function r(a){function b(b){z[b]||!a[b]}}`},
 		{`!function(a){a;for(var b=0;;);};var c;var d;`, `!function(a){a;for(var b=0;;);};var c,d`},
@@ -821,6 +822,7 @@ func TestJSVarRenaming(t *testing.T) {
 		{`({a:b=1}={})=>b`, `({a=1}={})=>a`}, // #422
 		{`()=>{var a;if(x){const b=0;while(true);}}`, `()=>{if(x){const b=0;for(var a;!0;);}}`},
 		{`(e,s)=>{e=>0,s(e(s))}`, `(a,b)=>{a=>0,b(a(b))}`}, // #469
+		{`()=>{var c;try {a} catch(b) {c}}`, `()=>{var b;try{a}catch{b}}`},
 	}
 
 	m := minify.New()
