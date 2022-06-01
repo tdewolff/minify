@@ -7,6 +7,9 @@ import (
 	"github.com/tdewolff/parse/v2/js"
 )
 
+const identStartLen = 54
+const identContinueLen = 64
+
 type renamer struct {
 	identStart    []byte
 	identContinue []byte
@@ -23,9 +26,12 @@ func newRenamer(rename, useCharFreq bool) *renamer {
 	identStart := []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$")
 	identContinue := []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$0123456789")
 	if useCharFreq {
-		// sorted based on character frequency of a collection of JS samples (incl. the var names!)
+		// sorted based on character frequency of a collection of JS samples
 		identStart = []byte("etnsoiarclduhmfpgvbjy_wOxCEkASMFTzDNLRPHIBV$WUKqYGXQZJ")
 		identContinue = []byte("etnsoiarcldu14023hm8f6pg57v9bjy_wOxCEkASMFTzDNLRPHIBV$WUKqYGXQZJ")
+	}
+	if len(identStart) != identStartLen || len(identContinue) != identContinueLen {
+		panic("bad identStart or identContinue lengths")
 	}
 	identOrder := map[byte]int{}
 	for i, c := range identStart {
@@ -82,9 +88,9 @@ NameLoop:
 		chars := r.identContinue
 		if i == 0 {
 			chars = r.identStart
-			index *= len(r.identStart)
+			index *= identStartLen
 		} else {
-			index *= len(r.identContinue)
+			index *= identContinueLen
 		}
 		for j, c := range chars {
 			if name[i] == c {
@@ -95,9 +101,9 @@ NameLoop:
 		return -1
 	}
 	for n := 0; n < len(name)-1; n++ {
-		offset := len(r.identStart)
+		offset := identStartLen
 		for i := 0; i < n; i++ {
-			offset *= len(r.identContinue)
+			offset *= identContinueLen
 		}
 		index += offset
 	}
@@ -109,17 +115,19 @@ func (r *renamer) getName(name []byte, index int) []byte {
 	// Thus we can have 54 one-character names and 52*54=2808 two-character names for every branch leaf.
 	// That is sufficient for virtually all input.
 
-	if index < len(r.identStart) {
+	// one character
+	if index < identStartLen {
 		name[0] = r.identStart[index]
 		return name[:1]
 	}
-	index -= len(r.identStart)
+	index -= identStartLen
 
+	// two characters or more
 	n := 2
 	for {
-		offset := len(r.identStart)
+		offset := identStartLen
 		for i := 0; i < n-1; i++ {
-			offset *= len(r.identContinue)
+			offset *= identContinueLen
 		}
 		if index < offset {
 			break
@@ -133,11 +141,11 @@ func (r *renamer) getName(name []byte, index int) []byte {
 	} else {
 		name = name[:n]
 	}
-	name[0] = r.identStart[index%len(r.identStart)]
-	index /= len(r.identStart)
+	name[0] = r.identStart[index%identStartLen]
+	index /= identStartLen
 	for i := 1; i < n; i++ {
-		name[i] = r.identContinue[index%len(r.identContinue)]
-		index /= len(r.identContinue)
+		name[i] = r.identContinue[index%identContinueLen]
+		index /= identContinueLen
 	}
 	return name
 }
