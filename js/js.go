@@ -945,41 +945,13 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			//	}
 			//}
 
-			// change a===null||a===undefined to a==null
-			if expr.Op == js.OrToken || expr.Op == js.AndToken {
-				eqEqOp := js.EqEqToken
-				eqEqEqOp := js.EqEqEqToken
-				if expr.Op == js.AndToken {
-					eqEqOp = js.NotEqToken
-					eqEqEqOp = js.NotEqEqToken
+			if v, not, ok := isUndefinedOrNullVar(expr); ok {
+				// change a===null||a===undefined to a==null
+				op := js.EqEqToken
+				if not {
+					op = js.NotEqToken
 				}
-
-				left, isBinaryX := expr.X.(*js.BinaryExpr)
-				right, isBinaryY := expr.Y.(*js.BinaryExpr)
-				if isBinaryX && isBinaryY && (left.Op == eqEqOp || left.Op == eqEqEqOp) && (right.Op == eqEqOp || right.Op == eqEqEqOp) {
-					leftSwitched := false
-					var leftVar, rightVar js.IExpr
-					if v, ok := left.X.(*js.Var); ok && isUndefinedOrNull(left.Y) {
-						leftVar = v
-					} else if v, ok := left.Y.(*js.Var); ok && isUndefinedOrNull(left.X) {
-						leftSwitched = true
-						leftVar = v
-					}
-					if v, ok := right.X.(*js.Var); ok && isUndefinedOrNull(right.Y) {
-						rightVar = v
-					} else if v, ok := right.Y.(*js.Var); ok && isUndefinedOrNull(right.X) {
-						rightVar = v
-					}
-					if leftVar != nil && leftVar == rightVar {
-						left.Op = eqEqOp
-						if leftSwitched {
-							left.X = &js.LiteralExpr{js.NullToken, nullBytes}
-						} else {
-							left.Y = &js.LiteralExpr{js.NullToken, nullBytes}
-						}
-						expr = left
-					}
-				}
+				expr = &js.BinaryExpr{op, v, &js.LiteralExpr{js.NullToken, nullBytes}}
 			}
 
 			m.minifyExpr(expr.X, precLeft)
@@ -1003,12 +975,6 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 							expr.Op = js.NotEqToken
 						}
 					}
-				}
-			} else if expr.Op == js.EqEqToken || expr.Op == js.NotEqToken {
-				if isUndefinedOrNull(expr.X) {
-					expr.X = &js.LiteralExpr{js.NullToken, nullBytes}
-				} else if isUndefinedOrNull(expr.Y) {
-					expr.Y = &js.LiteralExpr{js.NullToken, nullBytes}
 				}
 			}
 			m.write(expr.Op.Bytes())
@@ -1084,8 +1050,10 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		} else {
 			m.minifyExpr(expr.X, js.OpMember)
 		}
-		// 0 < len(m.prev) always
-		if last := m.prev[len(m.prev)-1]; '0' <= last && last <= '9' {
+		if expr.Optional {
+			m.write(questionBytes)
+		} else if last := m.prev[len(m.prev)-1]; '0' <= last && last <= '9' {
+			// 0 < len(m.prev) always
 			isInteger := true
 			for _, c := range m.prev[:len(m.prev)-1] {
 				if c < '0' || '9' < c {
@@ -1160,6 +1128,9 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			} else {
 				m.minifyExpr(expr.Tag, js.OpMember)
 			}
+			if expr.Optional {
+				m.write(optChainBytes)
+			}
 		}
 		parentInFor := m.inFor
 		m.inFor = false
@@ -1210,6 +1181,9 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.minifyExpr(expr.X, js.OpCall)
 		parentInFor := m.inFor
 		m.inFor = false
+		if expr.Optional {
+			m.write(optChainBytes)
+		}
 		m.minifyArguments(expr.Args)
 		m.inFor = parentInFor
 	case *js.IndexExpr:
@@ -1222,6 +1196,9 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			m.minifyExpr(expr.X, js.OpCall)
 		} else {
 			m.minifyExpr(expr.X, js.OpMember)
+		}
+		if expr.Optional {
+			m.write(optChainBytes)
 		}
 		if lit, ok := expr.Y.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken && 2 < len(lit.Data) {
 			if isIdent := js.AsIdentifierName(lit.Data[1 : len(lit.Data)-1]); isIdent {
@@ -1247,18 +1224,6 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.minifyExpr(expr.X, js.OpAssign)
 		m.write(colonBytes)
 		m.minifyExpr(expr.Y, js.OpAssign)
-	case *js.OptChainExpr:
-		m.minifyExpr(expr.X, js.OpCall)
-		m.write(optChainBytes)
-		if callExpr, ok := expr.Y.(*js.CallExpr); ok {
-			m.minifyArguments(callExpr.Args)
-		} else if indexExpr, ok := expr.Y.(*js.IndexExpr); ok {
-			m.write(openBracketBytes)
-			m.minifyExpr(indexExpr.Y, js.OpExpr)
-			m.write(closeBracketBytes)
-		} else {
-			m.minifyExpr(expr.Y, js.OpPrimary) // TemplateExpr or LiteralExpr
-		}
 	case *js.VarDecl:
 		m.minifyVarDecl(expr, true) // happens in for statement or when vars were hoisted
 	case *js.FuncDecl:

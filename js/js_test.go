@@ -627,6 +627,16 @@ func TestJS(t *testing.T) {
 		{`!!(a===b||c===d)`, `a===b||c===d`},
 		{`!(a!==null)`, `a===null`},
 		{`a==void 0`, `a==null`},
+		//{`if(a!==null&&a!==undefined)a.b()`, `a?.b()`},  // returns undefined instead of false
+		{`(a===null||a===undefined)?undefined:a()`, `a?.()`},
+		{`(a===null||a===undefined)?undefined:a[0]`, `a?.[0]`},
+		{"(a===null||a===undefined)?undefined:a`tpl`", "a?.`tpl`"},
+		{`(a===null||a===undefined)?undefined:a.b`, `a?.b`},
+		{`(a===null||a===undefined)?undefined:a.b()`, `a?.b()`},
+		{`(a===null||a===undefined)?undefined:a.b[0]`, `a?.b[0]`},
+		{"(a===null||a===undefined)?undefined:a.b`tpl`", "a?.b`tpl`"},
+		{`(a===null||a===undefined)?undefined:a.#b`, `a?.#b`},
+		{`(((a===null)||(a===undefined)))?undefined:a()`, `a?.()`},
 
 		// other
 		{`async function g(){await x+y}`, `async function g(){await x+y}`},
