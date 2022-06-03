@@ -362,7 +362,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		if stmt.Default != nil || len(stmt.List) != 0 {
 			m.write(fromBytes)
 		}
-		m.write(minifyString(stmt.Module))
+		m.write(minifyString(stmt.Module, false))
 		m.requireSemicolon()
 	case *js.ExportStmt:
 		m.write(exportBytes)
@@ -399,7 +399,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			}
 			if stmt.Module != nil {
 				m.write(fromBytes)
-				m.write(minifyString(stmt.Module))
+				m.write(minifyString(stmt.Module, false))
 			}
 			m.requireSemicolon()
 		}
@@ -465,7 +465,7 @@ func (m *jsMinifier) minifyStmtOrBlock(i js.IStmt, blockType blockType) {
 func (m *jsMinifier) minifyAlias(alias js.Alias) {
 	if alias.Name != nil {
 		if alias.Name[0] == '"' || alias.Name[0] == '\'' {
-			m.write(minifyString(alias.Name))
+			m.write(minifyString(alias.Name, false))
 		} else {
 			m.write(alias.Name)
 		}
@@ -476,7 +476,7 @@ func (m *jsMinifier) minifyAlias(alias js.Alias) {
 	}
 	if alias.Binding != nil {
 		if alias.Binding[0] == '"' || alias.Binding[0] == '\'' {
-			m.write(minifyString(alias.Binding))
+			m.write(minifyString(alias.Binding, false))
 		} else {
 			m.write(alias.Binding)
 		}
@@ -763,7 +763,7 @@ func (m *jsMinifier) minifyPropertyName(name js.PropertyName) {
 		m.minifyExpr(name.Computed, js.OpAssign)
 		m.write(closeBracketBytes)
 	} else if name.Literal.TokenType == js.StringToken {
-		m.write(minifyString(name.Literal.Data))
+		m.write(minifyString(name.Literal.Data, false))
 	} else {
 		m.write(name.Literal.Data)
 	}
@@ -896,7 +896,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				m.write(notOneBytes)
 			}
 		} else if expr.TokenType == js.StringToken {
-			m.write(minifyString(expr.Data))
+			m.write(minifyString(expr.Data, true))
 		} else if expr.TokenType == js.RegExpToken {
 			// </script>/ => < /script>/
 			if 0 < len(m.prev) && m.prev[len(m.prev)-1] == '<' && bytes.HasPrefix(expr.Data, regExpScriptBytes) {

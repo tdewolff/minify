@@ -151,8 +151,8 @@ func TestJS(t *testing.T) {
 		{`0,"<\/script>"`, `0,"<\/script>"`},
 		{`0,"</scr"+"ipt>"`, `0,"<\/script>"`},
 		{`0,"\""`, `0,'"'`},
-		{`0,'\'""'`, `0,'\'""'`},
-		{`0,"\"\"a'"`, `0,'""a\''`},
+		{`0,'\'""'`, "0,`'\"\"`"},
+		{`0,"\"\"a'"`, "0,`\"\"a'`"},
 		{`0,"'" + '"'`, "0,`'\"`"},
 		{`0,'"' + "'"`, "0,`\"'`"},
 		{`0,"a"+"b"+5`, `0,"ab"+5`},
@@ -641,6 +641,7 @@ func TestJS(t *testing.T) {
 		// other
 		{`async function g(){await x+y}`, `async function g(){await x+y}`},
 		{`a={"property": val1, "2": val2, "3name": val3};`, `a={property:val1,2:val2,"3name":val3}`},
+		{`a={"key'\"": v,};`, `a={"key'\"":v}`},
 		{`() => { const v=6; x={v} }`, `()=>{const v=6;x={v}}`},
 		{`a=obj["if"]`, `a=obj.if`},
 		{`a=obj["2"]`, `a=obj[2]`},

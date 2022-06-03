@@ -919,7 +919,7 @@ func mergeBinaryExpr(expr *js.BinaryExpr) {
 	}
 }
 
-func minifyString(b []byte) []byte {
+func minifyString(b []byte, allowTemplate bool) []byte {
 	if len(b) < 3 {
 		return []byte("\"\"")
 	}
@@ -943,7 +943,7 @@ func minifyString(b []byte) []byte {
 		} else if b[i] == '\\' && i+1 < len(b) {
 			if b[i+1] == 'n' || b[i+1] == 'r' {
 				newlines++
-			} else {
+			} else if '1' <= b[i+1] && b[i+1] <= '9' || b[i+1] == '0' && i+2 < len(b) && '0' <= b[i+2] && b[i+2] <= '9' {
 				notEscapes = true
 			}
 		}
@@ -956,7 +956,7 @@ func minifyString(b []byte) []byte {
 	} else if singleQuotes < doubleQuotes {
 		quote = byte('\'')
 	}
-	if !notEscapes && backtickQuotes+dollarSigns < quotes+newlines {
+	if allowTemplate && !notEscapes && backtickQuotes+dollarSigns < quotes+newlines {
 		quote = byte('`')
 	}
 	b[0] = quote

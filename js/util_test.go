@@ -37,12 +37,12 @@ func TestHexadecimalNumber(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
-	test.Bytes(t, minifyString([]byte(`""`)), []byte(`""`))
-	test.Bytes(t, minifyString([]byte(`"abc"`)), []byte(`"abc"`))
-	test.Bytes(t, minifyString([]byte(`'abc'`)), []byte(`"abc"`))
-	test.Bytes(t, minifyString([]byte(`"\8\9\t"`)), []byte("\"89\t\""))
-	test.Bytes(t, minifyString([]byte(`"\12"`)), []byte(`"\n"`))
-	test.Bytes(t, minifyString([]byte(`"\n\r$"`)), []byte("`\n\r\\$`"))
+	test.Bytes(t, minifyString([]byte(`""`), true), []byte(`""`))
+	test.Bytes(t, minifyString([]byte(`"abc"`), true), []byte(`"abc"`))
+	test.Bytes(t, minifyString([]byte(`'abc'`), true), []byte(`"abc"`))
+	test.Bytes(t, minifyString([]byte(`"\8\9\t"`), true), []byte("\"89\t\""))
+	test.Bytes(t, minifyString([]byte(`"\12"`), true), []byte(`"\n"`))
+	test.Bytes(t, minifyString([]byte(`"\n\r$"`), true), []byte("`\n\r\\$`"))
 }
 
 func TestHasSideEffects(t *testing.T) {
