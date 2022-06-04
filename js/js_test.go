@@ -36,6 +36,8 @@ func TestJS(t *testing.T) {
 		{`0o11`, `9`},
 		{`0x0D`, `13`},
 		{`0x0d`, `13`},
+		//{`123456787654321`, `0x704885f926b1`},
+		//{`4294967295`, `0xFFFFFFFF`}, // better GZIP
 		{`+ +x`, `+ +x`},
 		{`- -x`, `- -x`},
 		{`- +x`, `-+x`},
@@ -120,6 +122,7 @@ func TestJS(t *testing.T) {
 		{`while(a < 10){a}`, `for(;a<10;)a`},
 		{`while(a < 10){a;b}`, `for(;a<10;)a,b`},
 		{`while(a < 10){while(b);c}`, `for(;a<10;){for(;b;);c}`},
+		//{`while(a) if (!b) break`, `for(;a&&b;);`},
 		{`do {a} while(a < 10)`, `do a;while(a<10)`},
 		{`do [a]=5; while(a < 10)`, `do[a]=5;while(a<10)`},
 		{`do [a]=5; while(a < 10);return a`, `do[a]=5;while(a<10)return a`},
@@ -380,6 +383,7 @@ func TestJS(t *testing.T) {
 		{`class a{"f"(){}}`, `class a{f(){}}`},
 		{`class a{f(){};g(){}}`, `class a{f(){}g(){}}`},
 		{`class a{one;#two = 2;f(){}}`, `class a{one;#two=2;f(){}}`},
+		//{`function g(){a()} function g(){b()}`, `function g(){b()}`},
 
 		// dead code
 		//{`return;a`, `return`},
@@ -584,6 +588,7 @@ func TestJS(t *testing.T) {
 		{`0B00?a:b`, `b`},
 		{`0o00?a:b`, `b`},
 		{`0n?a:b`, `b`},
+		{`(0n?a:b)()`, `b()`},
 		{`!0`, `!0`},
 		{`!42`, `!1`},
 		{`!"str"`, `!1`},
@@ -593,6 +598,7 @@ func TestJS(t *testing.T) {
 		{`"object"===typeof a`, `"object"==typeof a`},
 		{`"object"!==typeof a`, `"object"!=typeof a`},
 		{`typeof a===b`, `typeof a===b`},
+		//{`typeof a==="undefined"`, `typeof a<"u"`}, // only for >ES2020 and not IE
 		{`a!=null?a:b`, `a??b`},
 		{`a==null?b:a`, `a??b`},
 		{`a!=undefined?a:b`, `a??b`},
@@ -639,6 +645,7 @@ func TestJS(t *testing.T) {
 		{"(a===null||a===undefined)?undefined:a.b`tpl`", "a?.b`tpl`"},
 		{`(a===null||a===undefined)?undefined:a.#b`, `a?.#b`},
 		{`(((a===null)||(a===undefined)))?undefined:a()`, `a?.()`},
+		//{`(a.b===null||a.b===undefined)?undefined:a.b()`, `a.b?.()`},
 
 		// other
 		{`async function g(){await x+y}`, `async function g(){await x+y}`},
