@@ -829,6 +829,14 @@ func (m *jsMinifier) optimizeCondExpr(expr *js.CondExpr, prec js.OpPrec) js.IExp
 		// no need to check whether left/right need to add groups, as the space saving is always more
 		return nullishExpr
 	} else {
+		callX, isCallX := expr.X.(*js.CallExpr)
+		callY, isCallY := expr.Y.(*js.CallExpr)
+		if isCallX && isCallY && len(callX.Args.List) == 1 && len(callY.Args.List) == 1 && !callX.Args.List[0].Rest && !callY.Args.List[0].Rest && isEqualExpr(callX.X, callY.X) {
+			expr.X = callX.Args.List[0].Value
+			expr.Y = callY.Args.List[0].Value
+			return &js.CallExpr{callX.X, js.Args{[]js.Arg{{expr, false}}}, false} // recompress the conditional expression inside
+		}
+
 		// shorten when true and false bodies are true and false
 		trueX, falseX := isTrue(expr.X), isFalse(expr.X)
 		trueY, falseY := isTrue(expr.Y), isFalse(expr.Y)
@@ -860,7 +868,7 @@ func (m *jsMinifier) optimizeCondExpr(expr *js.CondExpr, prec js.OpPrec) js.IExp
 				if comma, ok := group.X.(*js.CommaExpr); ok && js.OpCoalesce <= exprPrec(comma.List[len(comma.List)-1]) {
 					expr.Cond = comma.List[len(comma.List)-1]
 					comma.List[len(comma.List)-1] = expr
-					return comma
+					return comma // recompress the conditional expression inside
 				}
 			}
 		}

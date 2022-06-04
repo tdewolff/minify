@@ -627,6 +627,7 @@ func TestJS(t *testing.T) {
 		{`!!(a===b||c===d)`, `a===b||c===d`},
 		{`!(a!==null)`, `a===null`},
 		{`a==void 0`, `a==null`},
+		{`a?b(c):b(d)`, `b(a?c:d)`},
 		//{`if(a!==null&&a!==undefined)a.b()`, `a?.b()`},  // returns undefined instead of false
 		{`(a===null||a===undefined)?undefined:a()`, `a?.()`},
 		{`(a===null||a===undefined)?undefined:a[0]`, `a?.[0]`},
