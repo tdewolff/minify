@@ -111,12 +111,24 @@ func optimizeStmt(i js.IStmt) js.IStmt {
 		// merge body and remove braces if it is not a lexical declaration
 		blockStmt.List = optimizeStmtList(blockStmt.List, defaultBlock)
 		if len(blockStmt.List) == 1 {
-			varDecl, isVarDecl := blockStmt.List[0].(*js.VarDecl)
-			_, isClassDecl := blockStmt.List[0].(*js.ClassDecl)
-			if !isClassDecl && (!isVarDecl || varDecl.TokenType == js.VarToken) {
-				return optimizeStmt(blockStmt.List[0])
+			if _, ok := blockStmt.List[0].(*js.ClassDecl); ok {
+				return &js.EmptyStmt{}
+			} else if varDecl, ok := blockStmt.List[0].(*js.VarDecl); ok && varDecl.TokenType != js.VarToken {
+				// remove let or const declaration in otherwise empty scope, but keep assignments
+				exprs := []js.IExpr{}
+				for _, item := range varDecl.List {
+					if item.Default != nil && hasSideEffects(item.Default) {
+						exprs = append(exprs, item.Default)
+					}
+				}
+				if len(exprs) == 0 {
+					return &js.EmptyStmt{}
+				} else if len(exprs) == 1 {
+					return &js.ExprStmt{exprs[0]}
+				}
+				return &js.ExprStmt{&js.CommaExpr{exprs}}
 			}
-			return &js.EmptyStmt{}
+			return optimizeStmt(blockStmt.List[0])
 		} else if len(blockStmt.List) == 0 {
 			return &js.EmptyStmt{}
 		}
