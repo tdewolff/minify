@@ -188,7 +188,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 	case *js.LabelledStmt:
 		m.write(stmt.Label)
 		m.write(colonBytes)
-		m.minifyStmt(stmt.Value)
+		m.minifyStmtOrBlock(stmt.Value, defaultBlock)
 	case *js.BranchStmt:
 		m.write(stmt.Type.Bytes())
 		if stmt.Label != nil {
