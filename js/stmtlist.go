@@ -146,6 +146,7 @@ func optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 	for i := 0; i < len(list); i++ { // read index
 		if ifStmt, ok := list[i].(*js.IfStmt); ok && !isEmptyStmt(ifStmt.Else) {
 			// if(!a)b;else c  =>  if(a)c; else b
+		IfElseLoop:
 			if unary, ok := ifStmt.Cond.(*js.UnaryExpr); ok && unary.Op == js.NotToken && isFlowStmt(lastStmt(ifStmt.Else)) {
 				ifStmt.Cond = unary.X
 				ifStmt.Body, ifStmt.Else = ifStmt.Else, ifStmt.Body
@@ -159,6 +160,8 @@ func optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 					list = append(list[:i+1], append([]js.IStmt{ifStmt.Else}, list[i+1:]...)...)
 				}
 				ifStmt.Else = nil
+			} else if ifStmt, ok = ifStmt.Else.(*js.IfStmt); ok && !isEmptyStmt(ifStmt.Else) {
+				goto IfElseLoop
 			}
 		}
 

@@ -254,6 +254,7 @@ func TestJS(t *testing.T) {
 		{`if(a){}else{while(b);}`, `if(a);else for(;b;);`},
 		{`if(a){return b}else{while(c);}`, `if(a)return b;for(;c;);`},
 		{`if(a){return b}else{while(c);d}`, `if(a)return b;for(;c;);d`},
+		{`if(a)b;else if(c)return d;else if(e)return f`, `if(a)b;else if(c)return d;if(e)return f`},
 		{`if(!a){while(b);c}`, `if(!a){for(;b;);c}`},
 		{`while(a){if(b)continue;if(c)continue;else d}`, `for(;a;){if(b)continue;if(c)continue;d}`},
 		{`while(a)if(b)continue;else c`, `for(;a;){if(b)continue;c}`},
