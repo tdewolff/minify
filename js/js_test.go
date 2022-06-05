@@ -412,6 +412,7 @@ func TestJS(t *testing.T) {
 		//{`function g(){return;var a;a=b}`, `function g(){var a;}`},
 		//{`function g(){return 5;function f(){}}`, `function g(){return 5;function f(){}}`},
 		//{`function g(){if(a)return a;else return b;var c;c=d}`, `function g(){var c;return a||b}`},
+		//{`()=>a()`, ``},
 
 		// arrow functions
 		{`() => {}`, `()=>{}`},
