@@ -109,6 +109,7 @@ func TestJS(t *testing.T) {
 		{`class a extends(!b){}`, `class a extends(!b){}`},
 		{`class a { f(a) {a} }`, `class a{f(a){a}}`},
 		{`class a { f(a) {a}; static g(b) {b} }`, `class a{f(a){a}static g(b){b}}`},
+		{`class a { static b; f(c){c}; static #d=5; static { b = this.f(5) } }`, `class a{static b;f(c){c}static#d=5;static{b=this.f(5)}}`},
 		{`for (var a = 5; a < 10; a++){a}`, `for(var a=5;a<10;a++)a`},
 		{`for (a,b = 5; a < 10; a++){a}`, `for(a,b=5;a<10;a++)a`},
 		{`async function f(){for await (var a of b){a}}`, `async function f(){for await(var a of b)a}`},

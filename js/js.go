@@ -738,19 +738,26 @@ func (m *jsMinifier) minifyClassDecl(decl *js.ClassDecl) {
 	}
 	m.write(openBraceBytes)
 	m.needsSemicolon = false
-	for _, item := range decl.Definitions {
+	for _, item := range decl.List {
 		m.writeSemicolon()
-		m.minifyPropertyName(item.Name)
-		if item.Init != nil {
-			m.write(equalBytes)
-			m.minifyExpr(item.Init, js.OpAssign)
-		}
-		m.requireSemicolon()
-	}
-	if 0 < len(decl.Methods) {
-		m.writeSemicolon()
-		for _, item := range decl.Methods {
-			m.minifyMethodDecl(item)
+		if item.StaticBlock != nil {
+			m.write(staticBytes)
+			m.minifyBlockStmt(item.StaticBlock)
+		} else if item.Method != nil {
+			m.minifyMethodDecl(item.Method)
+		} else {
+			if item.Static {
+				m.write(staticBytes)
+				if !item.Name.IsComputed() && item.Name.Literal.TokenType == js.IdentifierToken {
+					m.write(spaceBytes)
+				}
+			}
+			m.minifyPropertyName(item.Name)
+			if item.Init != nil {
+				m.write(equalBytes)
+				m.minifyExpr(item.Init, js.OpAssign)
+			}
+			m.requireSemicolon()
 		}
 	}
 	m.write(closeBraceBytes)
