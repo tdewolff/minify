@@ -72,11 +72,12 @@ Pull the image:
 docker pull tdewolff/minify
 ```
 
+> The `ENTRYPOINT` of the container is the `minify` command
+
 and run the image, for example in interactive mode:
 
-```
-docker run -i tdewolff/minify
-echo "(function(){ if (a == false) { return 0; } else { return 1; } })();" | minify --type js
+```bash
+docker run -i --entrypoint "" tdewolff/minify sh -c 'echo "(function(){ if (a == false) { return 0; } else { return 1; } })();" | minify --type js'
 ```
 
 which will output
