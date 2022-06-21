@@ -1240,25 +1240,31 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		} else if m.expectExpr == expectExprStmt {
 			m.write(notBytes)
 		}
-		parentInFor := m.inFor
-		m.inFor = false
+		parentInFor, parentGroupedStmt := m.inFor, m.groupedStmt
+		m.inFor, m.groupedStmt = false, false
 		m.minifyFuncDecl(expr, true)
-		m.inFor = parentInFor
+		m.inFor, m.groupedStmt = parentInFor, parentGroupedStmt
 		if grouped {
 			m.write(closeParenBytes)
 		}
 	case *js.ArrowFunc:
+		parentGroupedStmt := m.groupedStmt
+		m.groupedStmt = false
 		m.minifyArrowFunc(expr)
+		m.groupedStmt = parentGroupedStmt
 	case *js.MethodDecl:
+		parentGroupedStmt := m.groupedStmt
+		m.groupedStmt = false
 		m.minifyMethodDecl(expr) // only happens in object literal
+		m.groupedStmt = parentGroupedStmt
 	case *js.ClassDecl:
 		if m.expectExpr == expectExprStmt {
 			m.write(notBytes)
 		}
-		parentInFor := m.inFor
-		m.inFor = false
+		parentInFor, parentGroupedStmt := m.inFor, m.groupedStmt
+		m.inFor, m.groupedStmt = false, false
 		m.minifyClassDecl(expr)
-		m.inFor = parentInFor
+		m.inFor, m.groupedStmt = parentInFor, parentGroupedStmt
 	case *js.CommaExpr:
 		for i, item := range expr.List {
 			if i != 0 {
