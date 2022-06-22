@@ -1,3 +1,5 @@
 const minify = require('./build/Release/obj.target/minify');
-console.log(minify.string("text/html", "<span style=\"color:#ff0000;\">A  phrase</span>"));
-console.log(minify.file("text/html", "test.html", "test.min.html"));
+
+minify.config({'html-keep-document-tags': 5.0})
+
+console.log(minify.string("text/html", "<html><span style=\"color:#ff0000;\">A  phrase</span>"));

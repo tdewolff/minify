@@ -2,8 +2,10 @@ package main
 
 import "C"
 import (
+	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"unsafe"
 
 	"github.com/tdewolff/minify/v2"
@@ -19,17 +21,97 @@ import (
 var m *minify.M
 
 func init() {
-	m = minify.New()
-	m.AddFunc("text/css", css.Minify)
-	m.AddFunc("text/html", html.Minify)
-	m.AddFunc("image/svg+xml", svg.Minify)
-	m.AddFuncRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma)script$"), js.Minify)
-	m.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
-	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
+	minifyConfig(nil, nil, 0)
 }
 
 func goBytes(str *C.char, length C.longlong) []byte {
 	return (*[1 << 32]byte)(unsafe.Pointer(str))[:length:length]
+}
+
+func goStringArray(carr **C.char, length C.longlong) []string {
+	if length == 0 {
+		return []string{}
+	}
+
+	strs := make([]string, length)
+	arr := (*[1 << 32]*C.char)(unsafe.Pointer(carr))[:length:length]
+	for i := 0; i < int(length); i++ {
+		strs[i] = C.GoString(arr[i])
+	}
+	return strs
+}
+
+//export minifyConfig
+func minifyConfig(ckeys **C.char, cvals **C.char, length C.longlong) *C.char {
+	keys := goStringArray(ckeys, length)
+	vals := goStringArray(cvals, length)
+
+	cssMinifier := &css.Minifier{}
+	htmlMinifier := &html.Minifier{}
+	jsMinifier := &js.Minifier{}
+	jsonMinifier := &json.Minifier{}
+	svgMinifier := &svg.Minifier{}
+	xmlMinifier := &xml.Minifier{}
+
+	var err error
+	for i := 0; i < len(keys); i++ {
+		switch keys[i] {
+		case "css-precision":
+			var precision int64
+			precision, err = strconv.ParseInt(vals[i], 10, 64)
+			cssMinifier.Precision = int(precision)
+		case "html-keep-comments":
+			htmlMinifier.KeepComments, err = strconv.ParseBool(vals[i])
+		case "html-keep-conditional-comments":
+			htmlMinifier.KeepConditionalComments, err = strconv.ParseBool(vals[i])
+		case "html-keep-default-attr-vals":
+			htmlMinifier.KeepDefaultAttrVals, err = strconv.ParseBool(vals[i])
+		case "html-keep-document-tags":
+			htmlMinifier.KeepDocumentTags, err = strconv.ParseBool(vals[i])
+		case "html-keep-end-tags":
+			htmlMinifier.KeepEndTags, err = strconv.ParseBool(vals[i])
+		case "html-keep-whitespace":
+			htmlMinifier.KeepWhitespace, err = strconv.ParseBool(vals[i])
+		case "html-keep-quotes":
+			htmlMinifier.KeepQuotes, err = strconv.ParseBool(vals[i])
+		case "js-precision":
+			var precision int64
+			precision, err = strconv.ParseInt(vals[i], 10, 64)
+			jsMinifier.Precision = int(precision)
+		case "js-keep-var-names":
+			jsMinifier.KeepVarNames, err = strconv.ParseBool(vals[i])
+		case "js-no-nullish-operator":
+			jsMinifier.NoNullishOperator, err = strconv.ParseBool(vals[i])
+		case "json-precision":
+			var precision int64
+			precision, err = strconv.ParseInt(vals[i], 10, 64)
+			jsonMinifier.Precision = int(precision)
+		case "json-keep-numbers":
+			jsonMinifier.KeepNumbers, err = strconv.ParseBool(vals[i])
+		case "svg-keep-comments":
+			svgMinifier.KeepComments, err = strconv.ParseBool(vals[i])
+		case "svg-precision":
+			var precision int64
+			precision, err = strconv.ParseInt(vals[i], 10, 64)
+			svgMinifier.Precision = int(precision)
+		case "xml-keep-whitespace":
+			xmlMinifier.KeepWhitespace, err = strconv.ParseBool(vals[i])
+		default:
+			return C.CString(fmt.Sprintf("unknown config key: %s", keys[i]))
+		}
+		if err != nil {
+			return C.CString(fmt.Sprintf("bad config value for %s: %v", keys[i], err))
+		}
+	}
+
+	m = minify.New()
+	m.Add("text/css", cssMinifier)
+	m.Add("text/html", htmlMinifier)
+	m.Add("image/svg+xml", svgMinifier)
+	m.AddRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma|j|live)script(1\\.[0-5])?$|^module$"), jsMinifier)
+	m.AddRegexp(regexp.MustCompile("[/+]json$"), jsonMinifier)
+	m.AddRegexp(regexp.MustCompile("[/+]xml$"), xmlMinifier)
+	return nil
 }
 
 //export minifyString

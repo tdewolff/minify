@@ -1,5 +1,6 @@
 #include <node.h>
 #include <stdlib.h>
+#include <iostream>
 #include "minify.h"
 
 namespace minify {
@@ -7,10 +8,72 @@ namespace minify {
     using v8::Isolate;
     using v8::Local;
     using v8::Object;
+    using v8::Array;
     using v8::String;
     using v8::NewStringType;
     using v8::Value;
     using v8::Exception;
+    using v8::Context;
+    using v8::JSON;
+
+    void config(const FunctionCallbackInfo<Value> &args) {
+        Isolate* isolate = args.GetIsolate();
+
+        if (args.Length() < 1) {
+            isolate->ThrowException(Exception::TypeError(
+                String::NewFromUtf8(isolate, "expected config argument").ToLocalChecked()));
+            return;
+        }
+
+        if (!args[0]->IsObject()) {
+            isolate->ThrowException(Exception::TypeError(
+                String::NewFromUtf8(isolate, "config must be an object").ToLocalChecked()));
+            return;
+        }
+
+        Local<Context> context = Context::New(isolate);
+        Local<Object> object = args[0]->ToObject(context).ToLocalChecked();
+        Local<Array> properties = object->GetOwnPropertyNames(context).ToLocalChecked();
+        uint32_t length = properties->Length();
+
+        std::string cppkeys[length];
+        std::string cppvals[length];
+        for (uint32_t i = 0; i < length; i++) {
+            Local<Value> key = properties->Get(context, i).ToLocalChecked();
+            Local<Value> val = object->Get(context, key).ToLocalChecked();
+
+            if (!key->IsString() || (!val->IsString() && !val->IsBoolean() && !val->IsInt32())) {
+                isolate->ThrowException(Exception::TypeError(
+                    String::NewFromUtf8(isolate, "config must be an object[string: string|boolean|integer]").ToLocalChecked()));
+                return;
+            }
+            if (!val->IsString()) {
+                val = JSON::Stringify(context, val).ToLocalChecked();
+            }
+
+            std::string cppkey(*String::Utf8Value(isolate, key));
+            std::string cppval(*String::Utf8Value(isolate, val));
+            cppkeys[i] = cppkey;
+            cppvals[i] = cppval;
+        }
+
+        const char **keys = (const char **)malloc(length * sizeof(const char *));
+        const char **vals = (const char **)malloc(length * sizeof(const char *));
+        for (uint32_t i = 0; i < length; i++) {
+            keys[i] = cppkeys[i].c_str();
+            vals[i] = cppvals[i].c_str();
+        }
+
+        char *error = minifyConfig((char **)keys, (char **)vals, (long long)length);
+        free(vals);
+        free(keys);
+        if (error != NULL) {
+            isolate->ThrowException(Exception::TypeError(
+                String::NewFromUtf8(isolate, error).ToLocalChecked()));
+            free(error);
+            return;
+        }
+    }
 
     void string(const FunctionCallbackInfo<Value> &args) {
         Isolate* isolate = args.GetIsolate();
@@ -81,6 +144,7 @@ namespace minify {
     }
 
     void init(Local<Object> exports, Local<Value> module, void *context) {
+        NODE_SET_METHOD(exports, "config", config);
         NODE_SET_METHOD(exports, "string", string);
         NODE_SET_METHOD(exports, "file", file);
     }
