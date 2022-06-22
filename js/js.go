@@ -18,9 +18,6 @@ const (
 	iterationBlock
 )
 
-// DefaultMinifier is the default minifier.
-var DefaultMinifier = &Minifier{}
-
 // Minifier is a JS minifier.
 type Minifier struct {
 	Precision           int // number of significant digits
@@ -31,7 +28,7 @@ type Minifier struct {
 
 // Minify minifies JS data, it reads from r and writes to w.
 func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
-	return DefaultMinifier.Minify(m, w, r, params)
+	return (&Minifier{}).Minify(m, w, r, params)
 }
 
 // Minify minifies JS data, it reads from r and writes to w.
