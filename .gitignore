@@ -20,7 +20,8 @@ bindings/js/test.min.html
 bindings/js/node_modules
 bindings/js/test/node_modules
 bindings/js/test/test.min.html
+bindings/py/.pypirc
 bindings/py/minify.h
 bindings/py/minify.so
-bindings/py/test.min.html
 bindings/py/tdewolff_minify.egg-info
+bindings/py/example/example.min.html
