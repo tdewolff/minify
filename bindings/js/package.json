@@ -1,26 +1,37 @@
 {
   "name": "@tdewolff/minify",
-  "version": "2.11.1",
+  "version": "2.11.11",
   "author": "Taco de Wolff",
+  "license": "MIT",
   "description": "Go minifiers for web formats",
   "main": "./index.js",
+  "files": [
+    "index.js",
+    "binding.gyp",
+    "Makefile"
+  ],
   "dependencies": {
-    "@mapbox/node-pre-gyp": "^1.0.9",
-    "node-pre-gyp-github": "^1.4.3"
+    "@mapbox/node-pre-gyp": "^1.0.9"
   },
   "scripts": {
+    "build": "node-pre-gyp install --build-from-source",
     "install": "node-pre-gyp install --fallback-to-build",
-    "test": "node test.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/tdewolff/minify.git"
+    "test": "node test.js",
+    "package": "node-pre-gyp package 2>&1"
   },
   "binary": {
     "module_name": "minify",
     "module_path": "./build/Release",
-    "host": "https://github.com/tdewolff/minify/releases/download/",
-    "remote_path": "{version}"
+    "host": "https://github.com/tdewolff/minify/releases/download",
+    "remote_path": "./v{version}/",
+    "package_name": "{node_abi}-{platform}-{arch}-{libc}.tar.gz"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tdewolff/minify.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tdewolff/minify/issues"
   },
   "keywords": [
     "minify",
@@ -33,5 +44,7 @@
     "json",
     "xml",
     "go"
-  ]
+  ],
+  "homepage": "https://github.com/tdewolff/minify#readme",
+  "devDependencies": {}
 }

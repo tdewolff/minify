@@ -18,6 +18,8 @@ bindings/js/minify.h
 bindings/js/minify.a
 bindings/js/test.min.html
 bindings/js/node_modules
+bindings/js/test/node_modules
+bindings/js/test/test.min.html
 bindings/py/minify.h
 bindings/py/minify.so
 bindings/py/test.min.html

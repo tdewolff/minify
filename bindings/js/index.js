@@ -1,8 +1,2 @@
-var minify = null;
-
-if () {
-} else {
-  minify = require('./build/Release/obj.target/minify');
-}
-
-module.exports = minify;
+module.exports = require('./build/Release/obj.target/minify');
+module.exports.version = require('./package.json').version;
