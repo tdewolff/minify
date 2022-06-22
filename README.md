@@ -6,7 +6,7 @@
 
 **[Python bindings](https://pypi.org/project/tdewolff-minify/)** install with `pip install tdewolff-minify`
 
-**[JavaScript bindings](https://www.npmjs.com/package/tdewolff-minify)**
+**[JavaScript bindings](https://www.npmjs.com/package/@tdewolff/minify)** install with `npm i @tdewolff/minify`
 
 ---
 
