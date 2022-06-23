@@ -16,26 +16,13 @@
     "Makefile"
   ],
   "dependencies": {
-    "@mapbox/node-pre-gyp": "^1.0.9",
-    "nan": "^2.16.0"
+    "bindings": "^1.5.0"
   },
   "scripts": {
-    "build": "node-pre-gyp install --build-from-source",
-    "install": "node-pre-gyp install --fallback-to-build",
-    "test": "node test.js",
-    "package": "node-pre-gyp package 2>&1"
+    "test": "node test.js"
   },
-  "binary": {
-    "module_name": "minify",
-    "module_path": "./build/Release",
-    "host": "https://github.com/tdewolff/minify/releases/download",
-    "remote_path": "./v{version}/",
-    "package_name": "{node_abi}-{platform}-{arch}-{libc}.tar.gz"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/tdewolff/minify.git"
-  },
+  "gypfile": true,
+  "homepage": "https://github.com/tdewolff/minify#readme",
   "bugs": {
     "url": "https://github.com/tdewolff/minify/issues"
   },
@@ -50,6 +37,5 @@
     "json",
     "xml",
     "go"
-  ],
-  "homepage": "https://github.com/tdewolff/minify#readme"
+  ]
 }

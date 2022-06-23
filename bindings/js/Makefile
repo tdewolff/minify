@@ -11,9 +11,8 @@ build/:
 
 	node-gyp configure
 
-$(target): build/ *.cc *.h *.a
-	node-gyp build --target_arch=ia32
-	npm run-script package --target_arch=ia32
+$(target): build/ *.c *.h *.a
+	node-gyp build
 
 publish:
 	npm publish --access public
@@ -22,7 +21,7 @@ clean:
 	rm -rf build
 
 test:
-	npm test
+	node test.js
 
 .PHONY: test clean
 
