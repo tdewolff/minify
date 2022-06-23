@@ -16,7 +16,8 @@
     "Makefile"
   ],
   "dependencies": {
-    "@mapbox/node-pre-gyp": "^1.0.9"
+    "@mapbox/node-pre-gyp": "^1.0.9",
+    "nan": "^2.16.0"
   },
   "scripts": {
     "build": "node-pre-gyp install --build-from-source",
@@ -50,6 +51,5 @@
     "xml",
     "go"
   ],
-  "homepage": "https://github.com/tdewolff/minify#readme",
-  "devDependencies": {}
+  "homepage": "https://github.com/tdewolff/minify#readme"
 }

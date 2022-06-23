@@ -1,4 +1,5 @@
 #include <node.h>
+#include <nan.h>
 #include <stdlib.h>
 #include <iostream>
 #include "minify.h"
@@ -143,11 +144,11 @@ namespace minify {
         }
     }
 
-    void init(Local<Object> exports, Local<Value> module, void *context) {
+    void init(Local<Object> exports) {
         NODE_SET_METHOD(exports, "config", config);
         NODE_SET_METHOD(exports, "string", string);
         NODE_SET_METHOD(exports, "file", file);
     }
 
-    NODE_MODULE(minify, init)
+    NAN_MODULE_WORKER_ENABLED(minify, init)
 }
