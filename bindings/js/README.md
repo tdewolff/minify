@@ -7,10 +7,10 @@ Make sure to have [Go](https://go.dev/doc/install) installed.
 There are three functions available in JavaScript: configure the minifiers, minify a string, and minify a file. Below an example of their usage:
 
 ```js
-const minify = require('@tdewolff/minify');
+import { config, string, file } from '@tdewolff/minify';
 
 # default config option values
-minify.config({
+config({
     'css-precision': 0,
     'html-keep-comments': false,
     'html-keep-conditional-comments': false,
@@ -29,10 +29,10 @@ minify.config({
     'xml-keep-whitespace': false,
 })
 
-s = minify.string('text/html', '<span style="color:#ff0000;" class="text">Some  text</span>')
+const s = string('text/html', '<span style="color:#ff0000;" class="text">Some  text</span>')
 console.log(s)  // <span style=color:red class=text>Some text</span>
 
-minify.file('text/html', 'example.html', 'example.min.html')  // creates example.min.html
+file('text/html', 'example.html', 'example.min.html')  // creates example.min.html
 ```
 
 ## Mediatypes

@@ -1,10 +1,15 @@
 {
   "name": "@tdewolff/minify",
   "version": "2.11.11",
+  "type": "module",
   "author": "Taco de Wolff",
   "license": "MIT",
   "description": "Go minifiers for web formats",
   "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
   "files": [
     "index.js",
     "binding.gyp",
