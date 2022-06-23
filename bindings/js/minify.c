@@ -35,6 +35,13 @@ napi_status get_string(napi_env env, napi_value v, char **s, size_t *size) {
     return napi_ok;
 }
 
+void free_char_array(char **array, uint32_t length) {
+    for (uint32_t i = 0; i < length; i++) {
+        free(array[i]);
+    }
+    free(array);
+}
+
 napi_value config(napi_env env, napi_callback_info info) {
     napi_status status;
 
@@ -69,40 +76,64 @@ napi_value config(napi_env env, napi_callback_info info) {
         return NULL;
     }
 
+    char **keys = (char **)malloc(length * sizeof(char *));
+    char **vals = (char **)malloc(length * sizeof(char *));
     for (uint32_t i = 0; i < length; i++) {
-        napi_value nkey;
+        napi_value nkey, nval;
         status = napi_get_element(env, properties, i, &nkey);
         if (status != napi_ok) {
+            free_char_array(vals, i);
+            free_char_array(keys, i);
+            return NULL;
+        }
+        status = napi_get_property(env, argv[0], nkey, &nval);
+        if (status != napi_ok) {
+            free_char_array(vals, i);
+            free_char_array(keys, i);
             return NULL;
         }
 
-        char *key;
-        status = get_string(env, nkey, &key, NULL);
+        status = get_string(env, nkey, &keys[i], NULL);
         if (status == napi_string_expected) {
+            free_char_array(vals, i);
+            free_char_array(keys, i);
             napi_throw_type_error(env, NULL, "config keys must be strings");
             return NULL;
         } else if (status != napi_ok) {
+            free_char_array(vals, i);
+            free_char_array(keys, i);
             return NULL;
         }
 
-        napi_value nval;
-        status = napi_get_property(env, properties, nkey, &nval);
+        status = napi_typeof(env, nval, &type);
         if (status != napi_ok) {
+            free_char_array(vals, i);
+            free_char_array(keys, i+1);
+            return NULL;
+        } else if (type == napi_boolean || type == napi_number) {
+            status = napi_coerce_to_string(env, nval, &nval);
+        } else if (type != napi_string) {
+            free_char_array(vals, i);
+            free_char_array(keys, i+1);
+            napi_throw_type_error(env, NULL, "config values must be strings, integers, or booleans");
             return NULL;
         }
 
-        char *val;
-        status = get_string(env, nval, &val, NULL);
-        if (status == napi_string_expected) {
-            napi_throw_type_error(env, NULL, "config values must be strings");
-            return NULL;
-        } else if (status != napi_ok) {
+        status = get_string(env, nval, &vals[i], NULL);
+        if (status != napi_ok) {
+            free_char_array(vals, i);
+            free_char_array(keys, i+1);
             return NULL;
         }
+    }
 
-        printf("%u %s %s\n", i, key, val);
-        free(val);
-        free(key);
+    char *error = minifyConfig(keys, vals, length);
+    free_char_array(vals, length);
+    free_char_array(keys, length);
+    if (error != NULL) {
+        napi_throw_error(env, NULL, error);
+        free(error);
+        return NULL;
     }
     return napi_ok;
 }
