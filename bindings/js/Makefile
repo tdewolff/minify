@@ -1,8 +1,6 @@
-target=./build/Release/minify.node
+all: build
 
-all: $(target)
-
-build: *.go
+build: *.go *.c *.h
 	go get -u all
 	go build -buildmode=c-archive -o minify.a minify.go
 
@@ -10,15 +8,15 @@ build: *.go
 	sed -i "s/0.0.0/$version/" package.json
 
 	node-gyp configure
-
-$(target): build *.c *.h *.a
-	node-gyp build
+	prebuildify --napi
 
 publish:
 	npm publish --access public
 
 clean:
+	rm -rf minify.a
 	rm -rf build
+	rm -rf prebuilds
 
 test:
 	node test.js

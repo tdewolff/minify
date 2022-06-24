@@ -1,6 +1,6 @@
 {
   "name": "@tdewolff/minify",
-  "version": "2.11.11",
+  "version": "2.11.13",
   "type": "module",
   "author": "Taco de Wolff",
   "license": "MIT",
@@ -11,17 +11,17 @@
     "./package.json": "./package.json"
   },
   "files": [
+    "README",
     "index.js",
+    "test.js",
     "binding.gyp",
-    "Makefile"
+    "prebuilds"
   ],
-  "dependencies": {
-    "bindings": "^1.5.0"
-  },
   "scripts": {
-    "test": "node test.js"
+    "install": "node-gyp-build",
+    "test": "node test.js",
+    "prebuild": "prebuildify --napi"
   },
-  "gypfile": true,
   "homepage": "https://github.com/tdewolff/minify#readme",
   "bugs": {
     "url": "https://github.com/tdewolff/minify/issues"
@@ -37,5 +37,11 @@
     "json",
     "xml",
     "go"
-  ]
+  ],
+  "dependencies": {
+    "node-gyp-build": "^4.4.0"
+  },
+  "devDependencies": {
+    "prebuildify": "^5.0.0"
+  }
 }

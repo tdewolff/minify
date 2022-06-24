@@ -2,6 +2,6 @@
   "exports": "./example.js",
   "type": "module",
   "dependencies": {
-    "@tdewolff/minify": "^2.11.11"
+    "@tdewolff/minify": "^2.11.13"
   }
 }
