@@ -2,7 +2,7 @@ target=./build/Release/minify.node
 
 all: $(target)
 
-build/:
+build: *.go
 	go get -u all
 	go build -buildmode=c-archive -o minify.a minify.go
 
@@ -11,7 +11,7 @@ build/:
 
 	node-gyp configure
 
-$(target): build/ *.c *.h *.a
+$(target): build *.c *.h *.a
 	node-gyp build
 
 publish:
@@ -23,5 +23,5 @@ clean:
 test:
 	node test.js
 
-.PHONY: test clean
+.PHONY: all build publish test clean
 

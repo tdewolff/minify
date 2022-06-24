@@ -100,6 +100,11 @@ func minifyConfig(ckeys **C.char, cvals **C.char, length C.longlong) *C.char {
 			return C.CString(fmt.Sprintf("unknown config key: %s", keys[i]))
 		}
 		if err != nil {
+			if err.(*strconv.NumError).Func == "ParseInt" {
+				err = fmt.Errorf("\"%s\" is not an integer", vals[i])
+			} else if err.(*strconv.NumError).Func == "ParseBool" {
+				err = fmt.Errorf("\"%s\" is not a boolean", vals[i])
+			}
 			return C.CString(fmt.Sprintf("bad config value for %s: %v", keys[i], err))
 		}
 	}

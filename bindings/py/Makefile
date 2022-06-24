@@ -12,5 +12,5 @@ clean:
 	rm -rf dist
 	rm -rf tdewolff_minify.egg-info
 
-.PHONY: publish clean
+.PHONY: all build publish clean
 
