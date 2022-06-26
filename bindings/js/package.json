@@ -29,7 +29,7 @@
   "scripts": {
     "install": "node-gyp-build",
     "test": "node test.js",
-    "prebuild": "prebuildify --napi"
+    "prebuild": "prebuildify --napi --strip"
   },
   "homepage": "https://github.com/tdewolff/minify#readme",
   "bugs": {

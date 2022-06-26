@@ -11,7 +11,7 @@ build:
 	go get -u all
 	sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
 	node-gyp configure
-	prebuildify --napi
+	prebuildify --napi --strip
 
 publish:
 	npm publish --access public
