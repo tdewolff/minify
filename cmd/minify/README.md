@@ -25,13 +25,10 @@ If you do not have `make`, instead run the following lines to install `minify` a
 Optionally, you can run `go install github.com/tdewolff/minify/cmd/minify@latest` to install the latest version.
 
 ### Arch Linux
-Using `yay`:
-
+Using yay, see [AUR](https://aur.archlinux.org/packages/minify/)
 ```
-yay -Syu minify
+yay -S minify
 ```
-
-[Minify in AUR](https://aur.archlinux.org/packages/minify/)
 
 ### FreeBSD
 ```
@@ -39,31 +36,24 @@ pkg install minify
 ```
 
 ### Alpine Linux
-Enable the [https://wiki.alpinelinux.org/wiki/Enable_Community_Repository](community repo) and run
+Enable the [community repo](https://wiki.alpinelinux.org/wiki/Enable_Community_Repository)
 ```
 apk add minify
 ```
 
 ### MacOS
-Using Homebrew:
-
+Using Homebrew, see [Brew tap](https://github.com/tdewolff/homebrew-tap/)
 ```
 brew install tdewolff/tap/minify
 ```
 
-[Brew tap](https://github.com/tdewolff/homebrew-tap/)
-
 ### Ubuntu
-Update the package index:
-
 ```
 sudo apt-get update
-```
-
-Install minify deb package:
-```
 sudo apt-get install minify
 ```
+
+Note: may be outdated
 
 ### Docker
 Pull the image:
