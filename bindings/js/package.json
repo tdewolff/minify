@@ -1,6 +1,6 @@
 {
   "name": "@tdewolff/minify",
-  "version": "2.11.13",
+  "version": "2.11.14",
   "type": "module",
   "author": "Taco de Wolff",
   "license": "MIT",
@@ -12,9 +12,15 @@
   },
   "files": [
     "README",
+    "Makefile",
+    "go.mod",
+    "go.sum",
+    "minify.go",
+    "minify.c",
     "index.js",
     "test.js",
     "binding.gyp",
+    "build",
     "prebuilds"
   ],
   "scripts": {

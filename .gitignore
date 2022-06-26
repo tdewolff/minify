@@ -14,12 +14,12 @@ parse/tests/*/suppressions
 parse/tests/*/corpus/*
 !parse/tests/*/corpus/*.*
 bindings/js/build
+bindings/js/prebuilds
 bindings/js/minify.h
 bindings/js/minify.a
-bindings/js/test.min.html
 bindings/js/node_modules
-bindings/js/test/node_modules
-bindings/js/test/test.min.html
+bindings/js/example/node_modules
+bindings/js/example/test.min.html
 bindings/py/.pypirc
 bindings/py/minify.h
 bindings/py/minify.so
