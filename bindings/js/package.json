@@ -1,6 +1,6 @@
 {
   "name": "@tdewolff/minify",
-  "version": "2.11.14",
+  "version": "2.11.11",
   "type": "module",
   "author": "Taco de Wolff",
   "license": "MIT",
@@ -20,7 +20,10 @@
     "index.js",
     "test.js",
     "binding.gyp",
-    "build",
+    "build/binding.Makefile",
+    "build/config.gypi",
+    "build/Makefile",
+    "build/minify.target.mk",
     "prebuilds"
   ],
   "scripts": {

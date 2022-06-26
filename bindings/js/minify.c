@@ -1,5 +1,4 @@
 #include <node_api.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include "minify.h"
 
