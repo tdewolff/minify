@@ -18,6 +18,7 @@ bindings/js/prebuilds
 bindings/js/minify.h
 bindings/js/minify.a
 bindings/js/node_modules
+bindings/js/example/package-lock.json
 bindings/js/example/node_modules
 bindings/js/example/test.min.html
 bindings/py/.pypirc

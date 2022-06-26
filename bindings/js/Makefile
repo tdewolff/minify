@@ -1,3 +1,6 @@
+SHELL=/usr/bin/env bash
+VERSION=`git describe --tags --abbrev=0 | cut -b 2-`
+
 all: build
 
 # called by node-gyp
@@ -5,8 +8,8 @@ compile:
 	go build -buildmode=c-archive -o minify.a minify.go
 
 build:
-	version=$(cat go.mod | grep github.com/tdewolff/minify/v2 | cut -d ' ' -f 2 | cut -b 2-)
-	sed -i "s/0.0.0/$version/" package.json
+	go get -u all
+	sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
 	node-gyp configure
 	prebuildify --napi
 
