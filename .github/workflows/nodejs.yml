@@ -1,14 +1,21 @@
 name: Nodejs
 on:
-  workflow_run:
-    workflows: [Go]
-    types:
-      - completed
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  # it seems this won't work until this file is merged into master
+  # workflow_run:
+  #   workflows: [Go]
+  #   types:
+  #     - completed
 
 jobs:
   test:
     runs-on: ${{ matrix.os }}
-    if: github.event.workflow_run.conclusion == 'success'
+    # if: github.event.workflow_run.conclusion == 'success'
 
     strategy:
       fail-fast: false
