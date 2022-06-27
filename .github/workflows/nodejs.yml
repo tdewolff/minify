@@ -32,9 +32,10 @@ jobs:
         uses: actions/setup-node@v3
 
       - name: Install dependencies
-        uses: bahmutov/npm-install@v1
-        with:
-          working-directory: bindings/js
+        # uses: bahmutov/npm-install@v1
+        # with:
+        #   working-directory: bindings/js
+        run: npm ci
         env:
           LC_VERSION_MIN_MACOSX: 10.13
 
