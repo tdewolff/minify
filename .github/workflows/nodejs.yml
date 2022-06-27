@@ -38,7 +38,7 @@ jobs:
         env:
           # CGO_CFLAGS: -mmacosx-version-min=10.13
           # CGO_LDFLAGS: -mmacosx-version-min=10.13 
-          GOARCH: amd64
+          GOARCH: arm64
 
       - name: Test
         run: npm --prefix bindings/js test
