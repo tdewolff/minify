@@ -22,7 +22,7 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
-          - macos-10.15
+          - macos-latest
           - windows-latest
 
     steps:
@@ -35,6 +35,8 @@ jobs:
         uses: bahmutov/npm-install@v1
         with:
           working-directory: bindings/js
+        env:
+          LC_VERSION_MIN_MACOSX: 10.13
 
       - name: Test
         run: npm --prefix bindings/js test
