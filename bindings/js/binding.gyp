@@ -2,7 +2,7 @@
     "targets": [{
         "target_name": "minify",
         "product_extension": "node",
-        "type": "<(library)",
+        "type": "loadable_module",
         "cflags": ["-Wall"],
         "sources": ["minify.c"],
         "libraries": ["../minify.a"],
@@ -11,7 +11,7 @@
             "message": "Building Go library...",
             "inputs": ["minify.go", "minify.c"],
             "outputs": ["minify.a"],
-            "action": ["make", "compile"],
+            "action": ["make", "compile"]
         }],
     }],
 }

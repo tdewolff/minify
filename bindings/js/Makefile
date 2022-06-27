@@ -1,6 +1,12 @@
 SHELL=/usr/bin/env bash
 VERSION=`git describe --tags --abbrev=0 | cut -b 2-`
 
+# Below line is for Mac
+ifeq ($(shell uname -s),Darwin)
+export CGO_CFLAGS += -mmacosx-version-min=10.13
+export CGO_LDFLAGS += -mmacosx-version-min=10.13
+endif
+
 all: build
 
 # called by node-gyp
