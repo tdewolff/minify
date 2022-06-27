@@ -32,12 +32,9 @@ jobs:
         uses: actions/setup-node@v3
 
       - name: Install dependencies
-        # uses: bahmutov/npm-install@v1
-        # with:
-        #   working-directory: bindings/js
-        run: npm --prefix bindings/js ci
-        env:
-          CXXFLAGS: -mmacosx-version-min=10.13
+        uses: bahmutov/npm-install@v1
+        with:
+          working-directory: bindings/js
 
       - name: Test
         run: npm --prefix bindings/js test

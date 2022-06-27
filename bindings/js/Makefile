@@ -5,7 +5,7 @@ all: build
 
 # called by node-gyp
 compile:
-	go build -buildmode=c-archive -o minify.a minify.go
+	go build -buildmode=c-archive -gcflags="-mmacosx-version-min=10.13" -o minify.a minify.go
 
 build:
 	go get -u all
