@@ -3,6 +3,7 @@ VERSION=`git describe --tags --abbrev=0 | cut -b 2-`
 
 # Below line is for Mac
 ifeq ($(shell uname -s),Darwin)
+# node-gyp will run c++ with -mmacosx-version-min=10.13, set golang to match this
 export CGO_CFLAGS += -mmacosx-version-min=10.13
 export CGO_LDFLAGS += -mmacosx-version-min=10.13
 endif
