@@ -35,7 +35,7 @@ jobs:
         # uses: bahmutov/npm-install@v1
         # with:
         #   working-directory: bindings/js
-        run: npm ci
+        run: npm --prefix bindings/js ci
         env:
           LC_VERSION_MIN_MACOSX: 10.13
 
