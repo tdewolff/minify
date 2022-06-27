@@ -37,7 +37,7 @@ jobs:
         #   working-directory: bindings/js
         run: npm --prefix bindings/js ci
         env:
-          LC_VERSION_MIN_MACOSX: 10.13
+          CXXFLAGS: -mmacosx-version-min=10.13
 
       - name: Test
         run: npm --prefix bindings/js test
