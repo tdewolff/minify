@@ -35,10 +35,10 @@ jobs:
         uses: bahmutov/npm-install@v1
         with:
           working-directory: bindings/js
-        # env:
-        #   CGO_CFLAGS: -mmacosx-version-min=10.13
-        #   CGO_LDFLAGS: -mmacosx-version-min=10.13 
-        #   GOARCH: amd64
+        env:
+          # CGO_CFLAGS: -mmacosx-version-min=10.13
+          # CGO_LDFLAGS: -mmacosx-version-min=10.13 
+          GOARCH: amd64
 
       - name: Test
         run: npm --prefix bindings/js test
