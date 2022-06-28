@@ -106,8 +106,7 @@ See [CLI tool](https://github.com/tdewolff/minify/tree/master/cmd/minify) for in
 If you want to use Docker, please see https://hub.docker.com/r/tdewolff/minify.
 
 ```bash
-$ docker run -it tdewolff/minify
-/ # minify --version
+$ docker run -it tdewolff/minify --help
 ```
 
 ## API stability
