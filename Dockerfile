@@ -12,6 +12,6 @@ RUN /usr/bin/env bash -c make install
 FROM alpine:3
 
 COPY --from=build /go/bin/minify /usr/bin/minify
+COPY "containerfiles/container-entrypoint.sh" "/init.sh"
 
-ENTRYPOINT ["minify"]
-CMD ["--help"]
+ENTRYPOINT ["/init.sh"]
