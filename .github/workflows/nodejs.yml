@@ -26,12 +26,12 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - name: Set Windows environment
-        if: matrix.os == 'windows-latest'
-        #uses: microsoft/setup-msbuild@v1.0.0
-        run:
-          echo '::set-env name=GYP_MSVS_VERSION::2015'
-          echo '::set-env name=GYP_MSVS_OVERRIDE_PATH::C:\\Dummy'
+      #- name: Set Windows environment
+      #  if: matrix.os == 'windows-latest'
+      #  #uses: microsoft/setup-msbuild@v1.0.0
+      #  run:
+      #    echo '::set-env name=GYP_MSVS_VERSION::2015'
+      #    echo '::set-env name=GYP_MSVS_OVERRIDE_PATH::C:\\Dummy'
 
       - name: Install
         run: npm --prefix bindings/js ci
