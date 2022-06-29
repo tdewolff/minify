@@ -134,7 +134,7 @@ napi_value config(napi_env env, napi_callback_info info) {
         free(error);
         return NULL;
     }
-    return napi_ok;
+    return NULL;
 }
 
 napi_value string(napi_env env, napi_callback_info info) {
@@ -242,7 +242,7 @@ napi_value file(napi_env env, napi_callback_info info) {
         free(error);
         return NULL;
     }
-    return napi_ok;
+    return NULL;
 }
 
 napi_value init(napi_env env, napi_value exports) {
