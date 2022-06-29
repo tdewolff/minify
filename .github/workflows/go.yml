@@ -6,30 +6,41 @@ on:
   pull_request:
     branches:
       - master
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-go@v2
+    - uses: actions/checkout@v3
+
+    - uses: actions/setup-go@v3
       with:
-        go-version: 1.17
+        go-version: '>=1.17'
+
     - name: Build
       run: go build -v ./...
+
     - name: Test
       run: go test -race -count=1 -coverprofile=coverage.out ./...
+
     - name: Coverage
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v2
       with:
         name: codecov
         fail_ci_if_error: true
+
   golangci:
     name: lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '>=1.17'
+
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v3
         continue-on-error: true
         with:
           version: latest
