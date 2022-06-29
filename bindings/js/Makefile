@@ -31,9 +31,6 @@ clean:
 	rm -rf prebuilds
 
 test:
-	npm -v
-	node -v
-	node-gyp -v
 	node test.js
 
 .PHONY: all compile build publish test clean

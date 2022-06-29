@@ -28,14 +28,13 @@ jobs:
 
       - name: Setup Windows enviroment
         if: matrix.os == 'windows-latest'
-        uses: microsoft/setup-msbuild@v1.1
+        run: |
+          echo 'GYP_MSVS_VERSION=2015' >> $Env:GITHUB_ENV
+          echo 'GYP_MSVS_OVERRIDE_PATH=C:\\Dummy' >> $Env:GITHUB_ENV
 
       - name: Test
         run: |
-          npm config set msvs_version 2015 --global
-          npm config set python python2.7
-          python --version
           npm -v
           npm --prefix bindings/js ci
-          ls -la bindings/js/build/Release
+          ls bindings/js/build/Release
           npm --prefix bindings/js test
