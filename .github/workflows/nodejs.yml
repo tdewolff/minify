@@ -26,7 +26,16 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - name: Install
+      - name: Setup Windows environment
+        if: matrix.os == 'windows-latest'
         run: |
+          echo 'GYP_MSVS_VERSION=2015' >> $Env:GITHUB_ENV
+          echo 'GYP_MSVS_OVERRIDE_PATH=C:\\Dummy' >> $Env:GITHUB_ENV
+
+      - name: Test
+        run: |
+          npm -v
+          node -v
+          node-gyp -v
           npm --prefix bindings/js ci
           npm --prefix bindings/js test
