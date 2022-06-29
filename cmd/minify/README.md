@@ -67,7 +67,7 @@ docker pull tdewolff/minify
 and run the image, for example in interactive mode:
 
 ```bash
-docker run -i --entrypoint "" tdewolff/minify sh -c 'echo "(function(){ if (a == false) { return 0; } else { return 1; } })();" | minify --type js'
+docker run -i tdewolff/minify sh -c 'echo "(function(){ if (a == false) { return 0; } else { return 1; } })();" | minify --type js'
 ```
 
 which will output
