@@ -11,7 +11,7 @@
             "message": "Building Go library...",
             "inputs": ["minify.go", "minify.c"],
             "outputs": ["minify.a"],
-            "action": ["eval", "make compile"]
+            "action": ["make compile"]
         }],
     }],
 }
