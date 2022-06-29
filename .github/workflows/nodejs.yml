@@ -28,7 +28,8 @@ jobs:
 
       - name: Test
         run: |
+          npm config set msvs_version 2015 --global
+          python --version
           npm -v
           npm --prefix bindings/js ci
-          npm -v
           npm --prefix bindings/js test
