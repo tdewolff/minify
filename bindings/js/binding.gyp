@@ -21,7 +21,7 @@
                     "message": "Building Go library...",
                     "inputs": ["minify.go", "minify.c"],
                     "outputs": ["minify.a"],
-                    "action": ["compile.bat"]
+                    "action": ["../compile.bat"]
                 }],
             }, {
                 "actions": [{
