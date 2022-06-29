@@ -11,9 +11,6 @@ all: build
 
 # called by node-gyp
 compile:
-	npm -v
-	node -v
-	node-gyp -v
 	go build -buildmode=c-archive -o minify.a minify.go
 
 build:

@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - name: Test
+      - name: Install
         run: |
           npm --prefix bindings/js ci
           npm --prefix bindings/js test
@@ -34,5 +34,5 @@ jobs:
       - uses: actions/upload-artifact@v3
         #if: ...
         with:
-          name: node.napi.node
-          path: bindings/js/prebuilds/${{ matrix.os }}-x64/
+          name: ${{ matrix.os }}.node
+          path: bindings/js/build/Release/minify.node
