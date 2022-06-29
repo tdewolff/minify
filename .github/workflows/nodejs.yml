@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        node: [14]
+        node: [14, 18]
 
     runs-on: ${{ matrix.os }}
 
@@ -26,10 +26,16 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
+      - name: Add msbuild to PATH
+        if: matrix.os == 'windows-latest'
+        uses: microsoft/setup-msbuild@v1.0.0
+        run:
+          echo '::set-env name=GYP_MSVS_VERSION::2015'
+          echo '::set-env name=GYP_MSVS_OVERRIDE_PATH::C:\\Dummy'
+
       - name: Install
-        run: |
-          npm config set msvs_version 2017
-          npm --prefix bindings/js ci
+        run: npm --prefix bindings/js ci
+      #npm config set msvs_version 2017
 
       #- name: Install
       #  uses: bahmutov/npm-install@v1
