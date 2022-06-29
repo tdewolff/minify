@@ -11,6 +11,9 @@ all: build
 
 # called by node-gyp
 compile:
+	npm -v
+	node -v
+	node-gyp -v
 	go build -buildmode=c-archive -o minify.a minify.go
 
 build:
@@ -28,6 +31,9 @@ clean:
 	rm -rf prebuilds
 
 test:
+	npm -v
+	node -v
+	node-gyp -v
 	node test.js
 
 .PHONY: all compile build publish test clean
