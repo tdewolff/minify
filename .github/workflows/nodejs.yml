@@ -25,11 +25,16 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
-        
+
       - name: Install
-        uses: bahmutov/npm-install@v1
-        with:
-          working-directory: bindings/js
+        run: |
+          npm config set msvs_version 2017
+          npm --prefix bindings/js ci
+
+      #- name: Install
+      #  uses: bahmutov/npm-install@v1
+      #  with:
+      #    working-directory: bindings/js
 
       - name: Test
         run: npm --prefix bindings/js test
