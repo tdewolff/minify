@@ -27,13 +27,6 @@ jobs:
           node-version: ${{ matrix.node }}
 
       - name: Install
-        run: npm --prefix bindings/js ci
-
-      - name: Test
-        run: npm --prefix bindings/js test
-      - name: Test1
-        run: node bindings/js/test.js
-      - name: Test2
         run: |
-          cd bindings/js
-          make test
+          npm --prefix bindings/js ci
+          npm --prefix bindings/js test
