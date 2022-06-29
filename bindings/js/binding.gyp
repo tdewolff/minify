@@ -11,7 +11,20 @@
             "message": "Building Go library...",
             "inputs": ["minify.go", "minify.c"],
             "outputs": ["minify.a"],
-            "action": ["make", "compile"],
+            "action": ["make", "compile"]
         }],
+        "conditions": [
+          [
+            'OS=="mac"',
+            {
+              # node-gyp 2.x doesn't add this anymore
+              # https://github.com/TooTallNate/node-gyp/pull/612
+              "xcode_settings": {
+                "CLANG_CXX_LANGUAGE_STANDARD": "c++14",
+                "OTHER_LDFLAGS": ["-undefined dynamic_lookup"],
+              },
+            },
+          ]
+        ],
     }],
 }

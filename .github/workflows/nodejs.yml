@@ -1,0 +1,40 @@
+name: Nodejs
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  # it seems this won't work until this file is merged into master
+  # workflow_run:
+  #   workflows: [Go]
+  #   types:
+  #     - completed
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    # if: github.event.workflow_run.conclusion == 'success'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          # - windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        
+      - name: Install dependencies
+        uses: bahmutov/npm-install@v1
+        with:
+          working-directory: bindings/js
+
+      - name: Test
+        run: npm --prefix bindings/js test

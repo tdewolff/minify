@@ -4,3 +4,13 @@ updates:
   directory: /
   schedule:
     interval: daily
+- package-ecosystem: npm
+  directory: /bindings/js
+  versioning-strategy: increase
+  schedule:
+    interval: weekly
+- package-ecosystem: github-actions
+  directory: /
+  schedule:
+    # Check for updates to GitHub Actions every weekday
+    interval: daily
