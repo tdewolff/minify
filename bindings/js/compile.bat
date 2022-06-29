@@ -1,1 +1,1 @@
-make compile
+make -C .. compile
