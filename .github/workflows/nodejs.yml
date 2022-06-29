@@ -36,6 +36,6 @@ jobs:
         run: |
           npm -v
           node -v
-          node-gyp -v
+          npm run node-gyp -v
           npm --prefix bindings/js ci
           npm --prefix bindings/js test
