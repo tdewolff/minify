@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-2019, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         node: [18]
 
     runs-on: ${{ matrix.os }}
@@ -26,15 +26,13 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-      - name: Setup Windows enviroment
-        if: matrix.os == 'windows-latest'
-        run: |
-          echo 'GYP_MSVS_VERSION=2015' >> $Env:GITHUB_ENV
-          echo 'GYP_MSVS_OVERRIDE_PATH=C:\\Dummy' >> $Env:GITHUB_ENV
-
       - name: Test
         run: |
-          npm -v
           npm --prefix bindings/js ci
-          ls bindings/js/build/Release
           npm --prefix bindings/js test
+
+      - uses: actions/upload-artifact@v3
+        #if: ...
+        with:
+          name: node.napi.node
+          path: bindings/js/prebuilds/${{ matrix.os }}-x64/
