@@ -1,13 +1,16 @@
 name: NodeJS
 on:
-  workflow_run:
-    workflows: [Go]
-    types:
-      - completed
+  push:
+    #tags:
+    #  - 'v*'
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   test:
-    if: github.event.workflow_run.conclusion == 'success'
     strategy:
       fail-fast: false
       matrix:
