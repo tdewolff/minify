@@ -4,6 +4,7 @@
         "product_extension": "node",
         "type": "<(library)",
         "cflags": ["-Wall"],
+        "ldflags": ["-s"],
         "sources": ["minify.c"],
         "libraries": ["../minify.a"],
         "conditions": [

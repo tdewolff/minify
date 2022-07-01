@@ -1,4 +1,5 @@
 release.sh
+artifacts.sh
 dist/
 benchmarks/*
 !benchmarks/*.go
