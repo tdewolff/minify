@@ -228,10 +228,17 @@ RemoveVarsLoop:
 
 func mergeVarDecls(dst, src *js.VarDecl, forward bool) {
 	// this is the second VarDecl, so we are hoisting var declarations, which means the forInit variables are already in 'left'
-	for j := 0; j < len(src.List); j++ {
-		addDefinition(dst, src.List[j].Binding, src.List[j].Default, forward)
-		src.List = append(src.List[:j], src.List[j+1:]...)
-		j--
+	if !forward {
+		for j := 0; j < len(src.List); j++ {
+			addDefinition(dst, src.List[j].Binding, src.List[j].Default, forward)
+			src.List = append(src.List[:j], src.List[j+1:]...)
+			j--
+		}
+	} else {
+		for j := len(src.List) - 1; 0 <= j; j-- {
+			addDefinition(dst, src.List[j].Binding, src.List[j].Default, forward)
+			src.List = append(src.List[:j], src.List[j+1:]...)
+		}
 	}
 	// remove from vardecls list of scope
 	scope := src.Scope.Func

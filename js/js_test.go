@@ -359,6 +359,7 @@ func TestJS(t *testing.T) {
 		{`var o=8,p=9,x=0,y=1;x=x+2;y=y+3;var b=1,c=2,d=3`, `var o=8,p=9,x=0,y=1,x=x+2,y=y+3,b=1,c=2,d=3`},
 		{`var result=[];for(var a=0,array=d;a<array.length;a++){var v=array[a]}`, `for(var v,result=[],a=0,array=d;a<array.length;a++)v=array[a]`},
 		//{`var name=function name(){name()}`, `var name=function(){name()}`}, // TODO
+		{`var a=0,b=a;var c=1,d=2,e=3`, `var a=0,b=a,c=1,d=2,e=3`},
 
 		// TODO: test for variables renaming (first rename, then merge vars)
 
