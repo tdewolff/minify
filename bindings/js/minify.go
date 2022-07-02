@@ -18,7 +18,7 @@ import (
 	"github.com/tdewolff/parse/v2/buffer"
 )
 
-var m *minify.M
+var m minify.M
 
 func init() {
 	minifyConfig(nil, nil, 0)
@@ -109,7 +109,7 @@ func minifyConfig(ckeys **C.char, cvals **C.char, length C.longlong) *C.char {
 		}
 	}
 
-	m = minify.New()
+	m = *minify.New()
 	m.Add("text/css", cssMinifier)
 	m.Add("text/html", htmlMinifier)
 	m.Add("image/svg+xml", svgMinifier)
