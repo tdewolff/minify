@@ -857,6 +857,9 @@ func TestJSVarRenaming(t *testing.T) {
 		{`()=>{var a;if(x){const b=0;while(true);}}`, `()=>{if(x){const b=0;for(var a;!0;);}}`},
 		{`(e,s)=>{e=>0,s(e(s))}`, `(a,b)=>{a=>0,b(a(b))}`}, // #469
 		{`()=>{var c;try {a} catch(b) {c}}`, `()=>{var b;try{a}catch{b}}`},
+
+		// go-fuzz
+		{`var ÆÆ,ÆÆ=t;var ÆÆ=v,a=ÿ`, `var ÆÆ=t,ÆÆ=v,a=ÿ`},
 	}
 
 	m := minify.New()

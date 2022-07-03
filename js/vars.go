@@ -227,33 +227,25 @@ RemoveVarsLoop:
 }
 
 func mergeVarDecls(dst, src *js.VarDecl, forward bool) {
-	// this is the second VarDecl, so we are hoisting var declarations, which means the forInit variables are already in 'left'
-	if !forward {
-		for j := 0; j < len(src.List); j++ {
-			addDefinition(dst, src.List[j].Binding, src.List[j].Default, forward)
-			src.List = append(src.List[:j], src.List[j+1:]...)
-			j--
-		}
-	} else {
-		for j := len(src.List) - 1; 0 <= j; j-- {
-			addDefinition(dst, src.List[j].Binding, src.List[j].Default, forward)
-			src.List = append(src.List[:j], src.List[j+1:]...)
+	// Merge var declarations by moving declarations from src to dst. If forward is set, src comes first and dst after, otherwise the order is reverse.
+	if forward {
+		// reverse order so we can iterate from beginning to end, sometimes addDefinition may remove another declaration in the src list
+		n := len(src.List) - 1
+		for j := 0; j < len(src.List)/2; j++ {
+			src.List[j], src.List[n-j] = src.List[n-j], src.List[j]
 		}
 	}
-	// remove from vardecls list of scope
-	scope := src.Scope.Func
-	for i, decl := range scope.VarDecls {
-		if src == decl {
-			scope.VarDecls = append(scope.VarDecls[:i], scope.VarDecls[i+1:]...)
-			break
-		}
+	for j := 0; j < len(src.List); j++ {
+		addDefinition(dst, src.List[j].Binding, src.List[j].Default, forward)
 	}
+	src.List = src.List[:0]
 }
 
 func mergeVarDeclExprStmt(decl *js.VarDecl, exprStmt *js.ExprStmt, forward bool) bool {
-	if src, ok := exprStmt.Value.(*js.VarDecl); ok {
-		// this happens when a variable declarations is converted to an expression
-		mergeVarDecls(decl, src, forward)
+	// Merge var declarations with an assignment expression. If forward is set than expr comes first and decl after, otherwise the order is reverse.
+	if decl2, ok := exprStmt.Value.(*js.VarDecl); ok {
+		// this happens when a variable declarations is converted to an expression due to hoisting
+		mergeVarDecls(decl, decl2, forward)
 		return true
 	} else if commaExpr, ok := exprStmt.Value.(*js.CommaExpr); ok {
 		n := 0
@@ -263,7 +255,7 @@ func mergeVarDeclExprStmt(decl *js.VarDecl, exprStmt *js.ExprStmt, forward bool)
 				item = commaExpr.List[len(commaExpr.List)-i-1]
 			}
 			if src, ok := item.(*js.VarDecl); ok {
-				// this happens when a variable declarations is converted to an expression
+				// this happens when a variable declarations is converted to an expression due to hoisting
 				mergeVarDecls(decl, src, forward)
 				n++
 				continue
