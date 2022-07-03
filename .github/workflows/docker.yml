@@ -10,6 +10,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - uses: docker/metadata=action@v4
+      id: meta
+      with:
+        images: tdewolff/minify
+
     - uses: docker/login-action@v2
       with:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
