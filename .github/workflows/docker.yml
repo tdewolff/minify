@@ -10,7 +10,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - uses: docker/metadata=action@v4
+    - uses: docker/metadata-action@v4
       id: meta
       with:
         images: tdewolff/minify
