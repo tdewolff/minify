@@ -48,7 +48,7 @@
     "go"
   ],
   "dependencies": {
-    "node-gyp-build": "^4.4.0"
+    "node-gyp-build": "^4.5.0"
   },
   "devDependencies": {
     "prebuildify": "^5.0.0"
