@@ -31,13 +31,12 @@ jobs:
       
       - name: Test build from source
         run: |
-          npm install -g node-gyp
+          npm install -g node-gyp prebuildify
           npm --prefix bindings/js ci
           npm --prefix bindings/js test
 
       - name: Install
         run: |
-          npm install -g node-gyp
           cd bindings/js
           make
 
