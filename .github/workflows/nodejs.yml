@@ -32,10 +32,22 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
-      
+
+      - name: Install node-gyp and prebuildify
+        if: matrix.os == 'windows-2019'
+        run: |
+          $WhereNode = Get-Command node | Select-Object -ExpandProperty Definition
+          $NodeDirPath = Split-Path $WhereNode -Parent
+          $NodeModulesPath = $NodeDirPath + "\node_modules\npm\node_modules\npm-lifecycle"
+          cd $NodeModulesPath
+          npm install -g node-gyp@8.x prebuildify
+
+      - name: Install node-gyp and prebuildify
+        if: matrix.os != 'windows-2019'
+        run: npm install -g node-gyp prebuildify
+
       - name: Test build from source
         run: |
-          npm install -g node-gyp prebuildify
           npm --prefix bindings/js ci
           npm --prefix bindings/js test
 
