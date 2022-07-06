@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest, windows-2019]
         node: [14]
 
     runs-on: ${{ matrix.os }}
@@ -26,10 +26,8 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Windows environment
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2019'
         uses: microsoft/setup-msbuild@v1.1
-        with:
-          vs-version: '[15.9]'
 
       - uses: actions/setup-node@v3
         with:
