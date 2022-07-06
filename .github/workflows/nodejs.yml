@@ -35,7 +35,7 @@ jobs:
 
       - name: Setup Windows variables
         if: matrix.os == 'windows-latest'
-        run: npm config set msvs_version 2017
+        run: npm config set msvs_version 2022
       
       - name: Test build from source
         run: |
