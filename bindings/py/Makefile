@@ -1,3 +1,4 @@
+SHELL=/usr/bin/env bash
 VERSION=`git describe --tags --abbrev=0`
 
 all: build

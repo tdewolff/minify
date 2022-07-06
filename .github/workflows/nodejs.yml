@@ -3,6 +3,13 @@ on:
   push:
     tags:
       - 'v*'
+  # remove the following conditions:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   build:
@@ -37,6 +44,8 @@ jobs:
           path: bindings/js/prebuilds/*/*.node
 
   deploy:
+    # remove the following if:
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     needs: [build]
     steps:

@@ -51,6 +51,7 @@
     "node-gyp-build": "^4.5.0"
   },
   "devDependencies": {
+    "node-api-headers": "^0.0.1",
     "prebuildify": "^5.0.0"
   }
 }
