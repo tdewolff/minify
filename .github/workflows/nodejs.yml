@@ -27,7 +27,9 @@ jobs:
           npm --prefix bindings/js test
 
       - name: Install
-        run: npm --prefix bindings/js run prebuildify
+        run: |
+          cd bindings/js
+          make
 
       - uses: actions/upload-artifact@v3
         with:
