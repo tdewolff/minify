@@ -15,7 +15,7 @@ compile:
 
 build:
 	go get github.com/tdewolff/minify/v2@v${VERSION}
-	sed -i "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
+	sed -i '' "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
 	node-gyp configure
 	prebuildify --napi --strip
 
