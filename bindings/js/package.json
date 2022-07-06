@@ -52,7 +52,6 @@
   },
   "devDependencies": {
     "node-api-headers": "^0.0.1",
-    "node-gyp": "^9.0.0",
     "prebuildify": "^5.0.0"
   }
 }

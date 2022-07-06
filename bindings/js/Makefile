@@ -20,7 +20,7 @@ build:
 	prebuildify --napi --strip
 
 publish: clean build
-	npm publish --access public
+	npm publish
 
 clean:
 	rm -rf minify.a
