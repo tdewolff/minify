@@ -28,14 +28,12 @@ jobs:
       - name: Setup Windows environment
         if: matrix.os == 'windows-latest'
         uses: microsoft/setup-msbuild@v1.1
+        with:
+          vs-version: '[15.9]'
 
       - uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
-
-      - name: Setup Windows variables
-        if: matrix.os == 'windows-latest'
-        run: npm config set msvs_version 2022
       
       - name: Test build from source
         run: |
