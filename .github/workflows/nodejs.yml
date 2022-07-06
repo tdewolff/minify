@@ -1,10 +1,9 @@
 name: NodeJS
+# remove the branches conditions:
 on:
   push:
     tags:
       - 'v*'
-  # remove the following conditions:
-  push:
     branches:
       - master
   pull_request:
