@@ -1,7 +1,9 @@
+VERSION=`git describe --tags --abbrev=0`
+
 all: build
 
 build: *.c *.go
-	go get -u all
+	go get github.com/tdewolff/minify/v2@${VERSION}
 	go build -buildmode=c-shared -o minify.so
 	python -m build --sdist
 

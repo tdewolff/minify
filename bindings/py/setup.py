@@ -18,7 +18,7 @@ class build_go_ext(build_ext):
             raise CompileError('Go build failed')
 
 def get_version():
-    with  open('go.mod') as f:
+    with open('go.mod') as f:
         for line in f:
             line = line.strip()
             if line.startswith('github.com/tdewolff/minify/v2'):

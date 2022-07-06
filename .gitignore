@@ -21,7 +21,6 @@ bindings/js/node_modules
 bindings/js/example/package-lock.json
 bindings/js/example/node_modules
 bindings/js/example/test.min.html
-bindings/py/.pypirc
 bindings/py/minify.h
 bindings/py/minify.so
 bindings/py/tdewolff_minify.egg-info
