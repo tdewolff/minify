@@ -44,7 +44,7 @@ jobs:
 
       - uses: actions/setup-node@v3
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           path: bindings/js/prebuilds
 
