@@ -19,6 +19,7 @@ if (isMainThread) {
         throw "unexpected output using worker threads: '"+output+"' instead of '"+expected+"'";
     }
     await worker.terminate();
+    console.log("success!"); // this needs to be printed
 } else {
     const { config, string } = await import('@tdewolff/minify');
     config({'html-keep-document-tags': true})
