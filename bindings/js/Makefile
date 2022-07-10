@@ -21,7 +21,8 @@ build:
 publish:
 	sed -i.bak -e "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
 	rm package.json.bak
-	npm publish
+	npm whoami
+	npm publish --access=public
 
 clean:
 	rm -rf minify.a
