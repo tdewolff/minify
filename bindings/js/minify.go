@@ -166,7 +166,9 @@ func minifyFile(cmediatype, cinput, coutput *C.char) *C.char {
 
 //export minifyCleanup
 func minifyCleanup() {
-	os.Exit(0)
+	// This will fix the worker thread segfault test by explicitly ending the node
+	// process with a 0 signal
+	// os.Exit(0)
 }
 
 func main() {}
