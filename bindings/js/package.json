@@ -28,7 +28,7 @@
   ],
   "scripts": {
     "install": "node-gyp-build",
-    "test": "node test.js",
+    "test": "node test/index.js && node test/worker.js",
     "prebuildify": "prebuildify --napi --strip"
   },
   "homepage": "https://github.com/tdewolff/minify#readme",
