@@ -18,8 +18,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
       - name: Setup Windows environment
         if: matrix.os == 'windows-2019'
@@ -53,6 +51,8 @@ jobs:
     needs: [build]
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v3
 
@@ -61,6 +61,8 @@ jobs:
           path: bindings/js/prebuilds
 
       - name: Publish
-        run: make -C bindings/js publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
+          make -C bindings/js publish
