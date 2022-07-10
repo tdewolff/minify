@@ -15,12 +15,12 @@ compile:
 
 build:
 	go get github.com/tdewolff/minify/v2@v${VERSION}
-	sed -i.bak -e "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
-	rm package.json.bak
 	node-gyp configure
 	prebuildify --napi --strip
 
-publish: clean build
+publish:
+	sed -i.bak -e "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
+	rm package.json.bak
 	npm publish
 
 clean:
