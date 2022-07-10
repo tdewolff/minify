@@ -143,7 +143,6 @@ static struct PyModuleDef minifymodule = {
 };
 
 PyMODINIT_FUNC
-PyInit_minify(void)
-{
+PyInit_minify(void) {
     return PyModule_Create(&minifymodule);
 }
