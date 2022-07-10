@@ -64,7 +64,7 @@ jobs:
 
       - name: Publish
         env:
-          NODE_AUTH_TOKEN: ${{secrets.NPM_SECRET}}
+          NPM_TOKEN: ${{secrets.NPM_TOKEN}}
         run: |
           cd bindings/js
-          npm publish
+          npm publish --access=public
