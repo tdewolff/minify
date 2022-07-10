@@ -40,9 +40,7 @@ jobs:
           npm test
 
       - name: Install
-        run: |
-          cd bindings/js
-          make
+        run: make -C bindings/js
 
       - uses: actions/upload-artifact@v3
         with:
@@ -63,8 +61,6 @@ jobs:
           path: bindings/js/prebuilds
 
       - name: Publish
-        run: |
-          cd bindings/js
-          npm publish --access=public
+        run: make -C bindings/js publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
