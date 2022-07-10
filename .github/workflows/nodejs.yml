@@ -63,8 +63,8 @@ jobs:
           path: bindings/js/prebuilds
 
       - name: Publish
-        env:
-          NPM_TOKEN: ${{secrets.NPM_TOKEN}}
         run: |
           cd bindings/js
           npm publish --access=public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
