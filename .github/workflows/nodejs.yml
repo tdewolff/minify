@@ -50,7 +50,7 @@ jobs:
           path: bindings/js/prebuilds/*/*.node
 
   deploy:
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    #if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     needs: [build]
     steps:
