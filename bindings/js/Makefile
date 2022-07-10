@@ -21,7 +21,6 @@ build:
 publish:
 	sed -i.bak -e "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
 	rm package.json.bak
-	npm whoami
 	npm publish --access=public
 
 clean:
