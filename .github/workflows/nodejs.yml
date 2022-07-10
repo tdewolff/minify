@@ -57,6 +57,8 @@ jobs:
           fetch-depth: 0
 
       - uses: actions/setup-node@v3
+        with:
+          registry-url: 'https://registry.npmjs.org'
 
       - uses: actions/download-artifact@v3
         with:
@@ -64,8 +66,5 @@ jobs:
 
       - name: Publish
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
-          cat ~/.npmrc
-          make -C bindings/js publish
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: make -C bindings/js publish
