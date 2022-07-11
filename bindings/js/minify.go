@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"time"
 	"unsafe"
 
 	"github.com/tdewolff/minify/v2"
@@ -166,7 +167,7 @@ func minifyFile(cmediatype, cinput, coutput *C.char) *C.char {
 
 //export minifyCleanup
 func minifyCleanup() {
-	//os.Exit(0)
+	time.Sleep(10 * time.Millisecond) // fixes Segmentation fault in Node workers
 }
 
 func main() {}
