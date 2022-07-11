@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-2019]
-        node: [10, 18]
+        node: [14, 18]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -79,6 +79,9 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           path: bindings/js/prebuilds
+
+      - name: Move artifacts
+        run: cd bindings/js/prebuilds && mv */* .
 
       - name: Publish
         env:
