@@ -58,7 +58,7 @@ jobs:
       - uses: actions/setup-node@v3
 
       - name: Install node-gyp and prebuildify
-        run: npm install -g node-gyp prebuildify
+        run: npm install -g node-gyp node-gyp-build node-api-headers prebuildify
 
       - name: Build
         run: make -C bindings/js
