@@ -37,6 +37,8 @@ jobs:
       - name: Build from source
         run: |
           cd bindings/js
+          npm --version
+          node --version
           npm ci --build-from-source
           npm test
 
@@ -58,6 +60,11 @@ jobs:
 
       - name: Build
         run: make -C bindings/js
+
+      - name: Test
+        run: |
+          cd bindings/js
+          npm test
 
       - uses: actions/upload-artifact@v3
         with:

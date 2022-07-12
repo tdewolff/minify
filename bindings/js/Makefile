@@ -9,8 +9,10 @@ endif
 
 all: build
 
-# called by node-gyp
+# called by node-gyp for build-from-source
 compile:
+	npm --version
+	node --version
 	go build -buildmode=c-archive -o minify.a minify.go
 
 build:
