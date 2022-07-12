@@ -58,7 +58,12 @@ jobs:
       - uses: actions/setup-node@v3
 
       - name: Install node-gyp and prebuildify
-        run: npm install -g node-gyp node-gyp-build node-api-headers prebuildify
+        run: npm install --location=global node-gyp node-gyp-build node-api-headers prebuildify
+
+      - name: Install dependencies
+        run: |
+          cd bindings/js
+          npm install node-gyp-build node-api-headers
 
       - name: Build
         run: make -C bindings/js
