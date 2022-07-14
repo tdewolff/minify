@@ -163,7 +163,7 @@ $ minify -r -o out/ src
 
 Minify only javascript files in **src/**:
 ```sh
-$ minify -r -o out/ --match=\.js src
+$ minify -r -o out/ --match="\.js$" src
 ```
 
 ### Concatenate
