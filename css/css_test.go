@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/ezoic/minify/v2"
-	"github.com/tdewolff/parse/v2/css"
+	"github.com/ezoic/parse/css"
 	"github.com/tdewolff/test"
 )
 

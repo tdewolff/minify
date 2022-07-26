@@ -6,9 +6,9 @@ import (
 	"io"
 
 	"github.com/ezoic/minify/v2"
-	"github.com/tdewolff/parse/v2"
-	"github.com/tdewolff/parse/v2/buffer"
-	"github.com/tdewolff/parse/v2/html"
+	"github.com/ezoic/parse"
+	"github.com/ezoic/parse/buffer"
+	"github.com/ezoic/parse/html"
 )
 
 var (

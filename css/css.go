@@ -9,9 +9,9 @@ import (
 	"strconv"
 
 	"github.com/ezoic/minify/v2"
-	"github.com/tdewolff/parse/v2"
-	"github.com/tdewolff/parse/v2/css"
-	strconvParse "github.com/tdewolff/parse/v2/strconv"
+	"github.com/ezoic/parse"
+	"github.com/ezoic/parse/css"
+	strconvParse "github.com/ezoic/parse/strconv"
 )
 
 var (

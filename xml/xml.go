@@ -5,8 +5,8 @@ import (
 	"io"
 
 	"github.com/ezoic/minify/v2"
-	"github.com/tdewolff/parse/v2"
-	"github.com/tdewolff/parse/v2/xml"
+	"github.com/ezoic/parse"
+	"github.com/ezoic/parse/xml"
 )
 
 var (
