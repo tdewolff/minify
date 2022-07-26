@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 
 	"github.com/ezoic/minify/v2"
-	"github.com/tdewolff/parse/v2/buffer"
+	"github.com/ezoic/parse/buffer"
 )
 
 var m = minify.New()

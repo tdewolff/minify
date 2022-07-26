@@ -18,8 +18,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/tdewolff/parse/v2"
-	"github.com/tdewolff/parse/v2/buffer"
+	"github.com/ezoic/parse"
+	"github.com/ezoic/parse/buffer"
 )
 
 // Warning is used to report usage warnings such as using a deprecated feature

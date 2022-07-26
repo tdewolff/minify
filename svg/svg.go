@@ -8,9 +8,9 @@ import (
 	"github.com/ezoic/minify/v2"
 	"github.com/ezoic/minify/v2/css"
 	minifyXML "github.com/ezoic/minify/v2/xml"
-	"github.com/tdewolff/parse/v2"
-	"github.com/tdewolff/parse/v2/buffer"
-	"github.com/tdewolff/parse/v2/xml"
+	"github.com/ezoic/parse"
+	"github.com/ezoic/parse/buffer"
+	"github.com/ezoic/parse/xml"
 )
 
 var (

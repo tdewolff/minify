@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/tdewolff/parse/v2/html"
+	"github.com/ezoic/parse/html"
 	"github.com/tdewolff/test"
 )
 

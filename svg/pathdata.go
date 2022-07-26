@@ -5,8 +5,8 @@ import (
 	strconvStdlib "strconv"
 
 	"github.com/ezoic/minify/v2"
-	"github.com/tdewolff/parse/v2"
-	"github.com/tdewolff/parse/v2/strconv"
+	"github.com/ezoic/parse"
+	"github.com/ezoic/parse/strconv"
 )
 
 type PathData struct {

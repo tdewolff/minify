@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/tdewolff/parse/v2/xml"
+	"github.com/ezoic/parse/xml"
 	"github.com/tdewolff/test"
 )
 
