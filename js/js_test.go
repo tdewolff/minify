@@ -792,6 +792,7 @@ func TestJS(t *testing.T) {
 		{`var a=5;({});var b=function(){3}`, `var b,a=5;({},b=function(){3})`},                                                                             // #494
 		{`var a=5;({});var b=class{c(){3}}`, `var b,a=5;({},b=class{c(){3}})`},                                                                             // #494
 		{`({});a={b(){3}}`, `({},a={b(){3}})`},                                                                                                             // #494
+		{`export default function Foo(){a}Foo.prototype.bar=b`, `export default function Foo(){a}Foo.prototype.bar=b;Foo=6`},                               // #525
 	}
 
 	m := minify.New()
