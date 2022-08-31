@@ -309,8 +309,6 @@ func TestJS(t *testing.T) {
 		{`for(var a=5,c=6;;);`, `for(var a=5,c=6;;);`},
 		{`while(a);var b;var c`, `for(var b,c;a;);`},
 		{`while(a){d()}var b;var c`, `for(var b,c;a;)d()`},
-		{`function a(){}var a`, `function a(){}var a`},
-		{`var a;function a(){}`, `var a;function a(){}`},
 		{`var [a,b=5,,...c]=[d,e,...f];var z;z`, `var[a,b=5,,...c]=[d,e,...f],z;z`},
 		{`var {a,b=5,[5+8]:c,...d}={d,e,...f};var z;z`, `var{a,b=5,[5+8]:c,...d}={d,e,...f},z;z`},
 		{`var a=5;var b=6;a,b`, `var a=5,b=6;a,b`},
@@ -792,7 +790,8 @@ func TestJS(t *testing.T) {
 		{`var a=5;({});var b=function(){3}`, `var b,a=5;({},b=function(){3})`},                                                                             // #494
 		{`var a=5;({});var b=class{c(){3}}`, `var b,a=5;({},b=class{c(){3}})`},                                                                             // #494
 		{`({});a={b(){3}}`, `({},a={b(){3}})`},                                                                                                             // #494
-		{`export default function Foo(){a}Foo.prototype.bar=b`, `export default function Foo(){a}Foo.prototype.bar=b;Foo=6`},                               // #525
+		{`export default function Foo(){a}Foo.prototype.bar=b`, `export default function Foo(){a}Foo.prototype.bar=b`},                                     // #525
+		{`(e=1,e=2)`, `e=1,e=2`}, // #528
 	}
 
 	m := minify.New()
