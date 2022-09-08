@@ -971,9 +971,14 @@ func minifyString(b []byte, allowTemplate bool) []byte {
 	b[len(b)-1] = quote
 
 	// strip unnecessary escapes
+	return replaceEscapes(b, quote, 1, 1)
+}
+
+func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
+	// strip unnecessary escapes
 	j := 0
 	start := 0
-	for i := 1; i < len(b)-1; i++ {
+	for i := prefix; i < len(b)-suffix; i++ {
 		if c := b[i]; c == '\\' {
 			c = b[i+1]
 			if c == quote || c == '\\' || c == 'u' || c == '0' && (i+2 == len(b)-1 || b[i+2] < '0' || '7' < b[i+2]) || quote != '`' && (c == 'n' || c == 'r') {

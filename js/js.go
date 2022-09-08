@@ -1139,10 +1139,10 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		parentInFor := m.inFor
 		m.inFor = false
 		for _, item := range expr.List {
-			m.write(item.Value)
+			m.write(replaceEscapes(item.Value, '`', 1, 2))
 			m.minifyExpr(item.Expr, js.OpExpr)
 		}
-		m.write(expr.Tail)
+		m.write(replaceEscapes(expr.Tail, '`', 1, 1))
 		m.inFor = parentInFor
 	case *js.NewExpr:
 		if expr.Args == nil && js.OpLHS < prec && prec != js.OpNew {
