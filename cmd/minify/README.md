@@ -22,7 +22,7 @@ If you do not have `make`, instead run the following lines to install `minify` a
     go install ./cmd/minify
     source minify_bash_tab_completion
 
-Optionally, you can run `go install github.com/tdewolff/minify/cmd/minify@latest` to install the latest version.
+Optionally, you can run `go install github.com/tdewolff/minify/v2/cmd/minify@latest` to install the latest version.
 
 ### Arch Linux
 Using yay, see [AUR](https://aur.archlinux.org/packages/minify/)
