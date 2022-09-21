@@ -273,12 +273,10 @@ func run() int {
 		Error.Println("must specify either --sync or --mime/--type")
 		return 1
 	}
-	if verbose {
-		if mimetype == "" {
-			Info.Println("infer mimetype from file extensions")
-		} else {
-			Info.Println("use mimetype", mimetype)
-		}
+	if mimetype == "" {
+		Info.Println("infer mimetype from file extensions")
+	} else {
+		Info.Println("use mimetype", mimetype)
 	}
 	if len(preserve) != 0 {
 		if bundle {
@@ -334,19 +332,17 @@ func run() int {
 		Error.Println("must specify --bundle for multiple input files with stdout destination")
 		return 1
 	}
-	if verbose {
-		if output == "" {
-			Info.Println("minify to stdout")
-		} else if !dirDst {
-			Info.Println("minify to output file", output)
-		} else if output == "./" {
-			Info.Println("minify to current working directory")
-		} else {
-			Info.Println("minify to output directory", output)
-		}
-		if useStdin {
-			Info.Println("minify from stdin")
-		}
+	if output == "" {
+		Info.Println("minify to stdout")
+	} else if !dirDst {
+		Info.Println("minify to output file", output)
+	} else if output == "./" {
+		Info.Println("minify to current working directory")
+	} else {
+		Info.Println("minify to output directory", output)
+	}
+	if useStdin {
+		Info.Println("minify from stdin")
 	}
 
 	var tasks []Task
@@ -420,31 +416,28 @@ func run() int {
 		for n := 0; n < numWorkers; n++ {
 			go minifyWorker(chanTasks, chanFails)
 		}
-		for _, task := range tasks {
-			chanTasks <- task
-		}
 
-		if watch {
+		if !watch {
+			for _, task := range tasks {
+				chanTasks <- task
+			}
+		} else {
 			watcher, err := NewWatcher(recursive)
 			if err != nil {
 				Error.Println(err)
 				return 1
 			}
 			defer watcher.Close()
-
 			changes := watcher.Run()
-			autoDir := false
-			files := roots
-			if !recursive {
-				files = inputs
-			}
-			for _, filename := range files {
+
+			for _, filename := range inputs {
 				watcher.AddPath(filename)
-				if filename == output {
-					autoDir = true
-				}
 			}
-			skip := map[string]bool{}
+
+			for _, task := range tasks {
+				watcher.IgnoreNext(task.dst)
+				chanTasks <- task
+			}
 
 			c := make(chan os.Signal, 1)
 			signal.Notify(c, os.Interrupt)
@@ -469,23 +462,12 @@ func run() int {
 						}
 					}
 
-					if autoDir && root == output {
-						// skip files in output directory (which is also an input directory) for the first change
-						// skips files that are not minified and stay put as they are not explicitly copied, but that's ok
-						if _, ok := skip[file]; !ok {
-							skip[file] = true
-							break
-						}
-					}
-
-					if !verbose {
-						Info.Println(file, "changed")
-					}
 					task, err := NewTask(root, file, output, !fileMatches(file))
 					if err != nil {
 						Error.Println(err)
 						return 1
 					}
+					watcher.IgnoreNext(task.dst) // skip change on output
 					chanTasks <- task
 				}
 			}
@@ -497,7 +479,7 @@ func run() int {
 		}
 	}
 
-	if verbose && !watch {
+	if !watch {
 		Info.Println("finished in", time.Since(start))
 	}
 	if 0 < fails {
