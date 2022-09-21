@@ -73,6 +73,14 @@ func (w *Watcher) Run() chan string {
 	files := make(chan string, 10)
 	go func() {
 		changetimes := map[string]time.Time{}
+
+		// prevent reminifying the first time for files with input==output
+		for path := range w.paths {
+			if info, err := os.Lstat(path); err == nil && info.Mode().IsRegular() {
+				changetimes[path] = time.Now()
+			}
+		}
+
 		for w.watcher.Events != nil && w.watcher.Errors != nil {
 			select {
 			case event, ok := <-w.watcher.Events:
