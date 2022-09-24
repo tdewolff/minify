@@ -29,7 +29,7 @@ clean:
 	rm -rf prebuilds
 
 test:
-	node test.js
+	npm test
 
 .PHONY: all compile build publish clean test
 
