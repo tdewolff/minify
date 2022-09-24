@@ -13,12 +13,12 @@ all: build
 compile:
 	go build -buildmode=c-archive -o minify.a minify.go
 
-build: clean
+build:
 	go get github.com/tdewolff/minify/v2@v${VERSION}
 	node-gyp configure
 	prebuildify --napi --strip
 
-publish: build
+publish: clean build
 	sed -i.bak -e "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
 	rm package.json.bak
 	npm publish --access=public
