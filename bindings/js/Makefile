@@ -18,7 +18,7 @@ build:
 	node-gyp configure
 	prebuildify --napi --strip
 
-publish: clean build
+publish:
 	sed -i.bak -e "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
 	rm package.json.bak
 	npm publish --access=public

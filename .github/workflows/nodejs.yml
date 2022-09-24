@@ -80,7 +80,7 @@ jobs:
           path: bindings/js/prebuilds/*/*.node
 
   deploy:
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    #if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     needs: [build]
     runs-on: ubuntu-latest
     steps:
@@ -91,6 +91,9 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           registry-url: 'https://registry.npmjs.org'
+
+      - name: Install node-gyp and prebuildify
+        run: npm install --location=global node-gyp node-gyp-build node-api-headers prebuildify
 
       - uses: actions/download-artifact@v3
         with:
