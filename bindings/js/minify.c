@@ -245,15 +245,9 @@ napi_value file(napi_env env, napi_callback_info info) {
     return NULL;
 }
 
-void cleanup() {
-    minifyCleanup();
-}
-
 napi_value init(napi_env env, napi_value exports) {
     napi_status status;
     napi_value fnConfig, fnString, fnFile;
-
-    status = napi_add_env_cleanup_hook(env, cleanup, NULL);
 
     status = napi_create_function(env, NULL, 0, config, NULL, &fnConfig);
     if (status != napi_ok) {

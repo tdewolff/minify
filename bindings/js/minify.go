@@ -164,8 +164,4 @@ func minifyFile(cmediatype, cinput, coutput *C.char) *C.char {
 	return nil
 }
 
-//export minifyCleanup
-func minifyCleanup() {
-}
-
 func main() {}

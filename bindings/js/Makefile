@@ -11,16 +11,14 @@ all: build
 
 # called by node-gyp for build-from-source
 compile:
-	npm --version
-	node --version
 	go build -buildmode=c-archive -o minify.a minify.go
 
-build:
+build: clean
 	go get github.com/tdewolff/minify/v2@v${VERSION}
 	node-gyp configure
 	prebuildify --napi --strip
 
-publish:
+publish: build
 	sed -i.bak -e "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
 	rm package.json.bak
 	npm publish --access=public

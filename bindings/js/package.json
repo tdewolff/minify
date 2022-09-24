@@ -1,6 +1,6 @@
 {
   "name": "@tdewolff/minify",
-  "version": "0.0.0",
+  "version": "2.12.1",
   "type": "module",
   "author": "Taco de Wolff",
   "license": "MIT",
