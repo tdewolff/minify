@@ -1060,7 +1060,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 			}
 			start = i + n
 			i += n - 1
-		} else if c == quote || c == '$' && quote == '`' {
+		} else if c == quote || c == '$' && quote == '`' && (i+1 < len(b) && b[i+1] == '{' || i+2 < len(b) && b[i+1] == '\\' && b[i+2] == '{') {
 			// may not be escaped properly when changing quotes
 			if j < start {
 				// avoid append
@@ -1071,7 +1071,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 			} else {
 				b = append(append(b[:i], '\\'), b[i:]...)
 				i++
-				b[i] = quote // was overwritten above
+				b[i] = c // was overwritten above
 			}
 		} else if c == '<' && 9 <= len(b)-1-i {
 			if b[i+1] == '\\' && 10 <= len(b)-1-i && bytes.Equal(b[i+2:i+10], []byte("/script>")) {
