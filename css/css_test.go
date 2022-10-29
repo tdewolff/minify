@@ -148,6 +148,7 @@ func TestCSSInline(t *testing.T) {
 		{"background-position:bottom left", "background-position:0 100%"},
 		{"background-position:top center", "background-position:50% 0"},
 		{"background-position:bottom center", "background-position:50% 100%"},
+		{"background-position:center left", "background-position:0"},
 		{"background-position:bottom 5% right 0%", "background-position:100% 95%"},
 		{"background-position:bottom 0 right 10%", "background-position:90% 100%"},
 		{"background-position:top 10% left 5%", "background-position:5% 10%"},
