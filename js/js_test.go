@@ -881,6 +881,37 @@ func TestJSVarRenaming(t *testing.T) {
 	}
 }
 
+func TestJSVersion(t *testing.T) {
+	versions := []int{esNext, 2020, 2019, 2018}
+
+	jsTests := []struct {
+		version int
+		js      string
+		before  string
+		after   string
+	}{
+		{2020, `a==null?b:a`, `a==null?b:a`, `a??b`},
+		{2019, `try{}catch(a){}`, `try{}catch(a){}`, `try{}catch{}`},
+	}
+
+	m := minify.New()
+	for _, tt := range jsTests {
+		for _, version := range versions {
+			t.Run(fmt.Sprintf("%d/%v", version, tt.js), func(t *testing.T) {
+				r := bytes.NewBufferString(tt.js)
+				w := &bytes.Buffer{}
+				o := Minifier{KeepVarNames: true, useAlphabetVarNames: true, Version: version}
+				err := o.Minify(m, w, r, nil)
+				if version < tt.version {
+					test.Minify(t, tt.js, err, w.String(), tt.before)
+				} else {
+					test.Minify(t, tt.js, err, w.String(), tt.after)
+				}
+			})
+		}
+	}
+}
+
 func TestReaderError(t *testing.T) {
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}

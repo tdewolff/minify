@@ -151,7 +151,7 @@ func run() int {
 	flag.BoolVar(&htmlMinifier.KeepQuotes, "html-keep-quotes", false, "Preserve quotes around attribute values")
 	flag.IntVar(&jsMinifier.Precision, "js-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
 	flag.BoolVar(&jsMinifier.KeepVarNames, "js-keep-var-names", false, "Preserve original variable names")
-	flag.BoolVar(&jsMinifier.NoNullishOperator, "js-no-nullish-operator", false, "Don't use the ?? nullish coalescing operator")
+	flag.IntVar(&jsMinifier.Version, "js-version", 0, "ECMAScript version to toggle supported optimizations (e.g. 2019, 2020), by default 0 is the latest version")
 	flag.IntVar(&jsonMinifier.Precision, "json-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
 	flag.BoolVar(&jsonMinifier.KeepNumbers, "json-keep-numbers", false, "Preserve original numbers instead of minifying them")
 	flag.BoolVar(&svgMinifier.KeepComments, "svg-keep-comments", false, "Preserve all comments")

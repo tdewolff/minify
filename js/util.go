@@ -825,7 +825,7 @@ func (m *jsMinifier) optimizeCondExpr(expr *js.CondExpr, prec js.OpPrec) js.IExp
 	} else if isEqualExpr(expr.X, expr.Y) {
 		// if true and false bodies are equal
 		return groupExpr(&js.CommaExpr{[]js.IExpr{expr.Cond, expr.X}}, prec)
-	} else if nullishExpr, ok := toNullishExpr(expr); ok && !m.o.NoNullishOperator {
+	} else if nullishExpr, ok := toNullishExpr(expr); ok && 2020 <= m.o.Version {
 		// no need to check whether left/right need to add groups, as the space saving is always more
 		return nullishExpr
 	} else {
