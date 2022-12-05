@@ -21,6 +21,7 @@ func TestMediatype(t *testing.T) {
 		{"text/html; charset=UTF-8", "text/html;charset=utf-8"},
 		{"text/html; charset=UTF-8 ; param = \" ; \"", "text/html;charset=utf-8;param=\" ; \""},
 		{"text/html, text/css", "text/html,text/css"},
+		{`video/mp4; codecs="av01.0.05M.08"`, `video/mp4;codecs="av01.0.05M.08"`}, // #545
 	}
 	for _, tt := range mediatypeTests {
 		t.Run(tt.mediatype, func(t *testing.T) {

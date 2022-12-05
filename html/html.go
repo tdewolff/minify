@@ -310,7 +310,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							httpEquiv.AttrVal = parse.TrimWhitespace(httpEquiv.AttrVal)
 							if charset := attrs[2]; charset == nil && parse.EqualFold(httpEquiv.AttrVal, []byte("content-type")) {
 								content.AttrVal = minify.Mediatype(content.AttrVal)
-								if parse.EqualFold(content.AttrVal, []byte("text/html;charset=utf-8")) {
+								if bytes.Equal(content.AttrVal, []byte("text/html;charset=utf-8")) {
 									httpEquiv.Text = nil
 									content.Text = []byte("charset")
 									content.Hash = Charset
