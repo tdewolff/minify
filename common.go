@@ -21,25 +21,31 @@ var Epsilon = 0.00001
 // Mediatype minifies a given mediatype by removing all whitespace.
 func Mediatype(b []byte) []byte {
 	j := 0
-	start := 0
 	inString := false
+	start, params := 0, len(b)
 	for i, c := range b {
-		if !inString && parse.IsWhitespace(c) {
-			if start != 0 {
-				j += copy(b[j:], b[start:i])
-			} else {
-				j += i
+		if !inString {
+			if parse.IsWhitespace(c) {
+				if start != 0 {
+					j += copy(b[j:], b[start:i])
+				} else {
+					j += i
+				}
+				start = i + 1
+			} else if c == ';' {
+				params = j + (i - start)
 			}
-			start = i + 1
 		} else if c == '"' {
 			inString = !inString
 		}
 	}
 	if start != 0 {
 		j += copy(b[j:], b[start:])
-		return parse.ToLower(b[:j])
+		parse.ToLower(b[:params])
+		return b[:j]
 	}
-	return parse.ToLower(b)
+	parse.ToLower(b[:params])
+	return b
 }
 
 // DataURI minifies a data URI and calls a minifier by the specified mediatype. Specifications: https://www.ietf.org/rfc/rfc2397.txt.

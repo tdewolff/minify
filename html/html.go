@@ -310,7 +310,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							httpEquiv.AttrVal = parse.TrimWhitespace(httpEquiv.AttrVal)
 							if charset := attrs[2]; charset == nil && parse.EqualFold(httpEquiv.AttrVal, []byte("content-type")) {
 								content.AttrVal = minify.Mediatype(content.AttrVal)
-								if bytes.Equal(content.AttrVal, []byte("text/html;charset=utf-8")) {
+								if parse.EqualFold(content.AttrVal, []byte("text/html;charset=utf-8")) {
 									httpEquiv.Text = nil
 									content.Text = []byte("charset")
 									content.Hash = Charset
@@ -392,12 +392,13 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						}
 						if attr.Traits&caselessAttr != 0 {
 							val = parse.ToLower(val)
-							if attr.Hash == Enctype || attr.Hash == Codetype || attr.Hash == Accept || attr.Hash == Type && (t.Hash == A || t.Hash == Link || t.Hash == Embed || t.Hash == Object || t.Hash == Source || t.Hash == Script || t.Hash == Style) {
-								val = minify.Mediatype(val)
-							}
 						}
 						if rawTagHash != 0 && attr.Hash == Type {
 							rawTagMediatype = parse.Copy(val)
+						}
+
+						if attr.Hash == Enctype || attr.Hash == Codetype || attr.Hash == Accept || attr.Hash == Type && (t.Hash == A || t.Hash == Link || t.Hash == Embed || t.Hash == Object || t.Hash == Source || t.Hash == Script || t.Hash == Style) {
+							val = minify.Mediatype(val)
 						}
 
 						// default attribute values can be omitted
