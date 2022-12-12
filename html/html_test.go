@@ -42,7 +42,7 @@ func TestHTML(t *testing.T) {
 		{`<span attr="test"></span>`, `<span attr=test></span>`},
 		{`<span attr='test&apos;test'></span>`, `<span attr="test'test"></span>`},
 		{`<span attr="test&quot;test"></span>`, `<span attr='test"test'></span>`},
-		{`<span attr='test""&apos;&amp;test'></span>`, `<span attr='test""&#39;&test'></span>`},
+		{`<span attr='test""&apos;&amp;test'></span>`, `<span attr='test""&#39;&amp;test'></span>`},
 		{`<span attr="test/test"></span>`, `<span attr=test/test></span>`},
 		{`<span attr="test/"></span>`, `<span attr=test/></span>`},
 		{`<span>&amp;</span>`, `<span>&</span>`},
