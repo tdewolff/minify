@@ -47,7 +47,7 @@
     "go"
   ],
   "dependencies": {
-    "node-gyp-build": "^4.5.0"
+    "node-gyp-build": "^4.6.0"
   },
   "devDependencies": {
     "node-api-headers": "^0.0.1"
