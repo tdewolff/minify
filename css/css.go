@@ -51,6 +51,7 @@ type cssMinifier struct {
 	o *Minifier
 
 	tokenBuffer []Token
+	tokensLevel int
 }
 
 ////////////////////////////////////////////////////////////////
@@ -445,6 +446,11 @@ func (c *cssMinifier) writeDeclaration(values []Token, important bool) {
 }
 
 func (c *cssMinifier) minifyTokens(prop Hash, fun Hash, values []Token) []Token {
+	if 100 < c.tokensLevel+1 {
+		return values
+	}
+	c.tokensLevel++
+
 	for i, value := range values {
 		tt := value.TokenType
 		switch tt {
@@ -612,6 +618,7 @@ func (c *cssMinifier) minifyTokens(prop Hash, fun Hash, values []Token) []Token 
 			}
 		}
 	}
+	c.tokensLevel--
 	return values
 }
 
