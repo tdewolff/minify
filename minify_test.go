@@ -24,7 +24,7 @@ func helperCommand(t *testing.T, s ...string) *exec.Cmd {
 	cs := []string{"-test.run=TestHelperProcess", "--"}
 	cs = append(cs, s...)
 	cmd := exec.Command(os.Args[0], cs...)
-	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1"}
+	cmd.Env = []string{"GO_WANT_HELPER_PROCESS=1", "GOCOVERDIR=."}
 	return cmd
 }
 

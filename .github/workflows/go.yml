@@ -13,15 +13,18 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - uses: actions/setup-go@v3
+    - uses: actions/setup-go@v4
       with:
         go-version: '>=1.17'
+
+    - name: Set environment
+      run: "GOCOVERDIR=." >> $GITHUB_ENV
 
     - name: Build
       run: go build -v ./...
 
     - name: Test
-      run: GOCOVERDIR=. go test -race -count=1 -coverprofile=coverage.out ./...
+      run: go test -race -count=1 -coverprofile=coverage.out ./...
 
     - name: Coverage
       uses: codecov/codecov-action@v3
@@ -35,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: '>=1.17'
 
