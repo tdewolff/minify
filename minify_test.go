@@ -128,7 +128,6 @@ func TestAdd(t *testing.T) {
 	w.Reset()
 
 	s := mAdd.Minify("dummy/err", w, r).Error()
-	fmt.Println(s)
 	test.String(t, s[len(s)-5:], "error")
 
 	s = mAdd.Minify("werr6", w, r).Error()
