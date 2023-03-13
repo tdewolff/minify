@@ -121,8 +121,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			tag = t.Hash
 			if tag == Metadata {
 				t.Data = nil
-			} else if tag == Rect {
-				o.shortenRect(tb, &t)
 			}
 
 			if t.Data == nil {
@@ -259,22 +257,6 @@ func (o *Minifier) shortenDimension(b []byte) ([]byte, int) {
 		return b, n + m
 	}
 	return b, 0
-}
-
-func (o *Minifier) shortenRect(tb *TokenBuffer, t *Token) {
-	w, h := zeroBytes, zeroBytes
-	attrs := tb.Attributes(Width, Height)
-	if attrs[0] != nil {
-		n, _ := parse.Dimension(attrs[0].AttrVal)
-		w = minify.Number(attrs[0].AttrVal[:n], o.Precision)
-	}
-	if attrs[1] != nil {
-		n, _ := parse.Dimension(attrs[1].AttrVal)
-		h = minify.Number(attrs[1].AttrVal[:n], o.Precision)
-	}
-	if len(w) == 0 || w[0] == '0' || len(h) == 0 || h[0] == '0' {
-		t.Data = nil
-	}
 }
 
 ////////////////////////////////////////////////////////////////

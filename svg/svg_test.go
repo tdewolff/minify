@@ -52,9 +52,7 @@ func TestSVG(t *testing.T) {
 		{`<path fill="#fff"/>`, `<path fill="#fff"/>`},
 		{`<path fill="white"/>`, `<path fill="#fff"/>`},
 		{`<path fill="#ff0000"/>`, `<path fill="red"/>`},
-		{`<rect x="5" y="10" rx="2" ry="3">`, ``},
-		{`<rect x="5" y="10" height="40"/>`, ``},
-		{`<rect x="5" y="10" width="30" height="0%"/>`, ``},
+		{`<rect x="5" y="10" width="30" height="0%"/>`, `<rect x="5" y="10" width="30" height="0"/>`},
 		{`<rect x="5" y="10" width="30%" height="100%"/>`, `<rect x="5" y="10" width="30%" height="100%"/>`},
 		{`<svg contentStyleType="text/json ; charset=iso-8859-1"><style>{a : true}</style></svg>`, `<svg contentStyleType="text/json;charset=iso-8859-1"><style>{a : true}</style></svg>`},
 		{`<metadata><dc:title /></metadata>`, ``},
@@ -69,8 +67,8 @@ func TestSVG(t *testing.T) {
 
 		{`<polygon points="-0.1,"/>`, `<polygon points="-0.1,"/>`},                                   // #45
 		{`<path stroke="url(#UPPERCASE)"/>`, `<path stroke="url(#UPPERCASE)"/>`},                     // #117
-		{`<rect height="10"/><path/>`, `<path/>`},                                                    // #244
-		{`<rect height="10"><path/></rect>`, ``},                                                     // #244
+		{`<rect height="10"/><path/>`, `<rect height="10"/><path/>`},                                 // #244
+		{`<rect height="10"><path/></rect>`, `<rect height="10"><path/></rect>`},                     // #244
 		{`<foreignObject><div></div></foreignObject>`, `<foreignObject><div></div></foreignObject>`}, // #291
 
 		// go fuzz
