@@ -211,7 +211,7 @@ func run() int {
 	}
 
 	if help {
-		flag.Usage()
+		f.Usage()
 		return 0
 	}
 
@@ -347,13 +347,14 @@ func run() int {
 		inputs[i] = filepath.Clean(input)
 	}
 
-	// set output, empty means stdout, ending in slash means a directory, otherwise a file
+	// set output file or directory, empty means stdout
 	dirDst := false
 	if output != "" {
 		dirDst = IsDir(output)
 		if !dirDst {
 			if 1 < len(inputs) && !bundle {
-				dirDst = true
+				Error.Printf("stat %v: no such file or directory\n", output)
+				return 1
 			} else if len(inputs) == 1 {
 				if info, err := os.Lstat(inputs[0]); err == nil && !bundle && info.Mode().IsDir() && info.Mode()&os.ModeSymlink == 0 {
 					dirDst = true
