@@ -18,7 +18,7 @@ jobs:
         go-version: '>=1.17'
 
     - name: Set environment
-      run: "GOCOVERDIR=." >> $GITHUB_ENV
+      run: echo "GOCOVERDIR=." >> $GITHUB_ENV
 
     - name: Build
       run: go build -v ./...
