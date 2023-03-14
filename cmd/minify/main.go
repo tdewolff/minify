@@ -49,9 +49,11 @@ var (
 	hidden             bool
 	list               bool
 	m                  *min.M
-	pattern            *regexp.Regexp
+	matches            []string
+	filters            []string
 	recursive          bool
-	verbose            bool
+	quiet              bool
+	verbose            int
 	version            bool
 	watch              bool
 	sync               bool
@@ -102,7 +104,6 @@ func main() {
 func run() int {
 	output := ""
 	filetype := ""
-	match := ""
 	siteurl := ""
 	cpuprofile := ""
 	memprofile := ""
@@ -114,67 +115,95 @@ func run() int {
 	svgMinifier := &svg.Minifier{}
 	xmlMinifier := &xml.Minifier{}
 
-	flag := flag.NewFlagSet("minify", flag.ContinueOnError)
-	flag.Usage = func() {
+	f := flag.NewFlagSet("minify", flag.ContinueOnError)
+	f.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [input]\n\nOptions:\n", os.Args[0])
-		flag.PrintDefaults()
+		f.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\nInput:\n  Files or directories, leave blank to use stdin. Specify --mime or --type to use stdin and stdout.\n")
 	}
 
-	flag.BoolVarP(&help, "help", "h", false, "Show usage")
-	flag.StringVarP(&output, "output", "o", "", "Output file or directory (must have trailing slash), leave blank to use stdout")
-	flag.StringVar(&mimetype, "mime", "", "Mimetype (eg. text/css), optional for input filenames, has precedence over --type")
-	flag.StringVar(&filetype, "type", "", "Filetype (eg. css), optional for input filenames")
-	flag.StringVar(&match, "match", "", "Filename pattern matching using regular expressions")
-	flag.BoolVarP(&recursive, "recursive", "r", false, "Recursively minify directories")
-	flag.BoolVarP(&hidden, "all", "a", false, "Minify all files, including hidden files and files in hidden directories")
-	flag.BoolVarP(&list, "list", "l", false, "List all accepted filetypes")
-	flag.BoolVarP(&verbose, "verbose", "v", false, "Verbose")
-	flag.BoolVarP(&watch, "watch", "w", false, "Watch files and minify upon changes")
-	flag.BoolVarP(&sync, "sync", "s", false, "Copy all files to destination directory and minify when filetype matches")
-	flag.StringSliceVarP(&preserve, "preserve", "p", nil, "Preserve options (mode, ownership, timestamps, links)")
-	flag.Lookup("preserve").NoOptDefVal = "mode,ownership,timestamps"
-	flag.BoolVar(&preserveLinks, "preserve-links", false, "Copy symbolic links without dereferencing and without minifying the referenced file (only with --sync)")
-	flag.BoolVarP(&bundle, "bundle", "b", false, "Bundle files by concatenation into a single file")
-	flag.BoolVar(&version, "version", false, "Version")
+	f.BoolVarP(&help, "help", "h", false, "Show usage")
+	f.StringVarP(&output, "output", "o", "", "Output file or directory (must have trailing slash), leave blank to use stdout")
+	f.StringVar(&mimetype, "mime", "", "Mimetype (eg. text/css), optional for input filenames, has precedence over --type")
+	f.StringVar(&filetype, "type", "", "Filetype (eg. css), optional for input filenames")
+	f.String("match", "", "Filename matching pattern, only matching files are processed")
+	f.String("include", "", "Filename inclusion pattern, includes files previously excluded")
+	f.String("exclude", "", "Filename exclusion pattern, excludes files from being processed")
+	f.BoolVarP(&recursive, "recursive", "r", false, "Recursively minify directories")
+	f.BoolVarP(&hidden, "all", "a", false, "Minify all files, including hidden files and files in hidden directories")
+	f.BoolVarP(&list, "list", "l", false, "List all accepted filetypes")
+	f.BoolVarP(&quiet, "quiet", "q", false, "Quiet mode to suppress all output")
+	f.CountVarP(&verbose, "verbose", "v", "Verbose mode, set twice for more verbosity")
+	f.BoolVarP(&watch, "watch", "w", false, "Watch files and minify upon changes")
+	f.BoolVarP(&sync, "sync", "s", false, "Copy all files to destination directory and minify when filetype matches")
+	f.StringSliceVarP(&preserve, "preserve", "p", nil, "Preserve options (mode, ownership, timestamps, links)")
+	f.Lookup("preserve").NoOptDefVal = "mode,ownership,timestamps"
+	f.BoolVar(&preserveLinks, "preserve-links", false, "Copy symbolic links without dereferencing and without minifying the referenced file (only with --sync)")
+	f.BoolVarP(&bundle, "bundle", "b", false, "Bundle files by concatenation into a single file")
+	f.BoolVar(&version, "version", false, "Version")
 
-	flag.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
-	flag.StringVar(&cpuprofile, "cpuprofile", "", "Export CPU profile")
-	flag.StringVar(&memprofile, "memprofile", "", "Export memory profile")
-	flag.IntVar(&cssMinifier.Precision, "css-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
-	flag.BoolVar(&htmlMinifier.KeepComments, "html-keep-comments", false, "Preserve all comments")
-	flag.BoolVar(&htmlMinifier.KeepConditionalComments, "html-keep-conditional-comments", false, "Preserve all IE conditional comments")
-	flag.BoolVar(&htmlMinifier.KeepDefaultAttrVals, "html-keep-default-attrvals", false, "Preserve default attribute values")
-	flag.BoolVar(&htmlMinifier.KeepDocumentTags, "html-keep-document-tags", false, "Preserve html, head and body tags")
-	flag.BoolVar(&htmlMinifier.KeepEndTags, "html-keep-end-tags", false, "Preserve all end tags")
-	flag.BoolVar(&htmlMinifier.KeepWhitespace, "html-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
-	flag.BoolVar(&htmlMinifier.KeepQuotes, "html-keep-quotes", false, "Preserve quotes around attribute values")
-	flag.IntVar(&jsMinifier.Precision, "js-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
-	flag.BoolVar(&jsMinifier.KeepVarNames, "js-keep-var-names", false, "Preserve original variable names")
-	flag.IntVar(&jsMinifier.Version, "js-version", 0, "ECMAScript version to toggle supported optimizations (e.g. 2019, 2020), by default 0 is the latest version")
-	flag.IntVar(&jsonMinifier.Precision, "json-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
-	flag.BoolVar(&jsonMinifier.KeepNumbers, "json-keep-numbers", false, "Preserve original numbers instead of minifying them")
-	flag.BoolVar(&svgMinifier.KeepComments, "svg-keep-comments", false, "Preserve all comments")
-	flag.IntVar(&svgMinifier.Precision, "svg-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
-	flag.BoolVar(&xmlMinifier.KeepWhitespace, "xml-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
+	f.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
+	f.StringVar(&cpuprofile, "cpuprofile", "", "Export CPU profile")
+	f.StringVar(&memprofile, "memprofile", "", "Export memory profile")
+	f.IntVar(&cssMinifier.Precision, "css-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
+	f.BoolVar(&htmlMinifier.KeepComments, "html-keep-comments", false, "Preserve all comments")
+	f.BoolVar(&htmlMinifier.KeepConditionalComments, "html-keep-conditional-comments", false, "Preserve all IE conditional comments")
+	f.BoolVar(&htmlMinifier.KeepDefaultAttrVals, "html-keep-default-attrvals", false, "Preserve default attribute values")
+	f.BoolVar(&htmlMinifier.KeepDocumentTags, "html-keep-document-tags", false, "Preserve html, head and body tags")
+	f.BoolVar(&htmlMinifier.KeepEndTags, "html-keep-end-tags", false, "Preserve all end tags")
+	f.BoolVar(&htmlMinifier.KeepWhitespace, "html-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
+	f.BoolVar(&htmlMinifier.KeepQuotes, "html-keep-quotes", false, "Preserve quotes around attribute values")
+	f.IntVar(&jsMinifier.Precision, "js-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
+	f.BoolVar(&jsMinifier.KeepVarNames, "js-keep-var-names", false, "Preserve original variable names")
+	f.IntVar(&jsMinifier.Version, "js-version", 0, "ECMAScript version to toggle supported optimizations (e.g. 2019, 2020), by default 0 is the latest version")
+	f.IntVar(&jsonMinifier.Precision, "json-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
+	f.BoolVar(&jsonMinifier.KeepNumbers, "json-keep-numbers", false, "Preserve original numbers instead of minifying them")
+	f.BoolVar(&svgMinifier.KeepComments, "svg-keep-comments", false, "Preserve all comments")
+	f.IntVar(&svgMinifier.Precision, "svg-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
+	f.BoolVar(&xmlMinifier.KeepWhitespace, "xml-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
 	if len(os.Args) == 1 {
-		fmt.Printf("minify: must specify --mime or --type in order to use stdin and stdout\n")
-		fmt.Printf("Try 'minify --help' for more information\n")
-		return 1
-	} else if err := flag.Parse(os.Args[1:]); err != nil {
-		fmt.Printf("minify: %v\n", err)
-		fmt.Printf("Try 'minify --help' for more information\n")
+		if !quiet {
+			fmt.Printf("minify: must specify --mime or --type in order to use stdin and stdout\n")
+			fmt.Printf("Try 'minify --help' for more information\n")
+		}
 		return 1
 	}
-	inputs := flag.Args()
+	err := f.ParseAll(os.Args[1:], func(flag *flag.Flag, value string) error {
+		if flag.Name == "match" || flag.Name == "include" || flag.Name == "exclude" {
+			for _, filter := range strings.Split(value, ",") {
+				if flag.Name == "match" {
+					matches = append(matches, filter)
+				} else if flag.Name == "include" {
+					filters = append(filters, "+"+filter)
+				} else {
+					filters = append(filters, "-"+filter)
+				}
+			}
+			return nil
+		}
+		return f.Set(flag.Name, value)
+	})
+	if err != nil {
+		if !quiet {
+			fmt.Printf("minify: %v\n", err)
+			fmt.Printf("Try 'minify --help' for more information\n")
+		}
+		return 1
+	}
+	inputs := f.Args()
 	useStdin := len(inputs) == 0
 
-	Error = log.New(os.Stderr, "ERROR: ", 0)
-	Warning = log.New(os.Stderr, "WARNING: ", 0)
-	if verbose {
-		Info = log.New(os.Stderr, "", 0)
-	} else {
-		Info = log.New(ioutil.Discard, "", 0)
+	Error = log.New(ioutil.Discard, "", 0)
+	Warning = log.New(ioutil.Discard, "", 0)
+	Info = log.New(ioutil.Discard, "", 0)
+	if !quiet {
+		Error = log.New(os.Stderr, "ERROR: ", 0)
+		if 0 < verbose {
+			Warning = log.New(os.Stderr, "WARNING: ", 0)
+		}
+		if 1 < verbose {
+			Info = log.New(os.Stderr, "INFO: ", 0)
+		}
 	}
 
 	if preserveLinks {
@@ -187,18 +216,22 @@ func run() int {
 	}
 
 	if version {
-		fmt.Printf("minify %s\n", Version)
+		if !quiet {
+			fmt.Printf("minify %s\n", Version)
+		}
 		return 0
 	}
 
 	if list {
-		var keys []string
-		for k := range filetypeMime {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		for _, k := range keys {
-			fmt.Println(k + "\t" + filetypeMime[k])
+		if !quiet {
+			var keys []string
+			for k := range filetypeMime {
+				keys = append(keys, k)
+			}
+			sort.Strings(keys)
+			for _, k := range keys {
+				fmt.Println(k + "\t" + filetypeMime[k])
+			}
 		}
 		return 0
 	}
@@ -236,12 +269,20 @@ func run() int {
 		}()
 	}
 
-	var err error
-	if match != "" {
-		pattern, err = regexp.Compile(match)
-		if err != nil {
-			Error.Println(err)
-			return 1
+	if 0 < len(matches) {
+		for _, filter := range matches {
+			if _, err = regexp.Compile(filter); err != nil {
+				Error.Println(err)
+				return 1
+			}
+		}
+	}
+	if 0 < len(filters) {
+		for _, filter := range filters {
+			if _, err = regexp.Compile(filter[1:]); err != nil {
+				Error.Println(err)
+				return 1
+			}
 		}
 	}
 
@@ -397,7 +438,7 @@ func run() int {
 
 	fails := 0
 	start := time.Now()
-	if !watch && (len(tasks) == 1 || verbose) {
+	if !watch && (len(tasks) == 1 || 0 < verbose) {
 		for _, task := range tasks {
 			if ok := minify(task); !ok {
 				fails++
@@ -405,7 +446,7 @@ func run() int {
 		}
 	} else {
 		numWorkers := runtime.NumCPU()
-		if verbose {
+		if 0 < verbose {
 			numWorkers = 1
 		} else if numWorkers < 4 {
 			numWorkers = 4
@@ -498,8 +539,31 @@ func minifyWorker(chanTasks <-chan Task, chanFails chan<- int) {
 	chanFails <- fails
 }
 
+func fileFilter(filename string) bool {
+	if 0 < len(matches) {
+		match := false
+		for _, filter := range matches {
+			pattern := regexp.MustCompile(filter)
+			if pattern.MatchString(filename) {
+				match = true
+				break
+			}
+		}
+		if !match {
+			return false
+		}
+	}
+	for _, filter := range filters {
+		pattern := regexp.MustCompile(filter[1:])
+		if pattern.MatchString(filename) {
+			return filter[0] == '+'
+		}
+	}
+	return true
+}
+
 func fileMatches(filename string) bool {
-	if pattern != nil && !pattern.MatchString(filename) {
+	if !fileFilter(filename) {
 		return false
 	} else if mimetype != "" {
 		return true
@@ -544,7 +608,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 			}
 			tasks = append(tasks, task)
 		} else if info.Mode().IsRegular() {
-			valid := pattern == nil || pattern.MatchString(info.Name()) // don't filter mimetype
+			valid := fileFilter(info.Name()) // don't filter mimetype
 			if valid || sync {
 				task, err := NewTask(root, input, output, !valid)
 				if err != nil {
@@ -711,13 +775,13 @@ func minify(t Task) bool {
 			}
 			srcMimetype, ok := filetypeMime[ext]
 			if !ok {
-				Error.Println("cannot infer mimetype from extension in", src, ", set --type or --mime explicitly")
+				Warning.Println("cannot infer mimetype from extension in", src, ", set --type or --mime explicitly")
 				return false
 			}
 			if fileMimetype == "" {
 				fileMimetype = srcMimetype
 			} else if srcMimetype != fileMimetype {
-				Error.Println("inferred mimetype", srcMimetype, "of", src, "for concatenation unequal to previous mimetypes, set --type or --mime explicitly")
+				Warning.Println("inferred mimetype", srcMimetype, "of", src, "for concatenation unequal to previous mimetypes, set --type or --mime explicitly")
 				return false
 			}
 		}
@@ -810,7 +874,7 @@ func minify(t Task) bool {
 	fr.Close()
 	fw.Close()
 
-	if verbose {
+	if !quiet {
 		dur := time.Since(startTime)
 		speed := "Inf MB"
 		if 0 < dur {
@@ -823,9 +887,9 @@ func minify(t Task) bool {
 
 		stats := fmt.Sprintf("(%9v, %6v, %6v, %5.1f%%, %6v/s)", dur, humanize.Bytes(uint64(rLen)), humanize.Bytes(uint64(wLen)), ratio*100, speed)
 		if srcName != dstName {
-			Info.Println(stats, "-", srcName, "to", dstName)
+			fmt.Println(stats, "-", srcName, "to", dstName)
 		} else {
-			Info.Println(stats, "-", srcName)
+			fmt.Println(stats, "-", srcName)
 		}
 	}
 
