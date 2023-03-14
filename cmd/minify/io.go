@@ -4,36 +4,6 @@ import (
 	"io"
 )
 
-type countingReader struct {
-	io.Reader
-	N uint64
-}
-
-func newCountingReader(r io.Reader) *countingReader {
-	return &countingReader{r, 0}
-}
-
-func (r *countingReader) Read(p []byte) (int, error) {
-	n, err := r.Reader.Read(p)
-	r.N += uint64(n)
-	return n, err
-}
-
-type countingWriter struct {
-	io.Writer
-	N uint64
-}
-
-func newCountingWriter(w io.Writer) *countingWriter {
-	return &countingWriter{w, 0}
-}
-
-func (w *countingWriter) Write(p []byte) (int, error) {
-	n, err := w.Writer.Write(p)
-	w.N += uint64(n)
-	return n, err
-}
-
 type eofReader struct{}
 
 func (r eofReader) Read(p []byte) (int, error) {

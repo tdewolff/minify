@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -788,23 +788,25 @@ func minify(t Task) bool {
 		return true
 	}
 
-	r := newCountingReader(fr)
-	w := newCountingWriter(fw)
-	bw := bufio.NewWriter(w)
+	b, err := ioutil.ReadAll(fr)
+	if err != nil {
+		fr.Close()
+		fw.Close()
+		Error.Println("cannot minify "+srcName+":", err)
+		return false
+	}
+	w := bytes.NewBuffer(make([]byte, 0, len(b)))
 
 	success := true
 	startTime := time.Now()
-	if err = m.Minify(fileMimetype, bw, r); err != nil {
-		bw.Flush()
-		if t.dst == "" && 0 < w.N {
-			fmt.Fprintf(os.Stdout, "\n\n")
-		}
+	if err = m.Minify(fileMimetype, w, bytes.NewReader(b)); err != nil {
+		w = bytes.NewBuffer(b) // copy original
 		Error.Println("cannot minify "+srcName+":", err)
 		success = false
-	} else {
-		bw.Flush()
 	}
 
+	rLen, wLen := len(b), w.Len()
+	_, err = io.Copy(fw, w)
 	fr.Close()
 	fw.Close()
 
@@ -812,14 +814,14 @@ func minify(t Task) bool {
 		dur := time.Since(startTime)
 		speed := "Inf MB"
 		if 0 < dur {
-			speed = humanize.Bytes(uint64(float64(r.N) / dur.Seconds()))
+			speed = humanize.Bytes(uint64(float64(rLen) / dur.Seconds()))
 		}
 		ratio := 1.0
-		if 0 < r.N {
-			ratio = float64(w.N) / float64(r.N)
+		if 0 < rLen {
+			ratio = float64(wLen) / float64(rLen)
 		}
 
-		stats := fmt.Sprintf("(%9v, %6v, %6v, %5.1f%%, %6v/s)", dur, humanize.Bytes(r.N), humanize.Bytes(w.N), ratio*100, speed)
+		stats := fmt.Sprintf("(%9v, %6v, %6v, %5.1f%%, %6v/s)", dur, humanize.Bytes(uint64(rLen)), humanize.Bytes(uint64(wLen)), ratio*100, speed)
 		if srcName != dstName {
 			Info.Println(stats, "-", srcName, "to", dstName)
 		} else {
