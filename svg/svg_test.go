@@ -32,7 +32,7 @@ func TestSVG(t *testing.T) {
 		// TODO: what about x="" y="" for viewBox?
 		//{`<svg width="24" height="24" viewBox="0 0 24 24"></svg>`, `<svg width="24" height="24"/>`},
 		{`<path x="a"> </path>`, `<path x="a"/>`},
-		{`<path x=""> </path>`, `<path/>`},
+		{`<path x=""> </path>`, `<path x/>`},
 		{`<path x=" a "/>`, `<path x="a"/>`},
 		{"<path x=\" a \n b \"/>", `<path x="a b"/>`},
 		{`<path x="5.0px" y="0%"/>`, `<path x="5" y="0"/>`},
@@ -70,6 +70,7 @@ func TestSVG(t *testing.T) {
 		{`<rect height="10"/><path/>`, `<rect height="10"/><path/>`},                                 // #244
 		{`<rect height="10"><path/></rect>`, `<rect height="10"><path/></rect>`},                     // #244
 		{`<foreignObject><div></div></foreignObject>`, `<foreignObject><div></div></foreignObject>`}, // #291
+		{`<svg x-foo/>`, `<svg x-foo/>`},                                                             // #576
 
 		// go fuzz
 		{`<0 d=09e9.6e-9e0`, `<0 d="09e9.6e-9e0"`},

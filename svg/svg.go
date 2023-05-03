@@ -129,7 +129,12 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				w.Write(t.Data)
 			}
 		case xml.AttributeToken:
-			if len(t.AttrVal) == 0 || t.Text == nil { // data is nil when attribute has been removed
+			if t.Text == nil { // data is nil when attribute has been removed
+				continue
+			} else if len(t.AttrVal) == 0 {
+				// empty attribute value
+				w.Write(spaceBytes)
+				w.Write(t.Text)
 				continue
 			}
 
