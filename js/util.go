@@ -981,12 +981,12 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 	for i := prefix; i < len(b)-suffix; i++ {
 		if c := b[i]; c == '\\' {
 			c = b[i+1]
-			if c == quote || c == '\\' || c == 'u' || c == '0' && (i+2 == len(b)-1 || b[i+2] < '0' || '7' < b[i+2]) || quote != '`' && (c == 'n' || c == 'r') {
+			if c == quote || c == '\\' || c == 'u' || quote != '`' && (c == 'n' || c == 'r') {
 				// keep escape sequence
 				i++
 				continue
 			}
-			n := 1
+			n := 1 // number of characters to skip
 			if c == '\n' || c == '\r' || c == 0xE2 && i+3 < len(b)-1 && b[i+2] == 0x80 && (b[i+3] == 0xA8 || b[i+3] == 0xA9) {
 				// line continuations
 				if c == 0xE2 {
@@ -1001,10 +1001,8 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 					// hexadecimal escapes
 					_, _ = hex.Decode(b[i+3:i+4:i+4], b[i+2:i+4])
 					n = 3
-					if b[i+3] == 0 || b[i+3] == '\\' || b[i+3] == quote || b[i+3] == '\n' || b[i+3] == '\r' {
-						if b[i+3] == 0 {
-							b[i+3] = '0'
-						} else if b[i+3] == '\n' {
+					if b[i+3] == '\\' || b[i+3] == quote || b[i+3] == '\n' || b[i+3] == '\r' {
+						if b[i+3] == '\n' {
 							b[i+3] = 'n'
 						} else if b[i+3] == '\r' {
 							b[i+3] = 'r'
@@ -1016,6 +1014,9 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 					i++
 					continue
 				}
+			} else if c == '0' && (i+2 == len(b)-1 || b[i+2] < '0' || '7' < b[i+2]) {
+				// \0 (NULL)
+				b[i+1] = '\x00'
 			} else if '0' <= c && c <= '7' {
 				// octal escapes (legacy), \0 already handled
 				num := c - '0'

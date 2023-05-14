@@ -149,9 +149,9 @@ func TestJS(t *testing.T) {
 		{`0,"string\t\f\v\bstring"`, "0,\"string\t\f\v\bstring\""},
 		{`0,"string\a\c\'string"`, `0,"stringac'string"`},
 		{`0,"string\∀string"`, `0,"string∀string"`},
-		{`0,"string\0\uFFFFstring"`, `0,"string\0\uFFFFstring"`},
-		{`0,"string\x00\x55\x0A\x0D\x22\x27string"`, `0,"string\0U\n\r\"'string"`},
-		{`0,"string\000\12\015\042\47\411string"`, `0,"string\0\n\r\"'!1string"`},
+		{`0,"string\0\uFFFFstring"`, "0,\"string\x00\\uFFFFstring\""},
+		{`0,"string\x00\x55\x0A\x0D\x22\x27string"`, "0,\"string\x00U\\n\\r\\\"'string\""},
+		{`0,"string\000\12\015\042\47\411string"`, "0,\"string\x00\\n\\r\\\"'!1string\""},
 		{"0,'string\\n\\rstring'", "0,`string\n\rstring`"},
 		{"0,'string\\\r\nstring\\\nstring\\\rstring\\\u2028string\\\u2029string'", `0,"stringstringstringstringstringstring"`},
 		{`0,"str1ng" + "str2ng"`, `0,"str1ngstr2ng"`},
@@ -793,7 +793,8 @@ func TestJS(t *testing.T) {
 		{`var a=5;({});var b=class{c(){3}}`, `var b,a=5;({},b=class{c(){3}})`},                                                                             // #494
 		{`({});a={b(){3}}`, `({},a={b(){3}})`},                                                                                                             // #494
 		{`export default function Foo(){a}Foo.prototype.bar=b`, `export default function Foo(){a}Foo.prototype.bar=b`},                                     // #525
-		{`(e=1,e=2)`, `e=1,e=2`}, // #528
+		{`(e=1,e=2)`, `e=1,e=2`},            // #528
+		{`"\x00\x31 \0"`, "\"\x001 \x00\""}, // #577
 	}
 
 	m := minify.New()
