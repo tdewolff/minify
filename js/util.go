@@ -3,6 +3,8 @@ package js
 import (
 	"bytes"
 	"encoding/hex"
+	stdStrconv "strconv"
+	"unicode/utf8"
 
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/parse/v2/js"
@@ -981,7 +983,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 	for i := prefix; i < len(b)-suffix; i++ {
 		if c := b[i]; c == '\\' {
 			c = b[i+1]
-			if c == quote || c == '\\' || c == 'u' || quote != '`' && (c == 'n' || c == 'r') {
+			if c == quote || c == '\\' || quote != '`' && (c == 'n' || c == 'r') {
 				// keep escape sequence
 				i++
 				continue
@@ -1014,6 +1016,36 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 					i++
 					continue
 				}
+			} else if c == 'u' && i+2 < len(b) {
+				l := i + 2
+				if b[i+2] == '{' {
+					l++
+				}
+				r := l
+				for ; r < len(b) && (b[i+2] == '{' || r < l+4); r++ {
+					if b[r] < '0' || '9' < b[r] && b[r] < 'A' || 'F' < b[r] && b[r] < 'a' || 'f' < b[r] {
+						break
+					}
+				}
+				if b[i+2] == '{' && 6 < r-l || b[i+2] != '{' && r-l != 4 {
+					i++
+					continue
+				}
+				num, err := stdStrconv.ParseInt(string(b[l:r]), 16, 32)
+				if err != nil || 0x10FFFF <= num {
+					i++
+					continue
+				}
+
+				// decode unicode character to UTF-8 and put at the end of the escape sequence
+				// then skip the first part of the escape sequence until the decoded character
+				n = 2 + r - l
+				if b[i+2] == '{' {
+					n += 2
+				}
+				m := utf8.RuneLen(rune(num))
+				utf8.EncodeRune(b[i+n-m:], rune(num))
+				n -= m
 			} else if c == '0' && (i+2 == len(b)-1 || b[i+2] < '0' || '7' < b[i+2]) {
 				// \0 (NULL)
 				b[i+1] = '\x00'
