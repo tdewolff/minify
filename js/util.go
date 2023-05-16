@@ -1044,6 +1044,10 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 					n += 2
 				}
 				m := utf8.RuneLen(rune(num))
+				if m == -1 {
+					i++
+					continue
+				}
 				utf8.EncodeRune(b[i+n-m:], rune(num))
 				n -= m
 			} else if c == '0' && (i+2 == len(b)-1 || b[i+2] < '0' || '7' < b[i+2]) {
