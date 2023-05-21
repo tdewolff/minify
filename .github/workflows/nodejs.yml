@@ -23,10 +23,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Windows environment
-        if: matrix.os == 'windows-2019'
-          #uses: microsoft/setup-msbuild@v1.3
-        run: npm install -g windows-build-tools
+            #- name: Setup Windows environment
+            #  if: matrix.os == 'windows-2019'
+            #    #uses: microsoft/setup-msbuild@v1.3
+            #  run: npm install -g windows-build-tools
 
       - uses: actions/setup-node@v3
         with:
@@ -56,10 +56,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Windows environment
-        if: matrix.os == 'windows-2019'
-          #uses: microsoft/setup-msbuild@v1.3
-        run: npm install -g windows-build-tools
+            #- name: Setup Windows environment
+            #  if: matrix.os == 'windows-2019'
+            #    #uses: microsoft/setup-msbuild@v1.3
+            #  run: npm install -g windows-build-tools
 
       - uses: actions/setup-node@v3
 
