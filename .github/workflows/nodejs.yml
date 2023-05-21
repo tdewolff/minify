@@ -1,8 +1,8 @@
 name: NodeJS
 on:
   push:
-    tags:
-      - 'v*'
+    #tags:
+    #  - 'v*'
     branches:
       - master
   pull_request:
@@ -14,8 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        #os: [ubuntu-latest, macos-latest, windows-2019]
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-2019]
         node: [14, 18]
 
     runs-on: ${{ matrix.os }}
@@ -26,7 +25,8 @@ jobs:
 
       - name: Setup Windows environment
         if: matrix.os == 'windows-2019'
-        uses: microsoft/setup-msbuild@v1.3
+          #uses: microsoft/setup-msbuild@v1.3
+        run: npm install -g windows-build-tools
 
       - uses: actions/setup-node@v3
         with:
@@ -48,14 +48,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        #os: [ubuntu-latest, macos-latest, windows-2019]
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, windows-2019]
 
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Setup Windows environment
+        if: matrix.os == 'windows-2019'
+          #uses: microsoft/setup-msbuild@v1.3
+        run: npm install -g windows-build-tools
 
       - uses: actions/setup-node@v3
 
