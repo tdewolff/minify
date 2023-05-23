@@ -1,1 +1,1 @@
-make -C .. compile
+mingw32-make -C .. compile

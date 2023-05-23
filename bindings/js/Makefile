@@ -1,6 +1,9 @@
 SHELL=/usr/bin/env bash
 VERSION=`git describe --tags --abbrev=0 | cut -b 2-`
 
+# needed explicitly for Windows
+export CGO_ENABLED=1
+
 # node-gyp will run c++ with -mmacosx-version-min=10.13, set golang to match this
 ifeq ($(shell uname -s),Darwin)
 export CGO_CFLAGS += -mmacosx-version-min=10.13

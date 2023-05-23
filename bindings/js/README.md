@@ -1,7 +1,24 @@
 JavaScript bindings for the Go minifiers for web formats `minify`, see [github.com/tdewolff/minify](https://github.com/tdewolff/minify).
 
-## Requisites
-Make sure to have [Go](https://go.dev/doc/install) installed.
+## Installation on Windows
+THIS DOES NOT WORK UNFORTUNATELY
+
+- Install [NPM](https://nodejs.org/en/download)
+- Install [Python](https://www.python.org/downloads/) (optional?)
+- Open Windows Command Prompt and run:
+- `$ npm install @tdewolff/minify`
+
+### Build from source
+- Install [Git](https://git-scm.com/)
+- Install [NPM](https://nodejs.org/en/download)
+- Install [Python](https://www.python.org/downloads/)
+- Install [Build Tools for Visual Studio](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) under "Tools for Visual Studio". Make sure to also enable the "Desktop development with C++", see [NodeJS - On Windows](https://github.com/nodejs/node-gyp#on-windows)
+- Install [TDM-GCC](https://jmeubank.github.io/tdm-gcc/download/) and select the 64+32 bit version, this is only to provide the `mingw32-make` binary
+- Install [Go](https://go.dev/doc/install)
+- Open the Git Bash and run:
+- `$ git clone https://github.com/tdewolff/minify`
+- `$ cd minify/bindings/js`
+- `$ npm install`
 
 ## Usage
 There are three functions available in JavaScript: configure the minifiers, minify a string, and minify a file. Below an example of their usage:
