@@ -886,7 +886,7 @@ func TestJSVarRenaming(t *testing.T) {
 }
 
 func TestJSVersion(t *testing.T) {
-	versions := []int{esNext, 2020, 2019, 2018}
+	versions := []int{2022, 2020, 2019, 2018}
 
 	jsTests := []struct {
 		version int

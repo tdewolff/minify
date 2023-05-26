@@ -21,7 +21,7 @@ minify.config({
     'html-keep-quotes': False,
     'js-precision': 0,
     'js-keep-var-names': False,
-    'js-no-nullish-operator': False,
+    'js-version': 0,
     'json-precision': 0,
     'json-keep-numbers': False,
     'svg-keep-comments': False,

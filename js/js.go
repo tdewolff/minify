@@ -10,8 +10,6 @@ import (
 	"github.com/tdewolff/parse/v2/js"
 )
 
-const esNext = 2022
-
 type blockType int
 
 const (
@@ -25,8 +23,11 @@ type Minifier struct {
 	Precision           int // number of significant digits
 	KeepVarNames        bool
 	useAlphabetVarNames bool
-	NoNullishOperator   bool // DEPRECATED, use version ES2020
 	Version             int
+}
+
+func (o *Minifier) minVersion(version int) bool {
+	return o.Version == 0 || version <= o.Version
 }
 
 // Minify minifies JS data, it reads from r and writes to w.
@@ -36,13 +37,6 @@ func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) err
 
 // Minify minifies JS data, it reads from r and writes to w.
 func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
-	if o.Version == 0 {
-		o.Version = esNext
-	}
-	if 2019 < o.Version && o.NoNullishOperator {
-		o.Version = 2019 // nullish operator was introduced in ES2020
-	}
-
 	z := parse.NewInput(r)
 	ast, err := js.Parse(z, js.Options{WhileToFor: true})
 	if err != nil {
@@ -313,7 +307,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		if stmt.Catch != nil {
 			m.write(catchBytes)
 			stmt.Catch.List = optimizeStmtList(stmt.Catch.List, defaultBlock)
-			if v, ok := stmt.Binding.(*js.Var); ok && v.Uses == 1 && 2019 <= m.o.Version {
+			if v, ok := stmt.Binding.(*js.Var); ok && v.Uses == 1 && m.o.minVersion(2019) {
 				stmt.Catch.Scope.Declared = stmt.Catch.Scope.Declared[1:]
 				stmt.Binding = nil
 			}

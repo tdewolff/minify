@@ -38,7 +38,7 @@ config({
     'html-keep-quotes': false,
     'js-precision': 0,
     'js-keep-var-names': false,
-    'js-no-nullish-operator': false,
+    'js-version': 0,
     'json-precision': 0,
     'json-keep-numbers': false,
     'svg-keep-comments': false,

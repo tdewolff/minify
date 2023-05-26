@@ -80,8 +80,10 @@ func minifyConfig(ckeys **C.char, cvals **C.char, length C.longlong) *C.char {
 			jsMinifier.Precision = int(precision)
 		case "js-keep-var-names":
 			jsMinifier.KeepVarNames, err = strconv.ParseBool(vals[i])
-		case "js-no-nullish-operator":
-			jsMinifier.NoNullishOperator, err = strconv.ParseBool(vals[i])
+		case "js-version":
+			var version int64
+			version, err = strconv.ParseInt(vals[i], 10, 64)
+			jsMinifier.Version = int(version)
 		case "json-precision":
 			var precision int64
 			precision, err = strconv.ParseInt(vals[i], 10, 64)
