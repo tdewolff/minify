@@ -69,16 +69,17 @@ var (
 // Task is a minify task.
 type Task struct {
 	srcs []string
+	root string
 	dst  string
 	sync bool
 }
 
 // NewTask returns a new Task.
 func NewTask(root, input, output string, sync bool) (Task, error) {
-	t := Task{[]string{input}, output, sync}
 	if IsDir(output) {
 		root = filepath.Dir(root)
 	}
+	t := Task{[]string{input}, root, output, sync}
 	if 0 < len(output) && output[len(output)-1] == os.PathSeparator {
 		rel, err := filepath.Rel(root, input)
 		if err != nil {
@@ -848,7 +849,7 @@ func minify(t Task) bool {
 			Error.Println(err)
 			return false
 		}
-		preserveAttributes(t.srcs[0], t.dst)
+		preserveAttributes(t.srcs[0], t.root, t.dst)
 		Info.Println("copy", srcName, "to", dstName)
 		return true
 	}
@@ -915,40 +916,49 @@ func minify(t Task) bool {
 			break
 		}
 	}
-	preserveAttributes(t.srcs[0], t.dst)
+	preserveAttributes(t.srcs[0], t.root, t.dst)
 	return success
 }
 
-func preserveAttributes(src, dst string) {
-	if src != "" && dst != "" {
-		srcInfo, err := os.Stat(src)
+func preserveAttributes(src, root, dst string) {
+	if src == "" || dst == "" {
+		return
+	}
+Next:
+	fmt.Println(src, root, dst)
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		Warning.Println(err)
+		return
+	}
+
+	if preserveMode {
+		err = os.Chmod(dst, srcInfo.Mode().Perm())
 		if err != nil {
 			Warning.Println(err)
-			return
 		}
-
-		if preserveMode {
-			err = os.Chmod(dst, srcInfo.Mode().Perm())
+	}
+	if preserveOwnership {
+		if uid, gid, ok := getOwnership(srcInfo); ok {
+			err = os.Chown(dst, uid, gid)
 			if err != nil {
 				Warning.Println(err)
 			}
+		} else {
+			Warning.Println(fmt.Errorf("preserve ownership not supported on platform"))
 		}
-		if preserveOwnership {
-			if uid, gid, ok := getOwnership(srcInfo); ok {
-				err = os.Chown(dst, uid, gid)
-				if err != nil {
-					Warning.Println(err)
-				}
-			} else {
-				Warning.Println(fmt.Errorf("preserve ownership not supported on platform"))
-			}
+	}
+	if preserveTimestamps {
+		err = os.Chtimes(dst, atime.Get(srcInfo), srcInfo.ModTime())
+		if err != nil {
+			Warning.Println(err)
 		}
-		if preserveTimestamps {
-			err = os.Chtimes(dst, atime.Get(srcInfo), srcInfo.ModTime())
-			if err != nil {
-				Warning.Println(err)
-			}
-		}
+	}
+	if src != root {
+		// preserve on until root path
+		src = filepath.Dir(src)
+		dst = filepath.Dir(dst)
+		goto Next
 	}
 }
 
