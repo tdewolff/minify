@@ -597,7 +597,7 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 			return nil, nil, err
 		}
 
-		root := filepath.Dir(input) + string(os.PathSeparator) + "."
+		root := filepath.Clean(filepath.Dir(input) + string(os.PathSeparator) + ".")
 		if preserveLinks && info.Mode()&os.ModeSymlink != 0 {
 			// copy symlink as is
 			if !sync {
@@ -925,7 +925,6 @@ func preserveAttributes(src, root, dst string) {
 		return
 	}
 Next:
-	fmt.Println(src, root, dst)
 	srcInfo, err := os.Stat(src)
 	if err != nil {
 		Warning.Println(err)
