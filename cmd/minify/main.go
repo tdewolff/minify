@@ -824,7 +824,7 @@ func minify(t Task) bool {
 	} else {
 		fr, err = newConcatFileReader(t.srcs, openInputFile)
 		if err == nil && fileMimetype == filetypeMime["js"] {
-			fr.(*concatFileReader).SetSeparator([]byte("\n"))
+			fr.(*concatFileReader).SetSeparator([]byte(";"))
 		}
 	}
 	if err != nil {
