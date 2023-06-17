@@ -137,9 +137,8 @@ func run() int {
 	f.CountVarP(&verbose, "verbose", "v", "Verbose mode, set twice for more verbosity")
 	f.BoolVarP(&watch, "watch", "w", false, "Watch files and minify upon changes")
 	f.BoolVarP(&sync, "sync", "s", false, "Copy all files to destination directory and minify when filetype matches")
-	f.StringSliceVarP(&preserve, "preserve", "p", nil, "Preserve options (mode, ownership, timestamps, links)")
+	f.StringSliceVarP(&preserve, "preserve", "p", nil, "Preserve options (mode, ownership, timestamps, links, all)")
 	f.Lookup("preserve").NoOptDefVal = "mode,ownership,timestamps"
-	f.BoolVar(&preserveLinks, "preserve-links", false, "Copy symbolic links without dereferencing and without minifying the referenced file (only with --sync)")
 	f.BoolVarP(&bundle, "bundle", "b", false, "Bundle files by concatenation into a single file")
 	f.BoolVar(&version, "version", false, "Version")
 
@@ -205,10 +204,6 @@ func run() int {
 		if 1 < verbose {
 			Info = log.New(os.Stderr, "INFO: ", 0)
 		}
-	}
-
-	if preserveLinks {
-		Warning.Println(fmt.Errorf("--preserveLinks is deprecated, use --preserve=links instead"))
 	}
 
 	if help {
@@ -331,6 +326,11 @@ func run() int {
 	}
 	for _, option := range preserve {
 		switch option {
+		case "all":
+			preserveMode = true
+			preserveOwnership = true
+			preserveTimestamps = true
+			preserveLinks = true
 		case "mode":
 			preserveMode = true
 		case "ownership":
