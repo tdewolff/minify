@@ -84,7 +84,7 @@ func minifyConfig(ckeys **C.char, cvals **C.char, length C.longlong) *C.char {
 		case "js-version":
 			var version int64
 			version, err = strconv.ParseInt(vals[i], 10, 64)
-			jsMinifier.Verion = int(version)
+			jsMinifier.Version = int(version)
 		case "json-precision":
 			var precision int64
 			precision, err = strconv.ParseInt(vals[i], 10, 64)
