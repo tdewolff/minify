@@ -983,7 +983,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 	for i := prefix; i < len(b)-suffix; i++ {
 		if c := b[i]; c == '\\' {
 			c = b[i+1]
-			if c == quote || c == '\\' || quote != '`' && (c == 'n' || c == 'r') {
+			if c == quote || c == '\\' || quote != '`' && (c == 'n' || c == 'r') || c == '0' && (i+2 == len(b)-1 || b[i+2] < '0' || '7' < b[i+2]) {
 				// keep escape sequence
 				i++
 				continue
@@ -999,11 +999,12 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 					n = 2
 				}
 			} else if c == 'x' {
-				if i+3 < len(b)-1 && isHexDigit(b[i+2]) && b[i+2] < '8' && isHexDigit(b[i+3]) {
+				if i+3 < len(b)-1 && isHexDigit(b[i+2]) && b[i+2] < '8' && isHexDigit(b[i+3]) && (!(b[i+2] == '0' && b[i+3] == '0') || i+3 == len(b) || b[i+3] != '\\' && (b[i+3] < '0' && '7' < b[i+3])) {
+					// don't convert \x00 to \0 if it may be an octal number
 					// hexadecimal escapes
 					_, _ = hex.Decode(b[i+3:i+4:i+4], b[i+2:i+4])
 					n = 3
-					if b[i+3] == '\\' || b[i+3] == quote || b[i+3] == '\n' || b[i+3] == '\r' {
+					if b[i+3] == '\\' || b[i+3] == quote || b[i+3] == '\n' || b[i+3] == '\r' || b[i+3] == 0 {
 						if b[i+3] == '\n' {
 							b[i+3] = 'n'
 						} else if b[i+3] == '\r' {
@@ -1037,22 +1038,32 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 					continue
 				}
 
-				// decode unicode character to UTF-8 and put at the end of the escape sequence
-				// then skip the first part of the escape sequence until the decoded character
-				n = 2 + r - l
-				if b[i+2] == '{' {
-					n += 2
+				if num == 0 {
+					// don't convert NULL to literal NULL (gives JS parsing problems)
+					if r == len(b) || b[r] != '\\' && (b[r] < '0' && '7' < b[r]) {
+						b[r-2] = '\\'
+						n = r - l
+					} else {
+						// don't convert NULL to \0 (may be an octal number)
+						b[r-4] = '\\'
+						b[r-3] = 'x'
+						n = r - l - 2
+					}
+				} else {
+					// decode unicode character to UTF-8 and put at the end of the escape sequence
+					// then skip the first part of the escape sequence until the decoded character
+					n = 2 + r - l
+					if b[i+2] == '{' {
+						n += 2
+					}
+					m := utf8.RuneLen(rune(num))
+					if m == -1 {
+						i++
+						continue
+					}
+					utf8.EncodeRune(b[i+n-m:], rune(num))
+					n -= m
 				}
-				m := utf8.RuneLen(rune(num))
-				if m == -1 {
-					i++
-					continue
-				}
-				utf8.EncodeRune(b[i+n-m:], rune(num))
-				n -= m
-			} else if c == '0' && (i+2 == len(b)-1 || b[i+2] < '0' || '7' < b[i+2]) {
-				// \0 (NULL)
-				b[i+1] = '\x00'
 			} else if '0' <= c && c <= '7' {
 				// octal escapes (legacy), \0 already handled
 				num := c - '0'
