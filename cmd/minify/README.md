@@ -83,7 +83,8 @@ which will output
       -a, --all                              Minify all files, including hidden files and files in hidden directories
       -b, --bundle                           Bundle files by concatenation into a single file
           --cpuprofile string                Export CPU profile
-          --css-precision int                Number of significant digits to preserve in numbers, 0 is all (default 0)
+          --css-precision int                Number of significant digits to preserve in numbers, 0 is all
+          --exclude string                   Filename exclusion pattern, excludes files from being processed
       -h, --help                             Show usage
           --html-keep-comments               Preserve all comments
           --html-keep-conditional-comments   Preserve all IE conditional comments
@@ -92,28 +93,33 @@ which will output
           --html-keep-end-tags               Preserve all end tags
           --html-keep-quotes                 Preserve quotes around attribute values
           --html-keep-whitespace             Preserve whitespace characters but still collapse multiple into one
-          --js-precision int                 Number of significant digits to preserve in numbers, 0 is all (default 0)
+          --include string                   Filename inclusion pattern, includes files previously excluded
           --js-keep-var-names                Preserve original variable names
-          --json-precision int               Number of significant digits to preserve in numbers, 0 is all (default 0)
+          --js-precision int                 Number of significant digits to preserve in numbers, 0 is all
+          --js-version int                   ECMAScript version to toggle supported optimizations (e.g. 2019, 2020), by default 0 is the latest version
+          --json-keep-numbers                Preserve original numbers instead of minifying them
+          --json-precision int               Number of significant digits to preserve in numbers, 0 is all
       -l, --list                             List all accepted filetypes
-          --match string                     Filename pattern matching using regular expressions
+          --match string                     Filename matching pattern, only matching files are processed
           --memprofile string                Export memory profile
           --mime string                      Mimetype (eg. text/css), optional for input filenames, has precedence over --type
       -o, --output string                    Output file or directory (must have trailing slash), leave blank to use stdout
-      -p, --preserve[=mode,ownership,timestamp]   Preserve options (mode, ownership, timestamps, links)
-	  --preserve-links                   Copy symbolic links without dereferencing and without minifying the referenced file (only with --sync)
+      -p, --preserve strings[=mode,ownership,timestamps]   Preserve options (mode, ownership, timestamps, links, all)
+      -q, --quiet                            Quiet mode to suppress all output
       -r, --recursive                        Recursively minify directories
-          --svg-precision int                Number of significant digits to preserve in numbers, 0 is all (default 0)
-	  -s, --sync                             Copy all files to destination directory and minify when filetype matches
+          --svg-keep-comments                Preserve all comments
+          --svg-precision int                Number of significant digits to preserve in numbers, 0 is all
+      -s, --sync                             Copy all files to destination directory and minify when filetype matches
           --type string                      Filetype (eg. css), optional for input filenames
           --url string                       URL of file to enable URL minification
-      -v, --verbose                          Verbose
+      -v, --verbose count                    Verbose mode, set twice for more verbosity
           --version                          Version
       -w, --watch                            Watch files and minify upon changes
           --xml-keep-whitespace              Preserve whitespace characters but still collapse multiple into one
 
     Input:
-      Files or directories, leave blank to use stdin
+      Files or directories, leave blank to use stdin. Specify --mime or --type to use stdin and stdout.
+
 
 ### Types
 
