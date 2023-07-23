@@ -182,7 +182,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 								break
 							}
 							// remove when followed up by a block tag
-							if next.Traits&nonPhrasingTag != 0 {
+							if next.Traits&blockTag != 0 {
 								t.Data = t.Data[:len(t.Data)-1]
 								omitSpace = false
 								break
@@ -274,7 +274,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				if !omitEndTag {
 					if o.KeepWhitespace || t.Traits&objectTag != 0 {
 						omitSpace = false
-					} else if t.Traits&nonPhrasingTag != 0 {
+					} else if t.Traits&blockTag != 0 {
 						omitSpace = true // omit spaces after block elements
 					}
 
@@ -296,7 +296,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 			if o.KeepWhitespace || t.Traits&objectTag != 0 {
 				omitSpace = false
-			} else if t.Traits&nonPhrasingTag != 0 {
+			} else if t.Traits&blockTag != 0 {
 				omitSpace = true // omit spaces after block elements
 			}
 
