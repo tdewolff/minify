@@ -504,7 +504,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 
 			// keep space after phrasing tags (<i>, <span>, ...) FontAwesome etc.
-			if t.TokenType == html.StartTagToken && t.Traits&nonPhrasingTag == 0 {
+			if t.TokenType == html.StartTagToken && t.Traits == normalTag {
 				if next := tb.Peek(0); next.Hash == t.Hash && next.TokenType == html.EndTagToken {
 					omitSpace = false
 				}
