@@ -169,13 +169,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							t.Data = t.Data[:len(t.Data)-1]
 							omitSpace = false
 							break
-						} else if next.TokenType == html.TextToken {
-							// this only happens when a comment, doctype or phrasing end tag (only for !o.KeepWhitespace) was in between
-							// remove if the text token starts with a whitespace
-							if len(next.Data) > 0 && parse.IsWhitespace(next.Data[0]) {
-								t.Data = t.Data[:len(t.Data)-1]
-								omitSpace = false
-							}
+						} else if next.TokenType == html.TextToken && !parse.IsAllWhitespace(next.Data) {
+							// stop looking when text encountered
 							break
 						} else if next.TokenType == html.StartTagToken || next.TokenType == html.EndTagToken {
 							if o.KeepWhitespace {

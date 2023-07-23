@@ -85,23 +85,22 @@ func TestHTML(t *testing.T) {
 
 		// whitespace
 		{`cats  and 	dogs `, `cats and dogs`},
-		{` <div> <i> test </i> <b> test </b> </div> `, `<div><i>test</i> <b>test</b></div>`},
+		{` <div> <i> test </i> <b> test </b> </div> `, `<div><i>test </i><b>test</b></div>`},
 		{`<strong>x </strong>y`, `<strong>x </strong>y`},
-		{`<strong>x </strong> y`, `<strong>x</strong> y`},
-		{"<strong>x </strong>\ny", "<strong>x</strong>\ny"},
+		{`<strong>x </strong> y`, `<strong>x </strong>y`},
+		{"<strong>x </strong>\ny", "<strong>x </strong>y"},
 		{`<p>x </p>y`, `<p>x</p>y`},
 		{`x <p>y</p>`, `x<p>y`},
 		{` <!doctype html> <!--comment--> <html> <body><p></p></body></html> `, `<!doctype html><p>`}, // spaces before html and at the start of html are dropped
 		{`<p>x<br> y`, `<p>x<br>y`},
-		{`<p>x </b> <b> y`, `<p>x</b> <b>y`},
+		{`<p>x </b> <b> y`, `<p>x </b><b>y`},
 		{`a <code></code> b`, `a <code></code> b`},
 		{`a <code>code</code> b`, `a <code>code</code> b`},
-		{`a <code> code </code> b`, `a <code>code</code> b`},
+		{`a <code> code </code> b`, `a <code>code </code>b`},
 		{`a <script>script</script> b`, `a <script>script</script>b`},
 		{"text\n<!--comment-->\ntext", "text\ntext"},
 		{"abc\n</body>\ndef", "abc\ndef"},
 		{"<x>\n<!--y-->\n</x>", "<x></x>"},
-		{"a <template> b </template> c", "a <template>b</template>c"},
 		{`<p class="  name  ">`, `<p class=name>`},
 		{`<p class="  name  other  ">`, `<p class="name other">`},
 		{`<p onclick="  javascript:lala  ">`, `<p onclick=lala>`},
@@ -111,6 +110,7 @@ func TestHTML(t *testing.T) {
 		{`a<picture> <img> </picture>b`, `a<picture> <img> </picture>b`},
 		{`a <picture> <img> </picture>b`, `a <picture><img> </picture>b`},
 		{`<input placeholder=" a " value=" b ">`, `<input placeholder=" a " value=" b ">`},
+		{`a <strike> b </strike> c`, `a <strike>b </strike>c`},
 
 		// from HTML Minifier
 		{`<DIV TITLE="blah">boo</DIV>`, `<div title=blah>boo</div>`},
