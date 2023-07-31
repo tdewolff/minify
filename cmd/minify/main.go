@@ -191,6 +191,11 @@ func run() int {
 		return 1
 	}
 	inputs := f.Args()
+	if len(inputs) == 1 && inputs[0] == "-" {
+		inputs = inputs[:0]
+	} else if output == "-" {
+		output = ""
+	}
 	useStdin := len(inputs) == 0
 
 	Error = log.New(ioutil.Discard, "", 0)
@@ -345,6 +350,10 @@ func run() int {
 	////////////////
 
 	for i, input := range inputs {
+		if input == "-" {
+			Error.Println("cannot mix files and stdin as input")
+			return 1
+		}
 		inputs[i] = filepath.Clean(input)
 		if input[len(input)-1] == '/' {
 			inputs[i] += "/"
