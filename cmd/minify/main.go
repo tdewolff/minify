@@ -966,6 +966,9 @@ Next:
 
 // IsDir returns true if the passed string looks like it specifies a directory, false otherwise.
 func IsDir(dir string) bool {
+	if 0 < len(dir) && dir[len(dir)-1] == '/' {
+		return true
+	}
 	info, err := os.Lstat(dir)
 	return err == nil && info.Mode().IsDir() && info.Mode()&os.ModeSymlink == 0
 }
