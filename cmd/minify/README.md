@@ -172,6 +172,8 @@ Minify only javascript files in **src/**:
 $ minify -r -o out/ --match="\.js$" src
 ```
 
+A trailing slash in the source path will copy all files inside the directory, while omitting the trainling slash will copy the directory as well.
+
 ### Concatenate
 When multiple inputs are given and the output is either standard output or a single file, it will concatenate the files together if you use the bundle option.
 
