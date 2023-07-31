@@ -296,16 +296,24 @@ func run() int {
 		}
 	}
 
-	if (useStdin || output == "") && (watch || sync || recursive) {
+	if (useStdin || output == "") && (watch || sync) {
 		if watch {
-			Error.Println("--watch doesn't work on stdin and stdout, specify input and output")
+			Error.Println("--watch doesn't work with stdin and stdout, specify input and output")
 		}
 		if sync {
-			Error.Println("--sync doesn't work on stdin and stdout, specify input and output")
+			Error.Println("--sync doesn't work with stdin and stdout, specify input and output")
+		}
+		return 1
+	} else if useStdin && (bundle || recursive) {
+		if bundle {
+			Error.Println("--bundle doesn't work with stdin, specify input")
 		}
 		if recursive {
-			Error.Println("--recursive doesn't work on stdin and stdout, specify input and output")
+			Error.Println("--recursive doesn't work with stdin, specify input")
 		}
+		return 1
+	} else if output == "" && recursive && !bundle {
+		Error.Println("--recursive doesn't work with stdout, specify output or use --bundle")
 		return 1
 	}
 	if mimetype == "" && useStdin {
