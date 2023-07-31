@@ -43,18 +43,6 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		return err
 	}
 
-	// license comments
-	for _, comment := range ast.Comments {
-		if 3 < len(comment) && comment[2] == '!' {
-			w.Write(comment)
-			if comment[1] == '/' {
-				w.Write(newlineBytes)
-			}
-		} else if 2 < len(comment) && comment[0] == '#' && comment[1] == '!' {
-			w.Write(comment)
-		}
-	}
-
 	m := &jsMinifier{
 		o:       o,
 		w:       w,
@@ -409,6 +397,12 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		stmt.Value[len(stmt.Value)-1] = '"'
 		m.write(stmt.Value)
 		m.requireSemicolon()
+	case *js.Comment:
+		// bang comment
+		m.write(stmt.Value)
+		if stmt.Value[1] == '/' {
+			m.write(newlineBytes)
+		}
 	}
 }
 
