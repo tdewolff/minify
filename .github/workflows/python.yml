@@ -39,6 +39,8 @@ jobs:
           package-dir: bindings/py
         env:
           CIBW_ARCHS: ${{ matrix.cibw_target }}
+          CIBW_MANYLINUX_I686_IMAGE: quay.io/pypa/manylinux_2_28_i686
+          CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64
           CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64
           CIBW_BEFORE_ALL: .ci/ensure-go.sh
 
@@ -111,7 +113,6 @@ jobs:
           package-dir: bindings/py
         env:
           CIBW_ARCHS: ${{ matrix.cibw_target }}
-          CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64
           CIBW_BEFORE_ALL: .ci/ensure-go.sh
           CIBW_ENVIRONMENT: PREBUILT_EXT_PATH='minify.so'
 
@@ -146,7 +147,6 @@ jobs:
           package-dir: bindings/py
         env:
           CIBW_ARCHS: ${{ matrix.cibw_target }}
-          CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64
           CIBW_ENVIRONMENT: GOARCH='${{ matrix.go_target }}'
 
       - name: Upload wheels
