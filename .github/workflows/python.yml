@@ -58,7 +58,13 @@ jobs:
     strategy:
       matrix:
         #go_target: ['386', 'amd64', 'arm64']
-        go_target: ['amd64']
+        go_target: ['386', 'amd64']
+        include:
+          - go_target: 'amd64'
+            xcompiler: x86_64-w64-mingw32-gcc-win32
+          - go_target: '386'
+            xcompiler: i686-w64-mingw32-gcc-win32
+
 
     steps:
       - uses: actions/checkout@v3
@@ -82,7 +88,7 @@ jobs:
         run: |
           sudo apt-get install mingw-w64
           cd bindings/py
-          CC=x86_64-w64-mingw64-gcc CGO_ENABLED=1 GOOS=windows GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o minify.so
+          CC=${{ matrix.xcompiler }} CGO_ENABLED=1 GOOS=windows GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o minify.so
 
       - name: Upload go library
         uses: actions/upload-artifact@v3
