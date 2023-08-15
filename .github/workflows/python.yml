@@ -71,13 +71,13 @@ jobs:
         run: |
           cd bindings/py
           go get github.com/tdewolff/minify/v2@${GITHUB_REF#refs/tags/}
-          GOOS=windows GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o minify.so
+          CGO_ENABLED=1 GOOS=windows GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o minify.so
       - name: Prebuild extension
         if: startsWith(github.ref, 'refs/tags/') == false
         run: |
           cd bindings/py
           go get github.com/tdewolff/minify/v2@$(git describe --tags --abbrev=0)
-          GOOS=windows GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o minify.so
+          CGO_ENABLED=1 GOOS=windows GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o minify.so
 
       - name: Upload go library
         uses: actions/upload-artifact@v3
