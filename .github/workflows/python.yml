@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-      - test-packaging
+      - python-packaging
     tags:
       - '*'
 
