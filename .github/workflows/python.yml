@@ -1,0 +1,186 @@
+name: Python
+
+on:
+  push:
+    branches:
+      - master
+      - test-packaging
+    tags:
+      - '*'
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go_target: ['386', 'amd64', 'arm64']
+        include:
+          - go_target: 'amd64'
+            cibw_target: 'x86_64'
+          - go_target: '386'
+            cibw_target: 'i686'
+          - go_target: 'arm64'
+            cibw_target: 'aarch64'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        if: matrix.cibw_target == 'arm64'
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: arm64
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.15.0
+        with:
+          package-dir: bindings/py
+        env:
+          CIBW_ARCHS: ${{ matrix.cibw_target }}
+          CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64
+          CIBW_BEFORE_ALL: .ci/ensure-go.sh
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v0.1.14
+        if: startsWith(github.ref, 'refs/tags/')
+      - name: Upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          path: ./wheelhouse/*.whl
+
+  windows-go-crosscompile:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go_target: ['386', 'amd64', 'arm64']
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '>=1.17'
+
+      - name: Prebuild extension
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cd bindings/py
+          go get github.com/tdewolff/minify/v2@${GITHUB_REF#refs/tags/}
+          GOOS=windows GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o minify.so
+      - name: Prebuild extension
+        if: startsWith(github.ref, 'refs/tags/') == false
+        run: |
+          cd bindings/py
+          go get github.com/tdewolff/minify/v2@$(git describe --tags --abbrev=0)
+          GOOS=windows GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o minify.so
+
+      - name: Upload go library
+        uses: actions/upload-artifact@v3
+        with:
+          name: minify-win-${{ matrix.go_target }}.so
+          path: bindings/py/minify.so
+
+  windows:
+    runs-on: windows-latest
+    needs: windows-go-crosscompile
+    strategy:
+      matrix:
+        go_target: ['386', 'amd64', 'arm64']
+        include:
+          - go_target: 'amd64'
+            cibw_target: 'x86_64'
+          - go_target: '386'
+            cibw_target: 'i686'
+          - go_target: 'arm64'
+            cibw_target: 'aarch64'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: minify-win-${{ matrix.go_target }}.so
+          path: bindings/py/minify.so
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.15.0
+        with:
+          package-dir: bindings/py
+        env:
+          CIBW_ARCHS: ${{ matrix.cibw_target }}
+          CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64
+          CIBW_BEFORE_ALL: .ci/ensure-go.sh
+          CIBW_ENVIRONMENT: PREBUILT_EXT_PATH='minify.so'
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: ./wheelhouse/*.whl
+
+  macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        go_target: ['amd64', 'arm64']
+        include:
+          - go_target: 'amd64'
+            cibw_target: 'x86_64'
+          - go_target: 'arm64'
+            cibw_target: 'arm64'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '>=1.17'
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.15.0
+        with:
+          package-dir: bindings/py
+        env:
+          CIBW_ARCHS: ${{ matrix.cibw_target }}
+          CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64
+          CIBW_ENVIRONMENT: GOARCH='${{ matrix.go_target }}'
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          path: ./wheelhouse/*.whl
+
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install build
+      - name: Build package
+        run: python -m build --sdist
+      - name: Upload sdist
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: dist
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [linux, windows, macos, sdist]
+    steps:
+      - name: Collect artifacts
+        uses: actions/download-artifact@v3
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v0.1.14
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}

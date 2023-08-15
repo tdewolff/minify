@@ -1,5 +1,7 @@
+import os
 import pathlib
-from subprocess import call
+import shutil
+from subprocess import CalledProcessError, check_call
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 from setuptools.errors import CompileError
@@ -11,11 +13,16 @@ class build_go_ext(build_ext):
     """Custom command to build extension from Go source files"""
     def build_extension(self, ext):
         ext_path = self.get_ext_fullpath(ext.name)
-        cmd = ['go', 'build', '-buildmode=c-shared', '-o', ext_path]
-        #cmd += ext.sources
-        out = call(cmd)
-        if out != 0:
-            raise CompileError('Go build failed')
+        prebuilt = os.environ.get('PREBUILT_EXT_PATH')
+        if prebuilt:
+            shutil.copyfile(prebuilt, ext_path)
+        else:
+            cmd = ['go', 'build', '-buildmode=c-shared', '-o', ext_path]
+            #cmd += ext.sources
+            try:
+                out = check_call(cmd)
+            except CalledProcessError as e:
+                raise CompileError('Go build failed') from e
 
 def get_version():
     with open('go.mod') as f:
@@ -35,6 +42,25 @@ setup(
     author="Taco de Wolff",
     author_email="tacodewolff@gmail.com",
     license="MIT",
+    classifiers = [
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
+        "Programming Language :: JavaScript",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Topic :: Internet :: WWW/HTTP",
+        "Topic :: Software Development :: Pre-processors",
+        "Topic :: Text Processing :: Markup",
+    ],
     ext_modules=[
         Extension("minify", ["minify.go"]),
     ],
