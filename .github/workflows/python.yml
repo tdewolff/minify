@@ -162,7 +162,9 @@ jobs:
       - name: Install dependencies
         run: pip install build
       - name: Build package
-        run: python -m build --sdist
+        run: |
+          cd bindings/py
+          python -m build --sdist
       - name: Upload sdist
         uses: actions/upload-artifact@v3
         with:
