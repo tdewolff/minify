@@ -64,7 +64,8 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: '>=1.17'
-
+      - name: Install GCC
+        run: sudo apt-get install gcc
       - name: Prebuild extension
         if: startsWith(github.ref, 'refs/tags/')
         run: |
