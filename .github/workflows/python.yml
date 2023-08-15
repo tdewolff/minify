@@ -80,7 +80,7 @@ jobs:
           go get github.com/tdewolff/minify/v2@$(git describe --tags --abbrev=0)
       - name: Prebuild extension
         run: |
-          apt-get install mingw64
+          sudo apt-get install mingw64
           cd bindings/py
           CC=x86_64-w64-mingw64-gcc CGO_ENABLED=1 GOOS=windows GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o minify.so
 
