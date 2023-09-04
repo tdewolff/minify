@@ -768,6 +768,7 @@ func TestJS(t *testing.T) {
 		{`var A;var b=(function(){var e;})=c,d`, `var d,A,b=function(){var e}=c`},
 		{`0xB_BBBbAbA`, `3149642426`},
 		{`"\udFEb"`, `"\udFEb"`},
+		{`' \u{0}\u{0}\u{0\0\ '`, `" \x00\x00\u{0\0 "`},
 
 		// bugs
 		{"var a=/\\s?auto?\\s?/i\nvar b;a,b", "var b,a=/\\s?auto?\\s?/i;a,b"},                           // #14
