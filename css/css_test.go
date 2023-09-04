@@ -73,6 +73,9 @@ func TestCSS(t *testing.T) {
 		{"@import url(", `@import url(`},
 		{"@import url( ", `@import url( `},
 		{"@import url(  )", `@import ""`},
+
+		// bugs
+		{"a{@media screen and (min-width:1024px){ width: 40%; } & h1 { font-size: clamp(2.5rem, 1rem + 3vw, 3.5rem)}}", "a{@media screen and (min-width:1024px){width: 40%;}& h1 { font-size: clamp(2.5rem, 1rem + 3vw, 3.5rem)}}"}, // #602
 	}
 
 	m := minify.New()
