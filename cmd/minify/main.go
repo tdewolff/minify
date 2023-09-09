@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"runtime/pprof"
 	"sort"
 	"strings"
 	"time"
@@ -106,8 +105,6 @@ func run() int {
 	output := ""
 	filetype := ""
 	siteurl := ""
-	cpuprofile := ""
-	memprofile := ""
 
 	cssMinifier := &css.Minifier{}
 	htmlMinifier := &html.Minifier{}
@@ -143,8 +140,6 @@ func run() int {
 	f.BoolVar(&version, "version", false, "Version")
 
 	f.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
-	f.StringVar(&cpuprofile, "cpuprofile", "", "Export CPU profile")
-	f.StringVar(&memprofile, "memprofile", "", "Export memory profile")
 	f.IntVar(&cssMinifier.Precision, "css-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
 	f.BoolVar(&htmlMinifier.KeepComments, "html-keep-comments", false, "Preserve all comments")
 	f.BoolVar(&htmlMinifier.KeepConditionalComments, "html-keep-conditional-comments", false, "Preserve all IE conditional comments")
@@ -235,39 +230,6 @@ func run() int {
 			}
 		}
 		return 0
-	}
-
-	if cpuprofile != "" {
-		f, err := os.Create(cpuprofile)
-		if err != nil {
-			Error.Println(err)
-			return 1
-		}
-		if err = pprof.StartCPUProfile(f); err != nil {
-			Error.Println(err)
-			return 1
-		}
-		defer func() {
-			pprof.StopCPUProfile()
-			if err = f.Close(); err != nil {
-				Error.Println(err)
-			}
-		}()
-	}
-
-	if memprofile != "" {
-		defer func() {
-			f, err := os.Create(memprofile)
-			if err != nil {
-				Error.Println(err)
-			}
-			if err = pprof.WriteHeapProfile(f); err != nil {
-				Error.Println(err)
-			}
-			if err = f.Close(); err != nil {
-				Error.Println(err)
-			}
-		}()
 	}
 
 	if 0 < len(matches) {
