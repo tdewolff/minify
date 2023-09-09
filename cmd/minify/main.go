@@ -378,7 +378,7 @@ func run() int {
 		tasks = append(tasks, task)
 		roots = append(roots, "")
 	} else {
-		fsys := os.DirFS("").(fs.StatFS)
+		fsys := NewFS()
 		tasks, roots, err = createTasks(fsys, inputs, output)
 		if err != nil {
 			Error.Println(err)
@@ -565,7 +565,7 @@ func createTasks(fsys fs.FS, inputs []string, output string) ([]Task, []string, 
 	tasks := []Task{}
 	roots := []string{}
 	for _, input := range inputs {
-		root := filepath.Clean(filepath.Dir(input)) // + string(os.PathSeparator) + ".")
+		root := filepath.Clean(filepath.Dir(input))
 		input = filepath.Clean(input)
 
 		var err error
