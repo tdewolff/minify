@@ -19,21 +19,21 @@ func TestCreateTasks(t *testing.T) {
 		tasks         map[string]string
 	}{
 		// root file
-		{"a.js", "", map[string]string{"a.js": "a.js"}},
+		{"a.js", "", map[string]string{"a.js": ""}},
 		{"a.js", ".", map[string]string{"a.js": "a.js"}},
 		{"a.js", "./", map[string]string{"a.js": "a.js"}},
 		{"a.js", "out", map[string]string{"a.js": "out"}},
 		{"a.js", "out/", map[string]string{"a.js": "out/a.js"}},
 
 		// nested file
-		{"dir/b.js", "", map[string]string{"dir/b.js": "b.js"}},
+		{"dir/b.js", "", map[string]string{"dir/b.js": ""}},
 		{"dir/b.js", ".", map[string]string{"dir/b.js": "b.js"}},
 		{"dir/b.js", "./", map[string]string{"dir/b.js": "b.js"}},
 		{"dir/b.js", "out", map[string]string{"dir/b.js": "out"}},
 		{"dir/b.js", "out/", map[string]string{"dir/b.js": "out/b.js"}},
 
 		// directory
-		{"dir", "", map[string]string{"dir/b.js": "dir/b.js"}},
+		{"dir", "", map[string]string{"dir/b.js": ""}},
 		{"dir", ".", map[string]string{"dir/b.js": "dir/b.js"}},
 		{"dir", "./", map[string]string{"dir/b.js": "dir/b.js"}},
 		{"dir", "out/", map[string]string{"dir/b.js": "out/dir/b.js"}},

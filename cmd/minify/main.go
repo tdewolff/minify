@@ -76,7 +76,7 @@ type Task struct {
 
 // NewTask returns a new Task.
 func NewTask(root, input, output string, sync bool) (Task, error) {
-	if len(output) == 0 || output == "." || output[len(output)-1] == os.PathSeparator {
+	if len(output) != 0 && (output == "." || output[len(output)-1] == os.PathSeparator) {
 		rel, err := filepath.Rel(root, input)
 		if err != nil {
 			return Task{}, err
