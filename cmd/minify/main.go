@@ -325,8 +325,8 @@ func run() int {
 			return 1
 		}
 		inputs[i] = filepath.Clean(input)
-		if input[len(input)-1] == '/' {
-			inputs[i] += "/"
+		if input[len(input)-1] == os.PathSeparator {
+			inputs[i] += string(os.PathSeparator)
 		}
 	}
 
@@ -361,7 +361,7 @@ func run() int {
 		Info.Println("minify to stdout")
 	} else if !dirDst {
 		Info.Println("minify to output file", output)
-	} else if output == "./" {
+	} else if output == "."+string(os.PathSeparator) {
 		Info.Println("minify to current working directory")
 	} else {
 		Info.Println("minify to output directory", output)
@@ -945,7 +945,7 @@ Next:
 
 // IsDir returns true if the passed string looks like it specifies a directory, false otherwise.
 func IsDir(dir string) bool {
-	if 0 < len(dir) && dir[len(dir)-1] == '/' {
+	if 0 < len(dir) && dir[len(dir)-1] == os.PathSeparator {
 		return true
 	}
 	info, err := os.Lstat(dir)
