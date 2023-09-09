@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/url"
@@ -67,26 +68,22 @@ var (
 
 // Task is a minify task.
 type Task struct {
-	srcs []string
 	root string
+	srcs []string
 	dst  string
 	sync bool
 }
 
 // NewTask returns a new Task.
 func NewTask(root, input, output string, sync bool) (Task, error) {
-	if IsDir(output) {
-		root = filepath.Dir(root)
-	}
-	t := Task{[]string{input}, root, output, sync}
-	if 0 < len(output) && output[len(output)-1] == os.PathSeparator {
+	if len(output) == 0 || output == "." || output[len(output)-1] == os.PathSeparator {
 		rel, err := filepath.Rel(root, input)
 		if err != nil {
 			return Task{}, err
 		}
-		t.dst = filepath.Join(output, rel)
+		output = filepath.Join(output, rel)
 	}
-	return t, nil
+	return Task{root, []string{input}, output, sync}, nil
 }
 
 // Loggers.
@@ -381,7 +378,8 @@ func run() int {
 		tasks = append(tasks, task)
 		roots = append(roots, "")
 	} else {
-		tasks, roots, err = createTasks(inputs, output)
+		fsys := os.DirFS("").(fs.StatFS)
+		tasks, roots, err = createTasks(fsys, inputs, output)
 		if err != nil {
 			Error.Println(err)
 			return 1
@@ -563,15 +561,18 @@ func fileMatches(filename string) bool {
 	return true
 }
 
-func createTasks(inputs []string, output string) ([]Task, []string, error) {
+func createTasks(fsys fs.FS, inputs []string, output string) ([]Task, []string, error) {
 	tasks := []Task{}
 	roots := []string{}
 	for _, input := range inputs {
-		var info os.FileInfo
+		root := filepath.Clean(filepath.Dir(input)) // + string(os.PathSeparator) + ".")
+		input = filepath.Clean(input)
+
 		var err error
+		var info os.FileInfo
 		if !preserveLinks {
 			// follow and dereference symlinks
-			info, err = os.Stat(input)
+			info, err = fs.Stat(fsys, input)
 		} else {
 			info, err = os.Lstat(input)
 		}
@@ -579,7 +580,6 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 			return nil, nil, err
 		}
 
-		root := filepath.Clean(filepath.Dir(input) + string(os.PathSeparator) + ".")
 		if preserveLinks && info.Mode()&os.ModeSymlink != 0 {
 			// copy symlink as is
 			if !sync {
@@ -605,47 +605,36 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 				Warning.Println("--recursive not specified, omitting directory", input)
 				continue
 			}
-			root = input
-			roots = append(roots, root)
 
-			var walkFn func(string, DirEntry, error) error
-			walkFn = func(path string, d DirEntry, err error) error {
+			var walkFn func(string, fs.DirEntry, error) error
+			walkFn = func(input string, d fs.DirEntry, err error) error {
 				if err != nil {
 					return err
 				} else if d.Name() == "." || d.Name() == ".." {
 					return nil
 				} else if d.Name() == "" || !hidden && d.Name()[0] == '.' {
 					if d.IsDir() {
-						return SkipDir
+						return fs.SkipDir
 					}
 					return nil
 				}
 
-				input := path
-				if filepath.IsAbs(input) {
-					// path is absolute, clean it
-					input = filepath.Clean(input)
-				} else {
-					// path is relative, make an absolute path - Join() returns a clean result
-					input = filepath.Join(root, input)
-				}
-
 				if !preserveLinks && d.Type()&os.ModeSymlink != 0 {
 					// follow and dereference symlinks
-					info, err := os.Stat(input)
+					info, err := fs.Stat(fsys, input)
 					if err != nil {
 						return err
 					}
 					if info.IsDir() {
-						return WalkDir(DirFS(root), path, walkFn)
+						return fs.WalkDir(fsys, input, walkFn)
 					}
-					d = &statDirEntry{info}
+					d = fs.FileInfoToDirEntry(info)
 				}
 
 				if preserveLinks && d.Type()&os.ModeSymlink != 0 {
 					// copy symlink as is
 					if !sync {
-						Warning.Println("--sync not specified, omitting symbolic link", path)
+						Warning.Println("--sync not specified, omitting symbolic link", input)
 						return nil
 					}
 					task, err := NewTask(root, input, output, true)
@@ -665,9 +654,10 @@ func createTasks(inputs []string, output string) ([]Task, []string, error) {
 				}
 				return nil
 			}
-			if err := WalkDir(DirFS(root), ".", walkFn); err != nil {
+			if err := fs.WalkDir(fsys, input, walkFn); err != nil {
 				return nil, nil, err
 			}
+			roots = append(roots, root)
 		} else {
 			return nil, nil, fmt.Errorf("not a file or directory %s", input)
 		}
