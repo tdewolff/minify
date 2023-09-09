@@ -665,62 +665,6 @@ func createTasks(fsys fs.FS, inputs []string, output string) ([]Task, []string, 
 	return tasks, roots, nil
 }
 
-func openInputFile(input string) (io.ReadCloser, error) {
-	var r *os.File
-	if input == "" {
-		r = os.Stdin
-	} else {
-		err := try.Do(func(attempt int) (bool, error) {
-			var ferr error
-			r, ferr = os.Open(input)
-			return attempt < 5, ferr
-		})
-
-		if err != nil {
-			return nil, fmt.Errorf("open input file %q: %w", input, err)
-		}
-	}
-	return r, nil
-}
-
-func openOutputFile(output string) (*os.File, error) {
-	var w *os.File
-	if output == "" {
-		w = os.Stdout
-	} else {
-		dir := filepath.Dir(output)
-		if err := os.MkdirAll(dir, 0777); err != nil {
-			return nil, fmt.Errorf("creating directory %q: %w", dir, err)
-		}
-
-		err := try.Do(func(attempt int) (bool, error) {
-			var ferr error
-			w, ferr = os.OpenFile(output, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
-			return attempt < 5, ferr
-		})
-
-		if err != nil {
-			return nil, fmt.Errorf("open output file %q: %w", output, err)
-		}
-	}
-	return w, nil
-}
-
-func createSymlink(input, output string) error {
-	if _, err := os.Stat(output); err == nil {
-		if err = os.Remove(output); err != nil {
-			return err
-		}
-	}
-	if err := os.MkdirAll(filepath.Dir(output), 0777); err != nil {
-		return err
-	}
-	if err := os.Symlink(input, output); err != nil {
-		return err
-	}
-	return nil
-}
-
 func minify(t Task) bool {
 	// synchronizing files that are not minified but just copied to the same directory, no action needed
 	if t.sync {
@@ -795,10 +739,11 @@ func minify(t Task) bool {
 	if len(t.srcs) == 1 {
 		fr, err = openInputFile(t.srcs[0])
 	} else {
-		fr, err = newConcatFileReader(t.srcs, openInputFile)
+		var sep []byte
 		if err == nil && fileMimetype == filetypeMime["js"] {
-			fr.(*concatFileReader).SetSeparator([]byte(";\n"))
+			sep = []byte(";\n")
 		}
+		fr, err = openInputFiles(t.srcs, sep)
 	}
 	if err != nil {
 		Error.Println(err)
@@ -931,29 +876,4 @@ Next:
 		dst = filepath.Dir(dst)
 		goto Next
 	}
-}
-
-// IsDir returns true if the passed string looks like it specifies a directory, false otherwise.
-func IsDir(dir string) bool {
-	if 0 < len(dir) && dir[len(dir)-1] == os.PathSeparator {
-		return true
-	}
-	info, err := os.Lstat(dir)
-	return err == nil && info.Mode().IsDir() && info.Mode()&os.ModeSymlink == 0
-}
-
-// SameFile returns true if the two file paths specify the same path.
-// While Linux is case-preserving case-sensitive (and therefore a string comparison will work),
-// Windows is case-preserving case-insensitive; we use os.SameFile() to work cross-platform.
-func SameFile(filename1 string, filename2 string) (bool, error) {
-	fi1, err := os.Stat(filename1)
-	if err != nil {
-		return false, err
-	}
-
-	fi2, err := os.Stat(filename2)
-	if err != nil {
-		return false, err
-	}
-	return os.SameFile(fi1, fi2), nil
 }
