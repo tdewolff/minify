@@ -413,6 +413,7 @@ func TestCSSInline(t *testing.T) {
 		{"color:rgba(255,255,255,0)", "color:rgba(255,255,255,0)"}, // #327
 		{"box-shadow:none", "box-shadow:none"},                     // #332
 		{"margin:var(--a,0px)", "margin:var(--a,0px)"},             // #371
+		{"background:transparent var(--bs-btn-close-bg) center/1em auto no-repeat", "background:var(--bs-btn-close-bg)50%/1em no-repeat"}, // #603
 
 		// go-fuzz
 		{"FONT-FAMILY: ru\"", "font-family:ru\""},

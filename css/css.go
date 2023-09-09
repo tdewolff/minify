@@ -25,6 +25,7 @@ var (
 	rightBracketBytes = []byte("}")
 	rightParenBytes   = []byte(")")
 	urlBytes          = []byte("url(")
+	varBytes          = []byte("var(")
 	zeroBytes         = []byte("0")
 	oneBytes          = []byte("1")
 	transparentBytes  = []byte("transparent")
@@ -854,6 +855,8 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 					values = append(values[:i], values[i+1:]...)
 					end--
 					i--
+					continue
+				} else if values[i].TokenType == css.FunctionToken && bytes.Equal(values[i].Data, varBytes) {
 					continue
 				}
 
