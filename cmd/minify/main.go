@@ -51,7 +51,9 @@ var (
 	list               bool
 	m                  *min.M
 	matches            []string
+	matchesRegexp      []*regexp.Regexp
 	filters            []string
+	filtersRegexp      []*regexp.Regexp
 	recursive          bool
 	quiet              bool
 	verbose            int
@@ -230,17 +232,20 @@ func run() int {
 		return 0
 	}
 
+	// compile matches and regexps
 	if 0 < len(matches) {
-		for _, filter := range matches {
-			if _, err = regexp.Compile(filter); err != nil {
+		matchesRegexp = make([]*regexp.Regexp, len(matches))
+		for i, pattern := range matches {
+			if matchesRegexp[i], err = compilePattern(pattern); err != nil {
 				Error.Println(err)
 				return 1
 			}
 		}
 	}
 	if 0 < len(filters) {
-		for _, filter := range filters {
-			if _, err = regexp.Compile(filter[1:]); err != nil {
+		filtersRegexp = make([]*regexp.Regexp, len(filters))
+		for i, pattern := range filters {
+			if filtersRegexp[i], err = compilePattern(pattern[1:]); err != nil {
 				Error.Println(err)
 				return 1
 			}
@@ -526,12 +531,29 @@ func minifyWorker(chanTasks <-chan Task, chanFails chan<- int) {
 	chanFails <- fails
 }
 
+func compilePattern(pattern string) (*regexp.Regexp, error) {
+	// compile regexp or glob pattern
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		// glob wildcards to regexp
+		pattern = regexp.QuoteMeta(pattern)
+		pattern = strings.ReplaceAll(pattern, `\*`, `.+`)
+		pattern += "$"
+
+		var err2 error
+		if re, err2 = regexp.Compile(pattern); err2 != nil {
+			Error.Println(err)
+			return nil, err
+		}
+	}
+	return re, nil
+}
+
 func fileFilter(filename string) bool {
 	if 0 < len(matches) {
 		match := false
-		for _, filter := range matches {
-			pattern := regexp.MustCompile(filter)
-			if pattern.MatchString(filename) {
+		for _, re := range matchesRegexp {
+			if re.MatchString(filename) {
 				match = true
 				break
 			}
@@ -540,10 +562,9 @@ func fileFilter(filename string) bool {
 			return false
 		}
 	}
-	for _, filter := range filters {
-		pattern := regexp.MustCompile(filter[1:])
-		if pattern.MatchString(filename) {
-			return filter[0] == '+'
+	for i, re := range filtersRegexp {
+		if re.MatchString(filename) {
+			return filters[i][0] == '+'
 		}
 	}
 	return true

@@ -174,7 +174,7 @@ $ minify -r -o out/ src/
 
 Minify only javascript files in **src/**:
 ```sh
-$ minify -r -o out/ --match="*.js" src/
+$ minify -r -o out/ --match=*.js src/
 ```
 
 A trailing slash in the source path will copy all files inside the directory, while omitting the trainling slash will copy the directory as well. Both `src/` and `src/.` are equivalent, however `src/*` uses input expansion from bash and ignores hidden files starting with a dot.
