@@ -40,9 +40,11 @@ var extMap = map[string]string{
 	"js":          "application/javascript",
 	"mjs":         "application/javascript",
 	"json":        "application/json",
+	"rss":         "application/rss+xml",
 	"svg":         "image/svg+xml",
-	"xml":         "text/xml",
 	"webmanifest": "application/manifest+json",
+	"xhtml":       "application/xhtml-xml",
+	"xml":         "text/xml",
 }
 
 var (
