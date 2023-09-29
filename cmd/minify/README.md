@@ -149,7 +149,7 @@ $ minify --type=html -o index-min.tpl index.tpl
 
 You need to set the type or the mimetype option when using standard input:
 ```sh
-$ minify --mime=application/javascript < script.js > script-min.js
+$ minify --type=application/javascript < script.js > script-min.js
 
 $ cat script.js | minify --type=js > script-min.js
 ```
@@ -157,24 +157,29 @@ $ cat script.js | minify --type=js > script-min.js
 ### Directories
 You can also give directories as input, and these directories can be minified recursively.
 
-Minify files in the current working directory to **out/** (no subdirectories):
+Minify files in the current working directory to **out/...** (excluding subdirectories):
 ```sh
 $ minify -o out/ *
 ```
 
-Minify files recursively in **src/**:
+Minify files recursively in **src/...** to **out/src/...**:
 ```sh
 $ minify -r -o out/ src
 ```
 
-Minify only javascript files in **src/**:
+Minify files recursively in **src/...** to **out/...**:
 ```sh
-$ minify -r -o out/ --match="\.js$" src
+$ minify -r -o out/ src/
 ```
 
-A trailing slash in the source path will copy all files inside the directory, while omitting the trainling slash will copy the directory as well. Both `src/` and `src/*` are equivalent, except that the second case uses input expansion from bash and ignores hidden files starting with a dot.
+Minify only javascript files in **src/**:
+```sh
+$ minify -r -o out/ --match="*.js" src/
+```
 
-A trailing slash in the destination path will write a single file into a directory instead of to a file of that name.
+A trailing slash in the source path will copy all files inside the directory, while omitting the trainling slash will copy the directory as well. Both `src/` and `src/.` are equivalent, however `src/*` uses input expansion from bash and ignores hidden files starting with a dot.
+
+A trailing slash in the destination path forces writing into a directory. This removes ambiguity when minifying a single file which would otherwise write to a file.
 
 ### Concatenate
 When multiple inputs are given and the output is either standard output or a single file, it will concatenate the files together if you use the bundle option.

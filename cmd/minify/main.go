@@ -33,15 +33,16 @@ import (
 // Version is the current minify version.
 var Version = "built from source"
 
-var filetypeMime = map[string]string{
-	"css":  "text/css",
-	"htm":  "text/html",
-	"html": "text/html",
-	"js":   "application/javascript",
-	"mjs":  "application/javascript",
-	"json": "application/json",
-	"svg":  "image/svg+xml",
-	"xml":  "text/xml",
+var extMap = map[string]string{
+	"css":         "text/css",
+	"htm":         "text/html",
+	"html":        "text/html",
+	"js":          "application/javascript",
+	"mjs":         "application/javascript",
+	"json":        "application/json",
+	"svg":         "image/svg+xml",
+	"xml":         "text/xml",
+	"webmanifest": "application/manifest+json",
 }
 
 var (
@@ -64,6 +65,7 @@ var (
 	preserveTimestamps bool
 	preserveLinks      bool
 	mimetype           string
+	oldmimetype        string
 )
 
 // Task is a minify task.
@@ -100,7 +102,6 @@ func main() {
 
 func run() int {
 	output := ""
-	filetype := ""
 	siteurl := ""
 
 	cssMinifier := &css.Minifier{}
@@ -114,13 +115,13 @@ func run() int {
 	f.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] [input]\n\nOptions:\n", os.Args[0])
 		f.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\nInput:\n  Files or directories, leave blank to use stdin. Specify --mime or --type to use stdin and stdout.\n")
+		fmt.Fprintf(os.Stderr, "\nInput:\n  Files or directories, leave blank to use stdin. Specify --type to use stdin and stdout.\n")
 	}
 
 	f.BoolVarP(&help, "help", "h", false, "Show usage")
 	f.StringVarP(&output, "output", "o", "", "Output file or directory (must have trailing slash), leave blank to use stdout")
-	f.StringVar(&mimetype, "mime", "", "Mimetype (eg. text/css), optional for input filenames, has precedence over --type")
-	f.StringVar(&filetype, "type", "", "Filetype (eg. css), optional for input filenames")
+	f.StringVar(&oldmimetype, "mime", "", "Mimetype (eg. text/css), optional for input filenames (DEPRECATED, use --type)")
+	f.StringVar(&mimetype, "type", "", "Filetype (eg. css or text/css), optional for input filenames")
 	f.String("match", "", "Filename matching pattern, only matching files are processed")
 	f.String("include", "", "Filename inclusion pattern, includes files previously excluded")
 	f.String("exclude", "", "Filename exclusion pattern, excludes files from being processed")
@@ -155,7 +156,7 @@ func run() int {
 	f.BoolVar(&xmlMinifier.KeepWhitespace, "xml-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
 	if len(os.Args) == 1 {
 		if !quiet {
-			fmt.Printf("minify: must specify --mime or --type in order to use stdin and stdout\n")
+			fmt.Printf("minify: must specify --type in order to use stdin and stdout\n")
 			fmt.Printf("Try 'minify --help' for more information\n")
 		}
 		return 1
@@ -218,12 +219,12 @@ func run() int {
 	if list {
 		if !quiet {
 			var keys []string
-			for k := range filetypeMime {
+			for k := range extMap {
 				keys = append(keys, k)
 			}
 			sort.Strings(keys)
 			for _, k := range keys {
-				fmt.Println(k + "\t" + filetypeMime[k])
+				fmt.Println(k + "\t" + extMap[k])
 			}
 		}
 		return 0
@@ -247,10 +248,14 @@ func run() int {
 	}
 
 	// detect mimetype, mimetype=="" means we'll infer mimetype from file extensions
-	if mimetype == "" && filetype != "" {
+	if oldmimetype != "" {
+		Error.Println("deprecated use of '--mime %v', please use '--type %v' instead", oldmimetype, oldmimetype)
+		mimetype = oldmimetype
+	}
+	if slash := strings.Index(mimetype, "/"); slash == -1 && 0 < len(mimetype) {
 		var ok bool
-		if mimetype, ok = filetypeMime[filetype]; !ok {
-			Error.Println("cannot find mimetype for filetype", filetype)
+		if mimetype, ok = extMap[mimetype]; !ok {
+			Error.Println("unknown filetype", mimetype)
 			return 1
 		}
 	}
@@ -276,10 +281,10 @@ func run() int {
 		return 1
 	}
 	if mimetype == "" && useStdin {
-		Error.Println("must specify --mime or --type for stdin")
+		Error.Println("must specify --type for stdin")
 		return 1
 	} else if mimetype != "" && sync {
-		Error.Println("must specify either --sync or --mime/--type")
+		Error.Println("must specify either --sync or --type")
 		return 1
 	}
 	if mimetype == "" {
@@ -555,7 +560,7 @@ func fileMatches(filename string) bool {
 	if 0 < len(ext) {
 		ext = ext[1:]
 	}
-	if _, ok := filetypeMime[ext]; !ok {
+	if _, ok := extMap[ext]; !ok {
 		return false
 	}
 	return true
@@ -691,15 +696,15 @@ func minify(t Task) bool {
 			if 0 < len(ext) {
 				ext = ext[1:]
 			}
-			srcMimetype, ok := filetypeMime[ext]
+			srcMimetype, ok := extMap[ext]
 			if !ok {
-				Warning.Println("cannot infer mimetype from extension in", src, ", set --type or --mime explicitly")
+				Warning.Println("cannot infer mimetype from extension in", src, ", set --type explicitly")
 				return false
 			}
 			if fileMimetype == "" {
 				fileMimetype = srcMimetype
 			} else if srcMimetype != fileMimetype {
-				Warning.Println("inferred mimetype", srcMimetype, "of", src, "for concatenation unequal to previous mimetypes, set --type or --mime explicitly")
+				Warning.Println("inferred mimetype", srcMimetype, "of", src, "for concatenation unequal to previous mimetypes, set --type explicitly")
 				return false
 			}
 		}
@@ -740,7 +745,7 @@ func minify(t Task) bool {
 		fr, err = openInputFile(t.srcs[0])
 	} else {
 		var sep []byte
-		if err == nil && fileMimetype == filetypeMime["js"] {
+		if err == nil && fileMimetype == extMap["js"] {
 			sep = []byte(";\n")
 		}
 		fr, err = openInputFiles(t.srcs, sep)
