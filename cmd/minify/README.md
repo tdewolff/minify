@@ -77,59 +77,70 @@ which will output
 ```
 
 ## Usage
-    Usage: minify [options] [input]
 
+    Usage: minify [options] inputs...
+    
     Options:
-      -a, --all                              Minify all files, including hidden files and files in hidden directories
-      -b, --bundle                           Bundle files by concatenation into a single file
-          --cpuprofile string                Export CPU profile
-          --css-precision int                Number of significant digits to preserve in numbers, 0 is all
-          --exclude string                   Filename exclusion pattern, excludes files from being processed
-      -h, --help                             Show usage
-          --html-keep-comments               Preserve all comments
-          --html-keep-conditional-comments   Preserve all IE conditional comments
-          --html-keep-default-attrvals       Preserve default attribute values
-          --html-keep-document-tags          Preserve html, head and body tags
-          --html-keep-end-tags               Preserve all end tags
-          --html-keep-quotes                 Preserve quotes around attribute values
-          --html-keep-whitespace             Preserve whitespace characters but still collapse multiple into one
-          --include string                   Filename inclusion pattern, includes files previously excluded
-          --js-keep-var-names                Preserve original variable names
-          --js-precision int                 Number of significant digits to preserve in numbers, 0 is all
-          --js-version int                   ECMAScript version to toggle supported optimizations (e.g. 2019, 2020), by default 0 is the latest version
-          --json-keep-numbers                Preserve original numbers instead of minifying them
-          --json-precision int               Number of significant digits to preserve in numbers, 0 is all
-      -l, --list                             List all accepted filetypes
-          --match string                     Filename matching pattern, only matching files are processed
-          --memprofile string                Export memory profile
-          --mime string                      Mimetype (eg. text/css), optional for input filenames, has precedence over --type
-      -o, --output string                    Output file or directory (must have trailing slash), leave blank to use stdout
-      -p, --preserve strings[=mode,ownership,timestamps]   Preserve options (mode, ownership, timestamps, links, all)
-      -q, --quiet                            Quiet mode to suppress all output
-      -r, --recursive                        Recursively minify directories
-          --svg-keep-comments                Preserve all comments
-          --svg-precision int                Number of significant digits to preserve in numbers, 0 is all
-      -s, --sync                             Copy all files to destination directory and minify when filetype matches
-          --type string                      Filetype (eg. css), optional for input filenames
-          --url string                       URL of file to enable URL minification
-      -v, --verbose count                    Verbose mode, set twice for more verbosity
-          --version                          Version
-      -w, --watch                            Watch files and minify upon changes
-          --xml-keep-whitespace              Preserve whitespace characters but still collapse multiple into one
-
-    Input:
-      Files or directories, leave blank to use stdin. Specify --mime or --type to use stdin and stdout.
-
+      -a, --all                   Minify all files, including hidden files and files in hidden
+                                  directories
+      -b, --bundle                Bundle files by concatenation into a single file
+          --css-precision int     Number of significant digits to preserve in numbers, 0 is all
+          --exclude []string      Path exclusion pattern, excludes paths from being processed
+          --ext map[string]string
+                                  Filename extension mapping to filetype (eg. css or text/css)
+      -h, --help                  Help
+          --html-keep-comments    Preserve all comments
+          --html-keep-conditional-comments
+                                  Preserve all IE conditional comments
+          --html-keep-default-attrvals
+                                  Preserve default attribute values
+          --html-keep-document-tags
+                                  Preserve html, head and body tags
+          --html-keep-end-tags    Preserve all end tags
+          --html-keep-quotes      Preserve quotes around attribute values
+          --html-keep-whitespace  Preserve whitespace characters but still collapse multiple into one
+          --include []string      Path inclusion pattern, includes paths previously excluded
+          --js-keep-var-names     Preserve original variable names
+          --js-precision int      Number of significant digits to preserve in numbers, 0 is all
+          --js-version int        ECMAScript version to toggle supported optimizations (e.g. 2019,
+                                  2020), by default 0 is the latest version
+          --json-keep-numbers     Preserve original numbers instead of minifying them
+          --json-precision int    Number of significant digits to preserve in numbers, 0 is all
+      -l, --list                  List all accepted filetypes
+          --match []string        Filename matching pattern, only matching filenames are processed
+          --mime string           Mimetype (eg. text/css), optional for input filenames (DEPRECATED, use                              --type)
+      -o, --output string         Output file or directory, leave blank to use stdout
+      -p, --preserve []string     Preserve options (mode, ownership, timestamps, links, all)
+      -q, --quiet                 Quiet mode to suppress all output
+      -r, --recursive             Recursively minify directories
+      -s, --sync                  Copy all files to destination directory and minify when filetype
+                                  matches
+          --svg-keep-comments     Preserve all comments
+          --svg-precision int     Number of significant digits to preserve in numbers, 0 is all
+          --type string           Filetype (eg. css or text/css), optional when specifying inputs
+          --url string            URL of file to enable URL minification
+      -v, --verbose               Verbose mode, set twice for more verbosity
+          --version               Version
+      -w, --watch                 Watch files and minify upon changes
+          --xml-keep-whitespace   Preserve whitespace characters but still collapse multiple into one
+    
+    Arguments:
+      inputs    Input files or directories, leave blank to use stdin
 
 ### Types
+Default extension mapping to mimetype (and thus minifier). Use `--ext` to add more mappings, see below for an example.
 
-	css     text/css
-	htm     text/html
-	html    text/html
-	js      application/javascript
-	json    application/json
-	svg     image/svg+xml
-	xml     text/xml
+	css          text/css
+	htm          text/html
+	html         text/html
+	js           application/javascript
+	json         application/json
+	mjs          application/javascript
+	rss          application/rss+xml
+	svg          image/svg+xml
+	webmanifest  application/manifest+json
+	xhtml        application/xhtml-xml
+	xml          text/xml
 
 ## Examples
 Minify **index.html** to **index-min.html**:
@@ -191,6 +202,11 @@ or
 ```sh
 $ minify -r -o out/ --ext {scss:text/css xjs:js} src/
 ```
+
+#### Matching and include/exclude patterns
+The patterns for `--match`, `--include`, and `--exclude` can be either a glob or a regular expression. To use the latter, prefix the pattern with `~` (if you want to use a glob starting with `~`, escape the tilde `\~...`). Match only matches the base filename, while include/exclude match the full path. Be aware of bash expansion of glob patterns, which requires you to quote the pattern or escape asterisks.
+
+Match will filters all files by the given pattern, eg. `--match '*.css'` will only minify CSS files. The `--include` and `--exclude` options allow to add or remove certain files or directories and is interpreted in the order given. For example, `minify -rvo out/ --exclude 'src/*/**' --include 'src/foo/**' src/` will minify the directory `src/`, except for `src/*/...` where `*` is not `foo`.
 
 ### Concatenate
 When multiple inputs are given and the output is either standard output or a single file, it will concatenate the files together if you use the bundle option.

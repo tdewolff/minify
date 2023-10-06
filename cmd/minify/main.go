@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"runtime"
 	"sort"
@@ -74,15 +73,40 @@ var (
 	oldmimetype        string
 )
 
+type Matches struct {
+	matches *[]string
+}
+
+func (scanner Matches) Scan(s []string) (int, error) {
+	n := 0
+	for _, item := range s {
+		if strings.HasPrefix(item, "-") {
+			break
+		}
+		*scanner.matches = append(*scanner.matches, item)
+		n++
+	}
+	return n, nil
+}
+
+func (typenamer Matches) TypeName() string {
+	return "[]string"
+}
+
 type Includes struct {
 	filters *[]string
 }
 
 func (scanner Includes) Scan(s []string) (int, error) {
-	v := ""
-	n, err := argp.ScanVar(reflect.ValueOf(&v).Elem(), s)
-	*scanner.filters = append(*scanner.filters, "+"+v)
-	return n, err
+	n := 0
+	for _, item := range s {
+		if strings.HasPrefix(item, "-") {
+			break
+		}
+		*scanner.filters = append(*scanner.filters, "+"+item)
+		n++
+	}
+	return n, nil
 }
 
 func (typenamer Includes) TypeName() string {
@@ -94,10 +118,15 @@ type Excludes struct {
 }
 
 func (scanner Excludes) Scan(s []string) (int, error) {
-	v := ""
-	n, err := argp.ScanVar(reflect.ValueOf(&v).Elem(), s)
-	*scanner.filters = append(*scanner.filters, "-"+v)
-	return n, err
+	n := 0
+	for _, item := range s {
+		if strings.HasPrefix(item, "-") {
+			break
+		}
+		*scanner.filters = append(*scanner.filters, "-"+item)
+		n++
+	}
+	return n, nil
 }
 
 func (typenamer Excludes) TypeName() string {
@@ -152,10 +181,10 @@ func run() int {
 	f.AddRest(&inputs, "inputs", "Input files or directories, leave blank to use stdin")
 	f.AddOpt(&output, "o", "output", nil, "Output file or directory, leave blank to use stdout")
 	f.AddOpt(&oldmimetype, "", "mime", nil, "Mimetype (eg. text/css), optional for input filenames (DEPRECATED, use --type)")
-	f.AddOpt(&mimetype, "", "type", nil, "Filetype (eg. css or text/css), optional for input filenames")
-	f.AddOpt(&matches, "", "match", nil, "Filename matching pattern, only matching files are processed")
-	f.AddOpt(Includes{&filters}, "", "include", nil, "Filename inclusion pattern, includes files previously excluded")
-	f.AddOpt(Excludes{&filters}, "", "exclude", nil, "Filename exclusion pattern, excludes files from being processed")
+	f.AddOpt(&mimetype, "", "type", nil, "Filetype (eg. css or text/css), optional when specifying inputs")
+	f.AddOpt(Matches{&matches}, "", "match", nil, "Filename matching pattern, only matching filenames are processed")
+	f.AddOpt(Includes{&filters}, "", "include", nil, "Path inclusion pattern, includes paths previously excluded")
+	f.AddOpt(Excludes{&filters}, "", "exclude", nil, "Path exclusion pattern, excludes paths from being processed")
 	f.AddOpt(&extensions, "", "ext", nil, "Filename extension mapping to filetype (eg. css or text/css)")
 	f.AddOpt(&recursive, "r", "recursive", false, "Recursively minify directories")
 	f.AddOpt(&hidden, "a", "all", false, "Minify all files, including hidden files and files in hidden directories")
@@ -213,7 +242,7 @@ func run() int {
 			}
 			sort.Strings(keys)
 			for _, k := range keys {
-				fmt.Println(k + strings.Repeat(" ", n-len(k)+1) + extMap[k])
+				fmt.Println(k + strings.Repeat(" ", n-len(k)+2) + extMap[k])
 			}
 		}
 		return 0
@@ -545,29 +574,27 @@ func minifyWorker(chanTasks <-chan Task, chanFails chan<- int) {
 	chanFails <- fails
 }
 
+// compilePattern returns *regexp.Regexp or glob.Glob
 func compilePattern(pattern string) (*regexp.Regexp, error) {
-	// compile regexp or glob pattern
-	re, err := regexp.Compile(pattern)
-	if err != nil {
-		// glob wildcards to regexp
-		pattern = regexp.QuoteMeta(pattern)
-		pattern = strings.ReplaceAll(pattern, `\*`, `.+`)
-		pattern += "$"
-
-		var err2 error
-		if re, err2 = regexp.Compile(pattern); err2 != nil {
-			Error.Println(err)
-			return nil, err
+	if len(pattern) == 0 || pattern[0] != '~' {
+		if strings.HasPrefix(pattern, `\~`) {
+			pattern = pattern[1:]
 		}
+		pattern = regexp.QuoteMeta(pattern)
+		pattern = strings.ReplaceAll(pattern, `\*\*`, `.*`)
+		pattern = strings.ReplaceAll(pattern, `\*`, fmt.Sprintf(`[^%c]*`, filepath.Separator))
+		pattern = strings.ReplaceAll(pattern, `\?`, fmt.Sprintf(`[^%c]?`, filepath.Separator))
+		pattern = "^" + pattern + "$"
 	}
-	return re, nil
+	return regexp.Compile(pattern)
 }
 
 func fileFilter(filename string) bool {
 	if 0 < len(matches) {
 		match := false
+		base := filepath.Base(filename)
 		for _, re := range matchesRegexp {
-			if re.MatchString(filename) {
+			if re.MatchString(base) {
 				match = true
 				break
 			}
@@ -576,12 +603,13 @@ func fileFilter(filename string) bool {
 			return false
 		}
 	}
+	match := true
 	for i, re := range filtersRegexp {
 		if re.MatchString(filename) {
-			return filters[i][0] == '+'
+			match = filters[i][0] == '+'
 		}
 	}
-	return true
+	return match
 }
 
 func fileMatches(filename string) bool {
@@ -632,7 +660,7 @@ func createTasks(fsys fs.FS, inputs []string, output string) ([]Task, []string, 
 			}
 			tasks = append(tasks, task)
 		} else if info.Mode().IsRegular() {
-			valid := fileFilter(info.Name()) // don't filter mimetype
+			valid := fileFilter(input) // don't filter mimetype
 			if valid || sync {
 				task, err := NewTask(root, input, output, !valid)
 				if err != nil {
@@ -683,7 +711,7 @@ func createTasks(fsys fs.FS, inputs []string, output string) ([]Task, []string, 
 					}
 					tasks = append(tasks, task)
 				} else if d.Type().IsRegular() {
-					valid := fileMatches(d.Name())
+					valid := fileMatches(input)
 					if valid || sync {
 						task, err := NewTask(root, input, output, !valid)
 						if err != nil {
