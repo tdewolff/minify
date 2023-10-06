@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"runtime"
 	"sort"
@@ -20,7 +21,7 @@ import (
 	"github.com/djherbis/atime"
 	humanize "github.com/dustin/go-humanize"
 	"github.com/matryer/try"
-	flag "github.com/spf13/pflag"
+	"github.com/tdewolff/argp"
 	min "github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/css"
 	"github.com/tdewolff/minify/v2/html"
@@ -56,6 +57,7 @@ var (
 	matchesRegexp      []*regexp.Regexp
 	filters            []string
 	filtersRegexp      []*regexp.Regexp
+	extensions         map[string]string
 	recursive          bool
 	quiet              bool
 	verbose            int
@@ -71,6 +73,36 @@ var (
 	mimetype           string
 	oldmimetype        string
 )
+
+type Includes struct {
+	filters *[]string
+}
+
+func (scanner Includes) Scan(s []string) (int, error) {
+	v := ""
+	n, err := argp.ScanVar(reflect.ValueOf(&v).Elem(), s)
+	*scanner.filters = append(*scanner.filters, "+"+v)
+	return n, err
+}
+
+func (typenamer Includes) TypeName() string {
+	return "[]string"
+}
+
+type Excludes struct {
+	filters *[]string
+}
+
+func (scanner Excludes) Scan(s []string) (int, error) {
+	v := ""
+	n, err := argp.ScanVar(reflect.ValueOf(&v).Elem(), s)
+	*scanner.filters = append(*scanner.filters, "-"+v)
+	return n, err
+}
+
+func (typenamer Excludes) TypeName() string {
+	return "[]string"
+}
 
 // Task is a minify task.
 type Task struct {
@@ -105,8 +137,9 @@ func main() {
 }
 
 func run() int {
-	output := ""
-	siteurl := ""
+	var inputs []string
+	var output string
+	var siteurl string
 
 	cssMinifier := &css.Minifier{}
 	htmlMinifier := &html.Minifier{}
@@ -115,80 +148,84 @@ func run() int {
 	svgMinifier := &svg.Minifier{}
 	xmlMinifier := &xml.Minifier{}
 
-	f := flag.NewFlagSet("minify", flag.ContinueOnError)
-	f.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [options] [input]\n\nOptions:\n", os.Args[0])
-		f.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\nInput:\n  Files or directories, leave blank to use stdin. Specify --type to use stdin and stdout.\n")
+	f := argp.New("minify")
+	f.AddRest(&inputs, "inputs", "Input files or directories, leave blank to use stdin")
+	f.AddOpt(&output, "o", "output", nil, "Output file or directory, leave blank to use stdout")
+	f.AddOpt(&oldmimetype, "", "mime", nil, "Mimetype (eg. text/css), optional for input filenames (DEPRECATED, use --type)")
+	f.AddOpt(&mimetype, "", "type", nil, "Filetype (eg. css or text/css), optional for input filenames")
+	f.AddOpt(&matches, "", "match", nil, "Filename matching pattern, only matching files are processed")
+	f.AddOpt(Includes{&filters}, "", "include", nil, "Filename inclusion pattern, includes files previously excluded")
+	f.AddOpt(Excludes{&filters}, "", "exclude", nil, "Filename exclusion pattern, excludes files from being processed")
+	f.AddOpt(&extensions, "", "ext", nil, "Filename extension mapping to filetype (eg. css or text/css)")
+	f.AddOpt(&recursive, "r", "recursive", false, "Recursively minify directories")
+	f.AddOpt(&hidden, "a", "all", false, "Minify all files, including hidden files and files in hidden directories")
+	f.AddOpt(&list, "l", "list", false, "List all accepted filetypes")
+	f.AddOpt(&quiet, "q", "quiet", false, "Quiet mode to suppress all output")
+	f.AddOpt(argp.Count{&verbose}, "v", "verbose", nil, "Verbose mode, set twice for more verbosity")
+	f.AddOpt(&watch, "w", "watch", false, "Watch files and minify upon changes")
+	f.AddOpt(&sync, "s", "sync", false, "Copy all files to destination directory and minify when filetype matches")
+	f.AddOpt(&preserve, "p", "preserve", []string{"mode", "ownership", "timestamps"}, "Preserve options (mode, ownership, timestamps, links, all)")
+	f.AddOpt(&bundle, "b", "bundle", false, "Bundle files by concatenation into a single file")
+	f.AddOpt(&version, "", "version", false, "Version")
+
+	f.AddOpt(&siteurl, "", "url", nil, "URL of file to enable URL minification")
+	f.AddOpt(&cssMinifier.Precision, "", "css-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
+	f.AddOpt(&htmlMinifier.KeepComments, "", "html-keep-comments", false, "Preserve all comments")
+	f.AddOpt(&htmlMinifier.KeepConditionalComments, "", "html-keep-conditional-comments", false, "Preserve all IE conditional comments")
+	f.AddOpt(&htmlMinifier.KeepDefaultAttrVals, "", "html-keep-default-attrvals", false, "Preserve default attribute values")
+	f.AddOpt(&htmlMinifier.KeepDocumentTags, "", "html-keep-document-tags", false, "Preserve html, head and body tags")
+	f.AddOpt(&htmlMinifier.KeepEndTags, "", "html-keep-end-tags", false, "Preserve all end tags")
+	f.AddOpt(&htmlMinifier.KeepWhitespace, "", "html-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
+	f.AddOpt(&htmlMinifier.KeepQuotes, "", "html-keep-quotes", false, "Preserve quotes around attribute values")
+	f.AddOpt(&jsMinifier.Precision, "", "js-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
+	f.AddOpt(&jsMinifier.KeepVarNames, "", "js-keep-var-names", false, "Preserve original variable names")
+	f.AddOpt(&jsMinifier.Version, "", "js-version", 0, "ECMAScript version to toggle supported optimizations (e.g. 2019, 2020), by default 0 is the latest version")
+	f.AddOpt(&jsonMinifier.Precision, "", "json-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
+	f.AddOpt(&jsonMinifier.KeepNumbers, "", "json-keep-numbers", false, "Preserve original numbers instead of minifying them")
+	f.AddOpt(&svgMinifier.KeepComments, "", "svg-keep-comments", false, "Preserve all comments")
+	f.AddOpt(&svgMinifier.Precision, "", "svg-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
+	f.AddOpt(&xmlMinifier.KeepWhitespace, "", "xml-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
+	f.Parse()
+
+	if version {
+		if !quiet {
+			fmt.Printf("minify %s\n", Version)
+		}
+		return 0
 	}
 
-	f.BoolVarP(&help, "help", "h", false, "Show usage")
-	f.StringVarP(&output, "output", "o", "", "Output file or directory (must have trailing slash), leave blank to use stdout")
-	f.StringVar(&oldmimetype, "mime", "", "Mimetype (eg. text/css), optional for input filenames (DEPRECATED, use --type)")
-	f.StringVar(&mimetype, "type", "", "Filetype (eg. css or text/css), optional for input filenames")
-	f.String("match", "", "Filename matching pattern, only matching files are processed")
-	f.String("include", "", "Filename inclusion pattern, includes files previously excluded")
-	f.String("exclude", "", "Filename exclusion pattern, excludes files from being processed")
-	f.BoolVarP(&recursive, "recursive", "r", false, "Recursively minify directories")
-	f.BoolVarP(&hidden, "all", "a", false, "Minify all files, including hidden files and files in hidden directories")
-	f.BoolVarP(&list, "list", "l", false, "List all accepted filetypes")
-	f.BoolVarP(&quiet, "quiet", "q", false, "Quiet mode to suppress all output")
-	f.CountVarP(&verbose, "verbose", "v", "Verbose mode, set twice for more verbosity")
-	f.BoolVarP(&watch, "watch", "w", false, "Watch files and minify upon changes")
-	f.BoolVarP(&sync, "sync", "s", false, "Copy all files to destination directory and minify when filetype matches")
-	f.StringSliceVarP(&preserve, "preserve", "p", nil, "Preserve options (mode, ownership, timestamps, links, all)")
-	f.Lookup("preserve").NoOptDefVal = "mode,ownership,timestamps"
-	f.BoolVarP(&bundle, "bundle", "b", false, "Bundle files by concatenation into a single file")
-	f.BoolVar(&version, "version", false, "Version")
+	for ext, filetype := range extensions {
+		if mimetype, ok := extMap[filetype]; ok {
+			filetype = mimetype
+		}
+		extMap[ext] = filetype
+	}
 
-	f.StringVar(&siteurl, "url", "", "URL of file to enable URL minification")
-	f.IntVar(&cssMinifier.Precision, "css-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
-	f.BoolVar(&htmlMinifier.KeepComments, "html-keep-comments", false, "Preserve all comments")
-	f.BoolVar(&htmlMinifier.KeepConditionalComments, "html-keep-conditional-comments", false, "Preserve all IE conditional comments")
-	f.BoolVar(&htmlMinifier.KeepDefaultAttrVals, "html-keep-default-attrvals", false, "Preserve default attribute values")
-	f.BoolVar(&htmlMinifier.KeepDocumentTags, "html-keep-document-tags", false, "Preserve html, head and body tags")
-	f.BoolVar(&htmlMinifier.KeepEndTags, "html-keep-end-tags", false, "Preserve all end tags")
-	f.BoolVar(&htmlMinifier.KeepWhitespace, "html-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
-	f.BoolVar(&htmlMinifier.KeepQuotes, "html-keep-quotes", false, "Preserve quotes around attribute values")
-	f.IntVar(&jsMinifier.Precision, "js-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
-	f.BoolVar(&jsMinifier.KeepVarNames, "js-keep-var-names", false, "Preserve original variable names")
-	f.IntVar(&jsMinifier.Version, "js-version", 0, "ECMAScript version to toggle supported optimizations (e.g. 2019, 2020), by default 0 is the latest version")
-	f.IntVar(&jsonMinifier.Precision, "json-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
-	f.BoolVar(&jsonMinifier.KeepNumbers, "json-keep-numbers", false, "Preserve original numbers instead of minifying them")
-	f.BoolVar(&svgMinifier.KeepComments, "svg-keep-comments", false, "Preserve all comments")
-	f.IntVar(&svgMinifier.Precision, "svg-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
-	f.BoolVar(&xmlMinifier.KeepWhitespace, "xml-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
-	if len(os.Args) == 1 {
+	if list {
+		if !quiet {
+			n := 0
+			var keys []string
+			for k := range extMap {
+				keys = append(keys, k)
+				if n < len(k) {
+					n = len(k)
+				}
+			}
+			sort.Strings(keys)
+			for _, k := range keys {
+				fmt.Println(k + strings.Repeat(" ", n-len(k)+1) + extMap[k])
+			}
+		}
+		return 0
+	}
+
+	if len(inputs) == 0 && mimetype == "" && oldmimetype == "" {
 		if !quiet {
 			fmt.Printf("minify: must specify --type in order to use stdin and stdout\n")
 			fmt.Printf("Try 'minify --help' for more information\n")
 		}
 		return 1
-	}
-	err := f.ParseAll(os.Args[1:], func(flag *flag.Flag, value string) error {
-		if flag.Name == "match" || flag.Name == "include" || flag.Name == "exclude" {
-			for _, filter := range strings.Split(value, ",") {
-				if flag.Name == "match" {
-					matches = append(matches, filter)
-				} else if flag.Name == "include" {
-					filters = append(filters, "+"+filter)
-				} else {
-					filters = append(filters, "-"+filter)
-				}
-			}
-			return nil
-		}
-		return f.Set(flag.Name, value)
-	})
-	if err != nil {
-		if !quiet {
-			fmt.Printf("minify: %v\n", err)
-			fmt.Printf("Try 'minify --help' for more information\n")
-		}
-		return 1
-	}
-	inputs := f.Args()
-	if len(inputs) == 1 && inputs[0] == "-" {
+	} else if len(inputs) == 1 && inputs[0] == "-" {
 		inputs = inputs[:0]
 	} else if output == "-" {
 		output = ""
@@ -208,33 +245,8 @@ func run() int {
 		}
 	}
 
-	if help {
-		f.Usage()
-		return 0
-	}
-
-	if version {
-		if !quiet {
-			fmt.Printf("minify %s\n", Version)
-		}
-		return 0
-	}
-
-	if list {
-		if !quiet {
-			var keys []string
-			for k := range extMap {
-				keys = append(keys, k)
-			}
-			sort.Strings(keys)
-			for _, k := range keys {
-				fmt.Println(k + "\t" + extMap[k])
-			}
-		}
-		return 0
-	}
-
 	// compile matches and regexps
+	var err error
 	if 0 < len(matches) {
 		matchesRegexp = make([]*regexp.Regexp, len(matches))
 		for i, pattern := range matches {
@@ -256,7 +268,7 @@ func run() int {
 
 	// detect mimetype, mimetype=="" means we'll infer mimetype from file extensions
 	if oldmimetype != "" {
-		Error.Println("deprecated use of '--mime %v', please use '--type %v' instead", oldmimetype, oldmimetype)
+		Error.Printf("deprecated use of '--mime %v', please use '--type %v' instead", oldmimetype, oldmimetype)
 		mimetype = oldmimetype
 	}
 	if slash := strings.Index(mimetype, "/"); slash == -1 && 0 < len(mimetype) {
@@ -299,7 +311,7 @@ func run() int {
 	} else {
 		Info.Println("use mimetype", mimetype)
 	}
-	if len(preserve) != 0 {
+	if f.IsSet("preserve") {
 		if bundle {
 			Error.Println("--preserve cannot be used together with --bundle")
 			return 1

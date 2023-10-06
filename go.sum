@@ -10,8 +10,13 @@ github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 h1:JAEbJn3j/FrhdWA9jW8
 github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2/go.mod h1:0KeJpeMD6o+O4hW7qJOT7vyQPKrWmj26uf5wMc/IiIs=
 github.com/spf13/pflag v1.0.5 h1:iy+VFUOCP1a+8yFto/drg2CJ5u0yRoB7fZw3DKv/JXA=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
+github.com/tdewolff/argp v0.0.0-20230622205231-8a4234db046f h1:l5DhJGDkk4qI60fmBURYxC9cr7hgEtrrc4P1WJKp38E=
+github.com/tdewolff/argp v0.0.0-20230622205231-8a4234db046f/go.mod h1:fF+gnKbmf3iMG+ErLiF+orMU/InyZIEnKVVigUjfriw=
+github.com/tdewolff/argp v0.0.0-20231006010547-9c5fed0deeda h1:6CfJwZHxYOIpEYRiqU7z34yWc99balM7xxSFYz/ke8U=
+github.com/tdewolff/argp v0.0.0-20231006010547-9c5fed0deeda/go.mod h1:fF+gnKbmf3iMG+ErLiF+orMU/InyZIEnKVVigUjfriw=
 github.com/tdewolff/parse/v2 v2.6.8 h1:mhNZXYCx//xG7Yq2e/kVLNZw4YfYmeHbhx+Zc0OvFMA=
 github.com/tdewolff/parse/v2 v2.6.8/go.mod h1:XHDhaU6IBgsryfdnpzUXBlT6leW/l25yrFBTEb4eIyM=
+github.com/tdewolff/test v1.0.6/go.mod h1:6DAvZliBAAnD7rhVgwaM7DE5/d9NMOAJ09SqYqeK4QE=
 github.com/tdewolff/test v1.0.9 h1:SswqJCmeN4B+9gEAi/5uqT0qpi1y2/2O47V/1hhGZT0=
 github.com/tdewolff/test v1.0.9/go.mod h1:6DAvZliBAAnD7rhVgwaM7DE5/d9NMOAJ09SqYqeK4QE=
 golang.org/x/sys v0.0.0-20220908164124-27713097b956/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=

@@ -8,6 +8,7 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2
 	github.com/spf13/pflag v1.0.5
+	github.com/tdewolff/argp v0.0.0-20231006010547-9c5fed0deeda
 	github.com/tdewolff/parse/v2 v2.6.8
 	github.com/tdewolff/test v1.0.9
 )

@@ -181,6 +181,17 @@ A trailing slash in the source path will copy all files inside the directory, wh
 
 A trailing slash in the destination path forces writing into a directory. This removes ambiguity when minifying a single file which would otherwise write to a file.
 
+#### Map custom extensions
+You can map other extensions to a minifier by using the `--ext` option, which maps a filename extension to a filetype or mimetype, which is associated with a minifier.
+
+```sh
+$ minify -r -o out/ --ext.scss=text/css --ext.xjs=js src/
+```
+or
+```sh
+$ minify -r -o out/ --ext {scss:text/css xjs:js} src/
+```
+
 ### Concatenate
 When multiple inputs are given and the output is either standard output or a single file, it will concatenate the files together if you use the bundle option.
 
