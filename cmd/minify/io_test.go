@@ -19,7 +19,7 @@ func testOpener(filename string) (io.ReadCloser, error) {
 }
 
 func TestConcat(t *testing.T) {
-	r, err := newConcatFileReader([]string{"test", "test"}, testOpener)
+	r, err := newConcatFileReader([]string{"test", "test"}, testOpener, nil)
 	test.T(t, err, nil)
 
 	buf, err := ioutil.ReadAll(r)
@@ -32,10 +32,10 @@ func TestConcat(t *testing.T) {
 }
 
 func TestConcatErr(t *testing.T) {
-	_, err := newConcatFileReader([]string{"err"}, testOpener)
+	_, err := newConcatFileReader([]string{"err"}, testOpener, nil)
 	test.T(t, err, test.ErrPlain)
 
-	r, err := newConcatFileReader([]string{"test", "err"}, testOpener)
+	r, err := newConcatFileReader([]string{"test", "err"}, testOpener, nil)
 	test.T(t, err, nil)
 
 	buf := make([]byte, 10)
@@ -50,9 +50,8 @@ func TestConcatErr(t *testing.T) {
 }
 
 func TestConcatSep(t *testing.T) {
-	r, err := newConcatFileReader([]string{"test", "test"}, testOpener)
+	r, err := newConcatFileReader([]string{"test", "test"}, testOpener, []byte("_"))
 	test.T(t, err, nil)
-	r.SetSeparator([]byte("_"))
 
 	buf := make([]byte, 10)
 	n, err := r.Read(buf)
@@ -67,9 +66,8 @@ func TestConcatSep(t *testing.T) {
 }
 
 func TestConcatSepShort1(t *testing.T) {
-	r, err := newConcatFileReader([]string{"test", "test"}, testOpener)
+	r, err := newConcatFileReader([]string{"test", "test"}, testOpener, []byte("_"))
 	test.T(t, err, nil)
-	r.SetSeparator([]byte("_"))
 
 	// insufficient room for separator
 	buf := make([]byte, 4)
@@ -84,9 +82,8 @@ func TestConcatSepShort1(t *testing.T) {
 }
 
 func TestConcatSepShort2(t *testing.T) {
-	r, err := newConcatFileReader([]string{"test", "test"}, testOpener)
+	r, err := newConcatFileReader([]string{"test", "test"}, testOpener, []byte("_"))
 	test.T(t, err, nil)
-	r.SetSeparator([]byte("_"))
 
 	// insufficient room after separator
 	buf := make([]byte, 5)
@@ -99,9 +96,8 @@ func TestConcatSepShort2(t *testing.T) {
 }
 
 func TestConcatSepShort3(t *testing.T) {
-	r, err := newConcatFileReader([]string{"test", "test"}, testOpener)
+	r, err := newConcatFileReader([]string{"test", "test"}, testOpener, []byte("_"))
 	test.T(t, err, nil)
-	r.SetSeparator([]byte("_"))
 
 	// insufficient room after separator
 	buf := make([]byte, 6)
@@ -114,9 +110,8 @@ func TestConcatSepShort3(t *testing.T) {
 }
 
 func TestConcatSepShort4(t *testing.T) {
-	r, err := newConcatFileReader([]string{"test", "test"}, testOpener)
+	r, err := newConcatFileReader([]string{"test", "test"}, testOpener, []byte("xx"))
 	test.T(t, err, nil)
-	r.SetSeparator([]byte("xx"))
 
 	// insufficient room after separator
 	buf := make([]byte, 5)
@@ -139,9 +134,8 @@ func TestConcatSepShort4(t *testing.T) {
 }
 
 func TestConcatSepEmpty(t *testing.T) {
-	r, err := newConcatFileReader([]string{"empty", "empty"}, testOpener)
+	r, err := newConcatFileReader([]string{"empty", "empty"}, testOpener, []byte("_"))
 	test.T(t, err, nil)
-	r.SetSeparator([]byte("_"))
 
 	// insufficient room after separator
 	buf := make([]byte, 1)

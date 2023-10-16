@@ -980,10 +980,10 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 	// strip unnecessary escapes
 	j := 0
 	start := 0
-	for i := prefix; i < len(b)-suffix; i++ {
+	for i := prefix; i < len(b)-suffix-1; i++ {
 		if c := b[i]; c == '\\' {
 			c = b[i+1]
-			if c == quote || c == '\\' || quote != '`' && (c == 'n' || c == 'r') || c == '0' && (i+2 == len(b)-1 || b[i+2] < '0' || '7' < b[i+2]) {
+			if c == quote || c == '\\' || quote != '`' && (c == 'n' || c == 'r') || c == '0' && (len(b)-suffix <= i+2 || b[i+2] < '0' || '7' < b[i+2]) {
 				// keep escape sequence
 				i++
 				continue
@@ -1002,17 +1002,22 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 				if i+3 < len(b)-1 && isHexDigit(b[i+2]) && b[i+2] < '8' && isHexDigit(b[i+3]) && (!(b[i+2] == '0' && b[i+3] == '0') || i+3 == len(b) || b[i+3] != '\\' && (b[i+3] < '0' && '7' < b[i+3])) {
 					// don't convert \x00 to \0 if it may be an octal number
 					// hexadecimal escapes
-					_, _ = hex.Decode(b[i+3:i+4:i+4], b[i+2:i+4])
-					n = 3
-					if b[i+3] == '\\' || b[i+3] == quote || b[i+3] == '\n' || b[i+3] == '\r' || b[i+3] == 0 {
-						if b[i+3] == '\n' {
-							b[i+3] = 'n'
-						} else if b[i+3] == '\r' {
-							b[i+3] = 'r'
+					_, _ = hex.Decode(b[i:i+1:i+1], b[i+2:i+4])
+					n = 4
+					if b[i] == '\\' || b[i] == quote || b[i] == '\n' || b[i] == '\r' || b[i] == 0 {
+						if b[i] == '\n' {
+							b[i+1] = 'n'
+						} else if b[i] == '\r' {
+							b[i+1] = 'r'
+						} else {
+							b[i+1] = b[i]
 						}
+						b[i] = '\\'
+						i++
 						n--
-						b[i+2] = '\\'
 					}
+					i++
+					n--
 				} else {
 					i++
 					continue
@@ -1028,7 +1033,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 						break
 					}
 				}
-				if b[i+2] == '{' && 6 < r-l || b[i+2] != '{' && r-l != 4 {
+				if b[i+2] == '{' && (6 < r-l || len(b) <= r || b[r] != '}') || b[i+2] != '{' && r-l != 4 {
 					i++
 					continue
 				}
@@ -1038,35 +1043,40 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 					continue
 				}
 
+				n = 2 + r - l
+				if b[i+2] == '{' {
+					n += 2
+				}
 				if num == 0 {
 					// don't convert NULL to literal NULL (gives JS parsing problems)
 					if r == len(b) || b[r] != '\\' && (b[r] < '0' && '7' < b[r]) {
-						b[r-2] = '\\'
-						n = r - l
+						b[i+1] = '0'
+						i += 2
+						n -= 2
 					} else {
 						// don't convert NULL to \0 (may be an octal number)
-						b[r-4] = '\\'
-						b[r-3] = 'x'
-						n = r - l - 2
+						b[i+1] = 'x'
+						b[i+2] = '0'
+						b[i+3] = '0'
+						i += 4
+						n -= 4
 					}
 				} else {
 					// decode unicode character to UTF-8 and put at the end of the escape sequence
 					// then skip the first part of the escape sequence until the decoded character
-					n = 2 + r - l
-					if b[i+2] == '{' {
-						n += 2
-					}
 					m := utf8.RuneLen(rune(num))
 					if m == -1 {
 						i++
 						continue
 					}
-					utf8.EncodeRune(b[i+n-m:], rune(num))
+					utf8.EncodeRune(b[i:], rune(num))
+					i += m
 					n -= m
 				}
 			} else if '0' <= c && c <= '7' {
 				// octal escapes (legacy), \0 already handled
 				num := c - '0'
+				n++
 				if i+2 < len(b)-1 && '0' <= b[i+2] && b[i+2] <= '7' {
 					num = num*8 + b[i+2] - '0'
 					n++
@@ -1075,30 +1085,41 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 						n++
 					}
 				}
-				b[i+n] = num
+				b[i] = num
 				if num == 0 || num == '\\' || num == quote || num == '\n' || num == '\r' {
 					if num == 0 {
-						b[i+n] = '0'
+						b[i+1] = '0'
 					} else if num == '\n' {
-						b[i+n] = 'n'
+						b[i+1] = 'n'
 					} else if num == '\r' {
-						b[i+n] = 'r'
+						b[i+1] = 'r'
+					} else {
+						b[i+1] = b[i]
 					}
+					b[i] = '\\'
+					i++
 					n--
-					b[i+n] = '\\'
 				}
+				i++
+				n--
 			} else if c == 'n' {
-				b[i+1] = '\n' // only for template literals
+				b[i] = '\n' // only for template literals
+				i++
 			} else if c == 'r' {
-				b[i+1] = '\r' // only for template literals
+				b[i] = '\r' // only for template literals
+				i++
 			} else if c == 't' {
-				b[i+1] = '\t'
+				b[i] = '\t'
+				i++
 			} else if c == 'f' {
-				b[i+1] = '\f'
+				b[i] = '\f'
+				i++
 			} else if c == 'v' {
-				b[i+1] = '\v'
+				b[i] = '\v'
+				i++
 			} else if c == 'b' {
-				b[i+1] = '\b'
+				b[i] = '\b'
+				i++
 			}
 			// remove unnecessary escape character, anything but 0x00, 0x0A, 0x0D, \, ' or "
 			if start != 0 {

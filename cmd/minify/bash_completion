@@ -11,17 +11,14 @@ _minify_complete() {
     local cur prev flags mimes types
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    flags="-a --all --bundle --cpuprofile --exclude --include -l --list --match --memprofile --mime -o --output -p --preserve -q --quiet -r --recursive --type --url -v --verbose --version -w --watch --css-precision --html-keep-comments --html-keep-conditional-comments --html-keep-default-attrvals --html-keep-document-tags --html-keep-end-tags --html-keep-quotes --html-keep-whitespace --js-precision --js-keep-var-names --js-version --json-precision --json-keep-numbers --svg-keep-comments --svg-precision -s --sync --xml-keep-whitespace"
-    mimes="text/css text/html text/javascript application/javascript application/json image/svg+xml text/xml application/xml"
-    types="css html js json svg xml"
+    flags="-a --all --bundle --exclude --ext --include -l --list --match -o --output -p --preserve -q --quiet -r --recursive --type --url -v --verbose --version -w --watch --css-precision --html-keep-comments --html-keep-conditional-comments --html-keep-default-attrvals --html-keep-document-tags --html-keep-end-tags --html-keep-quotes --html-keep-whitespace --js-precision --js-keep-var-names --js-version --json-precision --json-keep-numbers --svg-keep-comments --svg-precision -s --sync --xml-keep-whitespace"
+    types="css html js json svg xml text/css text/html text/javascript application/javascript application/json image/svg+xml text/xml application/xml"
 
     if echo "${cur}" | grep -Eq '^-'; then
         COMPREPLY=($(compgen -W "${flags}" -- "${cur}"))
-    elif echo "${prev}" | grep -Eq '^--mime$'; then
-        COMPREPLY=($(compgen -W "${mimes}" -- "${cur}"))
     elif echo "${prev}" | grep -Eq '^--type$'; then
         COMPREPLY=($(compgen -W "${types}" -- "${cur}"))
-    elif echo "${prev}" | grep -Eq '^--(exclude|include|match|url|css-precision|js-precision|json-precision|svg-precision|cpuprofile|memprofile)$'; then
+    elif echo "${prev}" | grep -Eq '^--(exclude|include|match|url|css-precision|js-precision|json-precision|svg-precision)$'; then
         compopt +o default
         COMPREPLY=()
     else
