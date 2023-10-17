@@ -16,15 +16,13 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        #go_target: ['386', 'amd64', 'arm64']
-        go_target: ['amd64', 'arm64']
         include:
-          - go_target: 'amd64'
-            cibw_target: 'x86_64'
-          #- go_target: '386'
-          #  cibw_target: 'i686'
-          - go_target: 'arm64'
-            cibw_target: 'aarch64'
+          - go_target: amd64
+            cibw_target: x86_64
+          #- go_target:'386
+          #  cibw_target: i686
+          - go_target: arm64
+            cibw_target: aarch64
 
     steps:
       - uses: actions/checkout@v3
@@ -53,17 +51,23 @@ jobs:
         with:
           path: ./wheelhouse/*.whl
 
-  windows-go-crosscompile:
+  go-crosscompile:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        #go_target: ['386', 'amd64', 'arm64']
-        go_target: ['amd64']
         include:
-          - go_target: 'amd64'
+          - go_os: windows
+            go_target: amd64
             xcompiler: x86_64-w64-mingw32-gcc-win32
-          #- go_target: '386'
+          #- go_os: windows
+          #  go_target: 386
           #  xcompiler: i686-w64-mingw32-gcc-win32
+          - go_os: darwin
+            go_target: amd64
+            xcompiler:
+          - go_os: darwin
+            go_target: arm64
+            xcompiler:
 
 
     steps:
@@ -88,33 +92,31 @@ jobs:
         run: |
           sudo apt-get install mingw-w64
           cd bindings/py
-          CC=${{ matrix.xcompiler }} CGO_ENABLED=1 GOOS=windows GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o minify.so
+          CC=${{ matrix.xcompiler }} CGO_ENABLED=1 GOOS=${{ matrix.go_os }} GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o minify.so
 
       - name: Upload go library
         uses: actions/upload-artifact@v3
         with:
-          name: minify-win-${{ matrix.go_target }}.so
+          name: minify-${{ matrix.go_os }}-${{ matrix.go_target }}.so
           path: bindings/py/minify.so
 
   windows:
     runs-on: windows-latest
-    needs: windows-go-crosscompile
+    needs: go-crosscompile
     strategy:
       matrix:
-        #go_target: ['386', 'amd64', 'arm64']
-        go_target: ['amd64']
         include:
-          - go_target: 'amd64'
-            cibw_target: 'AMD64'
-          #- go_target: '386'
-          #  cibw_target: 'x86'
-          #- go_target: 'arm64'
-          #  cibw_target: 'ARM64'
+          - go_target: amd64
+            cibw_target: AMD64
+          #- go_target: 386
+          #  cibw_target: x86
+          #- go_target: arm64
+          #  cibw_target: ARM64
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
         with:
-          name: minify-win-${{ matrix.go_target }}.so
+          name: minify-windows-${{ matrix.go_target }}.so
           path: bindings/py/src/minify/_minify.so
 
       - name: Build wheels
@@ -132,23 +134,26 @@ jobs:
 
   macos:
     runs-on: macos-latest
+    needs: go-crosscompile
     strategy:
       matrix:
-        #go_target: ['amd64', 'arm64']
-        go_target: ['amd64']
         include:
-          - go_target: 'amd64'
-            cibw_target: 'x86_64'
-          #- go_target: 'arm64'
-          #  cibw_target: 'arm64'
+          - go_target: amd64
+            cibw_target: x86_64
+          #- go_target: arm64
+          #  cibw_target: arm64
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: minify-darwin-${{ matrix.go_target }}.so
+          path: bindings/py/src/minify/_minify.so
       - uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      - uses: actions/setup-go@v4
-        with:
-          go-version: '>=1.17'
+      #- uses: actions/setup-go@v4
+      #  with:
+      #    go-version: '>=1.17'
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.15.0
@@ -156,8 +161,8 @@ jobs:
           package-dir: bindings/py
         env:
           CIBW_ARCHS: ${{ matrix.cibw_target }}
-          CIBW_ENVIRONMENT: GOARCH='${{ matrix.go_target }} CGO_ENABLED=1'
-          CIBW_BEFORE_ALL: cd bindings/py; go build -buildmode=c-shared -o src/minify/_minify.so
+          #CIBW_ENVIRONMENT: GOARCH='${{ matrix.go_target }} CGO_ENABLED=1'
+          #CIBW_BEFORE_ALL: cd bindings/py; go build -buildmode=c-shared -o src/minify/_minify.so
 
       - name: Upload wheels
         uses: actions/upload-artifact@v3
