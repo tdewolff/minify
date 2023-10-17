@@ -25,7 +25,7 @@ func init() {
 }
 
 func goBytes(str *C.char, length C.longlong) []byte {
-	return (*[1 << 32]byte)(unsafe.Pointer(str))[:length:length]
+	return (*[1 << 32 - 1]byte)(unsafe.Pointer(str))[:length:length]
 }
 
 func goStringArray(carr **C.char, length C.longlong) []string {
@@ -34,7 +34,7 @@ func goStringArray(carr **C.char, length C.longlong) []string {
 	}
 
 	strs := make([]string, length)
-	arr := (*[1 << 32]*C.char)(unsafe.Pointer(carr))[:length:length]
+	arr := (*[1 << 32 - 1]*C.char)(unsafe.Pointer(carr))[:length:length]
 	for i := 0; i < int(length); i++ {
 		strs[i] = C.GoString(arr[i])
 	}
