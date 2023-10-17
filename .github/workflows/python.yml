@@ -101,7 +101,8 @@ jobs:
           export CGO_ENABLED=1
           export GOOS=${{ matrix.go_os }}
           export GOARCH=${{ matrix.go_target }}
-          export CFLAGS="-Wno-error=unused-command-line-argument -target ${{ matrix.clang_target }}-unknown-darwin-unknown"
+          #export CFLAGS="-Wno-error=unused-command-line-argument -target ${{ matrix.clang_target }}-unknown-darwin-unknown"
+          export CC=gcc
           go build -buildmode=c-shared -o minify.so
 
       - name: Upload go library
