@@ -43,7 +43,7 @@ jobs:
           CIBW_MANYLINUX_I686_IMAGE: quay.io/pypa/manylinux_2_28_i686
           CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64
           CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64
-          CIBW_BEFORE_ALL: .ci/ensure-go.sh; go build -buildmode=c-shared -o bindings/py/src/minify/_minify.so
+          CIBW_BEFORE_ALL: .ci/ensure-go.sh; cd bindings/py; go build -buildmode=c-shared -o src/minify/_minify.so
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v0.1.14
@@ -156,7 +156,7 @@ jobs:
         env:
           CIBW_ARCHS: ${{ matrix.cibw_target }}
           CIBW_ENVIRONMENT: GOARCH='${{ matrix.go_target }}'
-          CIBW_BEFORE_ALL: go build -buildmode=c-shared -o bindings/py/src/minify/_minify.so
+          CIBW_BEFORE_ALL: cd bindings/py; go build -buildmode=c-shared -o src/minify/_minify.so
 
       - name: Upload wheels
         uses: actions/upload-artifact@v3
