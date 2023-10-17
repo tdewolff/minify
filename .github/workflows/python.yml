@@ -156,7 +156,7 @@ jobs:
           package-dir: bindings/py
         env:
           CIBW_ARCHS: ${{ matrix.cibw_target }}
-          CIBW_ENVIRONMENT: GOARCH='${{ matrix.go_target }}'
+          CIBW_ENVIRONMENT: GOARCH='${{ matrix.go_target }} CGO_ENABLED=1'
           CIBW_BEFORE_ALL: cd bindings/py; go build -buildmode=c-shared -o src/minify/_minify.so
 
       - name: Upload wheels
