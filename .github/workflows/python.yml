@@ -105,11 +105,11 @@ jobs:
         go_target: ['amd64']
         include:
           - go_target: 'amd64'
-            cibw_target: 'x86_64'
+            cibw_target: 'AMD64'
           #- go_target: '386'
-          #  cibw_target: 'i686'
+          #  cibw_target: 'x86'
           #- go_target: 'arm64'
-          #  cibw_target: 'aarch64'
+          #  cibw_target: 'ARM64'
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
