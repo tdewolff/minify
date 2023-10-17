@@ -58,7 +58,7 @@ jobs:
     strategy:
       matrix:
         #go_target: ['386', 'amd64', 'arm64']
-        go_target: ['386', 'amd64']
+        go_target: ['amd64']
         include:
           - go_target: 'amd64'
             xcompiler: x86_64-w64-mingw32-gcc-win32
@@ -101,12 +101,13 @@ jobs:
     needs: windows-go-crosscompile
     strategy:
       matrix:
-        go_target: ['386', 'amd64', 'arm64']
+        #go_target: ['386', 'amd64', 'arm64']
+        go_target: ['amd64', 'arm64']
         include:
           - go_target: 'amd64'
             cibw_target: 'x86_64'
-          - go_target: '386'
-            cibw_target: 'i686'
+          #- go_target: '386'
+          #  cibw_target: 'i686'
           - go_target: 'arm64'
             cibw_target: 'aarch64'
     steps:
