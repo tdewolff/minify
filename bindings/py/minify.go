@@ -1,6 +1,5 @@
 package main
 
-// #cgo pkg-config: python3-embed
 import "C"
 import (
 	"fmt"

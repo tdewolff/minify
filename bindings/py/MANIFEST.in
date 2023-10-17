@@ -1,3 +1,4 @@
 include README.md
-include minify.go minify.c go.mod go.sum
-include py.typed minify.pyi
+include minify.go go.mod go.sum
+include build_minify.py
+include py.typed

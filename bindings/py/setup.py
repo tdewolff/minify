@@ -1,28 +1,11 @@
-import os
 import pathlib
-import shutil
-from subprocess import CalledProcessError, check_call
-from setuptools import Extension, setup
-from setuptools.command.build_ext import build_ext
+from setuptools import setup, Distribution
 from setuptools.errors import CompileError
+
 
 HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
-class build_go_ext(build_ext):
-    """Custom command to build extension from Go source files"""
-    def build_extension(self, ext):
-        ext_path = self.get_ext_fullpath(ext.name)
-        prebuilt = os.environ.get('PREBUILT_EXT_PATH')
-        if prebuilt:
-            shutil.copyfile(prebuilt, ext_path)
-        else:
-            cmd = ['go', 'build', '-buildmode=c-shared', '-o', ext_path]
-            #cmd += ext.sources
-            try:
-                out = check_call(cmd)
-            except CalledProcessError as e:
-                raise CompileError('Go build failed') from e
 
 def get_version():
     with open('go.mod') as f:
@@ -31,6 +14,17 @@ def get_version():
             if line.startswith('github.com/tdewolff/minify/v2'):
                 return line.split()[1][1:]
     raise CompileError('Version retrieval failed')
+
+
+class BinaryDistribution(Distribution):
+    """
+    Distribution which always forces binary packages to be platform-specific.
+
+    Based on https://stackoverflow.com/a/36886459/1795505.
+    """
+    def has_ext_modules(self):
+        return True
+
 
 setup(
     name="tdewolff-minify",
@@ -61,9 +55,12 @@ setup(
         "Topic :: Software Development :: Pre-processors",
         "Topic :: Text Processing :: Markup",
     ],
-    ext_modules=[
-        Extension("minify", ["minify.go"]),
-    ],
-    cmdclass={"build_ext": build_go_ext},
+    packages=["minify"],
+    package_dir={"": "src"},
+    package_data={"minify": ["_minify.so"]},
+    setup_requires=["cffi>=1.0.0"],
+    cffi_modules=["build_minify.py:ffi"],
+    install_requires=["cffi>=1.0.0"],
     zip_safe=False,
+    distclass=BinaryDistribution,
 )
