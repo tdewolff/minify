@@ -123,7 +123,6 @@ jobs:
           package-dir: bindings/py
         env:
           CIBW_ARCHS: ${{ matrix.cibw_target }}
-          CIBW_BEFORE_ALL: .ci/ensure-go.sh
 
       - name: Upload wheels
         uses: actions/upload-artifact@v3
