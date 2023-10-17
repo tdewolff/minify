@@ -135,12 +135,13 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        go_target: ['amd64', 'arm64']
+        #go_target: ['amd64', 'arm64']
+        go_target: ['amd64']
         include:
           - go_target: 'amd64'
             cibw_target: 'x86_64'
-          - go_target: 'arm64'
-            cibw_target: 'arm64'
+          #- go_target: 'arm64'
+          #  cibw_target: 'arm64'
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
