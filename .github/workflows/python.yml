@@ -102,14 +102,14 @@ jobs:
     strategy:
       matrix:
         #go_target: ['386', 'amd64', 'arm64']
-        go_target: ['amd64', 'arm64']
+        go_target: ['amd64']
         include:
           - go_target: 'amd64'
             cibw_target: 'x86_64'
           #- go_target: '386'
           #  cibw_target: 'i686'
-          - go_target: 'arm64'
-            cibw_target: 'aarch64'
+          #- go_target: 'arm64'
+          #  cibw_target: 'aarch64'
     steps:
       - uses: actions/checkout@v3
       - uses: actions/download-artifact@v3
