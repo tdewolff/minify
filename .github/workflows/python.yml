@@ -62,8 +62,8 @@ jobs:
         include:
           - go_target: 'amd64'
             xcompiler: x86_64-w64-mingw32-gcc-win32
-          - go_target: '386'
-            xcompiler: i686-w64-mingw32-gcc-win32
+          #- go_target: '386'
+          #  xcompiler: i686-w64-mingw32-gcc-win32
 
 
     steps:
