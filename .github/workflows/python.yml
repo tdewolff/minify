@@ -64,10 +64,10 @@ jobs:
           #  xcompiler: i686-w64-mingw32-gcc-win32
           - go_os: darwin
             go_target: amd64
-            xcompiler:
+            clang_target: x86_64
           - go_os: darwin
             go_target: arm64
-            xcompiler:
+            clang_target: arm64
 
 
     steps:
@@ -98,7 +98,11 @@ jobs:
         if: matrix.go_os == 'darwin'
         run: |
           cd bindings/py
-          CGO_ENABLED=1 GOOS=${{ matrix.go_os }} GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o minify.so
+          export CGO_ENABLED=1
+          export GOOS=${{ matrix.go_os }}
+          export GOARCH=${{ matrix.go_target }}
+          export CFLAGS="-Wno-error=unused-command-line-argument -target ${{ matrix.clang_target }}-unknown-darwin-unknown"
+          go build -buildmode=c-shared -o minify.so
 
       - name: Upload go library
         uses: actions/upload-artifact@v3
