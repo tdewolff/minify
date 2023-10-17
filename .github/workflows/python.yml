@@ -88,11 +88,17 @@ jobs:
         run: |
           cd bindings/py
           go get github.com/tdewolff/minify/v2@$(git describe --tags --abbrev=0)
-      - name: Prebuild extension
+      - name: Prebuild windows extension
+        if: matrix.go_os == 'windows'
         run: |
           sudo apt-get install mingw-w64
           cd bindings/py
           CC=${{ matrix.xcompiler }} CGO_ENABLED=1 GOOS=${{ matrix.go_os }} GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o minify.so
+      - name: Prebuild macos extension
+        if: matrix.go_os == 'macos'
+        run: |
+          cd bindings/py
+          CGO_ENABLED=1 GOOS=${{ matrix.go_os }} GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o minify.so
 
       - name: Upload go library
         uses: actions/upload-artifact@v3
