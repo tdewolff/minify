@@ -1,6 +1,8 @@
 import pathlib
-from setuptools import setup, Distribution
+from setuptools import setup
+from setuptools.command.build_ext import build_ext
 from setuptools.errors import CompileError
+from setuptools.extension import Extension
 
 
 HERE = pathlib.Path(__file__).parent
@@ -16,14 +18,11 @@ def get_version():
     raise CompileError('Version retrieval failed')
 
 
-class BinaryDistribution(Distribution):
-    """
-    Distribution which always forces binary packages to be platform-specific.
-
-    Based on https://stackoverflow.com/a/36886459/1795505.
-    """
-    def has_ext_modules(self):
-        return True
+class build_ext_external(build_ext):
+    """Placeholder for externally-built extension."""
+    def build_extension(self, ext: Extension):
+        if not all(pathlib.Path(p).exists() for p in ext.sources):
+            raise CompileError(f'Missing external extension files for {ext.name}!')
 
 
 setup(
@@ -55,6 +54,10 @@ setup(
         "Topic :: Software Development :: Pre-processors",
         "Topic :: Text Processing :: Markup",
     ],
+    ext_modules=[
+        Extension("minify", ["src/minify/_minify.so"]),
+    ],
+    cmdclass={"build_ext": build_ext_external},
     packages=["minify"],
     package_dir={"": "src"},
     package_data={"minify": ["_minify.so"]},
@@ -62,5 +65,4 @@ setup(
     cffi_modules=["build_minify.py:ffi"],
     install_requires=["cffi>=1.0.0"],
     zip_safe=False,
-    distclass=BinaryDistribution,
 )
