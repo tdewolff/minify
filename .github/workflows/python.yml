@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - master
-      - python-packaging
     tags:
       - '*'
+  pull_request:
+    branches:
+      - master
 
 permissions:
   contents: read
