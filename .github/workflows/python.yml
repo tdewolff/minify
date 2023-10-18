@@ -108,7 +108,9 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: minify-windows-${{ matrix.go_target }}.so
-          path: bindings/py/src/minify/_minify.so
+      - name: Insert pre-built library
+        run: |
+          mv minify-windows-${{ matrix.go_target }}.so bindings/py/src/minify/_minify.so
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.15.0
