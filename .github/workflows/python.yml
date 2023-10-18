@@ -116,6 +116,7 @@ jobs:
           package-dir: bindings/py
         env:
           CIBW_ARCHS: ${{ matrix.cibw_target }}
+          CIBW_BUILD_VERBOSITY: 1
 
       - name: Upload wheels
         uses: actions/upload-artifact@v3
