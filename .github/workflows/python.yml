@@ -49,6 +49,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
+          name: wheels-linux-${{ matrix.go_target }}
           path: ./wheelhouse/*.whl
 
   windows-go-crosscompile:
@@ -121,7 +122,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
-          name: wheels
+          name: wheels-windows-${{ matrix.go_target }}
           path: ./wheelhouse/*.whl
 
   macos-go-crosscompile:
@@ -203,7 +204,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
-          name: wheels
+          name: wheels-macos-${{ matrix.go_target }}
           path: ./wheelhouse/*.whl
 
   sdist:
@@ -236,8 +237,9 @@ jobs:
       - name: Collect artifacts
         uses: actions/download-artifact@v3
         with:
-          name: wheels
           path: dist
+      - name: Omit non-release files
+        run: rm dist/*.so
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v0.1.14
         with:
