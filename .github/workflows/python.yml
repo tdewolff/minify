@@ -110,6 +110,7 @@ jobs:
           name: minify-windows-${{ matrix.go_target }}.so
       - name: Insert pre-built library
         run: |
+          ls
           mv minify-windows-${{ matrix.go_target }}.so bindings/py/src/minify/_minify.so
 
       - name: Build wheels
