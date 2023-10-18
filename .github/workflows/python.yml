@@ -240,6 +240,8 @@ jobs:
           path: dist
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v0.1.14
+        with:
+          files: dist/*
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
         with:
