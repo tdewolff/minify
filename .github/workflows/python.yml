@@ -203,6 +203,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
+          name: wheels
           path: ./wheelhouse/*.whl
 
   sdist:
@@ -223,7 +224,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: wheels
-          path: dist
+          path: bindings/py/dist/*
 
   release:
     name: Release
@@ -234,6 +235,9 @@ jobs:
     steps:
       - name: Collect artifacts
         uses: actions/download-artifact@v3
+        with:
+          name: wheels
+          path: dist
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v0.1.14
       - name: Publish to PyPI
