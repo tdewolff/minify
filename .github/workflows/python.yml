@@ -83,13 +83,13 @@ jobs:
         run: |
           sudo apt-get install mingw-w64
           cd bindings/py
-          CC=${{ matrix.xcompiler }} CGO_ENABLED=1 GOOS=windows GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o minify.so
+          CC=${{ matrix.xcompiler }} CGO_ENABLED=1 GOOS=windows GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o _minify.so
 
       - name: Upload go library
         uses: actions/upload-artifact@v3
         with:
           name: minify-windows-${{ matrix.go_target }}.so
-          path: bindings/py/minify.so
+          path: bindings/py/_minify.so
 
   windows:
     runs-on: windows-latest
@@ -108,10 +108,7 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: minify-windows-${{ matrix.go_target }}.so
-      - name: Insert pre-built library
-        run: |
-          ls
-          mv minify-windows-${{ matrix.go_target }}.so bindings/py/src/minify/_minify.so
+          path: bindings/py/src/minify
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.15.0
