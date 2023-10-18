@@ -60,6 +60,7 @@ setup(
     cmdclass={"build_ext": build_ext_external},
     packages=["minify"],
     package_dir={"": "src"},
+    include_package_data=True,
     setup_requires=["cffi>=1.0.0"],
     cffi_modules=["build_minify.py:ffi"],
     install_requires=["cffi>=1.0.0"],
