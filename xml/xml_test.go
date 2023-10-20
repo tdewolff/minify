@@ -28,6 +28,7 @@ func TestXML(t *testing.T) {
 		{`<x a="b"></x>`, `<x a="b"/>`},
 		{`<x a=""></x>`, `<x a=""/>`},
 		{`<x a=a></x>`, `<x a=a/>`},
+		{`<x a=foo></x>`, `<x a=foo/>`},
 		{"<x a=\" a \n\r\t b \"/>", `<x a=" a     b "/>`},
 		{`<x a="&apos;b&quot;"></x>`, `<x a="'b&#34;"/>`},
 		{`<x a="&quot;&quot;'"></x>`, `<x a='""&#39;'/>`},

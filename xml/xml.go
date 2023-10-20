@@ -124,7 +124,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			w.Write(t.Text)
 			w.Write(isBytes)
 
-			if len(t.AttrVal) < 2 {
+			if len(t.AttrVal) < 2 || t.AttrVal[0] != '"' || t.AttrVal[len(t.AttrVal)-1] != '"' {
 				w.Write(t.AttrVal)
 			} else {
 				val := t.AttrVal[1 : len(t.AttrVal)-1]
