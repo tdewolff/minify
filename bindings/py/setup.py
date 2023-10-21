@@ -3,6 +3,7 @@ from setuptools import setup
 from setuptools.command.build_ext import build_ext
 from setuptools.errors import CompileError
 from setuptools.extension import Extension
+from subprocess import CalledProcessError, check_call
 
 
 HERE = pathlib.Path(__file__).parent
@@ -22,7 +23,10 @@ class build_ext_external(build_ext):
     """Placeholder for externally-built extension."""
     def build_extension(self, ext: Extension):
         if not all(pathlib.Path(p).exists() for p in ext.sources):
-            raise CompileError(f'Missing external extension files for {ext.name}!')
+            try:
+                check_call(['go', 'build', '-buildmode=c-shared', '-o', *ext.sources])
+            except CalledProcessError as e:
+                raise CompileError('Go compilation failed!') from e
 
 
 setup(
