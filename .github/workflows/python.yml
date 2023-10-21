@@ -2,13 +2,8 @@ name: Python
 
 on:
   push:
-    branches:
-      - master
     tags:
-      - '*'
-  pull_request:
-    branches:
-      - master
+      - 'v*'
 
 permissions:
   contents: read
