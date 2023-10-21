@@ -1,0 +1,248 @@
+name: Python
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - go_target: amd64
+            cibw_target: x86_64
+          #- go_target:'386
+          #  cibw_target: i686
+          - go_target: arm64
+            cibw_target: aarch64
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        if: matrix.go_target == 'arm64'
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: arm64
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.15.0
+        with:
+          package-dir: bindings/py
+        env:
+          CIBW_ARCHS: ${{ matrix.cibw_target }}
+          CIBW_MANYLINUX_I686_IMAGE: quay.io/pypa/manylinux_2_28_i686
+          CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64
+          CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64
+          CIBW_BEFORE_ALL: .ci/ensure-go.sh; cd bindings/py; go build -buildmode=c-shared -o src/minify/_minify.so
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v0.1.14
+        if: startsWith(github.ref, 'refs/tags/')
+      - name: Upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels-linux-${{ matrix.go_target }}
+          path: ./wheelhouse/*.whl
+
+  windows-go-crosscompile:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - go_target: amd64
+            xcompiler: x86_64-w64-mingw32-gcc-win32
+          #  go_target: 386
+          #  xcompiler: i686-w64-mingw32-gcc-win32
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '>=1.17'
+      - name: Fetch go package
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cd bindings/py
+          go get github.com/tdewolff/minify/v2@${GITHUB_REF#refs/tags/}
+      - name: Fetch go package
+        if: startsWith(github.ref, 'refs/tags/') == false
+        run: |
+          cd bindings/py
+          go get github.com/tdewolff/minify/v2@$(git describe --tags --abbrev=0)
+      - name: Prebuild windows extension
+        run: |
+          sudo apt-get install mingw-w64
+          cd bindings/py
+          CC=${{ matrix.xcompiler }} CGO_ENABLED=1 GOOS=windows GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o _minify.so
+
+      - name: Upload go library
+        uses: actions/upload-artifact@v3
+        with:
+          name: minify-windows-${{ matrix.go_target }}.so
+          path: bindings/py/_minify.so
+
+  windows:
+    runs-on: windows-latest
+    needs: windows-go-crosscompile
+    strategy:
+      matrix:
+        include:
+          - go_target: amd64
+            cibw_target: AMD64
+          #- go_target: 386
+          #  cibw_target: x86
+          #- go_target: arm64
+          #  cibw_target: ARM64
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: minify-windows-${{ matrix.go_target }}.so
+          path: bindings/py/src/minify
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.15.0
+        with:
+          package-dir: bindings/py
+        env:
+          CIBW_ARCHS: ${{ matrix.cibw_target }}
+          CIBW_BUILD_VERBOSITY: 1
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels-windows-${{ matrix.go_target }}
+          path: ./wheelhouse/*.whl
+
+  macos-go-crosscompile:
+    if: false
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - go_target: amd64
+            clang_target: x86_64
+          - go_target: arm64
+            clang_target: arm64
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '>=1.17'
+      - name: Fetch go package
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          cd bindings/py
+          go get github.com/tdewolff/minify/v2@${GITHUB_REF#refs/tags/}
+      - name: Fetch go package
+        if: startsWith(github.ref, 'refs/tags/') == false
+        run: |
+          cd bindings/py
+          go get github.com/tdewolff/minify/v2@$(git describe --tags --abbrev=0)
+      - name: Prebuild macos extension
+        run: |
+          cd bindings/py
+          export CGO_ENABLED=1
+          export GOOS=darwin
+          export GOARCH=${{ matrix.go_target }}
+          #export CFLAGS="-Wno-error=unused-command-line-argument -target ${{ matrix.clang_target }}-unknown-darwin-unknown"
+          export CC=gcc
+          go build -buildmode=c-shared -o minify.so
+
+      - name: Upload go library
+        uses: actions/upload-artifact@v3
+        with:
+          name: minify-darwin-${{ matrix.go_target }}.so
+          path: bindings/py/minify.so
+  macos:
+    if: false
+    runs-on: macos-latest
+    needs: macos-go-crosscompile
+    strategy:
+      matrix:
+        include:
+          - go_target: amd64
+            cibw_target: x86_64
+          #- go_target: arm64
+          #  cibw_target: arm64
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: minify-darwin-${{ matrix.go_target }}.so
+          path: bindings/py/src/minify/_minify.so
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      #- uses: actions/setup-go@v4
+      #  with:
+      #    go-version: '>=1.17'
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.15.0
+        with:
+          package-dir: bindings/py
+        env:
+          CIBW_ARCHS: ${{ matrix.cibw_target }}
+          #CIBW_ENVIRONMENT: GOARCH='${{ matrix.go_target }} CGO_ENABLED=1'
+          #CIBW_BEFORE_ALL: cd bindings/py; go build -buildmode=c-shared -o src/minify/_minify.so
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels-macos-${{ matrix.go_target }}
+          path: ./wheelhouse/*.whl
+
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install build
+      - name: Build package
+        run: |
+          cd bindings/py
+          python -m build --sdist
+      - name: Upload sdist
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: bindings/py/dist/*
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    #needs: [linux, windows, macos, sdist]
+    needs: [linux, windows, sdist]
+    steps:
+      - name: Collect artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: dist
+      - name: Omit non-release files
+        run: rm dist/*.so
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v0.1.14
+        with:
+          files: dist/*
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
