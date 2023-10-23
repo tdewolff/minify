@@ -30,7 +30,7 @@ jobs:
         with:
           platforms: arm64
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.15.0
+        uses: pypa/cibuildwheel@v2.16.2
         with:
           package-dir: bindings/py
         env:
@@ -109,7 +109,7 @@ jobs:
           path: bindings/py/src/minify
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.15.0
+        uses: pypa/cibuildwheel@v2.16.2
         with:
           package-dir: bindings/py
         env:
@@ -190,7 +190,7 @@ jobs:
       #    go-version: '>=1.17'
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.15.0
+        uses: pypa/cibuildwheel@v2.16.2
         with:
           package-dir: bindings/py
         env:
