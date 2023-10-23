@@ -22,7 +22,7 @@ jobs:
             cibw_target: aarch64
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up QEMU
         if: matrix.go_target == 'arm64'
@@ -60,7 +60,7 @@ jobs:
           #  xcompiler: i686-w64-mingw32-gcc-win32
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -102,7 +102,7 @@ jobs:
           #- go_target: arm64
           #  cibw_target: ARM64
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v3
         with:
           name: minify-windows-${{ matrix.go_target }}.so
@@ -133,7 +133,7 @@ jobs:
           - go_target: arm64
             clang_target: arm64
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -177,7 +177,7 @@ jobs:
           #- go_target: arm64
           #  cibw_target: arm64
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v3
         with:
           name: minify-darwin-${{ matrix.go_target }}.so
@@ -207,7 +207,7 @@ jobs:
   sdist:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
