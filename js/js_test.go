@@ -800,6 +800,7 @@ func TestJS(t *testing.T) {
 		{`export default function Foo(){a}Foo.prototype.bar=b`, `export default function Foo(){a}Foo.prototype.bar=b`},                                     // #525
 		{`(e=1,e=2)`, `e=1,e=2`},                  // #528
 		{`"\x00\x31 \0\u0000"`, `"\x001 \0\x00"`}, // #577
+		{`function transform(){{var aaaa=[];for(var b=0;;){}for(var b in aaaa){}var aaaa=[];for(var b=0;;){}}}`, `function transform(){{for(var aaaa=[],b=0;;);for(b in aaaa);for(aaaa=[],b=0;;)}}`}, // #619
 	}
 
 	m := minify.New()

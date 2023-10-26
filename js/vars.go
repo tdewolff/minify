@@ -206,11 +206,13 @@ RemoveVarsLoop:
 		if value != nil {
 			// variable declaration must be somewhere else, find and remove it
 			for _, decl2 := range decl.Scope.Func.VarDecls {
-				for i, item := range decl2.List {
-					if v, ok := item.Binding.(*js.Var); ok && item.Default == nil && v == vbind {
-						v.Uses--
-						decl2.List = append(decl2.List[:i], decl2.List[i+1:]...)
-						continue RemoveVarsLoop
+				if !decl2.InForInOf {
+					for i, item := range decl2.List {
+						if v, ok := item.Binding.(*js.Var); ok && item.Default == nil && v == vbind {
+							v.Uses--
+							decl2.List = append(decl2.List[:i], decl2.List[i+1:]...)
+							continue RemoveVarsLoop
+						}
 					}
 				}
 			}
