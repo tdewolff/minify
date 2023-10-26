@@ -322,37 +322,39 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.requireSemicolon()
 	case *js.EmptyStmt:
 	case *js.ImportStmt:
-		m.write(importBytes)
-		if stmt.Default != nil {
-			m.write(spaceBytes)
-			m.write(stmt.Default)
-			if len(stmt.List) != 0 {
-				m.write(commaBytes)
-			} else if stmt.Default != nil || len(stmt.List) != 0 {
+		if stmt.Default != nil || stmt.List == nil || 0 < len(stmt.List) {
+			m.write(importBytes)
+			if stmt.Default != nil {
 				m.write(spaceBytes)
-			}
-		}
-		if len(stmt.List) == 1 && len(stmt.List[0].Name) == 1 && stmt.List[0].Name[0] == '*' {
-			m.writeSpaceBeforeIdent()
-			m.minifyAlias(stmt.List[0])
-			if stmt.Default != nil || len(stmt.List) != 0 {
-				m.write(spaceBytes)
-			}
-		} else if 0 < len(stmt.List) {
-			m.write(openBraceBytes)
-			for i, item := range stmt.List {
-				if i != 0 {
+				m.write(stmt.Default)
+				if len(stmt.List) != 0 {
 					m.write(commaBytes)
+				} else if stmt.Default != nil || len(stmt.List) != 0 {
+					m.write(spaceBytes)
 				}
-				m.minifyAlias(item)
 			}
-			m.write(closeBraceBytes)
+			if len(stmt.List) == 1 && len(stmt.List[0].Name) == 1 && stmt.List[0].Name[0] == '*' {
+				m.writeSpaceBeforeIdent()
+				m.minifyAlias(stmt.List[0])
+				if stmt.Default != nil || len(stmt.List) != 0 {
+					m.write(spaceBytes)
+				}
+			} else if stmt.List != nil {
+				m.write(openBraceBytes)
+				for i, item := range stmt.List {
+					if i != 0 {
+						m.write(commaBytes)
+					}
+					m.minifyAlias(item)
+				}
+				m.write(closeBraceBytes)
+			}
+			if stmt.Default != nil || stmt.List != nil {
+				m.write(fromBytes)
+			}
+			m.write(minifyString(stmt.Module, false))
+			m.requireSemicolon()
 		}
-		if stmt.Default != nil || len(stmt.List) != 0 {
-			m.write(fromBytes)
-		}
-		m.write(minifyString(stmt.Module, false))
-		m.requireSemicolon()
 	case *js.ExportStmt:
 		m.write(exportBytes)
 		if stmt.Decl != nil {

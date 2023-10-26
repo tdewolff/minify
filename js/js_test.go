@@ -89,6 +89,7 @@ func TestJS(t *testing.T) {
 		{`import "path"`, `import"path"`},
 		{`import x from "path"`, `import x from"path"`},
 		{`import * as b from "path"`, `import*as b from"path"`},
+		{`import {} from "path"`, ``},
 		{`import {a as b} from "path"`, `import{a as b}from"path"`},
 		{`import {a as b, c} from "path"`, `import{a as b,c}from"path"`},
 		{`import x, * as b from "path"`, `import x,*as b from"path"`},
