@@ -190,12 +190,12 @@ func optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 					j--
 				} else if forStmt, ok := list[i].(*js.ForStmt); ok {
 					if varDecl, ok := forStmt.Init.(*js.VarDecl); ok && len(varDecl.List) == 0 || forStmt.Init == nil {
-						// TODO: only merge statements that don't have 'in' or 'of' keywords (slow to check?)
+						// TODO: only merge lhs expression that don't have 'in' or 'of' keywords (slow to check?)
 						forStmt.Init = left.Value
 						j--
 					}
 				} else if whileStmt, ok := list[i].(*js.WhileStmt); ok {
-					// TODO: only merge statements that don't have 'in' or 'of' keywords (slow to check?)
+					// TODO: only merge lhs expression that don't have 'in' or 'of' keywords (slow to check?)
 					var body *js.BlockStmt
 					if blockStmt, ok := whileStmt.Body.(*js.BlockStmt); ok {
 						body = blockStmt
@@ -241,7 +241,7 @@ func optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 							j--
 						}
 					} else if forStmt, ok := list[i].(*js.ForStmt); ok {
-						// TODO: only merge statements that don't have 'in' or 'of' keywords (slow to check?)
+						// TODO: only merge lhs expression that don't have 'in' or 'of' keywords (slow to check?)
 						if forStmt.Init == nil {
 							forStmt.Init = left
 							j--
@@ -256,7 +256,7 @@ func optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 							j--
 						}
 					} else if whileStmt, ok := list[i].(*js.WhileStmt); ok {
-						// TODO: only merge statements that don't have 'in' or 'of' keywords (slow to check?)
+						// TODO: only merge lhs expression that don't have 'in' or 'of' keywords (slow to check?)
 						var body *js.BlockStmt
 						if blockStmt, ok := whileStmt.Body.(*js.BlockStmt); ok {
 							body = blockStmt

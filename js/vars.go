@@ -286,84 +286,112 @@ func mergeVarDeclExprStmt(decl *js.VarDecl, exprStmt *js.ExprStmt, forward bool)
 	return false
 }
 
-func (m *jsMinifier) countHoistLength(ibinding js.IBinding) int {
+func (m *jsMinifier) varNameLen(v *js.Var) int {
 	if !m.o.KeepVarNames {
-		return len(bindingVars(ibinding)) * 2 // assume that var name will be of length one, +1 for the comma
+		return 2 // assume that var name will be of length one, +1 for the comma
 	}
-
-	n := 0
-	for _, v := range bindingVars(ibinding) {
-		n += len(v.Data) + 1 // +1 for the comma when added to other declaration
-	}
-	return n
+	return len(v.Data) + 1 // +1 for the comma when added to other declaration
 }
 
 func (m *jsMinifier) hoistVars(body *js.BlockStmt) {
-	// Hoist all variable declarations in the current module/function scope to the top.
-	// If the first statement is a var declaration, expand it. Otherwise prepend a new var declaration.
-	// Except for the first var declaration, all others are converted to expressions. This is possible because an ArrayBindingPattern and ObjectBindingPattern can be converted to an ArrayLiteral or ObjectLiteral respectively, as they are supersets of the BindingPatterns.
+	// Hoist all variable declarations in the current module/function scope to the top
+	// Find the best var declaration (that results in the shortest code), all others are converted to expressions.
+	// This is possible because an ArrayBindingPattern and ObjectBindingPattern can be converted to an ArrayLiteral or ObjectLiteral respectively, as they are supersets of the BindingPatterns.
 	if 1 < len(body.Scope.VarDecls) {
 		// Select which variable declarations will be hoisted (convert to expression) and which not
 		best := 0
-		score := make([]int, len(body.Scope.VarDecls)) // savings if hoisted
-		hoist := make([]bool, len(body.Scope.VarDecls))
-		for i, varDecl := range body.Scope.VarDecls {
-			hoist[i] = true
-			score[i] = 4 // "var "
-			if !varDecl.InForInOf {
-				n := 0
-				nArrays := 0
-				nObjects := 0
-				hasDefinitions := false
-				for j, item := range varDecl.List {
-					if item.Default != nil {
-						if _, ok := item.Binding.(*js.BindingObject); ok {
-							if j != 0 && nArrays == 0 && nObjects == 0 {
-								varDecl.List[0], varDecl.List[j] = varDecl.List[j], varDecl.List[0]
+		scores := make([]int, len(body.Scope.VarDecls)) // savings if hoisting target
+		hoists := make([][]bool, len(body.Scope.VarDecls))
+		for i, target := range body.Scope.VarDecls {
+			// keep list of target variables to avoid declaring a var more than once
+			var refsTarget []*js.Var
+			for _, item := range target.List {
+				refsTarget = append(refsTarget, bindingVars(item.Binding)...)
+			}
+
+			hoists[i] = make([]bool, len(body.Scope.VarDecls))
+			for j, varDecl := range body.Scope.VarDecls {
+				if i == j {
+					hoists[i][j] = false
+					continue
+				}
+
+				score := 4 // "var "
+				hoists[i][j] = true
+				if !varDecl.InForInOf {
+					// variable names in for-in or for-of cannot be removed
+					n := 0        // total number of vars with decls
+					nArrays := 0  // of which lhs arrays
+					nObjects := 0 // of which lhs objects
+					nNames := 0   // length of var names and commas
+					hasDefinitions := false
+					for k, item := range varDecl.List {
+						if item.Default != nil {
+							// move arrays/objects to the front (saves a space)
+							if _, ok := item.Binding.(*js.BindingObject); ok {
+								if k != 0 && nArrays == 0 && nObjects == 0 {
+									varDecl.List[0], varDecl.List[k] = varDecl.List[k], varDecl.List[0]
+								}
+								nObjects++
+							} else if _, ok := item.Binding.(*js.BindingArray); ok {
+								if k != 0 && nArrays == 0 && nObjects == 0 {
+									varDecl.List[0], varDecl.List[k] = varDecl.List[k], varDecl.List[0]
+								}
+								nArrays++
 							}
-							nObjects++
-						} else if _, ok := item.Binding.(*js.BindingArray); ok {
-							if j != 0 && nArrays == 0 && nObjects == 0 {
-								varDecl.List[0], varDecl.List[j] = varDecl.List[j], varDecl.List[0]
+
+							refs := bindingVars(item.Binding)
+						CountNamesLoop:
+							for _, ref := range refs {
+								for _, v := range refsTarget {
+									if ref == v {
+										// already exists in target
+										continue CountNamesLoop
+									}
+								}
+
+								// declaration separate from assignment will copy var name + comma
+								nNames += m.varNameLen(ref)
+								refsTarget = append(refsTarget, ref)
 							}
-							nArrays++
+							hasDefinitions = true
+							n++
 						}
-						score[i] -= m.countHoistLength(item.Binding) // var names and commas
-						hasDefinitions = true
-						n++
+					}
+					if hasDefinitions {
+						score -= nNames // copy var names and commas to target
+					} else if varDecl.InFor {
+						score-- // semicolon can be reused
+					}
+					if nObjects != 0 && !varDecl.InFor && nObjects == n {
+						score -= 2 // required parenthesis around braces
+					}
+					if nArrays != 0 || nObjects != 0 {
+						score-- // space after var disappears
+					}
+					if score < 0 {
+						// don't hoist if it increases the amount of characters
+						hoists[i][j] = false
+						score = 0
 					}
 				}
-				if !hasDefinitions {
-					score[i] = 5 - 1 // 1 for a comma
-					if varDecl.InFor {
-						score[i]-- // semicolon can be reused
-					}
-				}
-				if nObjects != 0 && !varDecl.InFor && nObjects == n {
-					score[i] -= 2 // required parenthesis around braces
-				}
-				if nArrays != 0 || nObjects != 0 {
-					score[i]-- // space after var disappears
-				}
-				if score[i] < score[best] || body.Scope.VarDecls[best].InForInOf {
-					// select var decl with the least savings if hoisted
-					best = i
-				}
-				if score[i] < 0 {
-					hoist[i] = false
-				}
+				scores[i] += score
+			}
+			if scores[best] < scores[i] || body.Scope.VarDecls[best].InForInOf {
+				// select var decl with the most savings if hoist target
+				best = i
 			}
 		}
-		if body.Scope.VarDecls[best].InForInOf {
+		if scores[best] < 0 || body.Scope.VarDecls[best].InForInOf {
 			// no savings possible
 			return
 		}
 
+		hoist := hoists[best]
 		decl := body.Scope.VarDecls[best]
 		if 10000 < len(decl.List) {
 			return
 		}
-		hoist[best] = false
 
 		// get original declarations
 		orig := []*js.Var{}
