@@ -688,19 +688,19 @@ func TestJS(t *testing.T) {
 		{`a in 5;for(b=4;b;)c()`, `a in 5;for(b=4;b;)c()`},
 		{`var a;for(var b=0;b;b++);a`, `for(var a,b=0;b;b++);a`},
 		{`var a=1;for(var b=0;b;b++);a`, `for(var a=1,b=0;b;b++);a`},
-		//{`var a=1;for(var a;a;a++);`, `for(var a=1;a;a++);`}, // TODO
+		{`var a=1;for(var a;a;a++);`, `for(var a=1;a;a++);`},
 		{`var a;for(var a=1;a;a++);`, `for(var a=1;a;a++);`},
 		{`var a=5;for(;a;)c()`, `for(var a=5;a;)c()`},
 		{`let a=5;for(;a;)c()`, `let a=5;for(;a;)c()`},
 		{`var a=b in c;for(;a;)c()`, `for(var a=(b in c);a;)c()`},
 		{`var a=5;for(var a=6,b;b;)c()`, `for(var b,a=5,a=6;b;)c()`},
-		//{`var a=5;for(var a,b;b;)c()`, `for(var b,a=5;b;)c()`}, // TODO
-		//{`var a=5;for(var b=6,c=7;;);`, `for(var a=5,b=6,c=7;;);`}, // TODO
+		{`var a=5;for(var a,b;b;)c()`, `for(var b,a=5;b;)c()`},
+		{`var a=5;for(var b=6,c=7;;);`, `for(var a=5,b=6,c=7;;);`},
 		{`var a=5;while(a)c()`, `for(var a=5;a;)c()`},
 		{`var a=5;while(a){c()}`, `for(var a=5;a;)c()`},
 		{`let a=5;while(a)c()`, `let a=5;for(;a;)c()`},
 		//{`var a;for(a=5;b;)c()`, `for(var a=5;b;)c()`}, // TODO
-		//{`a=5;for(var a;b;)c()`, `for(var a=5;b;)c()`}, // TODO
+		{`a=5;for(var a;b;)c()`, `for(var a=5;b;)c()`},
 		{`a=5;for(var b=4;b;)c()`, `a=5;for(var b=4;b;)c()`},
 		{`a=5;switch(b=4){}`, `switch(a=5,b=4){}`},
 		{`a=5;with(b=4){}`, `with(a=5,b=4);`},
@@ -802,7 +802,7 @@ func TestJS(t *testing.T) {
 		{`export default function Foo(){a}Foo.prototype.bar=b`, `export default function Foo(){a}Foo.prototype.bar=b`},                                     // #525
 		{`(e=1,e=2)`, `e=1,e=2`},                  // #528
 		{`"\x00\x31 \0\u0000"`, `"\x001 \0\x00"`}, // #577
-		{`function transform(){{var aaaa=[];for(var b=0;;){}for(var b in aaaa){}var aaaa=[];for(var b=0;;){}}}`, `function transform(){{for(var aaaa=[],b=0;;);for(b in aaaa);aaaa=[];for(b=0;;);}}`}, // #619
+		{`function transform(){{var aaaa=[];for(var b=0;;){}for(var b in aaaa){}var aaaa=[];for(var b=0;;){}}}`, `function transform(){{for(var aaaa=[],b=0;;);for(b in aaaa);for(aaaa=[],b=0;;);}}`}, // #619
 	}
 
 	m := minify.New()

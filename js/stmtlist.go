@@ -189,10 +189,14 @@ func optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 					throwStmt.Value = commaExpr(left.Value, throwStmt.Value)
 					j--
 				} else if forStmt, ok := list[i].(*js.ForStmt); ok {
-					if varDecl, ok := forStmt.Init.(*js.VarDecl); ok && len(varDecl.List) == 0 || forStmt.Init == nil {
-						// TODO: only merge lhs expression that don't have 'in' or 'of' keywords (slow to check?)
-						forStmt.Init = left.Value
-						j--
+					// TODO: only merge lhs expression that don't have 'in' or 'of' keywords (slow to check?)
+					if varDecl, ok := forStmt.Init.(*js.VarDecl); ok {
+						if len(varDecl.List) == 0 || forStmt.Init == nil {
+							forStmt.Init = left.Value
+							j--
+						} else if mergeVarDeclExprStmt(varDecl, left, true) {
+							j--
+						}
 					}
 				} else if whileStmt, ok := list[i].(*js.WhileStmt); ok {
 					// TODO: only merge lhs expression that don't have 'in' or 'of' keywords (slow to check?)
