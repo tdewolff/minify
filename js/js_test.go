@@ -65,22 +65,22 @@ func TestJS(t *testing.T) {
 		{`function a(b){b}`, `function a(b){b}`},
 		{`function a(b, c, ...d){}`, `function a(b,c,...d){}`},
 		{`function * a(){}`, `function*a(){}`},
-		{`function a(){}; return 5`, `function a(){}return 5`},
+		{`function a(){}; break`, `function a(){}break`},
 		{`x = function (){}`, `x=function(){}`},
 		{`x = function a(){}`, `x=function(){}`},
 		{`x = function (a){a}`, `x=function(a){a}`},
 		{`x = function (a, b, ...c){}`, `x=function(a,b,...c){}`},
 		{`x = function (){};y=z`, `x=function(){},y=z`},
-		{`return 5`, `return 5`},
-		{`return .5`, `return.5`},
-		{`return-5`, `return-5`},
+		{`function f(){return 5}`, `function f(){return 5}`},
+		{`function f(){return .5}`, `function f(){return.5}`},
+		{`function f(){return-5}`, `function f(){return-5}`},
 		{`break a`, `break a`},
 		{`continue a`, `continue a`},
 		{`label: b`, `label:b`},
 		{`typeof a`, `typeof a`},
 		{`new RegExp()`, `new RegExp`},
 		{`switch (a) { case b: 5; default: 6}`, `switch(a){case b:5;default:6}`},
-		{`switch (a) { case b: {var c;return c}; default: 6}`, `switch(a){case b:{var c;return c}default:6}`},
+		{`switch (a) { case b: {var c;c;break}; default: 6}`, `switch(a){case b:{var c;c;break}default:6}`},
 		{`switch (a) { case b: 5 }while(b);`, `switch(a){case b:5}for(;b;);`},
 		{`switch (a) { case "text": 5}`, `switch(a){case"text":5}`},
 		{`let a=5;switch(b){case 0:let a=5}`, `let a=5;switch(b){case 0:let a=5}`},
@@ -132,7 +132,7 @@ func TestJS(t *testing.T) {
 		//{`while(a) if (!b) break`, `for(;a&&b;);`},
 		{`do {a} while(a < 10)`, `do a;while(a<10)`},
 		{`do [a]=5; while(a < 10)`, `do[a]=5;while(a<10)`},
-		{`do [a]=5; while(a < 10);return a`, `do[a]=5;while(a<10)return a`},
+		{`do [a]=5; while(a < 10);break`, `do[a]=5;while(a<10)break`},
 		{`throw a`, `throw a`},
 		{`throw [a]`, `throw[a]`},
 		{`try {a} catch {b}`, `try{a}catch{b}`},
@@ -194,8 +194,8 @@ func TestJS(t *testing.T) {
 		{`function*a(){yield*undefined}`, `function*a(){yield*void 0}`},
 
 		// if/else statements
-		{`if(a){return b}`, `if(a)return b`},
-		{`if(a){b = 5;return b}`, `if(a)return b=5,b`},
+		{`function f(){if(a){return b}}`, `function f(){if(a)return b}`},
+		{`function f(){if(a){b = 5;return b}}`, `function f(){if(a)return b=5,b}`},
 		{`if(a)`, `a`},
 		{`if(a){}`, `a`},
 		{`if(a) a`, `a&&a`},
@@ -234,29 +234,29 @@ func TestJS(t *testing.T) {
 		{`if(a){if(b)c;else false}else{d}`, `a?!!b&&c:d`},
 		{`if(a){if(b)c;else d}else{false}`, `!!a&&(b?c:d)`},
 		{`if(a){if(b)c;else false}else{false}`, `!!a&&!!b&&c`},
-		{`if(a)return a;else return b`, `return a||b`},
-		{`if(a)return a;else a++`, `if(a)return a;a++`},
-		{`if(a)return b;else a++`, `if(a)return b;a++`},
+		{`function f(){if(a)return a;else return b}`, `function f(){return a||b}`},
+		{`function f(){if(a)return a;else a++}`, `function f(){if(a)return a;a++}`},
+		{`function f(){if(a)return b;else a++}`, `function f(){if(a)return b;a++}`},
 		{`if(a)throw b;else a++`, `if(a)throw b;a++`},
 		{`if(a)break;else a++`, `if(a)break;a++`},
-		{`if(a)return;else return`, `a`},
+		{`function f(){if(a)return;else return}`, `function f(){a}`},
 		{`if(a)throw a;else throw b`, `throw a||b`},
-		{`if(a)return a;else a=b`, `if(a)return a;a=b`},
-		{`if(a){a++;return a}else a=b`, `if(a)return a++,a;a=b`},
-		{`if(a){a++;return a}else if(b)a=b`, `if(a)return a++,a;b&&(a=b)`},
-		{`if(a){a++;return}else a=b`, `if(a){a++;return}a=b`},
-		//{`if(a){a++;return}else return`, `if(a){a++}return`}, // TODO
-		//{`if(a){a++;return}return`, `if(a){a++}return`}, // TODO
-		{`if(a){return}else {a=b;while(c){}}`, `if(a)return;for(a=b;c;);`},
-		{`if(a){a++;return a}else return`, `if(a)return a++,a`},
-		{`if(a){a++;return a}return`, `if(a)return a++,a`},
-		{`if(a){return a}return b`, `return a||b`},
-		{`if(a);else return a;return b`, `return a&&b`},
-		{`if(a){return a}b=c;return b`, `return a||(b=c,b)`},
-		{`if(a){return}b=c;return b`, `if(a)return;return b=c,b`},
-		{`if(a){return a}b=c;return`, `if(a)return a;b=c`},
-		{`if(a){return}return`, `a`},
-		{`if(a);else{return}return`, `a`},
+		{`function f(){if(a)return a;else a=b}`, `function f(){if(a)return a;a=b}`},
+		{`function f(){if(a){a++;return a}else a=b}`, `function f(){if(a)return a++,a;a=b}`},
+		{`function f(){if(a){a++;return a}else if(b)a=b}`, `function f(){if(a)return a++,a;b&&(a=b)}`},
+		{`function f(){if(a){a++;return}else a=b}`, `function f(){if(a){a++;return}a=b}`},
+		//{`function f(){if(a){a++;return}else return}`, `function f(){if(a){a++}return}`}, // TODO
+		//{`function f(){if(a){a++;return}return}`, `function f(){if(a){a++}return}`}, // TODO
+		{`function f(){if(a){return}else {a=b;while(c){}}}`, `function f(){if(a)return;for(a=b;c;);}`},
+		{`function f(){if(a){a++;return a}else return}`, `function f(){if(a)return a++,a}`},
+		{`function f(){if(a){a++;return a}return}`, `function f(){if(a)return a++,a}`},
+		{`function f(){if(a){return a}return b}`, `function f(){return a||b}`},
+		{`function f(){if(a);else return a;return b}`, `function f(){return a&&b}`},
+		{`function f(){if(a){return a}b=c;return b}`, `function f(){return a||(b=c,b)}`},
+		{`function f(){if(a){return}b=c;return b}`, `function f(){if(a)return;return b=c,b}`},
+		{`function f(){if(a){return a}b=c;return}`, `function f(){if(a)return a;b=c}`},
+		{`function f(){if(a){return}return}`, `function f(){a}`},
+		{`function f(){if(a);else{return}return}`, `function f(){a}`},
 		{`if(a){throw a}b=c;throw b`, `throw a||(b=c,b)`},
 		{`if(a);else{throw a}b=c;throw b`, `throw a&&(b=c,b)`},
 		{`if(a)a++;else b;if(b)b++;else c`, `a?a++:b,b?b++:c`},
@@ -264,12 +264,12 @@ func TestJS(t *testing.T) {
 		{`if(a){while(b);c}`, `if(a){for(;b;);c}`},
 		{`if(a){if(b){while(c);}}`, `if(a&&b)for(;c;);`},
 		{`if(a){}else{while(b);}`, `if(a);else for(;b;);`},
-		{`if(a){return b}else{while(c);}`, `if(a)return b;for(;c;);`},
-		{`if(a){return b}else{while(c);d}`, `if(a)return b;for(;c;);d`},
+		{`function f(){if(a){return b}else{while(c);}}`, `function f(){if(a)return b;for(;c;);}`},
+		{`function f(){if(a){return b}else{while(c);d}}`, `function f(){if(a)return b;for(;c;);d}`},
 		{`if(!a){while(b);c}`, `if(!a){for(;b;);c}`},
 		{`while(a){if(b)continue;if(c)continue;else d}`, `for(;a;){if(b)continue;if(c)continue;d}`},
 		{`while(a)if(b)continue;else c`, `for(;a;){if(b)continue;c}`},
-		{`while(a)if(b)return c;else return d`, `for(;a;)return b?c:d`},
+		{`function f(){while(a)if(b)return c;else return d}`, `function f(){for(;a;)return b?c:d}`},
 		{`while(a){if(b)continue;else c}`, `for(;a;){if(b)continue;c}`},
 		{`if(a){while(b)if(c)5}else{6}`, `if(a)for(;b;)c&&5;else 6`},
 		{`if(a){for(;;)if(b)break}else c`, `if(a){for(;;)if(b)break}else c`},
@@ -278,13 +278,13 @@ func TestJS(t *testing.T) {
 		{`if(a){for(d of e)if(f)g()}else c`, `if(a)for(d of e)f&&g();else c`},
 		{`if(a){d:if(b)break}else c`, `if(a){d:if(b)break}else c`},
 		{`if(a){with(d)if(b)break}else c`, `if(a){with(d)if(b)break}else c`},
-		{`if(a)return b;if(c)return d;return e`, `return a?b:c?d:e`},
+		{`function f(){if(a)return b;if(c)return d;return e}`, `function f(){return a?b:c?d:e}`},
 		{`if(a,b)b`, `a,b&&b`},
 		{`if(a,b)b;else d`, `a,b||d`},
 		{`if(a=b)a;else b`, `(a=b)||b`},
-		{`if(!a&&!b){return true}else if(!a||!b){return false}return c&&d`, `return!a&&!b||!!a&&!!b&&c&&d`},
-		{`if(!a){if(b){throw c}else{return c}}else{return a}`, `if(a)return a;if(b)throw c;return c`},
-		{`if(!a){return y}else if(b){if(c){return x}}return z`, `return a?b&&c?x:z:y`},
+		{`function f(){if(!a&&!b){return true}else if(!a||!b){return false}return c&&d}`, `function f(){return!a&&!b||!!a&&!!b&&c&&d}`},
+		{`function f(){if(!a){if(b){throw c}else{return c}}else{return a}}`, `function f(){if(a)return a;if(b)throw c;return c}`},
+		{`function f(){if(!a){return y}else if(b){if(c){return x}}return z}`, `function f(){return a?b&&c?x:z:y}`},
 		{`if(a)b:{if(c)break b}else if(d)e()`, `if(a){b:if(c)break b}else d&&e()`},
 
 		// var declarations
@@ -674,11 +674,11 @@ func TestJS(t *testing.T) {
 		{`f((a,b)||d)`, `f((a,b)||d)`},
 
 		// merge expressions
-		{`b=5;return a+b`, `return b=5,a+b`},
+		{`function f(){b=5;return a+b}`, `function f(){return b=5,a+b}`},
 		{`b=5;throw a+b`, `throw b=5,a+b`},
-		{`a();b();return c()`, `return a(),b(),c()`},
+		{`function f(){a();b();return c()}`, `function f(){return a(),b(),c()}`},
 		{`a();b();throw c()`, `throw a(),b(),c()`},
-		{`a=b;if(a){return a}else return b`, `return a=b,a||b`},
+		{`function f(){a=b;if(a){return a}else return b}`, `function f(){return a=b,a||b}`},
 		{`a=5;if(b)while(c);`, `if(a=5,b)for(;c;);`},
 		{`a=5;while(b)c()`, `for(a=5;b;)c()`},
 		{`a=5;while(b){c()}`, `for(a=5;b;)c()`},
@@ -755,10 +755,10 @@ func TestJS(t *testing.T) {
 		{`a<<!--script`, `a<<! --script`},
 		{`a<</script>/`, `a<< /script>/`},
 		{`function f(a,b){a();for(const c of b){const b=0}}`, `function f(a,b){a();for(const c of b){const b=0}}`},
-		{`return a,b,void 0`, `return a,b`},
+		{`function f(){return a,b,void 0}`, `function f(){return a,b}`},
 		{`var arr=[];var slice=arr.slice;var concat=arr.concat;var push=arr.push;var indexOf=arr.indexOf;var class2type={};`, `var arr=[],slice=arr.slice,concat=arr.concat,push=arr.push,indexOf=arr.indexOf,class2type={}`},
 		{`var arr=[];var class2type={};a=5;var rlocalProtocol=0`, `var arr=[],class2type={};a=5;var rlocalProtocol=0`},
-		{`a=b;if(!o)return c;return d`, `return a=b,o?d:c`},
+		{`function f(){a=b;if(!o)return c;return d}`, `function f(){return a=b,o?d:c}`},
 
 		// go-fuzz
 		{`({"":a})`, `({"":a})`},
@@ -861,13 +861,13 @@ func TestJSVarRenaming(t *testing.T) {
 			`name=function(){var a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,_,$,aa,ba,ca,da,ea,fa,ga,ha,ia,ja,ka,la,ma,na,oa,pa,qa,ra,sa,ta,ua,va,wa,xa,ya,za,Aa,Ba,Ca,Da,Ea,Fa,Ga,Ha,Ia,Ja,Ka,La,Ma,Na,Oa,Pa,Qa,Ra,Sa,Ta,Ua,Va,Wa,Xa,Ya,Za,_a,$a,ab,bb,cb,db,eb,fb,gb,hb,ib,jb,kb;a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,_,$,aa,ba,ca,da,ea,fa,ga,ha,ia,ja,ka,la,ma,na,oa,pa,qa,ra,sa,ta,ua,va,wa,xa,ya,za,Aa,Ba,Ca,Da,Ea,Fa,Ga,Ha,Ia,Ja,Ka,La,Ma,Na,Oa,Pa,Qa,Ra,Sa,Ta,Ua,Va,Wa,Xa,Ya,Za,_a,$a,ab,bb,cb,db,eb,fb,gb,hb,ib,jb,kb}`}, // 'as' is a keyword
 		{`a=>{for(let b of c){b,a;{var d}}}`, `a=>{for(let d of c){d,a;var b}}`}, // #334
 		//{`({x,y,z})=>x+y+z`, `({x,y,z})=>x+y+z`},
-		{`function f(a){let b=0;if(a===0){return 0}else{let b=3;return b}}`, `function f(a){let c=0;if(a===0)return 0;let b=3;return b}`}, // #405
-		{`!function(a){let b=0;if(a===0){return 0}else{let b=3;return b}}`, `!function(a){let c=0;if(a===0)return 0;let b=3;return b}`},   // #405
-		{`a=>{let b=0;if(a===0){return 0}else{let b=3;return b}}`, `a=>{let c=0;if(a===0)return 0;let b=3;return b}`},                     // #405
-		{`{let b=0;if(a===0){return 0}else{let b=3;return b}}`, `{let c=0;if(a===0)return 0;let b=3;return b}`},                           // #405
-		{`class x{f(a){let b=0;if(a===0){return 0}else{let b=3;return b}}}`, `class x{f(a){let c=0;if(a===0)return 0;let b=3;return b}}`}, // #405
-		{`for(;;){let b=0;if(a===0){return 0}else{let b=3;return b}}`, `for(;;){let c=0;if(a===0)return 0;let b=3;return b}`},             // #405
-		{`try{let b=0;if(a===0){return 0}else{let b=3;return b}}catch{}`, `try{let c=0;if(a===0)return 0;let b=3;return b}catch{}`},       // #405
+		{`function f(a){let b=0;if(a===0){break}else{let b=3;b;break}}`, `function f(a){let c=0;if(a===0)break;let b=3;b;break}`}, // #405
+		{`!function(a){let b=0;if(a===0){break}else{let b=3;b;break}}`, `!function(a){let c=0;if(a===0)break;let b=3;b;break}`},   // #405
+		{`a=>{let b=0;if(a===0){break}else{let b=3;b;break}}`, `a=>{let c=0;if(a===0)break;let b=3;b;break}`},                     // #405
+		{`{let b=0;if(a===0){break}else{let b=3;b;break}}`, `{let c=0;if(a===0)break;let b=3;b;break}`},                           // #405
+		{`class x{f(a){let b=0;if(a===0){break}else{let b=3;b;break}}}`, `class x{f(a){let c=0;if(a===0)break;let b=3;b;break}}`}, // #405
+		{`for(;;){let b=0;if(a===0){break}else{let b=3;b;break}}`, `for(;;){let c=0;if(a===0)break;let b=3;b;break}`},             // #405
+		{`try{let b=0;if(a===0){break}else{let b=3;b;break}}catch{}`, `try{let c=0;if(a===0)break;let b=3;b;break}catch{}`},       // #405
 		{`let a=0;switch(a){case 0:let b=1;case 1:let c=2}`, `let a=0;switch(a){case 0:let a=1;case 1:let b=2}`},
 		{`({a:b=1}={})=>b`, `({a=1}={})=>a`}, // #422
 		{`()=>{var a;if(x){const b=0;while(true);}}`, `()=>{if(x){const b=0;for(var a;!0;);}}`},
