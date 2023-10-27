@@ -327,9 +327,9 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			if stmt.Default != nil {
 				m.write(spaceBytes)
 				m.write(stmt.Default)
-				if len(stmt.List) != 0 {
+				if stmt.List != nil {
 					m.write(commaBytes)
-				} else if stmt.Default != nil || len(stmt.List) != 0 {
+				} else if stmt.Default != nil {
 					m.write(spaceBytes)
 				}
 			}
