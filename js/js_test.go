@@ -891,7 +891,7 @@ func TestJSVarRenaming(t *testing.T) {
 }
 
 func TestJSVersion(t *testing.T) {
-	versions := []int{2022, 2020, 2019, 2018}
+	versions := []int{2022, 2020, 2019, 2018, 2014}
 
 	jsTests := []struct {
 		version int
@@ -901,6 +901,7 @@ func TestJSVersion(t *testing.T) {
 	}{
 		{2020, `a==null?b:a`, `a==null?b:a`, `a??b`},
 		{2019, `try{}catch(a){}`, `try{}catch(a){}`, `try{}catch{}`},
+		{2015, `"<div onclick=\"alert('test')\">"`, `"<div onclick=\"alert('test')\">"`, "`<div onclick=\"alert('test')\">`"},
 	}
 
 	m := minify.New()
