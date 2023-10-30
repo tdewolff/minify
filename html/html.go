@@ -396,7 +396,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							rawTagMediatype = parse.Copy(val)
 						}
 
-						if attr.Hash == Enctype || attr.Hash == Codetype || attr.Hash == Accept || attr.Hash == Type && (t.Hash == A || t.Hash == Link || t.Hash == Embed || t.Hash == Object || t.Hash == Source || t.Hash == Script || t.Hash == Style) {
+						if attr.Hash == Enctype || attr.Hash == Accept || attr.Hash == Type && (t.Hash == A || t.Hash == Link || t.Hash == Embed || t.Hash == Object || t.Hash == Source || t.Hash == Script) {
 							val = minify.Mediatype(val)
 						}
 
@@ -406,17 +406,12 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							t.Hash == Link && bytes.Equal(val, cssMimeBytes) ||
 							t.Hash == Input && bytes.Equal(val, textBytes) ||
 							t.Hash == Button && bytes.Equal(val, submitBytes)) ||
-							attr.Hash == Language && t.Hash == Script ||
 							attr.Hash == Method && bytes.Equal(val, getBytes) ||
 							attr.Hash == Enctype && bytes.Equal(val, formMimeBytes) ||
 							attr.Hash == Colspan && bytes.Equal(val, oneBytes) ||
 							attr.Hash == Rowspan && bytes.Equal(val, oneBytes) ||
 							attr.Hash == Shape && bytes.Equal(val, rectBytes) ||
 							attr.Hash == Span && bytes.Equal(val, oneBytes) ||
-							attr.Hash == Clear && bytes.Equal(val, noneBytes) ||
-							attr.Hash == Frameborder && bytes.Equal(val, oneBytes) ||
-							attr.Hash == Scrolling && bytes.Equal(val, autoBytes) ||
-							attr.Hash == Valuetype && bytes.Equal(val, dataBytes) ||
 							attr.Hash == Media && t.Hash == Style && bytes.Equal(val, allBytes)) {
 							continue
 						}
