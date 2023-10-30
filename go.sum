@@ -8,8 +8,8 @@ github.com/fsnotify/fsnotify v1.7.0 h1:8JEhPFa5W2WU7YfeZzPNqzMP6Lwt7L2715Ggo0nos
 github.com/fsnotify/fsnotify v1.7.0/go.mod h1:40Bi/Hjc2AVfZrqy+aj+yEI+/bRxZnMJyTJwOpGvigM=
 github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 h1:JAEbJn3j/FrhdWA9jW8B5ajsLIjeuEHLi8xE4fk997o=
 github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2/go.mod h1:0KeJpeMD6o+O4hW7qJOT7vyQPKrWmj26uf5wMc/IiIs=
-github.com/tdewolff/argp v0.0.0-20231006153134-9e8ae9690730 h1:+ovScTG2is8AhPgzJCs9g+jo2R1l5Mq6o6np9FSkCfQ=
-github.com/tdewolff/argp v0.0.0-20231006153134-9e8ae9690730/go.mod h1:fF+gnKbmf3iMG+ErLiF+orMU/InyZIEnKVVigUjfriw=
+github.com/tdewolff/argp v0.0.0-20231030173501-fa6c54897951 h1:QiakK8TMHgZfKZ2enwnyYzT3fOtzIwZ6mDkVC3scOrQ=
+github.com/tdewolff/argp v0.0.0-20231030173501-fa6c54897951/go.mod h1:fF+gnKbmf3iMG+ErLiF+orMU/InyZIEnKVVigUjfriw=
 github.com/tdewolff/parse/v2 v2.7.1 h1:gdImkv0sIupYr/cXAu5s+CxfVpxMdYZX2Qr+5Q+RdF8=
 github.com/tdewolff/parse/v2 v2.7.1/go.mod h1:9p2qMIHpjRSTr1qnFxQr+igogyTUTlwvf9awHSm84h8=
 github.com/tdewolff/test v1.0.6/go.mod h1:6DAvZliBAAnD7rhVgwaM7DE5/d9NMOAJ09SqYqeK4QE=
