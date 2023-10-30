@@ -14,6 +14,7 @@ jobs:
       id: meta
       with:
         images: tdewolff/minify
+        tags: type=ref
 
     - uses: docker/login-action@v3
       with:
@@ -27,4 +28,5 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
-        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/minify:latest
+        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/minify:latest ${{ steps.meta.output.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
