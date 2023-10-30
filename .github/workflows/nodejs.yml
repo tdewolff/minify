@@ -16,7 +16,7 @@ jobs:
       matrix:
         #os: [ubuntu-latest, macos-latest, windows-2019]
         os: [ubuntu-latest, macos-latest]
-        node: [14, 18]
+        node: [16, 18, 20]
 
     runs-on: ${{ matrix.os }}
     steps:
