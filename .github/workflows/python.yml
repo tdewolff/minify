@@ -227,12 +227,16 @@ jobs:
     #needs: [linux, windows, macos, sdist]
     needs: [linux, windows, sdist]
     steps:
-      - name: Collect artifacts
+      - name: Download artifacts
         uses: actions/download-artifact@v3
         with:
-          path: bindings/py/dist
-      - name: Omit non-release files
-        run: rm -f bindings/py/dist/*.so
+          path: bindings/py/artifacts
+      - name: Bundle release artifacts
+        run: |
+          cd bindings/py/
+          rm -r artifacts/*.so
+          mkdir dist
+          mv artifacts/*/* dist/
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v0.1.15
         with:
@@ -242,3 +246,4 @@ jobs:
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
+          packages-dir: bindings/py/dist/
