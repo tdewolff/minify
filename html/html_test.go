@@ -26,6 +26,7 @@ func TestHTML(t *testing.T) {
 		expected string
 	}{
 		{`html`, `html`},
+		//{"<title>title</title> <body>", `<title>title</title>`},
 		{`<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">`, `<!doctype html>`},
 		{`<!-- comment -->`, ``},
 		{`<!--# SSI Tag -->`, `<!--# SSI Tag -->`},
@@ -67,6 +68,7 @@ func TestHTML(t *testing.T) {
 		{`<input type="text" value="">`, `<input>`},
 		{`<a rel="noopener">`, `<a rel=noopener>`},
 		{`<a rel=" noopener  external ">`, `<a rel="noopener external">`},
+		{`<input accept="image/png, image/jpeg">`, `<input accept=image/png,image/jpeg>`},
 
 		// increase coverage
 		{`<script style="css">js</script>`, `<script style=css>js</script>`},
@@ -347,6 +349,30 @@ func TestHTMLURL(t *testing.T) {
 			w := &bytes.Buffer{}
 			m.URL, _ = url.Parse(tt.url)
 			err := Minify(m, w, r, nil)
+			test.Minify(t, tt.html, err, w.String(), tt.expected)
+		})
+	}
+}
+
+func TestHTMLTemplates(t *testing.T) {
+	htmlTests := []struct {
+		html     string
+		expected string
+	}{
+		{`a<p>  {{ printf "  !  " }}  </p>b`, `a<p>  {{ printf "  !  " }}  </p>b`},
+		{`a<span>  {{ printf "  !  " }}  </span>b`, `a<span>  {{ printf "  !  " }}  </span>b`},
+		{`<a href={{ .Link }} />`, `<a href={{ .Link }}>`},
+		{`<input type="file" accept="{{ .Accept }}, image/jpeg">`, `<input type=file accept="{{ .Accept }}, image/jpeg">`},
+		{`<option value="0" {{ if eq .Type 0 }}selected{{ end }}>Foo</option>`, `<option value=0 {{ if eq .Type 0 }}selected{{ end }}>Foo</option>`},
+	}
+
+	m := minify.New()
+	htmlMinifier := &Minifier{KeepEndTags: true, TemplateDelims: GoTemplateDelims}
+	for _, tt := range htmlTests {
+		t.Run(tt.html, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.html)
+			w := &bytes.Buffer{}
+			err := htmlMinifier.Minify(m, w, r, nil)
 			test.Minify(t, tt.html, err, w.String(), tt.expected)
 		})
 	}

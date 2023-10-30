@@ -41,6 +41,13 @@ var (
 
 ////////////////////////////////////////////////////////////////
 
+var GoTemplateDelims = [2]string{"{{", "}}"}
+var HandlebarsTemplateDelims = [2]string{"{{", "}}"}
+var MustacheTemplateDelims = [2]string{"{{", "}}"}
+var EJSTemplateDelims = [2]string{"<%", "%>"}
+var ASPTemplateDelims = [2]string{"<%", "%>"}
+var PHPTemplateDelims = [2]string{"<?", "?>"}
+
 // Minifier is an HTML minifier.
 type Minifier struct {
 	KeepComments            bool
@@ -50,6 +57,7 @@ type Minifier struct {
 	KeepEndTags             bool
 	KeepQuotes              bool
 	KeepWhitespace          bool
+	TemplateDelims          [2]string
 }
 
 // Minify minifies HTML data, it reads from r and writes to w.
@@ -71,7 +79,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	z := parse.NewInput(r)
 	defer z.Restore()
 
-	l := html.NewLexer(z)
+	l := html.NewTemplateLexer(z, o.TemplateDelims)
 	tb := NewTokenBuffer(z, l)
 	for {
 		t := *tb.Shift()
@@ -127,7 +135,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 		case html.TextToken:
 			// CSS and JS minifiers for inline code
-			if rawTagHash != 0 {
+			if t.HasTemplate {
+				w.Write(t.Data)
+			} else if rawTagHash != 0 {
 				if rawTagHash == Style || rawTagHash == Script || rawTagHash == Iframe {
 					var mimetype []byte
 					var params map[string]string
@@ -372,6 +382,9 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 						break
 					} else if attr.Text == nil {
 						continue // removed attribute
+					} else if attr.HasTemplate {
+						w.Write(attr.Data)
+						continue // don't minify attributes that contain templates
 					}
 
 					val := attr.AttrVal
