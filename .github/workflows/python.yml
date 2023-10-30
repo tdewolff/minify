@@ -242,7 +242,7 @@ jobs:
         with:
           files: dist/*
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@27b31702a0e7fc50959f5ad993c78deac1bdfc29
+        uses: pypa/gh-action-pypi-publish@b7f401de30cb6434a1e19f805ff006643653240e
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
