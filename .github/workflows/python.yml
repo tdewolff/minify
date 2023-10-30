@@ -1,7 +1,8 @@
 name: Python
-
 on:
   push:
+    branches:
+      - master
     tags:
       - 'v*'
 
