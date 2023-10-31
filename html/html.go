@@ -134,7 +134,6 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				w.Write(t.Data)
 			}
 		case html.TextToken:
-			// CSS and JS minifiers for inline code
 			if t.HasTemplate {
 				w.Write(t.Data)
 			} else if rawTagHash != 0 {

@@ -364,11 +364,17 @@ func TestHTMLTemplates(t *testing.T) {
 		{`a<span>  {{ printf "  !  " }}  </span>b`, `a<span>  {{ printf "  !  " }}  </span>b`},
 		{`<a href={{ .Link }} />`, `<a href={{ .Link }}>`},
 		{`<input type="file" accept="{{ .Accept }}, image/jpeg">`, `<input type=file accept="{{ .Accept }}, image/jpeg">`},
-		{`<option value="0" {{ if eq .Type 0 }}selected{{ end }}>Foo</option>`, `<option value=0 {{ if eq .Type 0 }}selected{{ end }}>Foo</option>`},
+		{`<option value="0" {{ if eq .Type 0 }}selected{{ end }}>Foo</option>`, `<option value=0 {{ if eq .Type 0 }}selected{{ end }}>Foo`},
+		{`<style>a { color: {{.Color}} }</style>`, `<style>a { color: {{.Color}} }</style>`},
+		{`<div style=" color: {{.Color}} ">`, `<div style=" color: {{.Color}} ">`},
+		{`<script>alert( {{.Alert}} )</script>`, `<script>alert( {{.Alert}} )</script>`},
+		{`<button onclick=" alert( {{.Alert}} ) ">`, `<button onclick=" alert( {{.Alert}} ) ">`},
 	}
 
 	m := minify.New()
-	htmlMinifier := &Minifier{KeepEndTags: true, TemplateDelims: GoTemplateDelims}
+	m.AddFunc("text/css", css.Minify)
+	m.AddFunc("application/javascript", js.Minify)
+	htmlMinifier := &Minifier{TemplateDelims: GoTemplateDelims}
 	for _, tt := range htmlTests {
 		t.Run(tt.html, func(t *testing.T) {
 			r := bytes.NewBufferString(tt.html)
