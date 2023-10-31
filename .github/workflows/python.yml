@@ -37,7 +37,7 @@ jobs:
           CIBW_MANYLINUX_I686_IMAGE: quay.io/pypa/manylinux_2_28_i686
           CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64
           CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64
-          CIBW_BEFORE_ALL: .ci/ensure-go.sh; cd bindings/py; go get github.com/tdewolff/minify/v2@${GITHUB_REF#refs/tags/}; go build -buildmode=c-shared -o src/minify/_minify.so
+          CIBW_BEFORE_ALL: .ci/ensure-go.sh; cd bindings/py; go get github.com/tdewolff/minify/v2@${{ github.ref_name }}; go build -buildmode=c-shared -o src/minify/_minify.so
 
       - name: Upload wheels
         uses: actions/upload-artifact@v3
@@ -66,7 +66,7 @@ jobs:
       - name: Fetch go package
         run: |
           cd bindings/py
-          go get github.com/tdewolff/minify/v2@${GITHUB_REF#refs/tags/}
+          go get github.com/tdewolff/minify/v2@${{ github.ref_name }}
       - name: Prebuild windows extension
         run: |
           sudo apt-get install mingw-w64
@@ -99,7 +99,7 @@ jobs:
       - name: Update version in go.mod
         run: |
           cd bindings/py
-          go get github.com/tdewolff/minify/v2@${GITHUB_REF#refs/tags/}
+          go get github.com/tdewolff/minify/v2@${{ github.ref_name }}
       - uses: actions/download-artifact@v3
         with:
           name: minify-windows-${{ matrix.go_target }}.so
@@ -140,7 +140,7 @@ jobs:
       - name: Fetch go package
         run: |
           cd bindings/py
-          go get github.com/tdewolff/minify/v2@${GITHUB_REF#refs/tags/}
+          go get github.com/tdewolff/minify/v2@${{ github.ref_name }}
       - name: Prebuild macos extension
         run: |
           cd bindings/py
@@ -175,7 +175,7 @@ jobs:
       - name: Update version in go.mod
         run: |
           cd bindings/py
-          go get github.com/tdewolff/minify/v2@${GITHUB_REF#refs/tags/}
+          go get github.com/tdewolff/minify/v2@${{ github.ref_name }}
       - uses: actions/download-artifact@v3
         with:
           name: minify-darwin-${{ matrix.go_target }}.so
