@@ -401,30 +401,30 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							attr.Hash == Action && t.Hash == Form) {
 							continue // omit empty attribute values
 						}
-						if attr.Traits&caselessAttr != 0 {
-							val = parse.ToLower(val)
-						}
 						if rawTagHash != 0 && attr.Hash == Type {
 							rawTagMediatype = parse.Copy(val)
 						}
 
-						if attr.Hash == Enctype || attr.Hash == Accept || attr.Hash == Type && (t.Hash == A || t.Hash == Link || t.Hash == Embed || t.Hash == Object || t.Hash == Source || t.Hash == Script) {
+						if attr.Hash == Enctype ||
+							attr.Hash == Formenctype ||
+							attr.Hash == Accept ||
+							attr.Hash == Type && (t.Hash == A || t.Hash == Link || t.Hash == Embed || t.Hash == Object || t.Hash == Source || t.Hash == Script) {
 							val = minify.Mediatype(val)
 						}
 
 						// default attribute values can be omitted
-						if !o.KeepDefaultAttrVals && (attr.Hash == Type && (t.Hash == Script && jsMimetypes[string(val)] ||
-							t.Hash == Style && bytes.Equal(val, cssMimeBytes) ||
-							t.Hash == Link && bytes.Equal(val, cssMimeBytes) ||
-							t.Hash == Input && bytes.Equal(val, textBytes) ||
-							t.Hash == Button && bytes.Equal(val, submitBytes)) ||
-							attr.Hash == Method && bytes.Equal(val, getBytes) ||
-							attr.Hash == Enctype && bytes.Equal(val, formMimeBytes) ||
+						if !o.KeepDefaultAttrVals && (attr.Hash == Type && (t.Hash == Script && jsMimetypes[string(parse.ToLower(parse.Copy(val)))] ||
+							t.Hash == Style && parse.EqualFold(val, cssMimeBytes) ||
+							t.Hash == Link && parse.EqualFold(val, cssMimeBytes) ||
+							t.Hash == Input && parse.EqualFold(val, textBytes) ||
+							t.Hash == Button && parse.EqualFold(val, submitBytes)) ||
+							attr.Hash == Method && parse.EqualFold(val, getBytes) ||
+							attr.Hash == Enctype && parse.EqualFold(val, formMimeBytes) ||
 							attr.Hash == Colspan && bytes.Equal(val, oneBytes) ||
 							attr.Hash == Rowspan && bytes.Equal(val, oneBytes) ||
-							attr.Hash == Shape && bytes.Equal(val, rectBytes) ||
+							attr.Hash == Shape && parse.EqualFold(val, rectBytes) ||
 							attr.Hash == Span && bytes.Equal(val, oneBytes) ||
-							attr.Hash == Media && t.Hash == Style && bytes.Equal(val, allBytes)) {
+							attr.Hash == Media && t.Hash == Style && parse.EqualFold(val, allBytes)) {
 							continue
 						}
 

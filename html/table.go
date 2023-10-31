@@ -13,7 +13,6 @@ const (
 
 const (
 	booleanAttr traits = 1 << iota
-	caselessAttr
 	urlAttr
 	trimAttr
 )
@@ -163,77 +162,77 @@ var tagMap = map[Hash]traits{
 }
 
 var attrMap = map[Hash]traits{
-	Accept:                   caselessAttr | trimAttr, // list of mimetypes
-	Accept_Charset:           caselessAttr | trimAttr,
+	Accept:                   trimAttr, // list of mimetypes
+	Accept_Charset:           trimAttr,
 	Accesskey:                trimAttr,
 	Action:                   urlAttr,
-	Allow:                    caselessAttr | trimAttr,
+	Allow:                    trimAttr,
 	Allowfullscreen:          booleanAttr,
-	As:                       caselessAttr | trimAttr,
+	As:                       trimAttr,
 	Async:                    booleanAttr,
-	Autocapitalize:           caselessAttr | trimAttr,
-	Autocomplete:             caselessAttr | trimAttr,
+	Autocapitalize:           trimAttr,
+	Autocomplete:             trimAttr,
 	Autofocus:                booleanAttr,
 	Autoplay:                 booleanAttr,
-	Blocking:                 caselessAttr | trimAttr,
-	Capture:                  caselessAttr | trimAttr,
-	Charset:                  caselessAttr | trimAttr,
+	Blocking:                 trimAttr,
+	Capture:                  trimAttr,
+	Charset:                  trimAttr,
 	Checked:                  booleanAttr,
 	Cite:                     urlAttr,
 	Class:                    trimAttr,
-	Color:                    caselessAttr | trimAttr,
+	Color:                    trimAttr,
 	Cols:                     trimAttr, // uint bigger than 0
 	Colspan:                  trimAttr, // uint bigger than 0
-	Contenteditable:          caselessAttr | trimAttr,
+	Contenteditable:          trimAttr,
 	Controls:                 booleanAttr,
 	Coords:                   trimAttr, // list of floats
-	Crossorigin:              caselessAttr | trimAttr,
+	Crossorigin:              trimAttr,
 	Data:                     urlAttr,
 	Datetime:                 trimAttr,
-	Decoding:                 caselessAttr | trimAttr,
+	Decoding:                 trimAttr,
 	Default:                  booleanAttr,
 	Defer:                    booleanAttr,
-	Dir:                      caselessAttr | trimAttr,
+	Dir:                      trimAttr,
 	Disabled:                 booleanAttr,
-	Draggable:                caselessAttr | trimAttr,
-	Enctype:                  caselessAttr | trimAttr, // mimetype
-	Enterkeyhint:             caselessAttr | trimAttr,
-	Fetchpriority:            caselessAttr | trimAttr,
+	Draggable:                trimAttr,
+	Enctype:                  trimAttr, // mimetype
+	Enterkeyhint:             trimAttr,
+	Fetchpriority:            trimAttr,
 	For:                      trimAttr,
 	Form:                     trimAttr,
 	Formaction:               urlAttr,
-	Formenctype:              caselessAttr | trimAttr, // mimetype
-	Formmethod:               caselessAttr | trimAttr,
+	Formenctype:              trimAttr, // mimetype
+	Formmethod:               trimAttr,
 	Formnovalidate:           booleanAttr,
 	Formtarget:               trimAttr,
 	Headers:                  trimAttr,
-	Height:                   trimAttr,                // uint
-	Hidden:                   caselessAttr | trimAttr, // TODO: boolean
-	High:                     trimAttr,                // float
+	Height:                   trimAttr, // uint
+	Hidden:                   trimAttr, // TODO: boolean
+	High:                     trimAttr, // float
 	Href:                     urlAttr,
 	Hreflang:                 trimAttr, // BCP 47
-	Http_Equiv:               caselessAttr | trimAttr,
-	Imagesizes:               caselessAttr | trimAttr,
+	Http_Equiv:               trimAttr,
+	Imagesizes:               trimAttr,
 	Imagesrcset:              trimAttr,
 	Inert:                    booleanAttr,
-	Inputmode:                caselessAttr | trimAttr,
-	Is:                       caselessAttr | trimAttr,
+	Inputmode:                trimAttr,
+	Is:                       trimAttr,
 	Ismap:                    booleanAttr,
 	Itemid:                   urlAttr,
 	Itemprop:                 trimAttr,
 	Itemref:                  trimAttr,
 	Itemscope:                booleanAttr,
 	Itemtype:                 trimAttr, // list of urls
-	Kind:                     caselessAttr | trimAttr,
+	Kind:                     trimAttr,
 	Lang:                     trimAttr, // BCP 47
 	List:                     trimAttr,
-	Loading:                  caselessAttr | trimAttr,
+	Loading:                  trimAttr,
 	Loop:                     booleanAttr,
 	Low:                      trimAttr, // float
 	Max:                      trimAttr, // float or varies
 	Maxlength:                trimAttr, // uint
-	Media:                    caselessAttr | trimAttr,
-	Method:                   caselessAttr | trimAttr,
+	Media:                    trimAttr,
+	Method:                   trimAttr,
 	Min:                      trimAttr, // float or varies
 	Minlength:                trimAttr, // uint
 	Multiple:                 booleanAttr,
@@ -245,29 +244,29 @@ var attrMap = map[Hash]traits{
 	Pattern:                  trimAttr, // regex
 	Ping:                     trimAttr, // list of urls
 	Playsinline:              booleanAttr,
-	Popover:                  caselessAttr | trimAttr,
+	Popover:                  trimAttr,
 	Popovertarget:            trimAttr,
-	Popovertargetaction:      caselessAttr | trimAttr,
+	Popovertargetaction:      trimAttr,
 	Poster:                   urlAttr,
-	Preload:                  caselessAttr | trimAttr,
+	Preload:                  trimAttr,
 	Profile:                  urlAttr,
 	Readonly:                 booleanAttr,
-	Referrerpolicy:           caselessAttr | trimAttr,
-	Rel:                      caselessAttr | trimAttr,
+	Referrerpolicy:           trimAttr,
+	Rel:                      trimAttr,
 	Required:                 booleanAttr,
 	Reversed:                 booleanAttr,
 	Rows:                     trimAttr, // uint bigger than 0
 	Rowspan:                  trimAttr, // uint
-	Sandbox:                  caselessAttr | trimAttr,
-	Scope:                    caselessAttr | trimAttr,
+	Sandbox:                  trimAttr,
+	Scope:                    trimAttr,
 	Selected:                 booleanAttr,
-	Shadowrootmode:           caselessAttr | trimAttr,
+	Shadowrootmode:           trimAttr,
 	Shadowrootdelegatesfocus: booleanAttr,
-	Shape:                    caselessAttr | trimAttr,
+	Shape:                    trimAttr,
 	Size:                     trimAttr, // uint bigger than 0
-	Sizes:                    caselessAttr | trimAttr,
+	Sizes:                    trimAttr,
 	Span:                     trimAttr, // uint bigger than 0
-	Spellcheck:               caselessAttr | trimAttr,
+	Spellcheck:               trimAttr,
 	Src:                      urlAttr,
 	Srclang:                  trimAttr, // BCP 47
 	Srcset:                   trimAttr,
@@ -275,11 +274,11 @@ var attrMap = map[Hash]traits{
 	Step:                     trimAttr, // float or "any"
 	Tabindex:                 trimAttr, // int
 	Target:                   trimAttr,
-	Translate:                caselessAttr | trimAttr,
+	Translate:                trimAttr,
 	Type:                     trimAttr,
 	Usemap:                   trimAttr,
 	Width:                    trimAttr, // uint
-	Wrap:                     caselessAttr | trimAttr,
+	Wrap:                     trimAttr,
 	Xmlns:                    urlAttr,
 }
 

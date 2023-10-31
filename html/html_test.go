@@ -36,7 +36,7 @@ func TestHTML(t *testing.T) {
 		{`<meta http-equiv="content-type" content="text/html; charset=utf-8">`, `<meta charset=utf-8>`},
 		{`<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`, `<meta charset=utf-8>`},
 		{`<meta http-equiv=" content-type " content=" text/html;  charset=utf-8 ">`, `<meta charset=utf-8>`},
-		{`<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src https://*; child-src 'none';">`, `<meta http-equiv=content-security-policy content="default-src 'self'; img-src https://*; child-src 'none';">`},
+		{`<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src https://*; child-src 'none';">`, `<meta http-equiv=Content-Security-Policy content="default-src 'self'; img-src https://*; child-src 'none';">`},
 		{`<meta name="keywords" content="a, b">`, `<meta name=keywords content="a,b">`},
 		//{`<meta name="keywords" content=" a,  b ">`, `<meta name=keywords content="a,b">`}, // TODO
 		{`<meta name="viewport" content="width = 996" />`, `<meta name=viewport content="width=996">`},
