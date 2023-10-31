@@ -208,7 +208,7 @@ The patterns for `--match`, `--include`, and `--exclude` can be either a glob or
 
 Match will filters all files by the given pattern, eg. `--match '*.css'` will only minify CSS files. The `--include` and `--exclude` options allow to add or remove certain files or directories and is interpreted in the order given. For example, `minify -rvo out/ --exclude 'src/*/**' --include 'src/foo/**' src/` will minify the directory `src/`, except for `src/*/...` where `*` is not `foo`.
 
-You may define multiple patterns within one option, such as: `--exclude '**/folder1/**' '**/folder2/**' '**/folder3/**'` Doing this might result in unexpected behaviour when it is followed immediately by the input files, as this would be interpreted as another pattern, and not as inputs. `--exclude dir_to_exclude folder_input` Instead format accordingly: `--exclude dir_to_exclude -- folder_input`. This may be subject to change.
+You may define multiple patterns within one option, such as: `--exclude '**/folder1/**' '**/folder2/**' '**/folder3/**'` Doing this might result in unexpected behaviour when it is followed immediately by the input files, as this would be interpreted as another pattern, and not as inputs. `--exclude dir_to_exclude folder_input` Instead format accordingly: `--exclude dir_to_exclude -- folder_input`.
 
 ### Concatenate
 When multiple inputs are given and the output is either standard output or a single file, it will concatenate the files together if you use the bundle option.
