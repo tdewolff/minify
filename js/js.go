@@ -36,9 +36,12 @@ func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) err
 }
 
 // Minify minifies JS data, it reads from r and writes to w.
-func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
+func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	z := parse.NewInput(r)
-	ast, err := js.Parse(z, js.Options{WhileToFor: true})
+	ast, err := js.Parse(z, js.Options{
+		WhileToFor: true,
+		Inline:     params != nil && params["inline"] == "1",
+	})
 	if err != nil {
 		return err
 	}
