@@ -3,6 +3,6 @@ module github.com/tdewolff/minify/bindings/py
 go 1.18
 
 require (
-	github.com/tdewolff/minify/v2 v2.12.9
-	github.com/tdewolff/parse/v2 v2.6.8
+	github.com/tdewolff/minify/v2 v2.20.3
+	github.com/tdewolff/parse/v2 v2.7.2
 )
