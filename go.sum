@@ -10,10 +10,10 @@ github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2 h1:JAEbJn3j/FrhdWA9jW8
 github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2/go.mod h1:0KeJpeMD6o+O4hW7qJOT7vyQPKrWmj26uf5wMc/IiIs=
 github.com/tdewolff/argp v0.0.0-20231030173501-fa6c54897951 h1:QiakK8TMHgZfKZ2enwnyYzT3fOtzIwZ6mDkVC3scOrQ=
 github.com/tdewolff/argp v0.0.0-20231030173501-fa6c54897951/go.mod h1:fF+gnKbmf3iMG+ErLiF+orMU/InyZIEnKVVigUjfriw=
-github.com/tdewolff/parse/v2 v2.7.3 h1:SHj/ry85FdqniccvzJTG+Gt/mi/HNa1cJcTzYZnvc5U=
-github.com/tdewolff/parse/v2 v2.7.3/go.mod h1:9p2qMIHpjRSTr1qnFxQr+igogyTUTlwvf9awHSm84h8=
+github.com/tdewolff/parse/v2 v2.7.4 h1:zrUn2CFg9+5llbUZcsycctFlNRyV1D5gFBZRxuGzdzk=
+github.com/tdewolff/parse/v2 v2.7.4/go.mod h1:3FbJWZp3XT9OWVN3Hmfp0p/a08v4h8J9W1aghka0soA=
 github.com/tdewolff/test v1.0.6/go.mod h1:6DAvZliBAAnD7rhVgwaM7DE5/d9NMOAJ09SqYqeK4QE=
-github.com/tdewolff/test v1.0.10 h1:uWiheaLgLcNFqHcdWveum7PQfMnIUTf9Kl3bFxrIoew=
-github.com/tdewolff/test v1.0.10/go.mod h1:6DAvZliBAAnD7rhVgwaM7DE5/d9NMOAJ09SqYqeK4QE=
+github.com/tdewolff/test v1.0.11-0.20231101010635-f1265d231d52 h1:gAQliwn+zJrkjAHVcBEYW/RFvd2St4yYimisvozAYlA=
+github.com/tdewolff/test v1.0.11-0.20231101010635-f1265d231d52/go.mod h1:6DAvZliBAAnD7rhVgwaM7DE5/d9NMOAJ09SqYqeK4QE=
 golang.org/x/sys v0.13.0 h1:Af8nKPmuFypiUBjVoU9V20FiaFXOcuZI21p0ycVYYGE=
 golang.org/x/sys v0.13.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
