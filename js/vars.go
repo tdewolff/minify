@@ -188,30 +188,32 @@ func bindingVars(ibinding js.IBinding) (vs []*js.Var) {
 }
 
 func addDefinition(decl *js.VarDecl, binding js.IBinding, value js.IExpr, forward bool) {
-	// see if not already defined in variable declaration list
-	// if forward is set, binding=value comes before decl, otherwise the reverse holds true
-	vars := bindingVars(binding)
+	if decl.TokenType != js.ErrorToken {
+		// see if not already defined in variable declaration list
+		// if forward is set, binding=value comes before decl, otherwise the reverse holds true
+		vars := bindingVars(binding)
 
-	// remove variables in destination
-RemoveVarsLoop:
-	for _, vbind := range vars {
-		for i, item := range decl.List {
-			if v, ok := item.Binding.(*js.Var); ok && item.Default == nil && v == vbind {
-				v.Uses--
-				decl.List = append(decl.List[:i], decl.List[i+1:]...)
-				continue RemoveVarsLoop
+		// remove variables in destination
+	RemoveVarsLoop:
+		for _, vbind := range vars {
+			for i, item := range decl.List {
+				if v, ok := item.Binding.(*js.Var); ok && item.Default == nil && v == vbind {
+					v.Uses--
+					decl.List = append(decl.List[:i], decl.List[i+1:]...)
+					continue RemoveVarsLoop
+				}
 			}
-		}
 
-		if value != nil {
-			// variable declaration must be somewhere else, find and remove it
-			for _, decl2 := range decl.Scope.Func.VarDecls {
-				if !decl2.InForInOf {
-					for i, item := range decl2.List {
-						if v, ok := item.Binding.(*js.Var); ok && item.Default == nil && v == vbind {
-							v.Uses--
-							decl2.List = append(decl2.List[:i], decl2.List[i+1:]...)
-							continue RemoveVarsLoop
+			if value != nil {
+				// variable declaration must be somewhere else, find and remove it
+				for _, decl2 := range decl.Scope.Func.VarDecls {
+					if !decl2.InForInOf {
+						for i, item := range decl2.List {
+							if v, ok := item.Binding.(*js.Var); ok && item.Default == nil && v == vbind {
+								v.Uses--
+								decl2.List = append(decl2.List[:i], decl2.List[i+1:]...)
+								continue RemoveVarsLoop
+							}
 						}
 					}
 				}
