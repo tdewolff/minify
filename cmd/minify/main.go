@@ -34,14 +34,21 @@ import (
 var Version = "built from source"
 
 var extMap = map[string]string{
+	"asp":         "text/asp",
 	"css":         "text/css",
+	"ejs":         "text/x-ejs-template",
+	"gohtml":      "text/x-go-template",
+	"handlebars":  "text/x-handlebars-template",
 	"htm":         "text/html",
 	"html":        "text/html",
 	"js":          "application/javascript",
-	"mjs":         "application/javascript",
 	"json":        "application/json",
+	"mjs":         "application/javascript",
+	"mustache":    "text/x-mustache-template",
+	"php":         "application/x-httpd-php",
 	"rss":         "application/rss+xml",
 	"svg":         "image/svg+xml",
+	"tmpl":        "text/x-go-template",
 	"webmanifest": "application/manifest+json",
 	"xhtml":       "application/xhtml-xml",
 	"xml":         "text/xml",
@@ -170,12 +177,12 @@ func run() int {
 	var output string
 	var siteurl string
 
-	cssMinifier := &css.Minifier{}
-	htmlMinifier := &html.Minifier{}
-	jsMinifier := &js.Minifier{}
-	jsonMinifier := &json.Minifier{}
-	svgMinifier := &svg.Minifier{}
-	xmlMinifier := &xml.Minifier{}
+	cssMinifier := css.Minifier{}
+	htmlMinifier := html.Minifier{}
+	jsMinifier := js.Minifier{}
+	jsonMinifier := json.Minifier{}
+	svgMinifier := svg.Minifier{}
+	xmlMinifier := xml.Minifier{}
 
 	f := argp.New("minify")
 	f.AddRest(&inputs, "inputs", "Input files or directories, leave blank to use stdin")
@@ -248,16 +255,10 @@ func run() int {
 		return 0
 	}
 
-	if len(inputs) == 0 && mimetype == "" && oldmimetype == "" {
-		if !quiet {
-			fmt.Printf("minify: must specify --type in order to use stdin and stdout\n")
-			fmt.Printf("Try 'minify --help' for more information\n")
-		}
-		return 1
-	} else if len(inputs) == 1 && inputs[0] == "-" {
-		inputs = inputs[:0]
+	if len(inputs) == 1 && inputs[0] == "-" {
+		inputs = inputs[:0] // stdin
 	} else if output == "-" {
-		output = ""
+		output = "" // stdout
 	}
 	useStdin := len(inputs) == 0
 
@@ -336,6 +337,22 @@ func run() int {
 		return 1
 	}
 	if mimetype == "" {
+		if !recursive {
+			okAll := true
+			for _, input := range inputs {
+				ext := filepath.Ext(input)
+				if 0 < len(ext) {
+					ext = ext[1:]
+				}
+				if _, ok := extMap[ext]; !ok {
+					Error.Println("cannot infer mimetype from extension in", input, ", set --type explicitly")
+					okAll = false
+				}
+			}
+			if !okAll {
+				return 1
+			}
+		}
 		Info.Println("infer mimetype from file extensions")
 	} else {
 		Info.Println("use mimetype", mimetype)
@@ -459,12 +476,27 @@ func run() int {
 	////////////////
 
 	m = min.New()
-	m.Add("text/css", cssMinifier)
-	m.Add("text/html", htmlMinifier)
-	m.Add("image/svg+xml", svgMinifier)
-	m.AddRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma|j|live)script(1\\.[0-5])?$|^module$"), jsMinifier)
-	m.AddRegexp(regexp.MustCompile("[/+]json$"), jsonMinifier)
-	m.AddRegexp(regexp.MustCompile("[/+]xml$"), xmlMinifier)
+	m.Add("text/css", &cssMinifier)
+	m.Add("text/html", &htmlMinifier)
+	m.Add("image/svg+xml", &svgMinifier)
+	m.AddRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma|j|live)script(1\\.[0-5])?$|^module$"), &jsMinifier)
+	m.AddRegexp(regexp.MustCompile("[/+]json$"), &jsonMinifier)
+	m.AddRegexp(regexp.MustCompile("[/+]xml$"), &xmlMinifier)
+
+	aspMinifier := htmlMinifier
+	aspMinifier.TemplateDelims = [2]string{"<%", "%>"}
+	m.Add("text/asp", &aspMinifier)
+	m.Add("text/x-ejs-template", &aspMinifier)
+
+	phpMinifier := htmlMinifier
+	phpMinifier.TemplateDelims = [2]string{"<?", "?>"} // also handles <?php
+	m.Add("application/x-httpd-php", &phpMinifier)
+
+	tmplMinifier := htmlMinifier
+	tmplMinifier.TemplateDelims = [2]string{"{{", "}}"}
+	m.Add("text/x-go-template", &tmplMinifier)
+	m.Add("text/x-mustache-template", &tmplMinifier)
+	m.Add("text/x-handlebars-template", &tmplMinifier)
 
 	if m.URL, err = url.Parse(siteurl); err != nil {
 		Error.Println(err)

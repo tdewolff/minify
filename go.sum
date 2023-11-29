@@ -12,6 +12,8 @@ github.com/tdewolff/argp v0.0.0-20231030173501-fa6c54897951 h1:QiakK8TMHgZfKZ2en
 github.com/tdewolff/argp v0.0.0-20231030173501-fa6c54897951/go.mod h1:fF+gnKbmf3iMG+ErLiF+orMU/InyZIEnKVVigUjfriw=
 github.com/tdewolff/argp v0.0.0-20231127201036-c09ac479d39f h1:GsLzRgO6VYhzXBuUPFF1wfav4mB06rfuj3R5IH/DBy0=
 github.com/tdewolff/argp v0.0.0-20231127201036-c09ac479d39f/go.mod h1:fF+gnKbmf3iMG+ErLiF+orMU/InyZIEnKVVigUjfriw=
+github.com/tdewolff/argp v0.0.0-20231129210956-bb03d6873d97 h1:guej/op7QIuHIlsX8wrWimsTzyc3CKAgXvJsUvsoMXc=
+github.com/tdewolff/argp v0.0.0-20231129210956-bb03d6873d97/go.mod h1:fF+gnKbmf3iMG+ErLiF+orMU/InyZIEnKVVigUjfriw=
 github.com/tdewolff/parse/v2 v2.7.6 h1:PGZH2b/itDSye9RatReRn4GBhsT+KFEMtAMjHRuY1h8=
 github.com/tdewolff/parse/v2 v2.7.6/go.mod h1:3FbJWZp3XT9OWVN3Hmfp0p/a08v4h8J9W1aghka0soA=
 github.com/tdewolff/test v1.0.6/go.mod h1:6DAvZliBAAnD7rhVgwaM7DE5/d9NMOAJ09SqYqeK4QE=
