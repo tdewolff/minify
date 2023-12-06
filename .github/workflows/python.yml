@@ -60,7 +60,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '>=1.17'
       - name: Fetch go package
@@ -93,7 +93,7 @@ jobs:
           #  cibw_target: ARM64
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '>=1.17'
       - name: Update version in go.mod
@@ -134,7 +134,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '>=1.17'
       - name: Fetch go package
@@ -169,7 +169,7 @@ jobs:
           #  cibw_target: arm64
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '>=1.17'
       - name: Update version in go.mod
@@ -183,7 +183,7 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      #- uses: actions/setup-go@v4
+      #- uses: actions/setup-go@v5
       #  with:
       #    go-version: '>=1.17'
 
@@ -210,7 +210,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.11'
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '>=1.17'
       - name: Update version in go.mod
