@@ -184,6 +184,11 @@ func run() int {
 	svgMinifier := svg.Minifier{}
 	xmlMinifier := xml.Minifier{}
 
+	defaultPreserve := []string{"mode", "timestamps"}
+	if supportsGetOwnership {
+		defaultPreserve = []string{"mode", "ownership", "timestamps"}
+	}
+
 	f := argp.New("minify")
 	f.AddRest(&inputs, "inputs", "Input files or directories, leave blank to use stdin")
 	f.AddOpt(&output, "o", "output", nil, "Output file or directory, leave blank to use stdout")
@@ -200,7 +205,7 @@ func run() int {
 	f.AddOpt(argp.Count{&verbose}, "v", "verbose", nil, "Verbose mode, set twice for more verbosity")
 	f.AddOpt(&watch, "w", "watch", false, "Watch files and minify upon changes")
 	f.AddOpt(&sync, "s", "sync", false, "Copy all files to destination directory and minify when filetype matches")
-	f.AddOpt(&preserve, "p", "preserve", []string{"mode", "ownership", "timestamps"}, "Preserve options (mode, ownership, timestamps, links, all)")
+	f.AddOpt(&preserve, "p", "preserve", defaultPreserve, "Preserve options (mode, ownership, timestamps, links, all)")
 	f.AddOpt(&bundle, "b", "bundle", false, "Bundle files by concatenation into a single file")
 	f.AddOpt(&version, "", "version", false, "Version")
 
