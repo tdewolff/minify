@@ -383,6 +383,9 @@ func run() int {
 			preserveLinks = true
 		}
 	}
+	if preserveOwnership && !supportsGetOwnership {
+		Warning.Println(fmt.Errorf("preserve ownership not supported on platform"))
+	}
 
 	////////////////
 
@@ -960,8 +963,6 @@ Next:
 			if err != nil {
 				Warning.Println(err)
 			}
-		} else {
-			Warning.Println(fmt.Errorf("preserve ownership not supported on platform"))
 		}
 	}
 	if preserveTimestamps {
