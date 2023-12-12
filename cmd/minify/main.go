@@ -949,8 +949,18 @@ func preserveAttributes(src, root, dst string) {
 	if src == "" || dst == "" {
 		return
 	}
+
+	// make sure we only set attributes on directories and files inside the root destination
+	var err error
+	src, err = filepath.Rel(root, src)
+	if err != nil {
+		// should never occur
+		Error.Printf("src is not part of root path: src=%s root=%s", src, root)
+		return
+	}
+
 Next:
-	srcInfo, err := os.Stat(src)
+	srcInfo, err := os.Stat(filepath.Join(root, src))
 	if err != nil {
 		Warning.Println(err)
 		return
@@ -976,10 +986,11 @@ Next:
 			Warning.Println(err)
 		}
 	}
-	if src != root {
-		// preserve on until root path
-		src = filepath.Dir(src)
-		dst = filepath.Dir(dst)
+
+	src = filepath.Dir(src)
+	dst = filepath.Dir(dst)
+	if src != "." {
+		// go up to but excluding the root path
 		goto Next
 	}
 }
