@@ -180,7 +180,7 @@ jobs:
         with:
           name: minify-darwin-${{ matrix.go_target }}.so
           path: bindings/py/src/minify/_minify.so
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       #- uses: actions/setup-go@v4
@@ -207,7 +207,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - uses: actions/setup-go@v4
