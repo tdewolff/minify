@@ -100,7 +100,7 @@ jobs:
       - name: Install node-gyp and prebuildify
         run: npm install --location=global node-gyp node-gyp-build node-api-headers prebuildify
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           path: bindings/js/prebuilds
 
