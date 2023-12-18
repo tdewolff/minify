@@ -100,7 +100,7 @@ jobs:
         run: |
           cd bindings/py
           go get github.com/tdewolff/minify/v2@${{ github.ref_name }}
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: minify-windows-${{ matrix.go_target }}.so
           path: bindings/py/src/minify
@@ -176,7 +176,7 @@ jobs:
         run: |
           cd bindings/py
           go get github.com/tdewolff/minify/v2@${{ github.ref_name }}
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: minify-darwin-${{ matrix.go_target }}.so
           path: bindings/py/src/minify/_minify.so
@@ -237,7 +237,7 @@ jobs:
     needs: [linux, windows, sdist]
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: bindings/py/artifacts
       - name: Bundle release artifacts
