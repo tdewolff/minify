@@ -167,6 +167,8 @@ func TestHTML(t *testing.T) {
 		{`<source type='video/mp4; codecs="av01.0.05M.08"'>`, `<source type='video/mp4;codecs="av01.0.05M.08"'>`},                        // #545
 		{`<html lang="mn-Cyrl-MN">`, `<html lang=mn-Cyrl-MN>`},                                                                           // #579
 		{`<script src=a></script> <script src=b></script> <span></span>`, `<script src=a></script><script src=b></script><span></span>`}, // #592
+		{`a <math>b</math> c`, `a <math>b</math> c`},                                                                                     // #611
+		{`a <svg>b</svg> c`, `a <svg>b</svg> c`},                                                                                         // #611
 	}
 
 	m := minify.New()
