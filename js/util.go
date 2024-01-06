@@ -948,13 +948,17 @@ func minifyString(b []byte, allowTemplate bool) []byte {
 			doubleQuotes++
 		} else if b[i] == '`' {
 			backtickQuotes++
-		} else if b[i] == '$' {
+		} else if b[i] == '$' && i+1 < len(b) && b[i+1] == '{' {
 			dollarSigns++
 		} else if b[i] == '\\' && i+1 < len(b) {
 			if b[i+1] == 'n' || b[i+1] == 'r' {
 				newlines++
 			} else if '1' <= b[i+1] && b[i+1] <= '9' || b[i+1] == '0' && i+2 < len(b) && '0' <= b[i+2] && b[i+2] <= '9' {
-				hasOctals = true
+				if i+2 < len(b) && b[i+1] == '1' && (b[i+2] == '2' || b[i+2] == '5') {
+					newlines++
+				} else {
+					hasOctals = true
+				}
 			} else if b[i+1] == 'x' && i+3 < len(b) && b[i+2] == '0' && (b[i+3]|0x20 == 'a' || b[i+3]|0x20 == 'd') {
 				newlines++
 			} else if b[i+1] == 'u' && i+5 < len(b) && b[i+2] == '0' && b[i+3] == '0' && b[i+4] == '0' && (b[i+5]|0x20 == 'a' || b[i+5]|0x20 == 'd') {
@@ -995,7 +999,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 	for i := prefix; i < len(b)-suffix-1; i++ {
 		if c := b[i]; c == '\\' {
 			c = b[i+1]
-			if c == quote || c == '\\' || c == '0' && (len(b)-suffix <= i+2 || b[i+2] < '0' || '7' < b[i+2]) {
+			if c == quote || c == '\\' || quote != '`' && (c == 'n' || c == 'r') || c == '0' && (len(b)-suffix <= i+2 || b[i+2] < '0' || '7' < b[i+2]) {
 				// keep escape sequence
 				i++
 				continue
@@ -1106,7 +1110,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 					}
 				}
 				b[i] = num
-				if num == 0 || num == '\\' || num == quote || num == '\n' || num == '\r' {
+				if num == 0 || num == '\\' || num == quote || quote != '`' && (num == '\n' || num == '\r') {
 					if num == 0 {
 						b[i+1] = '0'
 					} else if num == '\n' {

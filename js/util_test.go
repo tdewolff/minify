@@ -37,12 +37,32 @@ func TestHexadecimalNumber(t *testing.T) {
 }
 
 func TestString(t *testing.T) {
-	test.Bytes(t, minifyString([]byte(`""`), true), []byte(`""`))
-	test.Bytes(t, minifyString([]byte(`"abc"`), true), []byte(`"abc"`))
-	test.Bytes(t, minifyString([]byte(`'abc'`), true), []byte(`"abc"`))
-	test.Bytes(t, minifyString([]byte(`"\8\9\t"`), true), []byte("\"89\t\""))
-	test.Bytes(t, minifyString([]byte(`"\12"`), true), []byte(`"\n"`))
-	test.Bytes(t, minifyString([]byte(`"\n\r$"`), true), []byte("`\n\r$`"))
+	tests := []struct {
+		str, expected string
+	}{
+		{`""`, `""`},
+		{`"abc"`, `"abc"`},
+		{`'abc'`, `"abc"`},
+		{`"\8\9\t"`, "\"89\t\""},
+		{`"\n\r"`, "`\n\r`"},
+		{`"\12\15"`, "`\n\r`"},
+		{`"\x0A\x0D"`, "`\n\r`"},
+		{`"\u000A\u000D"`, "`\n\r`"},
+		{`"\u{A}\u{D}"`, "`\n\r`"},
+		{`"\n$"`, "`\n$`"},
+		{`"\n${"`, `"\n${"`},
+		{`"\n\r${${"`, `"\n\r${${"`},
+		{`"\12\15${${"`, `"\n\r${${"`},
+		{`"\x0A\x0D${${"`, `"\n\r${${"`},
+		{`"\u000A\u000D${${"`, `"\n\r${${"`},
+		{`"\u{A}\u{D}${${"`, `"\n\r${${"`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.str, func(t *testing.T) {
+			test.Bytes(t, minifyString([]byte(tt.str), true), []byte(tt.expected))
+		})
+	}
 }
 
 func TestHasSideEffects(t *testing.T) {
