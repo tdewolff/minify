@@ -940,7 +940,7 @@ func minifyString(b []byte, allowTemplate bool) []byte {
 	backtickQuotes := 0
 	newlines := 0
 	dollarSigns := 0
-	notEscapes := false
+	hasOctals := false
 	for i := 1; i < len(b)-1; i++ {
 		if b[i] == '\'' {
 			singleQuotes++
@@ -954,7 +954,19 @@ func minifyString(b []byte, allowTemplate bool) []byte {
 			if b[i+1] == 'n' || b[i+1] == 'r' {
 				newlines++
 			} else if '1' <= b[i+1] && b[i+1] <= '9' || b[i+1] == '0' && i+2 < len(b) && '0' <= b[i+2] && b[i+2] <= '9' {
-				notEscapes = true
+				hasOctals = true
+			} else if b[i+1] == 'x' && i+3 < len(b) && b[i+2] == '0' && (b[i+3]|0x20 == 'a' || b[i+3]|0x20 == 'd') {
+				newlines++
+			} else if b[i+1] == 'u' && i+5 < len(b) && b[i+2] == '0' && b[i+3] == '0' && b[i+4] == '0' && (b[i+5]|0x20 == 'a' || b[i+5]|0x20 == 'd') {
+				newlines++
+			} else if b[i+1] == 'u' && i+4 < len(b) && b[i+2] == '{' {
+				j := i + 3
+				for j < len(b) && b[j] == '0' {
+					j++
+				}
+				if j+1 < len(b) && (b[j]|0x20 == 'a' || b[j]|0x20 == 'd') && b[j+1] == '}' {
+					newlines++
+				}
 			}
 		}
 	}
@@ -966,7 +978,7 @@ func minifyString(b []byte, allowTemplate bool) []byte {
 	} else if singleQuotes < doubleQuotes {
 		quote = byte('\'')
 	}
-	if allowTemplate && !notEscapes && backtickQuotes+dollarSigns < quotes+newlines {
+	if allowTemplate && !hasOctals && backtickQuotes+dollarSigns < quotes+newlines {
 		quote = byte('`')
 	}
 	b[0] = quote
@@ -983,7 +995,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 	for i := prefix; i < len(b)-suffix-1; i++ {
 		if c := b[i]; c == '\\' {
 			c = b[i+1]
-			if c == quote || c == '\\' || quote != '`' && (c == 'n' || c == 'r') || c == '0' && (len(b)-suffix <= i+2 || b[i+2] < '0' || '7' < b[i+2]) {
+			if c == quote || c == '\\' || c == '0' && (len(b)-suffix <= i+2 || b[i+2] < '0' || '7' < b[i+2]) {
 				// keep escape sequence
 				i++
 				continue
@@ -1004,7 +1016,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 					// hexadecimal escapes
 					_, _ = hex.Decode(b[i:i+1:i+1], b[i+2:i+4])
 					n = 4
-					if b[i] == '\\' || b[i] == quote || b[i] == '\n' || b[i] == '\r' || b[i] == 0 {
+					if b[i] == '\\' || b[i] == quote || quote != '`' && (b[i] == '\n' || b[i] == '\r') || b[i] == 0 {
 						if b[i] == '\n' {
 							b[i+1] = 'n'
 						} else if b[i] == '\r' {
@@ -1061,7 +1073,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 						i += 4
 						n -= 4
 					}
-				} else {
+				} else if quote == '`' || num != 10 && num != 13 {
 					// decode unicode character to UTF-8 and put at the end of the escape sequence
 					// then skip the first part of the escape sequence until the decoded character
 					m := utf8.RuneLen(rune(num))
@@ -1072,9 +1084,17 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 					utf8.EncodeRune(b[i:], rune(num))
 					i += m
 					n -= m
+				} else {
+					if num == 10 {
+						b[i+1] = 'n'
+					} else {
+						b[i+1] = 'r'
+					}
+					i += 2
+					n -= 2
 				}
 			} else if '0' <= c && c <= '7' {
-				// octal escapes (legacy), \0 already handled
+				// octal escapes (legacy), \0 already handled (quote != `)
 				num := c - '0'
 				n++
 				if i+2 < len(b)-1 && '0' <= b[i+2] && b[i+2] <= '7' {
@@ -1102,11 +1122,11 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 				}
 				i++
 				n--
-			} else if c == 'n' {
-				b[i] = '\n' // only for template literals
+			} else if quote == '`' && c == 'n' {
+				b[i] = '\n'
 				i++
-			} else if c == 'r' {
-				b[i] = '\r' // only for template literals
+			} else if quote == '`' && c == 'r' {
+				b[i] = '\r'
 				i++
 			} else if c == 't' {
 				b[i] = '\t'

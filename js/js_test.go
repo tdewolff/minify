@@ -152,8 +152,10 @@ func TestJS(t *testing.T) {
 		{`"string\a\c\'string"`, `"stringac'string"`},
 		{`"string\∀string"`, `"string∀string"`},
 		{`"string\0\uFFFFstring"`, "\"string\\0\uffffstring\""},
-		{`"string\x00\x55\x0A\x0D\x22\x27string"`, `"string\x00U\n\r\"'string"`},
+		{`"string\x00\x55\x0A\x0D\x22\x27string"`, "`string\\x00U\n\r\"'string`"},
 		{`"string\000\12\015\042\47\411string"`, "\"string\\0\\n\\r\\\"'!1string\""},
+		{`'\x0A\x0D'`, "`\n\r`"},
+		{`'\12\15'`, `"\n\r"`},
 		{`"\x005"`, `"\x005"`},
 		{"'string\\n\\rstring'", "`string\n\rstring`"},
 		{"'string\\\r\nstring\\\nstring\\\rstring\\\u2028string\\\u2029string'", `"stringstringstringstringstringstring"`},
@@ -807,6 +809,7 @@ func TestJS(t *testing.T) {
 		{`function transform(){{var aaaa=[];for(var b=0;;){}for(var b in aaaa){}var aaaa=[];for(var b=0;;){}}}`, `function transform(){{for(var aaaa=[],b=0;;);for(b in aaaa);for(aaaa=[],b=0;;);}}`}, // #619
 		{`for(var a=0;;){var b=5;for(var c=0;;);}`, `for(var b,c,a=0;;)for(b=5,c=0;;);`},                                                                                                              // #634
 		{"if(a)for(;;)\n;else b", `if(a)for(;;);else b`}, // #636
+		{`'\u000A\u000D'`, "`\n\r`"},                     // #653
 	}
 
 	m := minify.New()
