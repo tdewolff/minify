@@ -940,7 +940,6 @@ func minifyString(b []byte, allowTemplate bool) []byte {
 	backtickQuotes := 0
 	newlines := 0
 	dollarSigns := 0
-	hasOctals := false
 	for i := 1; i < len(b)-1; i++ {
 		if b[i] == '\'' {
 			singleQuotes++
@@ -953,16 +952,36 @@ func minifyString(b []byte, allowTemplate bool) []byte {
 		} else if b[i] == '\\' && i+1 < len(b) {
 			if b[i+1] == 'n' || b[i+1] == 'r' {
 				newlines++
-			} else if '1' <= b[i+1] && b[i+1] <= '9' || b[i+1] == '0' && i+2 < len(b) && '0' <= b[i+2] && b[i+2] <= '9' {
-				if i+2 < len(b) && b[i+1] == '1' && (b[i+2] == '2' || b[i+2] == '5') {
+			} else if '1' <= b[i+1] && b[i+1] <= '9' && i+2 < len(b) {
+				if b[i+1] == '1' && (b[i+2] == '2' || b[i+2] == '5') {
 					newlines++
-				} else {
-					hasOctals = true
+				} else if b[i+1] == '4' && b[i+2] == '2' {
+					doubleQuotes++
+				} else if b[i+1] == '4' && b[i+2] == '7' {
+					singleQuotes++
+				} else if i+3 < len(b) && b[i+1] == '1' && b[i+2] == '4' && b[i+3] == '0' {
+					backtickQuotes++
 				}
-			} else if b[i+1] == 'x' && i+3 < len(b) && b[i+2] == '0' && (b[i+3]|0x20 == 'a' || b[i+3]|0x20 == 'd') {
-				newlines++
-			} else if b[i+1] == 'u' && i+5 < len(b) && b[i+2] == '0' && b[i+3] == '0' && b[i+4] == '0' && (b[i+5]|0x20 == 'a' || b[i+5]|0x20 == 'd') {
-				newlines++
+			} else if b[i+1] == 'x' && i+3 < len(b) {
+				if b[i+2] == '0' && (b[i+3]|0x20 == 'a' || b[i+3]|0x20 == 'd') {
+					newlines++
+				} else if b[i+2] == '2' && b[i+3] == '2' {
+					doubleQuotes++
+				} else if b[i+2] == '2' && b[i+3] == '7' {
+					singleQuotes++
+				} else if b[i+2] == '6' && b[i+3] == '0' {
+					backtickQuotes++
+				}
+			} else if b[i+1] == 'u' && i+5 < len(b) && b[i+2] == '0' && b[i+3] == '0' {
+				if b[i+4] == '0' && (b[i+5]|0x20 == 'a' || b[i+5]|0x20 == 'd') {
+					newlines++
+				} else if b[i+4] == '2' && b[i+5] == '2' {
+					doubleQuotes++
+				} else if b[i+4] == '2' && b[i+5] == '7' {
+					singleQuotes++
+				} else if b[i+4] == '6' && b[i+5] == '0' {
+					backtickQuotes++
+				}
 			} else if b[i+1] == 'u' && i+4 < len(b) && b[i+2] == '{' {
 				j := i + 3
 				for j < len(b) && b[j] == '0' {
@@ -970,19 +989,27 @@ func minifyString(b []byte, allowTemplate bool) []byte {
 				}
 				if j+1 < len(b) && (b[j]|0x20 == 'a' || b[j]|0x20 == 'd') && b[j+1] == '}' {
 					newlines++
+				} else if j+2 < len(b) && b[j+2] == '}' {
+					if b[j] == '2' && b[j+1] == '2' {
+						doubleQuotes++
+					} else if b[j] == '2' && b[j+1] == '7' {
+						singleQuotes++
+					} else if b[j] == '6' && b[j+1] == '0' {
+						backtickQuotes++
+					}
 				}
 			}
 		}
 	}
 	quote := byte('"') // default to " for better GZIP compression
-	quotes := singleQuotes
+	quotes := doubleQuotes
 	if doubleQuotes < singleQuotes {
 		quote = byte('"')
-		quotes = doubleQuotes
 	} else if singleQuotes < doubleQuotes {
 		quote = byte('\'')
+		quotes = singleQuotes
 	}
-	if allowTemplate && !hasOctals && backtickQuotes+dollarSigns < quotes+newlines {
+	if allowTemplate && backtickQuotes+dollarSigns < quotes+newlines {
 		quote = byte('`')
 	}
 	b[0] = quote
@@ -1084,6 +1111,10 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 					if m == -1 {
 						i++
 						continue
+					} else if num < 256 && quote == byte(num) {
+						b[i] = '\\'
+						i++
+						n--
 					}
 					utf8.EncodeRune(b[i:], rune(num))
 					i += m
