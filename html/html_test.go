@@ -29,7 +29,7 @@ func TestHTML(t *testing.T) {
 		//{"<title>title</title> <body>", `<title>title</title>`},
 		{`<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">`, `<!doctype html>`},
 		{`<!-- comment -->`, ``},
-		{`<!--# SSI Tag -->`, `<!--# SSI Tag -->`},
+		{`<!--# SSI Tag -->`, ``},
 		{`<style><!--\ncss\n--></style>`, `<style><!--\ncss\n--></style>`},
 		{`<style>&</style>`, `<style>&</style>`},
 		{`<html><head></head><body>x</body></html>`, `x`},
@@ -239,7 +239,7 @@ func TestHTMLKeepEndTags(t *testing.T) {
 	}
 }
 
-func TestHTMLKeepConditionalComments(t *testing.T) {
+func TestHTMLKeepSpecialComments(t *testing.T) {
 	htmlTests := []struct {
 		html     string
 		expected string
@@ -250,10 +250,11 @@ func TestHTMLKeepConditionalComments(t *testing.T) {
 		{`<!--[if !mso]><!--> <b> </b> <!--<![endif]-->`, `<!--[if !mso]><!--><b></b><!--<![endif]-->`},
 		{`<!--[if gt IE 6]><!--> <b> </b> <![endif]-->`, `<!--[if gt IE 6]><!--><b></b><![endif]-->`},
 		{`<!--[if IE]foo<![endif]-->`, `<!--[if IE]foo<![endif]-->`}, // #596
+		{`<!--# SSI-->`, `<!--# SSI-->`},                             // #657
 	}
 
 	m := minify.New()
-	htmlMinifier := &Minifier{KeepConditionalComments: true}
+	htmlMinifier := &Minifier{KeepSpecialComments: true}
 	for _, tt := range htmlTests {
 		t.Run(tt.html, func(t *testing.T) {
 			r := bytes.NewBufferString(tt.html)
@@ -434,7 +435,7 @@ func TestWriterErrors(t *testing.T) {
 
 	m := minify.New()
 	m.Add("text/html", &Minifier{
-		KeepConditionalComments: true,
+		KeepSpecialComments: true,
 	})
 
 	for _, tt := range errorTests {
