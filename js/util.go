@@ -1355,23 +1355,31 @@ func minifyRegExp(b []byte) []byte {
 	return b
 }
 
-func removeUnderscores(b []byte) []byte {
+func removeUnderscoresAndSuffix(b []byte) ([]byte, bool) {
 	for i := 0; i < len(b); i++ {
 		if b[i] == '_' {
 			b = append(b[:i], b[i+1:]...)
 			i--
 		}
 	}
-	return b
+	if 0 < len(b) && b[len(b)-1] == 'n' {
+		return b[:len(b)-1], true
+	}
+	return b, false
 }
 
 func decimalNumber(b []byte, prec int) []byte {
-	b = removeUnderscores(b)
+	var suffix bool
+	b, suffix = removeUnderscoresAndSuffix(b)
+	if suffix {
+		return append(b, 'n')
+	}
 	return minify.Number(b, prec)
 }
 
 func binaryNumber(b []byte, prec int) []byte {
-	b = removeUnderscores(b)
+	var suffix bool
+	b, suffix = removeUnderscoresAndSuffix(b)
 	if len(b) <= 2 || 65 < len(b) {
 		return b
 	}
@@ -1387,11 +1395,15 @@ func binaryNumber(b []byte, prec int) []byte {
 		n /= 10
 		i--
 	}
+	if suffix {
+		return append(b, 'n')
+	}
 	return minify.Number(b, prec)
 }
 
 func octalNumber(b []byte, prec int) []byte {
-	b = removeUnderscores(b)
+	var suffix bool
+	b, suffix = removeUnderscoresAndSuffix(b)
 	if len(b) <= 2 || 23 < len(b) {
 		return b
 	}
@@ -1407,11 +1419,15 @@ func octalNumber(b []byte, prec int) []byte {
 		n /= 10
 		i--
 	}
+	if suffix {
+		return append(b, 'n')
+	}
 	return minify.Number(b, prec)
 }
 
 func hexadecimalNumber(b []byte, prec int) []byte {
-	b = removeUnderscores(b)
+	var suffix bool
+	b, suffix = removeUnderscoresAndSuffix(b)
 	if len(b) <= 2 || 12 < len(b) || len(b) == 12 && ('D' < b[2] && b[2] <= 'F' || 'd' < b[2]) {
 		return b
 	}
@@ -1432,6 +1448,9 @@ func hexadecimalNumber(b []byte, prec int) []byte {
 		b[i] = byte('0' + n%10)
 		n /= 10
 		i--
+	}
+	if suffix {
+		return append(b, 'n')
 	}
 	return minify.Number(b, prec)
 }
