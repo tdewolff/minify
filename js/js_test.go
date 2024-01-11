@@ -808,6 +808,7 @@ func TestJS(t *testing.T) {
 		{`for(var a=0;;){var b=5;for(var c=0;;);}`, `for(var b,c,a=0;;)for(b=5,c=0;;);`},                                                                                                              // #634
 		{"if(a)for(;;)\n;else b", `if(a)for(;;);else b`}, // #636
 		{`'\u000A\u000D'`, "`\n\r`"},                     // #653
+		{`for(!a;b;c);`, "`\n\r`"},                       // #656
 	}
 
 	m := minify.New()

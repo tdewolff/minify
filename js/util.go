@@ -633,7 +633,7 @@ func isFalsy(i js.IExpr) (bool, bool) {
 			return !negated, true // falsy
 		} else if tt == js.TrueToken || tt == js.StringToken {
 			return negated, true // truthy
-		} else if tt == js.DecimalToken || tt == js.BinaryToken || tt == js.OctalToken || tt == js.HexadecimalToken || tt == js.BigIntToken {
+		} else if tt == js.DecimalToken || tt == js.BinaryToken || tt == js.OctalToken || tt == js.HexadecimalToken || tt == js.IntegerToken {
 			for _, c := range d {
 				if c == 'e' || c == 'E' || c == 'n' {
 					break
