@@ -253,18 +253,10 @@ func (m *M) Reader(mediatype string, r io.Reader) io.Reader {
 
 // writer makes sure that errors from the minifier are passed down through Close (can be blocking).
 type writer struct {
-	w      io.WriteCloser
+	io.WriteCloser
 	wg     sync.WaitGroup
 	closed bool
 	err    error
-}
-
-// Write intercepts any writes to the writer.
-func (z *writer) Write(b []byte) (int, error) {
-	if z.err != nil {
-		return 0, z.err
-	}
-	return z.w.Write(b)
 }
 
 // Close must be called when writing has finished. It returns the error from the minifier.
@@ -273,10 +265,11 @@ func (z *writer) Close() error {
 		return nil
 	}
 	z.closed = true
-	if err := z.w.Close(); z.err == nil {
-		z.err = err
-	}
+	err := z.WriteCloser.Close()
 	z.wg.Wait()
+	if z.err == nil {
+		return err
+	}
 	return z.err
 }
 
