@@ -246,28 +246,41 @@ func (w *testResponseWriter) Write(b []byte) (int, error) {
 func TestResponseWriter(t *testing.T) {
 	m := New()
 	m.AddFunc("text/html", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
-		_, err := io.Copy(w, r)
+		_, _ = io.ReadAll(r)
+		_, err := w.Write([]byte("minified"))
 		return err
 	})
 
+	// use file extension
 	b := &bytes.Buffer{}
 	w := &testResponseWriter{b, http.Header{}}
 	r := &http.Request{RequestURI: "/index.html"}
 	mw := m.ResponseWriter(w, r)
+	_, err := mw.Write([]byte("input"))
 	test.Error(t, mw.Close())
-	_, _ = mw.Write([]byte("test"))
-	test.Error(t, mw.Close())
-	test.String(t, b.String(), "test", "equal input after dummy minify response writer")
+	test.String(t, b.String(), "minified")
+	_, err = mw.Write([]byte("test"))
+	test.T(t, err, io.ErrClosedPipe)
 
+	// use Content-Type header
 	b = &bytes.Buffer{}
 	w = &testResponseWriter{b, http.Header{}}
 	r = &http.Request{RequestURI: "/index"}
 	mw = m.ResponseWriter(w, r)
 	mw.Header().Add("Content-Type", "text/html")
-	_, _ = mw.Write([]byte("test"))
+	_, _ = mw.Write([]byte("input"))
 	mw.WriteHeader(http.StatusForbidden)
 	test.Error(t, mw.Close())
-	test.String(t, b.String(), "test", "equal input after dummy minify response writer")
+	test.String(t, b.String(), "minified")
+
+	// don't minify
+	b = &bytes.Buffer{}
+	w = &testResponseWriter{b, http.Header{}}
+	r = &http.Request{RequestURI: "/image.png"}
+	mw = m.ResponseWriter(w, r)
+	_, _ = mw.Write([]byte("input"))
+	test.Error(t, mw.Close())
+	test.String(t, b.String(), "input")
 }
 
 func TestMiddleware(t *testing.T) {
