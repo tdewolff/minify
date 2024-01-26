@@ -84,60 +84,72 @@ type Matches struct {
 	matches *[]string
 }
 
-func (scanner Matches) Scan(s []string) (int, error) {
+func (m Matches) Help() (string, string) {
+	val := ""
+	if 0 < len(*m.matches) {
+		val = fmt.Sprint(*m.matches)
+	}
+	return val, "[]string"
+}
+
+func (m Matches) Scan(name string, s []string) (int, error) {
 	n := 0
 	for _, item := range s {
 		if strings.HasPrefix(item, "-") {
 			break
 		}
-		*scanner.matches = append(*scanner.matches, item)
+		*m.matches = append(*m.matches, item)
 		n++
 	}
 	return n, nil
-}
-
-func (typenamer Matches) TypeName() string {
-	return "[]string"
 }
 
 type Includes struct {
 	filters *[]string
 }
 
-func (scanner Includes) Scan(s []string) (int, error) {
+func (m Includes) Help() (string, string) {
+	val := ""
+	if 0 < len(*m.filters) {
+		val = fmt.Sprint(*m.filters)
+	}
+	return val, "[]string"
+}
+
+func (m Includes) Scan(name string, s []string) (int, error) {
 	n := 0
 	for _, item := range s {
 		if strings.HasPrefix(item, "-") {
 			break
 		}
-		*scanner.filters = append(*scanner.filters, "+"+item)
+		*m.filters = append(*m.filters, "+"+item)
 		n++
 	}
 	return n, nil
-}
-
-func (typenamer Includes) TypeName() string {
-	return "[]string"
 }
 
 type Excludes struct {
 	filters *[]string
 }
 
-func (scanner Excludes) Scan(s []string) (int, error) {
+func (m Excludes) Help() (string, string) {
+	val := ""
+	if 0 < len(*m.filters) {
+		val = fmt.Sprint(*m.filters)
+	}
+	return val, "[]string"
+}
+
+func (m Excludes) Scan(name string, s []string) (int, error) {
 	n := 0
 	for _, item := range s {
 		if strings.HasPrefix(item, "-") {
 			break
 		}
-		*scanner.filters = append(*scanner.filters, "-"+item)
+		*m.filters = append(*m.filters, "-"+item)
 		n++
 	}
 	return n, nil
-}
-
-func (typenamer Excludes) TypeName() string {
-	return "[]string"
 }
 
 // Task is a minify task.
@@ -185,49 +197,49 @@ func run() int {
 	svgMinifier := svg.Minifier{}
 	xmlMinifier := xml.Minifier{}
 
-	defaultPreserve := []string{"mode", "timestamps"}
+	preserve := []string{"mode", "timestamps"}
 	if supportsGetOwnership {
-		defaultPreserve = []string{"mode", "ownership", "timestamps"}
+		preserve = []string{"mode", "ownership", "timestamps"}
 	}
 
 	f := argp.New("minify")
 	f.AddRest(&inputs, "inputs", "Input files or directories, leave blank to use stdin")
-	f.AddOpt(&output, "o", "output", nil, "Output file or directory, leave blank to use stdout")
-	f.AddOpt(&oldmimetype, "", "mime", nil, "Mimetype (eg. text/css), optional for input filenames (DEPRECATED, use --type)")
-	f.AddOpt(&mimetype, "", "type", nil, "Filetype (eg. css or text/css), optional when specifying inputs")
-	f.AddOpt(Matches{&matches}, "", "match", nil, "Filename matching pattern, only matching filenames are processed")
-	f.AddOpt(Includes{&filters}, "", "include", nil, "Path inclusion pattern, includes paths previously excluded")
-	f.AddOpt(Excludes{&filters}, "", "exclude", nil, "Path exclusion pattern, excludes paths from being processed")
-	f.AddOpt(&extensions, "", "ext", nil, "Filename extension mapping to filetype (eg. css or text/css)")
-	f.AddOpt(&recursive, "r", "recursive", false, "Recursively minify directories")
-	f.AddOpt(&hidden, "a", "all", false, "Minify all files, including hidden files and files in hidden directories")
-	f.AddOpt(&list, "l", "list", false, "List all accepted filetypes")
-	f.AddOpt(&quiet, "q", "quiet", false, "Quiet mode to suppress all output")
-	f.AddOpt(argp.Count{&verbose}, "v", "verbose", nil, "Verbose mode, set twice for more verbosity")
-	f.AddOpt(&watch, "w", "watch", false, "Watch files and minify upon changes")
-	f.AddOpt(&sync, "s", "sync", false, "Copy all files to destination directory and minify when filetype matches")
-	f.AddOpt(&preserve, "p", "preserve", defaultPreserve, "Preserve options (mode, ownership, timestamps, links, all)")
-	f.AddOpt(&bundle, "b", "bundle", false, "Bundle files by concatenation into a single file")
-	f.AddOpt(&version, "", "version", false, "Version")
+	f.AddOpt(&output, "o", "output", "Output file or directory, leave blank to use stdout")
+	f.AddOpt(&oldmimetype, "", "mime", "Mimetype (eg. text/css), optional for input filenames (DEPRECATED, use --type)")
+	f.AddOpt(&mimetype, "", "type", "Filetype (eg. css or text/css), optional when specifying inputs")
+	f.AddOpt(Matches{&matches}, "", "match", "Filename matching pattern, only matching filenames are processed")
+	f.AddOpt(Includes{&filters}, "", "include", "Path inclusion pattern, includes paths previously excluded")
+	f.AddOpt(Excludes{&filters}, "", "exclude", "Path exclusion pattern, excludes paths from being processed")
+	f.AddOpt(&extensions, "", "ext", "Filename extension mapping to filetype (eg. css or text/css)")
+	f.AddOpt(&recursive, "r", "recursive", "Recursively minify directories")
+	f.AddOpt(&hidden, "a", "all", "Minify all files, including hidden files and files in hidden directories")
+	f.AddOpt(&list, "l", "list", "List all accepted filetypes")
+	f.AddOpt(&quiet, "q", "quiet", "Quiet mode to suppress all output")
+	f.AddOpt(argp.Count{&verbose}, "v", "verbose", "Verbose mode, set twice for more verbosity")
+	f.AddOpt(&watch, "w", "watch", "Watch files and minify upon changes")
+	f.AddOpt(&sync, "s", "sync", "Copy all files to destination directory and minify when filetype matches")
+	f.AddOpt(&preserve, "p", "preserve", "Preserve options (mode, ownership, timestamps, links, all)")
+	f.AddOpt(&bundle, "b", "bundle", "Bundle files by concatenation into a single file")
+	f.AddOpt(&version, "", "version", "Version")
 
-	f.AddOpt(&siteurl, "", "url", nil, "URL of file to enable URL minification")
-	f.AddOpt(&cssMinifier.Precision, "", "css-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
-	f.AddOpt(&htmlMinifier.KeepComments, "", "html-keep-comments", false, "Preserve all comments")
-	f.AddOpt(&htmlMinifier.KeepConditionalComments, "", "html-keep-conditional-comments", false, "Preserve all IE conditional comments (DEPRECATED)")
-	f.AddOpt(&htmlMinifier.KeepSpecialComments, "", "html-keep-special-comments", false, "Preserve all IE conditionals and SSI tags")
-	f.AddOpt(&htmlMinifier.KeepDefaultAttrVals, "", "html-keep-default-attrvals", false, "Preserve default attribute values")
-	f.AddOpt(&htmlMinifier.KeepDocumentTags, "", "html-keep-document-tags", false, "Preserve html, head and body tags")
-	f.AddOpt(&htmlMinifier.KeepEndTags, "", "html-keep-end-tags", false, "Preserve all end tags")
-	f.AddOpt(&htmlMinifier.KeepWhitespace, "", "html-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
-	f.AddOpt(&htmlMinifier.KeepQuotes, "", "html-keep-quotes", false, "Preserve quotes around attribute values")
-	f.AddOpt(&jsMinifier.Precision, "", "js-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
-	f.AddOpt(&jsMinifier.KeepVarNames, "", "js-keep-var-names", false, "Preserve original variable names")
-	f.AddOpt(&jsMinifier.Version, "", "js-version", 0, "ECMAScript version to toggle supported optimizations (e.g. 2019, 2020), by default 0 is the latest version")
-	f.AddOpt(&jsonMinifier.Precision, "", "json-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
-	f.AddOpt(&jsonMinifier.KeepNumbers, "", "json-keep-numbers", false, "Preserve original numbers instead of minifying them")
-	f.AddOpt(&svgMinifier.KeepComments, "", "svg-keep-comments", false, "Preserve all comments")
-	f.AddOpt(&svgMinifier.Precision, "", "svg-precision", 0, "Number of significant digits to preserve in numbers, 0 is all")
-	f.AddOpt(&xmlMinifier.KeepWhitespace, "", "xml-keep-whitespace", false, "Preserve whitespace characters but still collapse multiple into one")
+	f.AddOpt(&siteurl, "", "url", "URL of file to enable URL minification")
+	f.AddOpt(&cssMinifier.Precision, "", "css-precision", "Number of significant digits to preserve in numbers, 0 is all")
+	f.AddOpt(&htmlMinifier.KeepComments, "", "html-keep-comments", "Preserve all comments")
+	f.AddOpt(&htmlMinifier.KeepConditionalComments, "", "html-keep-conditional-comments", "Preserve all IE conditional comments (DEPRECATED)")
+	f.AddOpt(&htmlMinifier.KeepSpecialComments, "", "html-keep-special-comments", "Preserve all IE conditionals and SSI tags")
+	f.AddOpt(&htmlMinifier.KeepDefaultAttrVals, "", "html-keep-default-attrvals", "Preserve default attribute values")
+	f.AddOpt(&htmlMinifier.KeepDocumentTags, "", "html-keep-document-tags", "Preserve html, head and body tags")
+	f.AddOpt(&htmlMinifier.KeepEndTags, "", "html-keep-end-tags", "Preserve all end tags")
+	f.AddOpt(&htmlMinifier.KeepWhitespace, "", "html-keep-whitespace", "Preserve whitespace characters but still collapse multiple into one")
+	f.AddOpt(&htmlMinifier.KeepQuotes, "", "html-keep-quotes", "Preserve quotes around attribute values")
+	f.AddOpt(&jsMinifier.Precision, "", "js-precision", "Number of significant digits to preserve in numbers, 0 is all")
+	f.AddOpt(&jsMinifier.KeepVarNames, "", "js-keep-var-names", "Preserve original variable names")
+	f.AddOpt(&jsMinifier.Version, "", "js-version", "ECMAScript version to toggle supported optimizations (e.g. 2019, 2020), by default 0 is the latest version")
+	f.AddOpt(&jsonMinifier.Precision, "", "json-precision", "Number of significant digits to preserve in numbers, 0 is all")
+	f.AddOpt(&jsonMinifier.KeepNumbers, "", "json-keep-numbers", "Preserve original numbers instead of minifying them")
+	f.AddOpt(&svgMinifier.KeepComments, "", "svg-keep-comments", "Preserve all comments")
+	f.AddOpt(&svgMinifier.Precision, "", "svg-precision", "Number of significant digits to preserve in numbers, 0 is all")
+	f.AddOpt(&xmlMinifier.KeepWhitespace, "", "xml-keep-whitespace", "Preserve whitespace characters but still collapse multiple into one")
 	f.Parse()
 
 	if version {
