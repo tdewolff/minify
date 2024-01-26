@@ -165,6 +165,7 @@ var (
 	Error   *log.Logger
 	Warning *log.Logger
 	Info    *log.Logger
+	Debug   *log.Logger
 )
 
 func main() {
@@ -271,6 +272,7 @@ func run() int {
 	Error = log.New(ioutil.Discard, "", 0)
 	Warning = log.New(ioutil.Discard, "", 0)
 	Info = log.New(ioutil.Discard, "", 0)
+	Debug = log.New(ioutil.Discard, "", 0)
 	if !quiet {
 		Error = log.New(os.Stderr, "ERROR: ", 0)
 		if 0 < verbose {
@@ -278,6 +280,9 @@ func run() int {
 		}
 		if 1 < verbose {
 			Info = log.New(os.Stderr, "INFO: ", 0)
+		}
+		if 2 < verbose {
+			Debug = log.New(os.Stderr, "DEBUG: ", 0)
 		}
 	}
 
@@ -343,25 +348,9 @@ func run() int {
 		return 1
 	}
 	if mimetype == "" {
-		if !recursive {
-			okAll := true
-			for _, input := range inputs {
-				ext := filepath.Ext(input)
-				if 0 < len(ext) {
-					ext = ext[1:]
-				}
-				if _, ok := extMap[ext]; !ok {
-					Error.Println("cannot infer mimetype from extension in", input, ", set --type explicitly")
-					okAll = false
-				}
-			}
-			if !okAll {
-				return 1
-			}
-		}
-		Info.Println("infer mimetype from file extensions")
+		Debug.Println("infer mimetype from file extensions")
 	} else {
-		Info.Println("use mimetype", mimetype)
+		Debug.Println("use mimetype", mimetype)
 	}
 	if f.IsSet("preserve") {
 		if bundle {
@@ -431,16 +420,16 @@ func run() int {
 		return 1
 	}
 	if output == "" {
-		Info.Println("minify to stdout")
+		Debug.Println("minify to stdout")
 	} else if !dirDst {
-		Info.Println("minify to output file", output)
+		Debug.Println("minify to output file", output)
 	} else if output == "."+string(os.PathSeparator) {
-		Info.Println("minify to current working directory")
+		Debug.Println("minify to current working directory")
 	} else {
-		Info.Println("minify to output directory", output)
+		Debug.Println("minify to output directory", output)
 	}
 	if useStdin {
-		Info.Println("minify from stdin")
+		Debug.Println("minify from stdin")
 	}
 
 	var tasks []Task
