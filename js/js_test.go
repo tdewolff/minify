@@ -810,9 +810,10 @@ func TestJS(t *testing.T) {
 		{`"\x00\x31 \0\u0000"`, `"\x001 \0\x00"`}, // #577
 		{`function transform(){{var aaaa=[];for(var b=0;;){}for(var b in aaaa){}var aaaa=[];for(var b=0;;){}}}`, `function transform(){{for(var aaaa=[],b=0;;);for(b in aaaa);for(aaaa=[],b=0;;);}}`}, // #619
 		{`for(var a=0;;){var b=5;for(var c=0;;);}`, `for(var b,c,a=0;;)for(b=5,c=0;;);`},                                                                                                              // #634
-		{"if(a)for(;;)\n;else b", `if(a)for(;;);else b`}, // #636
-		{`'\u000A\u000D'`, "`\n\r`"},                     // #653
-		{`for(!a;b;c);`, "for(!a;b;c);"},                 // #656
+		{"if(a)for(;;)\n;else b", `if(a)for(;;);else b`},       // #636
+		{`'\u000A\u000D'`, "`\n\r`"},                           // #653
+		{`for(!a;b;c);`, "for(!a;b;c);"},                       // #656
+		{"var a = /*! comment */ b;", "/*! comment */var a=b"}, // #664
 	}
 
 	m := minify.New()
