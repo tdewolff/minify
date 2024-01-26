@@ -9,11 +9,8 @@ import (
 	"github.com/matryer/try"
 )
 
-// IsDir returns true if the passed string looks like it specifies a directory, false otherwise.
+// IsDir returns whether the path is a directory.
 func IsDir(dir string) bool {
-	if 0 < len(dir) && dir[len(dir)-1] == os.PathSeparator {
-		return true
-	}
 	info, err := os.Lstat(dir)
 	return err == nil && info.Mode().IsDir() && info.Mode()&os.ModeSymlink == 0
 }

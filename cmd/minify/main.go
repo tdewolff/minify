@@ -409,17 +409,14 @@ func run() int {
 	// set output file or directory, empty means stdout
 	dirDst := false
 	if output != "" {
-		dirDst = IsDir(output)
-		if !dirDst {
-			if 1 < len(inputs) && !bundle {
-				Error.Printf("stat %v: no such file or directory\n", output)
-				return 1
-			} else if len(inputs) == 1 {
-				if info, err := os.Lstat(inputs[0]); err == nil && !bundle && info.Mode().IsDir() && info.Mode()&os.ModeSymlink == 0 {
-					dirDst = true
-				}
-			}
+		if 0 < len(output) && output[len(output)-1] == os.PathSeparator {
+			dirDst = true
+		} else if !bundle && 1 < len(inputs) {
+			dirDst = true
+		} else if !bundle && len(inputs) == 1 && IsDir(inputs[0]) {
+			dirDst = true
 		}
+
 		if dirDst && bundle {
 			Error.Println("--bundle requires destination to be stdout or a file")
 			return 1
