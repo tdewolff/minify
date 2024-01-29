@@ -327,7 +327,7 @@ func run() int {
 	if slash := strings.Index(mimetype, "/"); slash == -1 && 0 < len(mimetype) {
 		var ok bool
 		if mimetype, ok = extMap[mimetype]; !ok {
-			Error.Println("unknown filetype", mimetype)
+			Error.Printf("unknown filetype %v", mimetype)
 			return 1
 		}
 	}
@@ -362,7 +362,7 @@ func run() int {
 	if mimetype == "" {
 		Debug.Println("infer mimetype from file extensions")
 	} else {
-		Debug.Println("use mimetype", mimetype)
+		Debug.Printf("use mimetype %v", mimetype)
 	}
 	if f.IsSet("preserve") {
 		if bundle {
@@ -434,11 +434,11 @@ func run() int {
 	if output == "" {
 		Debug.Println("minify to stdout")
 	} else if !dirDst {
-		Debug.Println("minify to output file", output)
+		Debug.Printf("minify to output file %v", output)
 	} else if output == "."+string(os.PathSeparator) {
 		Debug.Println("minify to current working directory")
 	} else {
-		Debug.Println("minify to output directory", output)
+		Debug.Printf("minify to output directory %v", output)
 	}
 	if useStdin {
 		Debug.Println("minify from stdin")
@@ -595,7 +595,7 @@ func run() int {
 	}
 
 	if !watch {
-		Info.Println("finished in", time.Since(start))
+		Info.Printf("finished in %v", time.Since(start))
 	}
 	if 0 < fails {
 		return 1
@@ -690,8 +690,7 @@ func createTasks(fsys fs.FS, inputs []string, output string) ([]Task, []string, 
 		if preserveLinks && info.Mode()&os.ModeSymlink != 0 {
 			// copy symlink as is
 			if !sync {
-				Warning.Println("--sync not specified, omitting symbolic link", input)
-				continue
+				return nil, nil, fmt.Errorf("--sync not specified, omitting symbolic link %v", input)
 			}
 			task, err := NewTask(root, input, output, true)
 			if err != nil {
@@ -701,6 +700,15 @@ func createTasks(fsys fs.FS, inputs []string, output string) ([]Task, []string, 
 		} else if info.Mode().IsRegular() {
 			valid := fileFilter(input) // don't filter mimetype
 			if valid || sync {
+				if !sync {
+					ext := filepath.Ext(input)
+					if 0 < len(ext) {
+						ext = ext[1:]
+					}
+					if _, ok := extMap[ext]; !ok {
+						return nil, nil, fmt.Errorf("cannot infer mimetype from extension in %v, set --type explicitly", input)
+					}
+				}
 				task, err := NewTask(root, input, output, !valid)
 				if err != nil {
 					return nil, nil, err
@@ -709,7 +717,7 @@ func createTasks(fsys fs.FS, inputs []string, output string) ([]Task, []string, 
 			}
 		} else if info.Mode().IsDir() {
 			if !recursive {
-				Warning.Println("--recursive not specified, omitting directory", input)
+				Warning.Printf("--recursive not specified, omitting directory %v", input)
 				continue
 			}
 
@@ -741,7 +749,7 @@ func createTasks(fsys fs.FS, inputs []string, output string) ([]Task, []string, 
 				if preserveLinks && d.Type()&os.ModeSymlink != 0 {
 					// copy symlink as is
 					if !sync {
-						Warning.Println("--sync not specified, omitting symbolic link", input)
+						Warning.Printf("--sync not specified, omitting symbolic link %v", input)
 						return nil
 					}
 					task, err := NewTask(root, input, output, true)
@@ -800,13 +808,13 @@ func minify(t Task) bool {
 			}
 			srcMimetype, ok := extMap[ext]
 			if !ok {
-				Warning.Println("cannot infer mimetype from extension in", src, ", set --type explicitly")
+				Warning.Printf("cannot infer mimetype from extension in %v, set --type explicitly", src)
 				return false
 			}
 			if fileMimetype == "" {
 				fileMimetype = srcMimetype
 			} else if srcMimetype != fileMimetype {
-				Warning.Println("inferred mimetype", srcMimetype, "of", src, "for concatenation unequal to previous mimetypes, set --type explicitly")
+				Warning.Printf("inferred mimetype %v of %v for concatenation unequal to previous mimetypes, set --type explicitly", srcMimetype, src)
 				return false
 			}
 		}
@@ -874,7 +882,7 @@ func minify(t Task) bool {
 			return false
 		}
 		preserveAttributes(t.srcs[0], t.root, t.dst)
-		Info.Println("copy", srcName, "to", dstName)
+		Info.Printf("copy %v to %v", srcName, dstName)
 		return true
 	}
 
@@ -882,7 +890,7 @@ func minify(t Task) bool {
 	if err != nil {
 		fr.Close()
 		fw.Close()
-		Error.Println("cannot minify "+srcName+":", err)
+		Error.Printf("cannot minify %v: %v", srcName, err)
 		return false
 	}
 	w := bytes.NewBuffer(make([]byte, 0, len(b)))
@@ -891,7 +899,7 @@ func minify(t Task) bool {
 	startTime := time.Now()
 	if err = m.Minify(fileMimetype, w, bytes.NewReader(b)); err != nil {
 		w = bytes.NewBuffer(b) // copy original
-		Error.Println("cannot minify "+srcName+":", err)
+		Error.Printf("cannot minify %v: %v", srcName, err)
 		success = false
 	}
 
@@ -913,9 +921,9 @@ func minify(t Task) bool {
 
 		stats := fmt.Sprintf("(%9v, %6v, %6v, %5.1f%%, %6v/s)", dur, humanize.Bytes(uint64(rLen)), humanize.Bytes(uint64(wLen)), ratio*100, speed)
 		if srcName != dstName {
-			fmt.Println(stats, "-", srcName, "to", dstName)
+			fmt.Println("%v - %v to %v", stats, srcName, dstName)
 		} else {
-			fmt.Println(stats, "-", srcName)
+			fmt.Println("%v - %v", stats, srcName)
 		}
 	}
 
