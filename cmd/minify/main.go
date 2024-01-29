@@ -921,9 +921,9 @@ func minify(t Task) bool {
 
 		stats := fmt.Sprintf("(%9v, %6v, %6v, %5.1f%%, %6v/s)", dur, humanize.Bytes(uint64(rLen)), humanize.Bytes(uint64(wLen)), ratio*100, speed)
 		if srcName != dstName {
-			fmt.Println("%v - %v to %v", stats, srcName, dstName)
+			fmt.Printf("%v - %v to %v\n", stats, srcName, dstName)
 		} else {
-			fmt.Println("%v - %v", stats, srcName)
+			fmt.Printf("%v - %v\n", stats, srcName)
 		}
 	}
 
