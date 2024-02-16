@@ -364,14 +364,12 @@ func run() int {
 	} else {
 		Debug.Printf("use mimetype %v", mimetype)
 	}
-	if f.IsSet("preserve") {
-		if bundle {
-			Error.Println("--preserve cannot be used together with --bundle")
-			return 1
-		} else if useStdin || output == "" {
+	if 0 < len(preserve) && (useStdin || output == "") {
+		if f.IsSet("preserve") {
 			Error.Println("--preserve cannot be used together with stdin or stdout")
 			return 1
 		}
+		preserve = preserve[:0]
 	}
 	for _, option := range preserve {
 		switch option {
@@ -881,7 +879,7 @@ func minify(t Task) bool {
 			Error.Println(err)
 			return false
 		}
-		preserveAttributes(t.srcs[0], t.root, t.dst)
+		preserveAttributes(t.srcs, t.root, t.dst)
 		Info.Printf("copy %v to %v", srcName, dstName)
 		return true
 	}
@@ -948,56 +946,91 @@ func minify(t Task) bool {
 			break
 		}
 	}
-	preserveAttributes(t.srcs[0], t.root, t.dst)
+	preserveAttributes(t.srcs, t.root, t.dst)
 	return success
 }
 
-func preserveAttributes(src, root, dst string) {
-	if src == "" || dst == "" {
+func preserveAttributes(srcs []string, root, dst string) {
+	if len(srcs) == 0 || dst == "" {
 		return
 	}
+
+	// only with --bundle we allow 1 < len(srcs)
 
 	// make sure we only set attributes on directories and files inside the root destination
 	var err error
-	src, err = filepath.Rel(root, src)
-	if err != nil {
-		// should never occur
-		Error.Printf("src is not part of root path: src=%s root=%s", src, root)
-		return
+	for i := range srcs {
+		if srcs[i], err = filepath.Rel(root, srcs[i]); err != nil {
+			// should never occur
+			Error.Printf("src is not part of root path: src=%s root=%s", srcs[i], root)
+			return
+		}
 	}
 
+	srcInfos := make([]os.FileInfo, len(srcs))
 Next:
-	srcInfo, err := os.Stat(filepath.Join(root, src))
-	if err != nil {
-		Warning.Println(err)
-		return
+	for i := range srcs {
+		if srcInfos[i], err = os.Stat(filepath.Join(root, srcs[i])); err != nil {
+			Warning.Println(err)
+			return
+		}
 	}
 
 	if preserveMode {
-		err = os.Chmod(dst, srcInfo.Mode().Perm())
-		if err != nil {
-			Warning.Println(err)
+		valid := true
+		perm := srcInfos[0].Mode().Perm()
+		for _, srcInfo := range srcInfos[1:] {
+			if srcInfo.Mode().Perm() != perm {
+				Warning.Println("src permissions are different, won't set dst permissions")
+				valid = false
+				break
+			}
 		}
-	}
-	if preserveOwnership {
-		if uid, gid, ok := getOwnership(srcInfo); ok {
-			err = os.Chown(dst, uid, gid)
-			if err != nil {
+		if valid {
+			if err = os.Chmod(dst, perm); err != nil {
 				Warning.Println(err)
 			}
 		}
 	}
+	if preserveOwnership {
+		if uid, gid, ok := getOwnership(srcInfos[0]); ok {
+			valid := true
+			for _, srcInfo := range srcInfos[1:] {
+				if uid2, gid2, ok2 := getOwnership(srcInfo); !ok2 || uid2 != uid || gid2 != gid {
+					Warning.Println("src ownership is different, won't set dst ownership")
+					valid = false
+					break
+				}
+			}
+			if valid {
+				if err = os.Chown(dst, uid, gid); err != nil {
+					Warning.Println(err)
+				}
+			}
+		} else {
+			Warning.Println("unable to set file ownership")
+		}
+	}
 	if preserveTimestamps {
-		err = os.Chtimes(dst, atime.Get(srcInfo), srcInfo.ModTime())
-		if err != nil {
+		accessTime := atime.Get(srcInfos[0])
+		modTime := srcInfos[0].ModTime()
+		for _, srcInfo := range srcInfos[1:] {
+			if accessTime2 := atime.Get(srcInfo); accessTime2.After(accessTime) {
+				accessTime = accessTime2
+			}
+			if modTime2 := srcInfo.ModTime(); modTime2.After(modTime) {
+				modTime = modTime2
+			}
+		}
+		if err = os.Chtimes(dst, accessTime, modTime); err != nil {
 			Warning.Println(err)
 		}
 	}
 
-	src = filepath.Dir(src)
 	dst = filepath.Dir(dst)
-	if src != "." {
+	if srcs[0] = filepath.Dir(srcs[0]); srcs[0] != "." {
 		// go up to but excluding the root path
+		srcs = srcs[:1] // use first file to set permissions on parent directories
 		goto Next
 	}
 }
