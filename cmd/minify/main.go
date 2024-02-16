@@ -1027,10 +1027,14 @@ Next:
 		}
 	}
 
+	// when using --bundle there are no directories to preserve
+	if 1 < len(srcs) {
+		return
+	}
+
 	dst = filepath.Dir(dst)
 	if srcs[0] = filepath.Dir(srcs[0]); srcs[0] != "." {
 		// go up to but excluding the root path
-		srcs = srcs[:1] // use first file to set permissions on parent directories
 		goto Next
 	}
 }
