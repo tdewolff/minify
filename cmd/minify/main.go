@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/url"
 	"os"
 	"os/signal"
@@ -18,7 +19,6 @@ import (
 	"time"
 
 	"github.com/djherbis/atime"
-	humanize "github.com/dustin/go-humanize"
 	"github.com/matryer/try"
 	"github.com/tdewolff/argp"
 	min "github.com/tdewolff/minify/v2"
@@ -912,14 +912,14 @@ func minify(t Task) bool {
 		dur := time.Since(startTime)
 		speed := "Inf MB"
 		if 0 < dur {
-			speed = humanize.Bytes(uint64(float64(rLen) / dur.Seconds()))
+			speed = formatBytes(uint64(float64(rLen) / dur.Seconds()))
 		}
 		ratio := 1.0
 		if 0 < rLen {
 			ratio = float64(wLen) / float64(rLen)
 		}
 
-		stats := fmt.Sprintf("(%9v, %6v, %6v, %5.1f%%, %6v/s)", dur, humanize.Bytes(uint64(rLen)), humanize.Bytes(uint64(wLen)), ratio*100, speed)
+		stats := fmt.Sprintf("(%6v, %6v, %6v, %5.1f%%, %6v/s)", formatDuration(dur), formatBytes(uint64(rLen)), formatBytes(uint64(wLen)), ratio*100, speed)
 		if srcName != dstName {
 			fmt.Printf("%v - %v to %v\n", stats, srcName, dstName)
 		} else {
@@ -1000,4 +1000,55 @@ Next:
 		// go up to but excluding the root path
 		goto Next
 	}
+}
+
+func formatBytes(size uint64) string {
+	if size < 10 {
+		return fmt.Sprintf("%d B", size)
+	}
+
+	units := []string{"B", "kB", "MB", "GB", "TB", "PB", "EB"}
+	scale := int(math.Floor((math.Log10(float64(size)) + math.Log10(2.0)) / 3.0))
+	value := float64(size) / math.Pow10(scale*3.0)
+	format := "%.0f %s"
+	if value < 10.0 {
+		format = "%.1f %s"
+	}
+	return fmt.Sprintf(format, value, units[scale])
+}
+
+func formatDuration(dur time.Duration) string {
+	str := ""
+	if 1.0 <= dur.Hours() {
+		hours, _ := math.Modf(dur.Hours())
+		str += fmt.Sprintf("%dh", int(hours+0.5))
+		dur -= time.Duration(int(hours+0.5) * 3600 * 1e9)
+	}
+	if 1.0 <= dur.Minutes() {
+		minutes, _ := math.Modf(dur.Minutes())
+		str += fmt.Sprintf("%dm", int(minutes+0.5))
+		dur -= time.Duration(int(minutes+0.5) * 60 * 1e9)
+	}
+	if 1.0 <= dur.Seconds() {
+		seconds, _ := math.Modf(dur.Seconds())
+		str += fmt.Sprintf("%ds", int(seconds+0.5))
+		dur -= time.Duration(int(seconds+0.5) * 1e9)
+	}
+	if 0 < len(str) {
+		return str
+	} else if dur == 0 {
+		return "0s"
+	} else if dur < 10 {
+		return fmt.Sprintf("%d ns", dur)
+	}
+
+	size := dur.Nanoseconds()
+	units := []string{"ns", "µs", "ms", "s"}
+	scale := int(math.Floor((math.Log10(float64(size)) + math.Log10(2.0)) / 3.0))
+	value := float64(size) / math.Pow10(scale*3.0)
+	format := "%.0f %s"
+	if value < 10.0 {
+		format = "%.1f %s"
+	}
+	return fmt.Sprintf(format, value, units[scale])
 }
