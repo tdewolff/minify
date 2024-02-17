@@ -142,7 +142,7 @@ func TestHTML(t *testing.T) {
 		{`<span style="font-family:&quot;Helvetica Neue&quot;,&quot;Helvetica&quot;,Helvetica,Arial,sans-serif">text</span>`, `<span style='font-family:"Helvetica Neue","Helvetica",Helvetica,Arial,sans-serif'>text</span>`},
 
 		// go-fuzz
-		{`<meta e t n content=ful><a b`, `<meta e t n content="ful"><a b>`},
+		{`<meta e t n content=ful><a b`, `<meta e t n content=ful><a b>`},
 		{`<img alt=a'b="">`, `<img alt='a&#39;b=""'>`},
 		{`</b`, `</b`},
 		{`<title></`, `<title></`},
@@ -311,6 +311,7 @@ func TestHTMLKeepQuotes(t *testing.T) {
 		{`<p attr="test">`, `<p attr="test">`},
 		{`<p attr='test'>`, `<p attr='test'>`},
 		{`<p attr=test>`, `<p attr=test>`},
+		{`<meta name='viewport' content='width=device-width, initial-scale=1'>`, `<meta name='viewport' content='width=device-width,initial-scale=1'>`},
 	}
 
 	m := minify.New()
