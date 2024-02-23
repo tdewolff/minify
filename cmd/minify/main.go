@@ -543,12 +543,13 @@ func run() int {
 			defer watcher.Close()
 			changes := watcher.Run()
 
-			for _, filename := range inputs {
-				watcher.AddPath(filename)
-			}
-
+			taskMap := map[string]*Task{}
 			for _, task := range tasks {
-				watcher.IgnoreNext(task.dst)
+				for _, src := range task.srcs {
+					taskMap[src] = &task
+					watcher.AddPath(src)
+				}
+				watcher.IgnoreNext(task.dst) // skip change on output
 				chanTasks <- task
 			}
 
@@ -563,29 +564,16 @@ func run() int {
 						changes = nil
 						break
 					}
-					file = filepath.Clean(file)
 
-					// find longest common path among roots
-					root := ""
-					for _, path := range roots {
-						pathRel, err1 := filepath.Rel(path, file)
-						rootRel, err2 := filepath.Rel(root, file)
-						if err2 != nil || err1 == nil && len(pathRel) < len(rootRel) {
-							root = path
-						}
-					}
-
-					task, err := NewTask(root, file, output, !fileMatches(file))
-					if err != nil {
-						Error.Println(err)
-						return 1
+					task, ok := taskMap[filepath.Clean(file)]
+					if !ok {
+						continue
 					}
 					watcher.IgnoreNext(task.dst) // skip change on output
-					chanTasks <- task
+					chanTasks <- *task
 				}
 			}
 		}
-
 		close(chanTasks)
 		for n := 0; n < numWorkers; n++ {
 			fails += <-chanFails
@@ -818,8 +806,9 @@ func minify(t Task) bool {
 		}
 	}
 
-	srcName := strings.Join(t.srcs, " + ")
-	if len(t.srcs) > 1 {
+	srcs := append([]string{}, t.srcs...)
+	srcName := strings.Join(srcs, " + ")
+	if len(srcs) > 1 {
 		srcName = "(" + srcName + ")"
 	}
 	if srcName == "" {
@@ -830,11 +819,11 @@ func minify(t Task) bool {
 		dstName = "stdout"
 	} else {
 		// rename original when overwriting
-		for i := range t.srcs {
-			if sameFile, _ := SameFile(t.srcs[i], t.dst); sameFile {
-				t.srcs[i] += ".bak"
+		for i := range srcs {
+			if sameFile, _ := SameFile(srcs[i], t.dst); sameFile {
+				srcs[i] += ".bak"
 				err := try.Do(func(attempt int) (bool, error) {
-					ferr := os.Rename(t.dst, t.srcs[i])
+					ferr := os.Rename(t.dst, srcs[i])
 					return attempt < 5, ferr
 				})
 				if err != nil {
@@ -849,14 +838,14 @@ func minify(t Task) bool {
 	var err error
 	var fr io.ReadCloser
 	var fw io.WriteCloser
-	if len(t.srcs) == 1 {
-		fr, err = openInputFile(t.srcs[0])
+	if len(srcs) == 1 {
+		fr, err = openInputFile(srcs[0])
 	} else {
 		var sep []byte
 		if err == nil && fileMimetype == extMap["js"] {
 			sep = []byte(";\n")
 		}
-		fr, err = openInputFiles(t.srcs, sep)
+		fr, err = openInputFiles(srcs, sep)
 	}
 	if err != nil {
 		Error.Println(err)
@@ -879,7 +868,7 @@ func minify(t Task) bool {
 			Error.Println(err)
 			return false
 		}
-		preserveAttributes(t.srcs, t.root, t.dst)
+		preserveAttributes(srcs, t.root, t.dst)
 		Info.Printf("copy %v to %v", srcName, dstName)
 		return true
 	}
@@ -926,10 +915,10 @@ func minify(t Task) bool {
 	}
 
 	// remove original that was renamed, when overwriting files
-	for i := range t.srcs {
-		if t.srcs[i] == t.dst+".bak" {
+	for i := range srcs {
+		if srcs[i] == t.dst+".bak" {
 			if err == nil {
-				if err = os.Remove(t.srcs[i]); err != nil {
+				if err = os.Remove(srcs[i]); err != nil {
 					Error.Println(err)
 					return false
 				}
@@ -937,16 +926,16 @@ func minify(t Task) bool {
 				if err = os.Remove(t.dst); err != nil {
 					Error.Println(err)
 					return false
-				} else if err = os.Rename(t.srcs[i], t.dst); err != nil {
+				} else if err = os.Rename(srcs[i], t.dst); err != nil {
 					Error.Println(err)
 					return false
 				}
 			}
-			t.srcs[i] = t.dst
+			srcs[i] = t.dst
 			break
 		}
 	}
-	preserveAttributes(t.srcs, t.root, t.dst)
+	preserveAttributes(srcs, t.root, t.dst)
 	return success
 }
 
