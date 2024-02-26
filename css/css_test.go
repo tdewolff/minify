@@ -76,6 +76,7 @@ func TestCSS(t *testing.T) {
 
 		// bugs
 		{"a{@media screen and (min-width:1024px){ width: 40%; } & h1 { font-size: clamp(2.5rem, 1rem + 3vw, 3.5rem)}}", "a{@media screen and (min-width:1024px){width: 40%;}& h1 { font-size: clamp(2.5rem, 1rem + 3vw, 3.5rem)}}"}, // #602
+		{"a{padding:calc(var(--dce-edge-xsmall,6px) - 2px) calc(var(--dce-button-horizontal-padding,18px) - 2px)}", "a{padding:calc(var(--dce-edge-xsmall,6px) - 2px)calc(var(--dce-button-horizontal-padding,18px) - 2px)}"},       // #673
 	}
 
 	m := minify.New()
@@ -90,7 +91,7 @@ func TestCSS(t *testing.T) {
 
 	// coverage
 	test.T(t, Token{css.IdentToken, []byte("data"), nil, 0, 0}.String(), "Ident(data)")
-	test.T(t, Token{css.FunctionToken, nil, []Token{{css.IdentToken, []byte("data"), nil, 0, 0}}, 0, 0}.String(), "[Ident(data)]")
+	test.T(t, Token{css.FunctionToken, []byte("func("), []Token{{css.IdentToken, []byte("data"), nil, 0, 0}}, 0, 0}.String(), "func(Ident(data))")
 }
 
 func TestCSSInline(t *testing.T) {

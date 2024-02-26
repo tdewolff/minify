@@ -81,14 +81,21 @@ func (t Token) String() string {
 	if len(t.Args) == 0 {
 		return t.TokenType.String() + "(" + string(t.Data) + ")"
 	}
-	return fmt.Sprint(t.Args)
+
+	sb := strings.Builder{}
+	sb.Write(t.Data)
+	for _, arg := range t.Args {
+		sb.WriteString(arg.String())
+	}
+	sb.WriteByte(')')
+	return sb.String()
 }
 
 // Equal returns true if both tokens are equal.
 func (t Token) Equal(t2 Token) bool {
 	if t.TokenType == t2.TokenType && bytes.Equal(t.Data, t2.Data) && len(t.Args) == len(t2.Args) {
 		for i := 0; i < len(t.Args); i++ {
-			if t.Args[i].TokenType != t2.Args[i].TokenType || !bytes.Equal(t.Args[i].Data, t2.Args[i].Data) {
+			if !t.Args[i].Equal(t2.Args[i]) {
 				return false
 			}
 		}
@@ -405,7 +412,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 	}
 
 	values = c.minifyTokens(prop, 0, values)
-	if len(values) > 0 {
+	if 0 < len(values) {
 		values = c.minifyProperty(prop, values)
 	}
 	c.writeDeclaration(values, important)
