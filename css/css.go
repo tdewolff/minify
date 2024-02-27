@@ -1134,7 +1134,7 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 			} else {
 				values[i] = minifyColor(values[i])
 			}
-			if 0 < i && sameValues && !bytes.Equal(values[0].Data, values[i].Data) {
+			if 0 < i && sameValues && !values[0].Equal(values[i]) {
 				sameValues = false
 			}
 		}
