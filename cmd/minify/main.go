@@ -686,7 +686,7 @@ func createTasks(fsys fs.FS, inputs []string, output string) ([]Task, []string, 
 		} else if info.Mode().IsRegular() {
 			valid := fileFilter(input) // don't filter mimetype
 			if valid || sync {
-				if !sync {
+				if mimetype == "" && !sync {
 					ext := filepath.Ext(input)
 					if 0 < len(ext) {
 						ext = ext[1:]
