@@ -906,7 +906,7 @@ func minify(t Task) bool {
 			ratio = float64(wLen) / float64(rLen)
 		}
 
-		stats := fmt.Sprintf("(%6v, %6v, %6v, %5.1f%%, %6v/s)", formatDuration(dur), formatBytes(uint64(rLen)), formatBytes(uint64(wLen)), ratio*100, speed)
+		stats := fmt.Sprintf("(%6v, %6v, %6v, %5.1f%%, %6v/s)", formatDuration(dur), formatBytes(uint64(rLen)), formatBytes(uint64(wLen)), ratio*100.0, speed)
 		if srcName != dstName {
 			fmt.Printf("%v - %v to %v\n", stats, srcName, dstName)
 		} else {
