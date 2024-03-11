@@ -247,7 +247,7 @@ jobs:
           mkdir dist
           mv artifacts/*/* dist/
       - name: Upload to GitHub Release
-        uses: softprops/action-gh-release@v0.1.15
+        uses: softprops/action-gh-release@v2.0.3
         with:
           files: bindings/py/dist/*
       - name: Publish to PyPI
