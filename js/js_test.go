@@ -711,6 +711,7 @@ func TestJS(t *testing.T) {
 		{`a=5;with(b=4){}`, `with(a=5,b=4);`},
 		{`(function(){})();(function(){})()`, `(function(){})(),function(){}()`},
 		//{`for(var a=0;;){var b=5;var d=6;for(var c=0;;);}`, `for(a=0;;)for(var a,b=5,d=6,c=0;;);`}, // TODO
+		//{`var aaaa=[];for(var b=0;;){}for(var b in aaaa){}var aaaa=[];for(var b=0;;){}`, `for(var aaaa=[],b=0;;);for(b in aaaa);for(aaaa=[],b=0;;);`}, // TODO
 
 		// collapse functions
 		//{`var a=function(){return 5}`, `var a=()=>5`},
@@ -808,8 +809,8 @@ func TestJS(t *testing.T) {
 		{`export default function Foo(){a}Foo.prototype.bar=b`, `export default function Foo(){a}Foo.prototype.bar=b`},                                     // #525
 		{`(e=1,e=2)`, `e=1,e=2`},                  // #528
 		{`"\x00\x31 \0\u0000"`, `"\x001 \0\x00"`}, // #577
-		{`function transform(){{var aaaa=[];for(var b=0;;){}for(var b in aaaa){}var aaaa=[];for(var b=0;;){}}}`, `function transform(){{for(var aaaa=[],b=0;;);for(b in aaaa);for(aaaa=[],b=0;;);}}`}, // #619
-		{`for(var a=0;;){var b=5;for(var c=0;;);}`, `for(var b,c,a=0;;)for(b=5,c=0;;);`},                                                                                                              // #634
+		{`function transform(){{var aaaa=[];for(var b=0;;){}for(var b in aaaa){}var aaaa=[];for(var b=0;;){}}}`, `function transform(){{for(var aaaa=[],b=0;;);for(b in aaaa);for(var aaaa=[],b=0;;);}}`}, // #619
+		{`for(var a=0;;){var b=5;for(var c=0;;);}`, `for(var b,c,a=0;;)for(b=5,c=0;;);`},                                                                                                                  // #634
 		{"if(a)for(;;)\n;else b", `if(a)for(;;);else b`},       // #636
 		{`'\u000A\u000D'`, "`\n\r`"},                           // #653
 		{`for(!a;b;c);`, "for(!a;b;c);"},                       // #656
