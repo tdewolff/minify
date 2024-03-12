@@ -179,6 +179,7 @@ func TestJS(t *testing.T) {
 		{`"a"+"b"+5+"c"+"d"`, `"ab"+5+"cd"`},
 		{`"a"+"b"+5+6+"d"`, `"ab"+5+6+"d"`},
 		{"`$${foo}`", "`$${foo}`"},
+		{"'\\n\\nCheck the render method of `'", "`\n\nCheck the render method of \\``"},
 
 		// rename true, false, undefined, Infinity
 		{`x=true`, `x=!0`},

@@ -1023,7 +1023,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 	// strip unnecessary escapes
 	j := 0
 	start := 0
-	for i := prefix; i < len(b)-suffix-1; i++ {
+	for i := prefix; i < len(b)-suffix; i++ {
 		if c := b[i]; c == '\\' {
 			c = b[i+1]
 			if c == quote || c == '\\' || quote != '`' && (c == 'n' || c == 'r') || c == '0' && (len(b)-suffix <= i+2 || b[i+2] < '0' || '7' < b[i+2]) {
