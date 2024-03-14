@@ -64,6 +64,7 @@ func BenchmarkJS(b *testing.B) {
 		"sample_ace.js",
 		"sample_antd.js",
 		"sample_dot.js",
+		"sample_echarts.js",
 		"sample_jquery.js",
 		"sample_jqueryui.js",
 		"sample_moment.js",
