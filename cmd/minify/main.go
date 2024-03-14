@@ -425,7 +425,7 @@ func run() int {
 		if dirDst {
 			output += string(os.PathSeparator)
 		}
-	} else if 1 < len(inputs) {
+	} else if !bundle && 1 < len(inputs) {
 		Error.Println("must specify --bundle for multiple input files with stdout destination")
 		return 1
 	}
