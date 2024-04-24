@@ -4,6 +4,7 @@ package js
 import (
 	"bytes"
 	"io"
+	"sort"
 
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/parse/v2"
@@ -541,29 +542,24 @@ func (m *jsMinifier) minifyVarDecl(decl *js.VarDecl, onlyDefines bool) {
 			}
 		}
 	} else {
-		if decl.TokenType == js.VarToken && len(decl.List) <= 10000 {
-			// move single var decls forward and order for GZIP optimization
-			start := 0
-			if _, ok := decl.List[0].Binding.(*js.Var); !ok {
-				start++
-			}
-			for i := 0; i < len(decl.List); i++ {
-				item := decl.List[i]
-				if v, ok := item.Binding.(*js.Var); ok && item.Default == nil && len(v.Data) == 1 {
-					for j := start; j < len(decl.List); j++ {
-						if v2, ok := decl.List[j].Binding.(*js.Var); ok && decl.List[j].Default == nil && len(v2.Data) == 1 {
-							if m.renamer.identOrder[v2.Data[0]] < m.renamer.identOrder[v.Data[0]] {
-								continue
-							} else if m.renamer.identOrder[v2.Data[0]] == m.renamer.identOrder[v.Data[0]] {
-								break
-							}
+		if decl.TokenType == js.VarToken {
+			sort.SliceStable(decl.List, func(i, j int) bool {
+				if decl.List[i].Default == nil && decl.List[j].Default == nil {
+					// sort single-length variables names
+					// TODO: why not all names? Why need identOrder?
+					if a, ok := decl.List[i].Binding.(*js.Var); ok && len(a.Data) == 1 {
+						if b, ok := decl.List[j].Binding.(*js.Var); ok && len(b.Data) == 1 {
+							return m.renamer.identOrder[a.Data[0]] < m.renamer.identOrder[b.Data[0]]
 						}
-						decl.List = append(decl.List[:i], decl.List[i+1:]...)
-						decl.List = append(decl.List[:j], append([]js.BindingElement{item}, decl.List[j:]...)...)
-						break
+					}
+				} else if decl.List[i].Default == nil {
+					if _, ok := decl.List[j].Binding.(*js.Var); j != 0 || ok {
+						// move non-define declarations to the front, except for the first array/object
+						return true
 					}
 				}
-			}
+				return false
+			})
 		}
 
 		m.write(decl.TokenType.Bytes())
