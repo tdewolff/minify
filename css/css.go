@@ -250,11 +250,13 @@ func (c *cssMinifier) minifyGrammar() {
 			c.w.Write(value)
 			semicolonQueued = true
 		case css.CommentGrammar:
-			if len(data) > 5 && data[1] == '*' && data[2] == '!' {
+			if 5 < len(data) && data[1] == '*' && data[2] == '!' {
 				c.w.Write(data[:3])
 				comment := parse.TrimWhitespace(parse.ReplaceMultipleWhitespace(data[3 : len(data)-2]))
 				c.w.Write(comment)
 				c.w.Write(data[len(data)-2:])
+			} else if 5 < len(data) && (data[2] == '#' || data[2] == '@') {
+				c.w.Write(data) // sourceMappingURL
 			}
 		default:
 			c.w.Write(data)

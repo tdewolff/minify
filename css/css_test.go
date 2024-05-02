@@ -18,6 +18,7 @@ func TestCSS(t *testing.T) {
 	}{
 		{"/*comment*/", ""},
 		{"/*! bang  comment */", "/*!bang comment*/"},
+		{"/*# sourceMappingURL=url */", "/*# sourceMappingURL=url */"},
 		{"a;", "a"},
 		{"i{}/*! bang  comment */", "i{}/*!bang comment*/"},
 		{"i { key: value; key2: value; }", "i{key:value;key2:value}"},
