@@ -1,13 +1,11 @@
 name: Python
 on:
   push:
-    branches:
-      - master
     tags:
       - 'v*'
 
-permissions:
-  contents: write
+        #permissions:
+        #  contents: write
 
 jobs:
   linux:
