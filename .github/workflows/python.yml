@@ -189,8 +189,7 @@ jobs:
 
       - name: Debug
         run: |
-          ls -la
-          ls -la src/minify
+          ls -la bindings/py/src/minify
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.17.0
