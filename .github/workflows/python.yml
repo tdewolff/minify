@@ -180,12 +180,17 @@ jobs:
         with:
           name: minify-darwin-${{ matrix.go_target }}.so
           path: bindings/py/src/minify/minify.so
+      - uses: actions/download-artifact@v4
+        with:
+          name: minify-darwin-${{ matrix.go_target }}.so
+          path: bindings/py/minify.so
+      - uses: actions/download-artifact@v4
+        with:
+          name: minify-darwin-${{ matrix.go_target }}.so
+          path: minify.so
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      #- uses: actions/setup-go@v5
-      #  with:
-      #    go-version: '>=1.17'
 
       - name: Debug
         run: |
