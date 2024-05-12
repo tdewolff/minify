@@ -15,7 +15,7 @@ def get_version():
         for line in f:
             line = line.strip()
             if line.startswith('github.com/tdewolff/minify/v2'):
-                return line.split()[1][1:]
+                return line.split()[1].split('-')[0][1:]
     raise CompileError('Version retrieval failed')
 
 
@@ -59,7 +59,7 @@ setup(
         "Topic :: Text Processing :: Markup",
     ],
     ext_modules=[
-        Extension("minify", ["src/minify/_minify.so"]),
+        Extension("minify", ["src/minify/minify.so"]),
     ],
     cmdclass={"build_ext": build_ext_external},
     packages=["minify"],

@@ -3,9 +3,9 @@ VERSION=`git describe --tags --abbrev=0`
 
 all: build
 
-build: *.h *.go MANIFEST.in
+build: *.go MANIFEST.in
 	go get github.com/tdewolff/minify/v2@${VERSION}
-	go build -buildmode=c-shared -o minify.so
+	go build -buildmode=c-shared -o src/minify/minify.so
 	python -m build --sdist
 
 publish: clean build
