@@ -187,6 +187,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: minify-darwin-${{ matrix.go_target }}.so
+          path: src/minify/minify.so
+      - uses: actions/download-artifact@v4
+        with:
+          name: minify-darwin-${{ matrix.go_target }}.so
           path: minify.so
       - uses: actions/setup-python@v5
         with:
@@ -194,6 +198,8 @@ jobs:
 
       - name: Debug
         run: |
+          ls -la
+          ls -la bindings/py
           ls -la bindings/py/src/minify
 
       - name: Build wheels
