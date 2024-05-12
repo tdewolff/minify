@@ -59,7 +59,7 @@ setup(
         "Topic :: Text Processing :: Markup",
     ],
     ext_modules=[
-        Extension("minify", ["src/minify/minify.so"]),
+        Extension("minify", ["minify.so"]),
     ],
     cmdclass={"build_ext": build_ext_external},
     packages=["minify"],

@@ -1,5 +1,5 @@
 include README.md
 include minify.go go.mod go.sum
-include src/minify/minify.so
+include minify.so
 include build_minify.py
 include py.typed

@@ -5,7 +5,7 @@ all: build
 
 build: *.go MANIFEST.in
 	go get github.com/tdewolff/minify/v2@${VERSION}
-	go build -buildmode=c-shared -o src/minify/minify.so
+	go build -buildmode=c-shared -o minify.so
 	python -m build --sdist
 
 publish: clean build

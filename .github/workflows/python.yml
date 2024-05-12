@@ -39,7 +39,7 @@ jobs:
           CIBW_MANYLINUX_I686_IMAGE: quay.io/pypa/manylinux_2_28_i686
           CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64
           CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64
-          CIBW_BEFORE_ALL: .ci/ensure-go.sh; cd bindings/py; go get github.com/tdewolff/minify/v2@${{ github.ref_name }}; go build -buildmode=c-shared -o src/minify/minify.so
+          CIBW_BEFORE_ALL: .ci/ensure-go.sh; cd bindings/py; go get github.com/tdewolff/minify/v2@${{ github.ref_name }}; go build -buildmode=c-shared -o minify.so
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -105,7 +105,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: minify-windows-${{ matrix.go_target }}.so
-          path: bindings/py/src/minify
+          path: bindings/py
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.17.0
@@ -179,19 +179,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: minify-darwin-${{ matrix.go_target }}.so
-          path: bindings/py/src/minify/minify.so
-      - uses: actions/download-artifact@v4
-        with:
-          name: minify-darwin-${{ matrix.go_target }}.so
-          path: bindings/py/minify.so
-      - uses: actions/download-artifact@v4
-        with:
-          name: minify-darwin-${{ matrix.go_target }}.so
-          path: src/minify/minify.so
-      - uses: actions/download-artifact@v4
-        with:
-          name: minify-darwin-${{ matrix.go_target }}.so
-          path: minify.so
+          path: bindings/py
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -200,7 +188,6 @@ jobs:
         run: |
           ls -la
           ls -la bindings/py
-          ls -la bindings/py/src/minify
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.17.0
@@ -209,7 +196,7 @@ jobs:
         env:
           CIBW_ARCHS: ${{ matrix.cibw_target }}
           #CIBW_ENVIRONMENT: GOARCH='${{ matrix.go_target }} CGO_ENABLED=1'
-          #CIBW_BEFORE_ALL: cd bindings/py; go build -buildmode=c-shared -o src/minify/minify.so
+          #CIBW_BEFORE_ALL: cd bindings/py; go build -buildmode=c-shared -o minify.so
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
