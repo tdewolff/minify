@@ -187,6 +187,11 @@ jobs:
       #  with:
       #    go-version: '>=1.17'
 
+      - name: Debug
+        run: |
+          ls -la
+          ls -la src/minify
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.17.0
         with:
