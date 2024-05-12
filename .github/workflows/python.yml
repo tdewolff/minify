@@ -184,11 +184,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Debug
-        run: |
-          ls -la
-          ls -la bindings/py
-
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.17.0
         with:
