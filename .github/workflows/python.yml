@@ -103,7 +103,10 @@ jobs:
         run: |
           #sudo apt-get install mingw-w64
           cd bindings/py
-          GOOS=windows GOARCH=${{ matrix.go_target }} CGO_ENABLED=1 go build -buildmode=c-shared -o src/minify/minify.so
+          set GOOS=windows
+          set GOARCH=${{ matrix.go_target }}
+          set CGO_ENABLED=1
+          go build -buildmode=c-shared -o src/minify/minify.so
           #- uses: actions/download-artifact@v4
           #  with:
           #    name: minify-windows-${{ matrix.go_target }}.so
@@ -162,8 +165,8 @@ jobs:
           package-dir: bindings/py
         env:
           CIBW_ARCHS: ${{ matrix.cibw_target }}
+          CIBW_ENVIRONMENT: MACOSX_DEPLOYMENT_TARGET=10.9
           #CIBW_ENVIRONMENT: GOARCH='${{ matrix.go_target }} CGO_ENABLED=1'
-          CIBW_ENVIRONMENT: MAXOSX_DEPLOYMENT_TARGET=10.9
           #CIBW_BEFORE_ALL: cd bindings/py; go build -buildmode=c-shared -o minify.so
       - name: Upload wheels
         uses: actions/upload-artifact@v4
