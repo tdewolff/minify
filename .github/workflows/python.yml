@@ -44,43 +44,8 @@ jobs:
           name: wheels-linux-${{ matrix.go_target }}
           path: ./wheelhouse/*.whl
 
-            #windows-go-crosscompile:
-            #  runs-on: ubuntu-latest
-            #  strategy:
-            #    matrix:
-            #      include:
-            #        - go_target: amd64
-            #          xcompiler: x86_64-w64-mingw32-gcc-win32
-            #        #  go_target: 386
-            #        #  xcompiler: i686-w64-mingw32-gcc-win32
-
-            #  steps:
-            #    - uses: actions/checkout@v4
-            #      with:
-            #        fetch-depth: 0
-
-            #    - uses: actions/setup-go@v5
-            #      with:
-            #        go-version: '>=1.17'
-            #    - name: Fetch go package
-            #      run: |
-            #        cd bindings/py
-            #        go get github.com/tdewolff/minify/v2@${{ github.ref_name }}
-            #    - name: Prebuild windows extension
-            #      run: |
-            #        sudo apt-get install mingw-w64
-            #        cd bindings/py
-            #        CC=${{ matrix.xcompiler }} CGO_ENABLED=1 GOOS=windows GOARCH=${{ matrix.go_target }} go build -buildmode=c-shared -o src/minify/minify.so
-
-            #    - name: Upload go library
-            #      uses: actions/upload-artifact@v4
-            #      with:
-            #        name: minify-windows-${{ matrix.go_target }}.so
-            #        path: bindings/py/src/minify/minify.so
-
   windows:
     runs-on: windows-latest
-      #needs: windows-go-crosscompile
     strategy:
       matrix:
         include:
@@ -101,16 +66,11 @@ jobs:
           go get github.com/tdewolff/minify/v2@${{ github.ref_name }}
       - name: Build Windows extension
         run: |
-          #sudo apt-get install mingw-w64
           cd bindings/py
           set GOOS=windows
           set GOARCH=${{ matrix.go_target }}
           set CGO_ENABLED=1
           go build -buildmode=c-shared -o src/minify/minify.so
-          #- uses: actions/download-artifact@v4
-          #  with:
-          #    name: minify-windows-${{ matrix.go_target }}.so
-          #    path: bindings/py/src/minify
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.18.0
@@ -149,15 +109,8 @@ jobs:
           export GOOS=darwin
           export GOARCH=${{ matrix.go_target }}
           export CGO_ENABLED=1
-          #export CFLAGS="-Wno-error=unused-command-line-argument -target ${{ matrix.clang_target }}-unknown-darwin-unknown"
+          export MACOSX_DEPLOYMENT_TARGET=10.9
           go build -buildmode=c-shared -o src/minify/minify.so
-          #- uses: actions/download-artifact@v4
-          #  with:
-          #    name: minify-darwin-${{ matrix.go_target }}.so
-          #    path: bindings/py/src/minify
-          #- uses: actions/setup-python@v5
-          #  with:
-          #    python-version: '3.11'
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.18.0
@@ -165,9 +118,6 @@ jobs:
           package-dir: bindings/py
         env:
           CIBW_ARCHS: ${{ matrix.cibw_target }}
-          CIBW_ENVIRONMENT: MACOSX_DEPLOYMENT_TARGET=10.9
-          #CIBW_ENVIRONMENT: GOARCH='${{ matrix.go_target }} CGO_ENABLED=1'
-          #CIBW_BEFORE_ALL: cd bindings/py; go build -buildmode=c-shared -o minify.so
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
