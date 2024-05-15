@@ -1,10 +1,8 @@
 name: Python
 on:
   push:
-    branches:
-      - master
     tags:
-      - 'v*'
+    - 'v*'
 
 jobs:
   linux:
@@ -19,19 +17,12 @@ jobs:
         - go_target: arm64
           cibw_target: aarch64
     steps:
+    - uses: actions/checkout@v4
     - name: Set up QEMU
       if: matrix.go_target == 'arm64'
       uses: docker/setup-qemu-action@v3
       with:
         platforms: arm64
-    - uses: actions/checkout@v4
-    - uses: actions/setup-go@v5
-      with:
-        go-version: '>=1.17'
-    - name: Update version in go.mod
-      run: |
-        cd bindings/py
-        go get github.com/tdewolff/minify/v2@${{ github.ref_name }}
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.18.0
       with:
@@ -41,8 +32,7 @@ jobs:
         CIBW_MANYLINUX_I686_IMAGE: quay.io/pypa/manylinux_2_28_i686
         CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64
         CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64
-          #CIBW_BEFORE_ALL: .ci/ensure-go.sh; cd bindings/py; go get github.com/tdewolff/minify/v2@${{ github.ref_name }}; go build -buildmode=c-shared -o src/minify/minify.so
-        CIBW_BEFORE_ALL: go build -buildmode=c-shared -o src/minify/minify.so
+        CIBW_BEFORE_ALL: .ci/ensure-go.sh; cd bindings/py; go get github.com/tdewolff/minify/v2@${{ github.ref_name }}; go build -buildmode=c-shared -o src/minify/minify.so
     - name: Upload wheels
       uses: actions/upload-artifact@v4
       with:
