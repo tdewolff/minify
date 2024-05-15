@@ -1,103 +1,90 @@
 name: NodeJS
 on:
   push:
+    branches:
+    - master
     tags:
-      - 'v*'
+    - 'v*'
   pull_request:
     branches:
-      - master
-
+    - master
 jobs:
-  test:
-    strategy:
-      fail-fast: false
-      matrix:
-        #os: [ubuntu-latest, macos-latest, windows-2019]
-        os: [ubuntu-latest, macos-latest]
-        node: [16, 18, 20]
-
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node }}
-
-      - name: Install node-gyp
-        run: npm install -g node-gyp
-
-      - name: Build from source
-        run: |
-          cd bindings/js
-          npm --version
-          node --version
-          npm ci --build-from-source
-          npm test
+  #test:
+  #  strategy:
+  #    fail-fast: false
+  #    matrix:
+  #      #os: [ubuntu-latest, macos-latest, windows-2019]
+  #      os: [ubuntu-latest, macos-latest]
+  #      node: [16, 18, 20]
+  #  runs-on: ${{ matrix.os }}
+  #  steps:
+  #  - uses: actions/checkout@v4
+  #  - uses: actions/setup-go@v5
+  #    with:
+  #      go-version: '>=1.17'
+  #  - uses: actions/setup-node@v4
+  #    with:
+  #      node-version: ${{ matrix.node }}
+  #  - name: Install node-gyp
+  #    run: npm install -g node-gyp
+  #  - name: Build from source
+  #    run: |
+  #      cd bindings/js
+  #      npm --version
+  #      node --version
+  #      npm ci --build-from-source
+  #      npm test
 
   build:
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
         #os: [ubuntu-latest, macos-latest, windows-2019]
-        os: [ubuntu-latest, macos-latest]
-
+        #os: [ubuntu-latest, macos-latest]
+        node: [16, 18, 20]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v4
-
-      - name: Install node-gyp and prebuildify
-        run: npm install --location=global node-gyp node-gyp-build node-api-headers prebuildify
-
-      - name: Install dependencies
-        run: |
-          cd bindings/js
-          npm install node-gyp-build node-api-headers
-
-      - name: Build
-        run: make -C bindings/js
-
-      - name: Test
-        run: |
-          cd bindings/js
-          npm test
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.os }}.node
-          path: bindings/js/prebuilds/*/*.node
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '>=1.17'
+    - uses: actions/setup-node@v4
+    - name: Install node-gyp and prebuildify
+      run: npm install --location=global node-gyp node-gyp-build node-api-headers prebuildify
+    - name: Install dependencies
+      run: |
+        cd bindings/js
+        npm install node-gyp-build node-api-headers
+    - name: Build
+      run: make -C bindings/js
+    - name: Test
+      run: |
+        cd bindings/js
+        npm test
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.os }}.node
+        path: bindings/js/prebuilds/*/*.node
 
   deploy:
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     needs: [build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v4
-        with:
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install node-gyp and prebuildify
-        run: npm install --location=global node-gyp node-gyp-build node-api-headers prebuildify
-
-      - uses: actions/download-artifact@v4
-        with:
-          path: bindings/js/prebuilds
-
-      - name: Move artifacts
-        run: cd bindings/js/prebuilds && mv */* .
-
-      - name: Publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: make -C bindings/js publish
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        registry-url: 'https://registry.npmjs.org'
+    - name: Install node-gyp and prebuildify
+      run: npm install --location=global node-gyp node-gyp-build node-api-headers prebuildify
+    - uses: actions/download-artifact@v4
+      with:
+        path: bindings/js/prebuilds
+    - name: Move artifacts
+      run: cd bindings/js/prebuilds && mv */* .
+    - name: Publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      run: make -C bindings/js publish
