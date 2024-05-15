@@ -817,6 +817,7 @@ func TestJS(t *testing.T) {
 		{`for(!a;b;c);`, "for(!a;b;c);"},                       // #656
 		{"var a = /*! comment */ b;", "/*! comment */var a=b"}, // #664
 		{`var c="";for(let i=0;;);var d="";for(let i=0;;);`, `var d,c="";for(let i=0;;);d="";for(let i=0;;);`}, // #687
+		{"String.raw`\\b`", "String.raw`\\b`"}, // #701
 	}
 
 	m := minify.New()
