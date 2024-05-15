@@ -36,7 +36,6 @@ jobs:
   #      npm test
 
   build:
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
     strategy:
       fail-fast: false
       matrix:
