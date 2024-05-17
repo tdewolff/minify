@@ -15,6 +15,8 @@ all: build
 
 # called by node-gyp for build-from-source
 compile:
+	go mod init
+	go get github.com/tdewolff/minify/v2@${HASH}
 	go build -buildmode=c-archive -o minify.a minify.go
 
 build:
