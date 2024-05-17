@@ -1,4 +1,5 @@
 SHELL=/usr/bin/env bash
+HASH=`git log -1 --format="%H"`
 VERSION=`git describe --tags --abbrev=0 | cut -b 2-`
 
 # needed explicitly for Windows
@@ -17,7 +18,7 @@ compile:
 	go build -buildmode=c-archive -o minify.a minify.go
 
 build:
-	go get github.com/tdewolff/minify/v2@v${VERSION}
+	go get github.com/tdewolff/minify/v2@${HASH}
 	node-gyp configure
 	prebuildify --napi --strip
 
