@@ -18,6 +18,7 @@ compile:
 	go build -buildmode=c-archive -o minify.a minify.go
 
 build:
+	go mod init
 	go get github.com/tdewolff/minify/v2@${HASH}
 	node-gyp configure
 	prebuildify --napi --strip
@@ -31,6 +32,7 @@ clean:
 	rm -rf minify.a
 	rm -rf build
 	rm -rf prebuilds
+	rm -rf go.*
 
 test:
 	npm test
