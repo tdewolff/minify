@@ -145,7 +145,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
+      #if: startsWith(github.ref, 'refs/tags/')
     needs: [linux, windows, macos, sdist]
     steps:
     - name: Download artifacts
@@ -155,7 +155,8 @@ jobs:
     - name: Bundle release artifacts
       run: |
         cd bindings/py/
-        rm -r artifacts/*.so
+        ls -la artifacts/*
+        #rm -r artifacts/*.so
         mkdir dist
         mv artifacts/*/* dist/
     - name: Upload to GitHub Release
