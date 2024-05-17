@@ -1,8 +1,6 @@
 name: Python
 on:
   push:
-    branches:
-    - master
     tags:
     - 'v*'
 jobs:
@@ -147,7 +145,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-      #if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/')
     needs: [linux, windows, macos, sdist]
     steps:
     - name: Download artifacts
@@ -157,7 +155,6 @@ jobs:
     - name: Bundle release artifacts
       run: |
         cd bindings/py/
-        ls -la artifacts/*
         #rm -r artifacts/*.so
         mkdir dist
         mv artifacts/*/* dist/

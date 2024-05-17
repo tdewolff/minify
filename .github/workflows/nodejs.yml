@@ -1,8 +1,6 @@
 name: NodeJS
 on:
   push:
-    branches:
-    - master
     tags:
     - 'v*'
   pull_request:
@@ -33,6 +31,7 @@ jobs:
         node --version
         npm ci --build-from-source
         npm test
+
   build:
     strategy:
       fail-fast: false
