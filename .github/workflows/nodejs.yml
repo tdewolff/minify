@@ -9,11 +9,33 @@ on:
     branches:
     - master
 jobs:
-  build:
+  test:
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [16, 18, 20]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node }}
+    - name: Install node-gyp
+      run: npm install -g node-gyp
+    - name: Build from source
+      run: |
+        cd bindings/js
+        npm --version
+        node --version
+        npm ci --build-from-source
+        npm test
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        #os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
