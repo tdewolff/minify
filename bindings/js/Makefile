@@ -1,7 +1,6 @@
 SHELL=/usr/bin/env bash
 HASH=`git log -1 --format="%H"`
 VERSION=`git describe --tags --abbrev=0 | cut -b 2-`
-NODE_VERSION=`node -e 'console.log(require("./package.json").version);'`
 
 # needed explicitly for Windows
 export CGO_ENABLED=1
@@ -18,7 +17,8 @@ all: build
 compile:
 	go mod init github.com/tdewolff/minify/bindings/js
 	go mod tidy
-	go get github.com/tdewolff/minify/v2@${NODE_VERSION}
+	NODE_VERSION=`node -e 'console.log(require("./package.json").version);'`
+	go get github.com/tdewolff/minify/v2@v${NODE_VERSION}
 	go build -buildmode=c-archive -o minify.a minify.go
 
 build:
