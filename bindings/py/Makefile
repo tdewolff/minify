@@ -3,11 +3,14 @@ VERSION=`git describe --tags --abbrev=0`
 
 all: build
 
-build: *.go MANIFEST.in
-	#go mod init
-	#go get github.com/tdewolff/minify/v2@${VERSION}
+compile:
+	# called from workflow
 	sed -i.bak -e "s/\{VERSION\}/${VERSION}/" setup.py
 	go build -buildmode=c-shared -o src/minify/minify.so
+
+build: compile
+	#go mod init
+	#go get github.com/tdewolff/minify/v2@${VERSION}
 	python -m build --sdist
 
 publish: clean build
@@ -18,5 +21,5 @@ clean:
 	rm -rf tdewolff_minify.egg-info
 	rm -rf go.*
 
-.PHONY: all build publish clean
+.PHONY: all compile build publish clean
 
