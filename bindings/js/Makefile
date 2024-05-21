@@ -18,14 +18,11 @@ compile:
 	go build -buildmode=c-archive -o minify.a minify.go
 
 build:
-	#go mod init github.com/tdewolff/minify/bindings/js
-	#go mod tidy
-	#go get github.com/tdewolff/minify/v2@${HASH}
 	node-gyp configure
 	prebuildify --napi --strip
 
 publish:
-	sed -i.bak -e "s/\"version\": \".*\"/\"version\": \"${VERSION}\"/" package.json
+	sed -i.bak -e "s/\{VERSION\}/${VERSION}/" package.json
 	rm package.json.bak
 	npm publish --access=public
 

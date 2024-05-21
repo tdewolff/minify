@@ -4,8 +4,9 @@ VERSION=`git describe --tags --abbrev=0`
 all: build
 
 build: *.go MANIFEST.in
-	go mod init
-	go get github.com/tdewolff/minify/v2@${VERSION}
+	#go mod init
+	#go get github.com/tdewolff/minify/v2@${VERSION}
+	sed -i.bak -e "s/\{VERSION\}/${VERSION}/" setup.py
 	go build -buildmode=c-shared -o src/minify/minify.so
 	python -m build --sdist
 

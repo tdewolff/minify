@@ -10,13 +10,13 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 
-def get_version():
-    with open('go.mod') as f:
-        for line in f:
-            line = line.strip()
-            if line.startswith('github.com/tdewolff/minify/v2'):
-                return line.split()[1].split('-')[0][1:]
-    raise CompileError('Version retrieval failed')
+#def get_version():
+#    with open('go.mod') as f:
+#        for line in f:
+#            line = line.strip()
+#            if line.startswith('github.com/tdewolff/minify/v2'):
+#                return line.split()[1].split('-')[0][1:]
+#    raise CompileError('Version retrieval failed')
 
 
 class build_ext_external(build_ext):
@@ -31,7 +31,7 @@ class build_ext_external(build_ext):
 
 setup(
     name="tdewolff-minify",
-    version=get_version(),
+    version="{VERSION}",
     description="Go minifiers for web formats",
     long_description=README,
     long_description_content_type="text/markdown",
