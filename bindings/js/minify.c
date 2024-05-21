@@ -1,3 +1,5 @@
+//go:build exclude
+
 #include <node_api.h>
 #include <stdlib.h>
 #include "minify.h"
