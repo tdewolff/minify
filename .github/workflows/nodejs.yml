@@ -27,6 +27,8 @@ jobs:
         node-version: ${{ matrix.node }}
     - name: Install node-gyp
       run: npm install -g node-gyp
+    - name: Update version
+      run: make -C bindings/js version
     - name: Build from source
       run: |
         cd bindings/js
