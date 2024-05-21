@@ -374,6 +374,7 @@ func TestHTMLTemplates(t *testing.T) {
 		{`<script>alert( {{.Alert}} )</script>`, `<script>alert( {{.Alert}} )</script>`},
 		{`<button onclick=" alert( {{.Alert}} ) ">`, `<button onclick=" alert( {{.Alert}} ) ">`},
 		{`<select>{{ range . }}<option>{{ . }}{{ end }}</select>`, `<select>{{ range . }}<option>{{ . }}{{ end }}</select>`},
+		{`<p>Hello <code>{{""}}</code> there</p>`, `<p>Hello <code>{{""}}</code> there`},
 	}
 
 	m := minify.New()
