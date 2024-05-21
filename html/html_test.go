@@ -201,13 +201,15 @@ func TestHTMLCSSJS(t *testing.T) {
 		{`<script>var a="</scr"+"ipt>"</script>`, `<script>var a="<\/script>"</script>`},                                                        // #355
 		{`<div style="font-family: Arial, &#39;sans-serif&#39;; font-size: 22px;">`, `<div style=font-family:Arial,sans-serif;font-size:22px>`}, // #272
 		{`<style amp-boilerplate>body{-webkit-animation:-amp-start 8s    steps(1,end) 0s 1 normal both;}</style>`, `<style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;}</style>`},
-		{`<button onclick="return false">`, `<button onclick=return!1>`}, // #631
+		{`<button onclick="return false">`, `<button onclick=return!1>`},                                                                                                                      // #631
+		{`<html><svg id="foo" viewBox="0 0 1 1" xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>`, `<svg id="foo" viewBox="0 0 1 1"><rect width="1" height="1"/></svg>`}, // #704
 	}
 
 	m := minify.New()
 	m.AddFunc("text/html", Minify)
 	m.AddFunc("text/css", css.Minify)
 	m.AddFunc("application/javascript", js.Minify)
+	m.AddFunc("image/svg+xml", svg.Minify)
 	for _, tt := range htmlTests {
 		t.Run(tt.html, func(t *testing.T) {
 			r := bytes.NewBufferString(tt.html)

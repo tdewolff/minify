@@ -129,7 +129,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				}
 			}
 		case html.SvgToken:
-			if err := m.MinifyMimetype(svgMimeBytes, w, buffer.NewReader(t.Data), nil); err != nil {
+			if err := m.MinifyMimetype(svgMimeBytes, w, buffer.NewReader(t.Data), inlineParams); err != nil {
 				if err != minify.ErrNotExist {
 					return minify.UpdateErrorPosition(err, z, t.Offset)
 				}

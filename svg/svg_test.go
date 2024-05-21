@@ -132,6 +132,26 @@ func TestSVGPrecision(t *testing.T) {
 	}
 }
 
+func TestSVGInline(t *testing.T) {
+	var svgTests = []struct {
+		svg      string
+		expected string
+	}{
+		{`<svg xmlns="http://www.w3.org/2000/svg"><path/></svg>`, `<svg><path/></svg>`},
+	}
+
+	m := minify.New()
+	o := &Minifier{Inline: true}
+	for _, tt := range svgTests {
+		t.Run(tt.svg, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.svg)
+			w := &bytes.Buffer{}
+			err := o.Minify(m, w, r, nil)
+			test.Minify(t, tt.svg, err, w.String(), tt.expected)
+		})
+	}
+}
+
 func TestReaderErrors(t *testing.T) {
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}

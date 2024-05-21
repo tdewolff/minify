@@ -62,6 +62,7 @@ type Minifier struct {
 	KeepCSS2     bool
 	Precision    int // number of significant digits
 	newPrecision int // precision for new numbers
+	Inline       bool
 }
 
 // Minify minifies CSS data, it reads from r and writes to w.
@@ -138,15 +139,17 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 	if o.newPrecision <= 0 || 15 < o.newPrecision {
 		o.newPrecision = 15 // minimum number of digits a double can represent exactly
 	}
+	if !o.Inline {
+		o.Inline = params != nil && params["inline"] == "1"
+	}
 
 	z := parse.NewInput(r)
 	defer z.Restore()
 
-	isInline := params != nil && params["inline"] == "1"
 	c := &cssMinifier{
 		m: m,
 		w: w,
-		p: css.NewParser(z, isInline),
+		p: css.NewParser(z, o.Inline),
 		o: o,
 	}
 	c.minifyGrammar()

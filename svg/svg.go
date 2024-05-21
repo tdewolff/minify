@@ -31,6 +31,7 @@ type Minifier struct {
 	KeepComments bool
 	Precision    int // number of significant digits
 	newPrecision int // precision for new numbers
+	Inline       bool
 }
 
 // Minify minifies SVG data, it reads from r and writes to w.
@@ -39,10 +40,13 @@ func Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) err
 }
 
 // Minify minifies SVG data, it reads from r and writes to w.
-func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]string) error {
+func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[string]string) error {
 	o.newPrecision = o.Precision
 	if o.newPrecision <= 0 || 15 < o.newPrecision {
 		o.newPrecision = 15 // minimum number of digits a double can represent exactly
+	}
+	if !o.Inline {
+		o.Inline = params != nil && params["inline"] == "1"
 	}
 
 	var tag Hash
@@ -139,7 +143,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				val, _ = o.shortenDimension(val)
 			}
 			if attr == Xml_Space && bytes.Equal(val, []byte("preserve")) ||
-				tag == Svg && (attr == Version && bytes.Equal(val, []byte("1.1")) ||
+				tag == Svg && (o.Inline && attr == Xmlns ||
+					attr == Version && bytes.Equal(val, []byte("1.1")) ||
 					attr == X && bytes.Equal(val, zeroBytes) ||
 					attr == Y && bytes.Equal(val, zeroBytes) ||
 					attr == PreserveAspectRatio && bytes.Equal(val, []byte("xMidYMid meet")) ||
