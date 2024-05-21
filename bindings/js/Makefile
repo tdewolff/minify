@@ -16,12 +16,14 @@ all: build
 
 # called by node-gyp for build-from-source
 compile:
-	go mod init
+	go mod init github.com/tdewolff/minify/bindings/js
+	go mod tidy
 	go get github.com/tdewolff/minify/v2@${NODE_VERSION}
 	go build -buildmode=c-archive -o minify.a minify.go
 
 build:
-	go mod init
+	go mod init github.com/tdewolff/minify/bindings/js
+	go mod tidy
 	go get github.com/tdewolff/minify/v2@${HASH}
 	node-gyp configure
 	prebuildify --napi --strip
