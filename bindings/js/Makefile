@@ -1,6 +1,7 @@
 SHELL=/usr/bin/env bash
 HASH=`git log -1 --format="%H"`
 VERSION=`git describe --tags --abbrev=0 | cut -b 2-`
+NODE_VERSION=`node -e 'console.log(require('./package.json').version);'`
 
 # needed explicitly for Windows
 export CGO_ENABLED=1
@@ -16,7 +17,7 @@ all: build
 # called by node-gyp for build-from-source
 compile:
 	go mod init
-	go get github.com/tdewolff/minify/v2@${HASH}
+	go get github.com/tdewolff/minify/v2@${NODE_VERSION}
 	go build -buildmode=c-archive -o minify.a minify.go
 
 build:
