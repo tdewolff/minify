@@ -1,8 +1,13 @@
 name: Python
 on:
   push:
+    branches:
+    - master
     tags:
     - 'v*'
+  pull_request:
+    branches:
+    - master
 jobs:
   linux:
     runs-on: ubuntu-latest
