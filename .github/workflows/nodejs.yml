@@ -54,6 +54,8 @@ jobs:
       run: |
         cd bindings/js
         npm install node-gyp-build node-api-headers
+    - name: Update version
+      run: make -C bindings/js version
     - name: Build
       run: make -C bindings/js
     - name: Test
