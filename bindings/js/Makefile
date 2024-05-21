@@ -17,8 +17,7 @@ all: build
 compile:
 	go mod init github.com/tdewolff/minify/bindings/js
 	go mod tidy
-	NODE_VERSION=`node -e 'console.log(require("./package.json").version);'`
-	go get github.com/tdewolff/minify/v2@v${NODE_VERSION}
+	go get github.com/tdewolff/minify/v2@v`node -e 'console.log(require("./package.json").version);'`
 	go build -buildmode=c-archive -o minify.a minify.go
 
 build:
