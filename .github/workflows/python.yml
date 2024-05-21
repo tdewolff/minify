@@ -107,6 +107,8 @@ jobs:
         #go mod init github.com/tdewolff/minify/bindings/js
         #go mod tidy
         #go build -buildmode=c-shared -o src/minify/minify.so
+        echo ${{ github.ref_name }}
+        echo `git describe --tags --abbrev=0`
         make -C bindings/py compile
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.18.1
@@ -140,9 +142,7 @@ jobs:
     - name: Install dependencies
       run: pip install build
     - name: Build package
-      run: |
-        cd bindings/py
-        python -m build --sdist
+      run: make -C bindings/py build
     - name: Upload sdist
       uses: actions/upload-artifact@v4
       with:
