@@ -22,6 +22,8 @@ jobs:
           cibw_target: aarch64
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-tags: true
     - name: Set up QEMU
       if: matrix.go_target == 'arm64'
       uses: docker/setup-qemu-action@v3
@@ -56,6 +58,8 @@ jobs:
         #  cibw_target: ARM64
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-tags: true
     - uses: actions/setup-go@v5
       with:
         go-version: '>=1.17'
@@ -93,6 +97,8 @@ jobs:
         #  cibw_target: arm64
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-tags: true
     - uses: actions/setup-go@v5
       with:
         go-version: '>=1.17'
@@ -126,6 +132,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-tags: true
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -135,7 +143,7 @@ jobs:
         go-version: '>=1.17'
     - name: Update version in go.mod
       run: |
-        cd bindings/py
+        #cd bindings/py
         #go get github.com/tdewolff/minify/v2@${{ github.ref_name }}
         #go mod init github.com/tdewolff/minify/bindings/js
         #go mod tidy
