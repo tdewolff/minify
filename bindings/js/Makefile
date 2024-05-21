@@ -1,7 +1,7 @@
 SHELL=/usr/bin/env bash
 HASH=`git log -1 --format="%H"`
 VERSION=`git describe --tags --abbrev=0 | cut -b 2-`
-NODE_VERSION=`node -e 'console.log(require('./package.json').version);'`
+NODE_VERSION=`node -e 'console.log(require("./package.json").version);'`
 
 # needed explicitly for Windows
 export CGO_ENABLED=1

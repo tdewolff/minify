@@ -1,8 +1,6 @@
 name: Python
 on:
   push:
-    branches:
-    - master
     tags:
     - 'v*'
   pull_request:
