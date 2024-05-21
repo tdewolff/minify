@@ -31,7 +31,7 @@ jobs:
         CIBW_MANYLINUX_I686_IMAGE: quay.io/pypa/manylinux_2_28_i686
         CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64
         CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64
-        CIBW_BEFORE_ALL: .ci/ensure-go.sh; cd bindings/py; go get github.com/tdewolff/minify/v2@${{ github.ref_name }}; go build -buildmode=c-shared -o src/minify/minify.so
+        CIBW_BEFORE_ALL: .ci/ensure-go.sh; cd bindings/py; go get github.com/tdewolff/minify/v2@${{ github.ref_name }}; go mod init; go build -buildmode=c-shared -o src/minify/minify.so
     - name: Upload wheels
       uses: actions/upload-artifact@v4
       with:
@@ -64,6 +64,7 @@ jobs:
         set GOOS=windows
         set GOARCH=${{ matrix.go_target }}
         set CGO_ENABLED=1
+        go mod init
         go build -buildmode=c-shared -o src/minify/minify.so
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.18.1
@@ -102,6 +103,7 @@ jobs:
         export GOARCH=${{ matrix.go_target }}
         export CGO_ENABLED=1
         export MACOSX_DEPLOYMENT_TARGET=10.9
+        go mod init
         go build -buildmode=c-shared -o src/minify/minify.so
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.18.1
