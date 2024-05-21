@@ -30,7 +30,7 @@ jobs:
     - name: Build from source
       run: |
         cd bindings/js
-        go mod init
+        go mod init github.com/tdewolff/minify/bindings/js
         npm --version
         node --version
         npm ci --build-from-source
@@ -54,7 +54,7 @@ jobs:
     - name: Install dependencies
       run: |
         cd bindings/js
-        go mod init
+        go mod init github.com/tdewolff/minify/bindings/js
         npm install node-gyp-build node-api-headers
     - name: Build
       run: make -C bindings/js
