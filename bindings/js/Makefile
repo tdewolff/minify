@@ -22,7 +22,7 @@ build:
 	prebuildify --napi --strip
 
 publish:
-	sed -i.bak -e "s/\{VERSION\}/${VERSION}/" package.json
+	sed -i.bak -e "s/{VERSION}/${VERSION}/" package.json
 	rm package.json.bak
 	npm publish --access=public
 

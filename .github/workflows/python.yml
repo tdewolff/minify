@@ -65,14 +65,9 @@ jobs:
         go-version: '>=1.17'
     - name: Build Windows extension
       run: |
-        #cd bindings/py
         set GOOS=windows
         set GOARCH=${{ matrix.go_target }}
         set CGO_ENABLED=1
-        #go get github.com/tdewolff/minify/v2@${{ github.ref_name }}
-        #go mod init github.com/tdewolff/minify/bindings/js
-        #go mod tidy
-        #go build -buildmode=c-shared -o src/minify/minify.so
         make -C bindings/py compile
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.18.1
@@ -104,17 +99,10 @@ jobs:
         go-version: '>=1.17'
     - name: Build MacOS extension
       run: |
-        #cd bindings/py
         export GOOS=darwin
         export GOARCH=${{ matrix.go_target }}
         export CGO_ENABLED=1
         export MACOSX_DEPLOYMENT_TARGET=10.9
-        #go get github.com/tdewolff/minify/v2@${{ github.ref_name }}
-        #go mod init github.com/tdewolff/minify/bindings/js
-        #go mod tidy
-        #go build -buildmode=c-shared -o src/minify/minify.so
-        echo ${{ github.ref_name }}
-        echo `git describe --tags --abbrev=0`
         make -C bindings/py compile
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.18.1
@@ -141,12 +129,6 @@ jobs:
     - uses: actions/setup-go@v5
       with:
         go-version: '>=1.17'
-    - name: Update version in go.mod
-      run: |
-        #cd bindings/py
-        #go get github.com/tdewolff/minify/v2@${{ github.ref_name }}
-        #go mod init github.com/tdewolff/minify/bindings/js
-        #go mod tidy
     - name: Install dependencies
       run: pip install build
     - name: Build package
