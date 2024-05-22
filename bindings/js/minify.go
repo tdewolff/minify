@@ -34,7 +34,7 @@ func goStringArray(carr **C.char, length C.longlong) []string {
 	}
 
 	strs := make([]string, length)
-	arr := (*[1 << 31]*C.char)(unsafe.Pointer(carr))[:length:length]
+	arr := (*[1<<31 - 1]*C.char)(unsafe.Pointer(carr))[:length:length]
 	for i := 0; i < int(length); i++ {
 		strs[i] = C.GoString(arr[i])
 	}
