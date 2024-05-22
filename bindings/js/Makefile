@@ -15,7 +15,7 @@ all: build
 
 # called by node-gyp for build-from-source
 compile:
-	go mod init github.com/tdewolff/minify/bindings/py
+	go mod init github.com/tdewolff/minify/bindings/js
 	go mod tidy
 	go build -buildmode=c-archive -o minify.a minify.go
 
