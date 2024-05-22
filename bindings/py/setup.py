@@ -5,19 +5,8 @@ from setuptools.errors import CompileError
 from setuptools.extension import Extension
 from subprocess import CalledProcessError, check_call
 
-
 HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
-
-
-#def get_version():
-#    with open('go.mod') as f:
-#        for line in f:
-#            line = line.strip()
-#            if line.startswith('github.com/tdewolff/minify/v2'):
-#                return line.split()[1].split('-')[0][1:]
-#    raise CompileError('Version retrieval failed')
-
 
 class build_ext_external(build_ext):
     """Placeholder for externally-built extension."""
@@ -27,7 +16,6 @@ class build_ext_external(build_ext):
                 check_call(['go', 'build', '-buildmode=c-shared', '-o', *ext.sources])
             except CalledProcessError as e:
                 raise CompileError('Go compilation failed!') from e
-
 
 setup(
     name="tdewolff-minify",
