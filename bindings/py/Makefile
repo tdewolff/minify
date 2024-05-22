@@ -9,8 +9,6 @@ compile:
 	go build -buildmode=c-shared -o src/minify/minify.so
 
 build: compile
-	go mod init github.com/tdewolff/minify/bindings/py
-	go mod tidy
 	python -m build --sdist
 
 publish: clean build
