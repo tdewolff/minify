@@ -24,17 +24,13 @@ func init() {
 	minifyConfig(nil, nil, 0)
 }
 
-func goBytes(str *C.char, length C.longlong) []byte {
-	return (*[1 << 30]byte)(unsafe.Pointer(str))[:length:length]
-}
-
 func goStringArray(carr **C.char, length C.longlong) []string {
 	if length == 0 {
 		return []string{}
 	}
 
 	strs := make([]string, length)
-	arr := (*[1 << 30]*C.char)(unsafe.Pointer(carr))[:length:length]
+	arr := unsafe.Slice(carr, length)
 	for i := 0; i < int(length); i++ {
 		strs[i] = C.GoString(arr[i])
 	}
@@ -124,8 +120,8 @@ func minifyConfig(ckeys **C.char, cvals **C.char, length C.longlong) *C.char {
 //export minifyString
 func minifyString(cmediatype, cinput *C.char, input_length C.longlong, coutput *C.char, output_length *C.longlong) *C.char {
 	mediatype := C.GoString(cmediatype) // copy
-	input := goBytes(cinput, input_length)
-	output := goBytes(coutput, input_length)
+	input := C.GoBytes(unsafe.Pointer(cinput), C.int(input_length))
+	output := C.GoBytes(unsafe.Pointer(coutput), C.int(input_length))
 
 	out := buffer.NewStaticWriter(output[:0])
 	if err := m.Minify(mediatype, out, buffer.NewReader(input)); err != nil {
