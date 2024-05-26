@@ -22,11 +22,12 @@ compile:
 build:
 	node-gyp configure
 	prebuildify --napi --strip
+	rm -rf go.*
 
-publish:
+publish: build
 	sed -i.bak -e "s/{VERSION}/${VERSION}/" package.json
-	rm package.json.bak
 	npm publish --access=public
+	mv package.json.bak package.json
 
 clean:
 	rm -rf minify.a
@@ -34,7 +35,7 @@ clean:
 	rm -rf prebuilds
 	rm -rf go.*
 
-test:
+test: build
 	npm test
 
 .PHONY: all compile build publish clean test
