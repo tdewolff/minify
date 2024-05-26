@@ -6,7 +6,7 @@ from ._ffi_minify import ffi
 __all__ = ['MinifyError', 'config', 'file', 'string']
 
 
-lib = ffi.dlopen(str(pathlib.Path(__file__).parent / '_minify.so'))
+lib = ffi.dlopen(str(pathlib.Path(__file__).parent / 'minify.so'))
 
 
 class MinifyError(ValueError):
