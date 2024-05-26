@@ -24,6 +24,11 @@ func init() {
 	minifyConfig(nil, nil, 0)
 }
 
+func goBytes(str *C.char, length, capacity C.longlong) []byte {
+	// somehow address space on 32-bit system is smaller than 1<<30
+	return (*[1 << 28]byte)(unsafe.Pointer(str))[:length:capacity]
+}
+
 func goStringArray(carr **C.char, length C.longlong) []string {
 	if length == 0 {
 		return []string{}
@@ -119,9 +124,9 @@ func minifyConfig(ckeys **C.char, cvals **C.char, length C.longlong) *C.char {
 
 //export minifyString
 func minifyString(cmediatype, cinput *C.char, input_length C.longlong, coutput *C.char, output_length *C.longlong) *C.char {
-	mediatype := C.GoString(cmediatype) // copy
-	input := C.GoBytes(unsafe.Pointer(cinput), C.int(input_length))
-	output := C.GoBytes(unsafe.Pointer(coutput), C.int(input_length))
+	mediatype := C.GoString(cmediatype)                    // copy
+	input := goBytes(cinput, input_length, input_length+1) // +1 for NULL byte used in parser
+	output := goBytes(coutput, input_length, input_length)
 
 	out := buffer.NewStaticWriter(output[:0])
 	if err := m.Minify(mediatype, out, buffer.NewReader(input)); err != nil {

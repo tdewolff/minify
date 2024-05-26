@@ -7,9 +7,13 @@ compile:
 	# called from workflow
 	sed -i.bak -e "s/{VERSION}/${VERSION}/" setup.py
 	go build -buildmode=c-shared -o src/minify/minify.so
+	mv setup.py.bak setup.py
 
 build: compile
+	go mod init github.com/tdewolff/minify/bindings/js
+	go mod tidy
 	python -m build --sdist
+	rm -rf go.*
 
 publish: clean build
 	twine upload dist/*
