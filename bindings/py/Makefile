@@ -9,10 +9,10 @@ compile:
 	go build -buildmode=c-shared -o src/minify/minify.so
 
 build: compile
-	mv setup.py.bak setup.py
 	go mod init github.com/tdewolff/minify/bindings/js
 	go mod tidy
 	python -m build --sdist
+	mv setup.py.bak setup.py
 	rm -rf go.*
 
 publish: clean build
