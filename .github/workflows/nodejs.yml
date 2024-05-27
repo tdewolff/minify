@@ -1,8 +1,6 @@
 name: NodeJS
 on:
   push:
-    branches:
-    - master
     tags:
     - 'v*'
   pull_request:
