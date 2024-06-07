@@ -1026,7 +1026,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 	for i := prefix; i < len(b)-suffix; i++ {
 		if c := b[i]; c == '\\' {
 			c = b[i+1]
-			if c == quote || c == '\\' || quote != '`' && (c == 'n' || c == 'r') || c == '0' && (len(b)-suffix <= i+2 || b[i+2] < '0' || '7' < b[i+2]) {
+			if c == quote || c == '\\' || c == 'r' || quote != '`' && c == 'n' || c == '0' && (len(b)-suffix <= i+2 || b[i+2] < '0' || '7' < b[i+2]) {
 				// keep escape sequence
 				i++
 				continue
@@ -1047,7 +1047,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 					// hexadecimal escapes
 					_, _ = hex.Decode(b[i:i+1:i+1], b[i+2:i+4])
 					n = 4
-					if b[i] == '\\' || b[i] == quote || quote != '`' && (b[i] == '\n' || b[i] == '\r') || b[i] == 0 {
+					if b[i] == '\\' || b[i] == quote || b[i] == '\r' || quote != '`' && b[i] == '\n' || b[i] == 0 {
 						if b[i] == '\n' {
 							b[i+1] = 'n'
 						} else if b[i] == '\r' {
@@ -1104,7 +1104,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 						i += 4
 						n -= 4
 					}
-				} else if quote == '`' || num != 10 && num != 13 {
+				} else if num != 13 && (quote == '`' || num != 10) {
 					// decode unicode character to UTF-8 and put at the end of the escape sequence
 					// then skip the first part of the escape sequence until the decoded character
 					m := utf8.RuneLen(rune(num))
@@ -1141,7 +1141,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 					}
 				}
 				b[i] = num
-				if num == 0 || num == '\\' || num == quote || quote != '`' && (num == '\n' || num == '\r') {
+				if num == 0 || num == '\\' || num == quote || num == '\r' || quote != '`' && num == '\n' {
 					if num == 0 {
 						b[i+1] = '0'
 					} else if num == '\n' {
@@ -1159,9 +1159,6 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 				n--
 			} else if quote == '`' && c == 'n' {
 				b[i] = '\n'
-				i++
-			} else if quote == '`' && c == 'r' {
-				b[i] = '\r'
 				i++
 			} else if c == 't' {
 				b[i] = '\t'
