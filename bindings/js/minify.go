@@ -65,6 +65,8 @@ func minifyConfig(ckeys **C.char, cvals **C.char, length C.longlong) *C.char {
 			htmlMinifier.KeepComments, err = strconv.ParseBool(vals[i])
 		case "html-keep-conditional-comments":
 			htmlMinifier.KeepConditionalComments, err = strconv.ParseBool(vals[i])
+		case "html-keep-special-comments":
+			htmlMinifier.KeepSpecialComments, err = strconv.ParseBool(vals[i])
 		case "html-keep-default-attr-vals":
 			htmlMinifier.KeepDefaultAttrVals, err = strconv.ParseBool(vals[i])
 		case "html-keep-document-tags":
