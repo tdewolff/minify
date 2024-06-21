@@ -950,10 +950,10 @@ func minifyString(b []byte, allowTemplate bool) []byte {
 		} else if b[i] == '$' && i+1 < len(b) && b[i+1] == '{' {
 			dollarSigns++
 		} else if b[i] == '\\' && i+1 < len(b) {
-			if b[i+1] == 'n' || b[i+1] == 'r' {
+			if b[i+1] == 'n' {
 				newlines++
 			} else if '1' <= b[i+1] && b[i+1] <= '9' && i+2 < len(b) {
-				if b[i+1] == '1' && (b[i+2] == '2' || b[i+2] == '5') {
+				if b[i+1] == '1' && b[i+2] == '2' {
 					newlines++
 				} else if b[i+1] == '4' && b[i+2] == '2' {
 					doubleQuotes++
@@ -963,7 +963,7 @@ func minifyString(b []byte, allowTemplate bool) []byte {
 					backtickQuotes++
 				}
 			} else if b[i+1] == 'x' && i+3 < len(b) {
-				if b[i+2] == '0' && (b[i+3]|0x20 == 'a' || b[i+3]|0x20 == 'd') {
+				if b[i+2] == '0' && b[i+3]|0x20 == 'a' {
 					newlines++
 				} else if b[i+2] == '2' && b[i+3] == '2' {
 					doubleQuotes++
@@ -973,7 +973,7 @@ func minifyString(b []byte, allowTemplate bool) []byte {
 					backtickQuotes++
 				}
 			} else if b[i+1] == 'u' && i+5 < len(b) && b[i+2] == '0' && b[i+3] == '0' {
-				if b[i+4] == '0' && (b[i+5]|0x20 == 'a' || b[i+5]|0x20 == 'd') {
+				if b[i+4] == '0' && b[i+5]|0x20 == 'a' {
 					newlines++
 				} else if b[i+4] == '2' && b[i+5] == '2' {
 					doubleQuotes++
@@ -987,7 +987,7 @@ func minifyString(b []byte, allowTemplate bool) []byte {
 				for j < len(b) && b[j] == '0' {
 					j++
 				}
-				if j+1 < len(b) && (b[j]|0x20 == 'a' || b[j]|0x20 == 'd') && b[j+1] == '}' {
+				if j+1 < len(b) && b[j]|0x20 == 'a' && b[j+1] == '}' {
 					newlines++
 				} else if j+2 < len(b) && b[j+2] == '}' {
 					if b[j] == '2' && b[j+1] == '2' {
