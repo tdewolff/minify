@@ -74,6 +74,8 @@ func TestXMLKeepWhitespace(t *testing.T) {
 		{`<x> <?xml?> </x>`, `<x><?xml?> </x>`},
 		{`<x> <![CDATA[ x ]]> </x>`, `<x> x </x>`},
 		{`<x> <![CDATA[ <<<<< ]]> </x>`, `<x><![CDATA[ <<<<< ]]></x>`},
+
+		{`<a><![CDATA[ %d ]]></a>`, `<a> %d </a>`}, // #722
 	}
 
 	m := minify.New()

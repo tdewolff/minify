@@ -41,10 +41,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	for {
 		t := *tb.Shift()
 		if t.TokenType == xml.CDATAToken {
+			// convert CDATA to regular text if smaller
 			if len(t.Text) == 0 {
 				continue
-			}
-			if text, useText := xml.EscapeCDATAVal(&attrByteBuffer, t.Text); useText {
+			} else if text, useText := xml.EscapeCDATAVal(&attrByteBuffer, t.Text); useText {
 				t.TokenType = xml.TextToken
 				t.Data = text
 			}
@@ -113,10 +113,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 			w.Write(t.Data)
 		case xml.StartTagToken:
+			w.Write(t.Data)
 			if o.KeepWhitespace {
 				omitSpace = false
 			}
-			w.Write(t.Data)
 		case xml.StartTagPIToken:
 			w.Write(t.Data)
 		case xml.AttributeToken:
@@ -154,14 +154,14 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 		case xml.StartTagClosePIToken:
 			w.Write(t.Data)
 		case xml.EndTagToken:
-			if o.KeepWhitespace {
-				omitSpace = false
-			}
 			if len(t.Data) > 3+len(t.Text) {
 				t.Data[2+len(t.Text)] = '>'
 				t.Data = t.Data[:3+len(t.Text)]
 			}
 			w.Write(t.Data)
+			if o.KeepWhitespace {
+				omitSpace = false
+			}
 		}
 	}
 }
