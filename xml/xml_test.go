@@ -20,7 +20,7 @@ func TestXML(t *testing.T) {
 		{`<A>x</A>`, `<A>x</A>`},
 		{`<a><b>x</b></a>`, `<a><b>x</b></a>`},
 		{"<a><b>x\ny</b></a>", "<a><b>x\ny</b></a>"},
-		{`<a> <![CDATA[ a ]]> </a>`, `<a>a</a>`},
+		{`<a> <![CDATA[ a ]]> </a>`, `<a> a </a>`},
 		{`<a >a</a >`, `<a>a</a>`},
 		{`<?xml  version="1.0" ?>`, `<?xml version="1.0"?>`},
 		{`<x></x>`, `<x/>`},
@@ -75,7 +75,10 @@ func TestXMLKeepWhitespace(t *testing.T) {
 		{`<x> <![CDATA[ x ]]> </x>`, `<x> x </x>`},
 		{`<x> <![CDATA[ <<<<< ]]> </x>`, `<x><![CDATA[ <<<<< ]]></x>`},
 
+		{` <![CDATA[ %d ]]> `, ` %d `},             // #722
 		{`<a><![CDATA[ %d ]]></a>`, `<a> %d </a>`}, // #722
+		{`<a><![CDATA[ %d ]]><b>`, `<a> %d <b>`},   // #722
+		{`<a> %d <b>`, `<a> %d <b>`},               // #722
 	}
 
 	m := minify.New()
