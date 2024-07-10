@@ -195,6 +195,8 @@ func TestJS(t *testing.T) {
 		{`x=Infinity()`, `x=(1/0)()`},
 		{`x=2**Infinity`, `x=2**(1/0)`},
 		//{`Infinity=5;x=Infinity`, `Infinity=5;x=Infinity`},
+		{`!""`, `!0`},
+		{`!"foobar"`, `!1`},
 		{`class a extends undefined {}`, `class a extends(void 0){}`},
 		{`new true`, `new(!0)`},
 		{`function*a(){yield undefined}`, `function*a(){yield}`},

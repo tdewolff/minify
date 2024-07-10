@@ -1010,8 +1010,17 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				// <!--  =>  <! --
 				m.writeSpaceBefore('-')
 			} else if expr.Op == js.NotToken {
-				if lit, ok := expr.X.(*js.LiteralExpr); ok && (lit.TokenType == js.StringToken || lit.TokenType == js.RegExpToken) {
-					// !"string"  =>  !1
+				if lit, ok := expr.X.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken {
+					if len(lit.Data) == 2 {
+						// !""  =>  !0
+						m.write(zeroBytes)
+					} else {
+						// !"string"  =>  !1
+						m.write(oneBytes)
+					}
+					break
+				} else if ok && lit.TokenType == js.RegExpToken {
+					// !/regexp/  =>  !1
 					m.write(oneBytes)
 					break
 				} else if ok && (lit.TokenType == js.DecimalToken || lit.TokenType == js.IntegerToken) {
