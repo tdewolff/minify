@@ -162,7 +162,7 @@ type Task struct {
 
 // NewTask returns a new Task.
 func NewTask(root, input, output string, sync bool) (Task, error) {
-	if len(output) != 0 && (output == "." || output[len(output)-1] == os.PathSeparator) {
+	if len(output) != 0 && (output == "." || output[len(output)-1] == os.PathSeparator || output[len(output)-1] == '/') {
 		rel, err := filepath.Rel(root, input)
 		if err != nil {
 			return Task{}, err
@@ -400,7 +400,7 @@ func run() int {
 			return 1
 		}
 		inputs[i] = filepath.Clean(input)
-		if input[len(input)-1] == os.PathSeparator {
+		if input[len(input)-1] == os.PathSeparator || input[len(input)-1] == '/' {
 			inputs[i] += string(os.PathSeparator)
 		}
 	}
@@ -408,7 +408,7 @@ func run() int {
 	// set output file or directory, empty means stdout
 	dirDst := false
 	if output != "" {
-		if 0 < len(output) && output[len(output)-1] == os.PathSeparator {
+		if 0 < len(output) && (output[len(output)-1] == os.PathSeparator || output[len(output)-1] == '/') {
 			dirDst = true
 		} else if !bundle && 1 < len(inputs) {
 			dirDst = true
