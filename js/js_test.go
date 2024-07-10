@@ -545,8 +545,9 @@ func TestJS(t *testing.T) {
 		{`(a()).b(c)`, `a().b(c)`},
 		{`(a()[5]).b(c)`, `a()[5].b(c)`},
 		{"(a()`tmpl`).b(c)", "a()`tmpl`.b(c)"},
-		{`(a?.b).c(d)`, `a?.b.c(d)`},
-		{`(a?.(c)).d(e)`, `a?.(c).d(e)`},
+		{`(a?.b).c(d)`, `(a?.b).c(d)`},
+		{`(a?.(c)).d(e)`, `(a?.(c)).d(e)`},
+		{`(a?.b.c).d`, `a?.b.c.d`},
 		{`class a extends (new b){}`, `class a extends new b{}`},
 		{`(new.target)`, `new.target`},
 		{`(import.meta)`, `(import.meta)`},
@@ -756,7 +757,7 @@ func TestJS(t *testing.T) {
 		{`/[^a\-\--\-\-\-]/`, `/[^a\-\-----]/`},
 
 		// edge-cases
-		{`let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`, `let o=null;try{o=o?.a.b||"FAIL"}catch{}console.log(o||"PASS")`},
+		{`let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`, `let o=null;try{o=(o?.a).b||"FAIL"}catch{}console.log(o||"PASS")`},
 		{`1..a`, `1..a`},
 		{`1.5.a`, `1.5.a`},
 		{`1e4.a`, `1e4.a`},
