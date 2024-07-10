@@ -7,6 +7,12 @@ import (
 func optimizeStmt(i js.IStmt) js.IStmt {
 	// convert if/else into expression statement, and optimize blocks
 	if ifStmt, ok := i.(*js.IfStmt); ok {
+		if ifStmt.Body != nil {
+			ifStmt.Body = optimizeStmt(ifStmt.Body)
+		}
+		if ifStmt.Else != nil {
+			ifStmt.Else = optimizeStmt(ifStmt.Else)
+		}
 		hasIf := !isEmptyStmt(ifStmt.Body)
 		hasElse := !isEmptyStmt(ifStmt.Else)
 		if unaryExpr, ok := ifStmt.Cond.(*js.UnaryExpr); ok && unaryExpr.Op == js.NotToken && hasElse {
@@ -15,9 +21,11 @@ func optimizeStmt(i js.IStmt) js.IStmt {
 			hasIf, hasElse = hasElse, hasIf
 		}
 		if !hasIf && !hasElse {
-			return &js.ExprStmt{Value: ifStmt.Cond}
+			if hasSideEffects(ifStmt.Cond) {
+				return &js.ExprStmt{Value: ifStmt.Cond}
+			}
+			return &js.EmptyStmt{}
 		} else if hasIf && !hasElse {
-			ifStmt.Body = optimizeStmt(ifStmt.Body)
 			if X, isExprBody := ifStmt.Body.(*js.ExprStmt); isExprBody {
 				if unaryExpr, ok := ifStmt.Cond.(*js.UnaryExpr); ok && unaryExpr.Op == js.NotToken {
 					left := groupExpr(unaryExpr.X, binaryLeftPrecMap[js.OrToken])
@@ -35,15 +43,12 @@ func optimizeStmt(i js.IStmt) js.IStmt {
 				return ifStmt
 			}
 		} else if !hasIf && hasElse {
-			ifStmt.Else = optimizeStmt(ifStmt.Else)
 			if X, isExprElse := ifStmt.Else.(*js.ExprStmt); isExprElse {
 				left := groupExpr(ifStmt.Cond, binaryLeftPrecMap[js.OrToken])
 				right := groupExpr(X.Value, binaryRightPrecMap[js.OrToken])
 				return &js.ExprStmt{&js.BinaryExpr{js.OrToken, left, right}}
 			}
 		} else if hasIf && hasElse {
-			ifStmt.Body = optimizeStmt(ifStmt.Body)
-			ifStmt.Else = optimizeStmt(ifStmt.Else)
 			XExpr, isExprBody := ifStmt.Body.(*js.ExprStmt)
 			YExpr, isExprElse := ifStmt.Else.(*js.ExprStmt)
 			if isExprBody && isExprElse {

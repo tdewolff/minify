@@ -90,13 +90,6 @@ func isEmptyStmt(stmt js.IStmt) bool {
 		return true
 	} else if _, ok := stmt.(*js.EmptyStmt); ok {
 		return true
-	} else if decl, ok := stmt.(*js.VarDecl); ok && decl.TokenType == js.ErrorToken {
-		for _, item := range decl.List {
-			if item.Default != nil {
-				return false
-			}
-		}
-		return true
 	} else if block, ok := stmt.(*js.BlockStmt); ok {
 		for _, item := range block.List {
 			if ok := isEmptyStmt(item); !ok {
@@ -349,16 +342,18 @@ func exprPrec(i js.IExpr) js.OpPrec {
 func hasSideEffects(i js.IExpr) bool {
 	// assume that variable usage and that the index operator themselves have no side effects
 	switch expr := i.(type) {
-	case *js.Var, *js.LiteralExpr, *js.FuncDecl, *js.ClassDecl, *js.ArrowFunc, *js.NewTargetExpr, *js.ImportMetaExpr:
+	case *js.Var:
+		return true
+	case *js.LiteralExpr, *js.FuncDecl, *js.ClassDecl, *js.ArrowFunc, *js.NewTargetExpr, *js.ImportMetaExpr:
 		return false
 	case *js.NewExpr, *js.CallExpr, *js.YieldExpr:
 		return true
 	case *js.GroupExpr:
 		return hasSideEffects(expr.X)
 	case *js.DotExpr:
-		return hasSideEffects(expr.X)
+		return true
 	case *js.IndexExpr:
-		return hasSideEffects(expr.X) || hasSideEffects(expr.Y)
+		return true
 	case *js.CondExpr:
 		return hasSideEffects(expr.Cond) || hasSideEffects(expr.X) || hasSideEffects(expr.Y)
 	case *js.CommaExpr:

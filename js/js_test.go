@@ -428,6 +428,10 @@ func TestJS(t *testing.T) {
 		//{`function g(){return 5;function f(){}}`, `function g(){return 5;function f(){}}`},
 		//{`function g(){if(a)return a;else return b;var c;c=d}`, `function g(){var c;return a||b}`},
 		//{`()=>a()`, ``},
+		{`if(true){let b}`, ``},
+		{`if(true){let b=5}`, ``},
+		{`if(true){const b=c}`, `!0&&c`},
+		{`if(true){const b=c.d}`, `!0&&c.d`},
 
 		// arrow functions
 		{`() => {}`, `()=>{}`},
@@ -798,7 +802,7 @@ func TestJS(t *testing.T) {
 		{`if(!a)debugger;`, `if(!a)debugger`},                                                           // #370
 		{`export function a(b){b}`, `export function a(b){b}`},                                          // #375
 		{`switch(a){case 0:b=c;d=e}`, `switch(a){case 0:b=c,d=e}`},                                      // #426
-		{`if(a){const b=0}`, ``},                                                                        // #428
+		{`if(a){const b=0}`, `a`},                                                                       // #428
 		{`()=>({a(){b=!b}})`, `()=>({a(){b=!b}})`},                                                      // #429
 		{`var a=1;function f(){return 1}var{min,max}=Math;function g(){return 2}`, `a=1;function f(){return 1}var{min,max}=Math,a;function g(){return 2}`}, // #445
 		{`const f=x=>void console.log(x)`, `const f=x=>void console.log(x)`},                                                                               // #463
