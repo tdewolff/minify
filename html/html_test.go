@@ -33,6 +33,7 @@ func TestHTML(t *testing.T) {
 		{`<style><!--\ncss\n--></style>`, `<style><!--\ncss\n--></style>`},
 		{`<style>&</style>`, `<style>&</style>`},
 		{`<html><head></head><body>x</body></html>`, `x`},
+		{"<html><head><title> a </title>\n<link></head></html>", `<title>a</title><link>`},
 		{`<meta http-equiv="content-type" content="text/html; charset=utf-8">`, `<meta charset=utf-8>`},
 		{`<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`, `<meta charset=utf-8>`},
 		{`<meta http-equiv=" content-type " content=" text/html;  charset=utf-8 ">`, `<meta charset=utf-8>`},

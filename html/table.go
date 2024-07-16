@@ -125,7 +125,7 @@ var tagMap = map[Hash]traits{
 	Th:         blockTag,
 	Thead:      blockTag,
 	Time:       normalTag,
-	Title:      normalTag,
+	Title:      blockTag,
 	Tr:         blockTag,
 	Track:      normalTag,
 	U:          normalTag,
