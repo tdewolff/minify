@@ -4,7 +4,7 @@ package js
 import (
 	"io"
 
-	"github.com/ezoic/minify/v2"
+	"github.com/ezoic/minify"
 	"github.com/ezoic/parse"
 	"github.com/ezoic/parse/js"
 )
