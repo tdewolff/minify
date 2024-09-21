@@ -379,6 +379,12 @@ func TestHTMLTemplates(t *testing.T) {
 		{`<select>{{ range . }}<option>{{ . }}{{ end }}</select>`, `<select>{{ range . }}<option>{{ . }}{{ end }}</select>`},
 		{`<p>Hello <code>{{""}}</code> there</p>`, `<p>Hello <code>{{""}}</code> there`},
 		{`<select><option>Default</option>{{range $i, $lang := .Languages}}<option>{{$lang}}</option>{{end}}</select>`, `<select><option>Default{{range $i, $lang := .Languages}}<option>{{$lang}}{{end}}</select>`},
+		{`<select name="language">
+		  <option value=""{{if eq "" (.Post.Get "language")}} selected{{end}}>{{T "Default"}}</option>
+		  {{range $i, $lang := .Languages}}
+		  <option value="{{$lang}}"{{if eq $lang ($.Post.Get "language")}} selected{{end}}>{{index $.LanguageNames $i}}</option>
+		  {{end}}
+		</select>`, ``},
 	}
 
 	m := minify.New()
