@@ -114,6 +114,7 @@ func TestHTML(t *testing.T) {
 		{`a <picture> <img> </picture>b`, `a <picture><img> </picture>b`},
 		{`<input placeholder=" a " value=" b ">`, `<input placeholder=" a " value=" b ">`},
 		{`a <strike> b </strike> c`, `a <strike>b </strike>c`},
+		{`a <svg>`, `a <svg>`},
 
 		// from HTML Minifier
 		{`<DIV TITLE="blah">boo</DIV>`, `<div title=blah>boo</div>`},
@@ -379,12 +380,7 @@ func TestHTMLTemplates(t *testing.T) {
 		{`<select>{{ range . }}<option>{{ . }}{{ end }}</select>`, `<select>{{ range . }}<option>{{ . }}{{ end }}</select>`},
 		{`<p>Hello <code>{{""}}</code> there</p>`, `<p>Hello <code>{{""}}</code> there`},
 		{`<select><option>Default</option>{{range $i, $lang := .Languages}}<option>{{$lang}}</option>{{end}}</select>`, `<select><option>Default{{range $i, $lang := .Languages}}<option>{{$lang}}{{end}}</select>`},
-		{`<select name="language">
-		  <option value=""{{if eq "" (.Post.Get "language")}} selected{{end}}>{{T "Default"}}</option>
-		  {{range $i, $lang := .Languages}}
-		  <option value="{{$lang}}"{{if eq $lang ($.Post.Get "language")}} selected{{end}}>{{index $.LanguageNames $i}}</option>
-		  {{end}}
-		</select>`, ``},
+		{`<tr{{if .Deleted}} class="is-disabled"{{end}}>`, `<tr{{if .Deleted}} class="is-disabled"{{end}}>`},
 	}
 
 	m := minify.New()
