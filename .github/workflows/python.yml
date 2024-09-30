@@ -28,7 +28,7 @@ jobs:
       with:
         platforms: arm64
     - name: Build wheels
-      uses: pypa/cibuildwheel@v2.19.2
+      uses: pypa/cibuildwheel@v2.21.1
       with:
         package-dir: bindings/py
       env:
@@ -68,7 +68,7 @@ jobs:
         set CGO_ENABLED=1
         make -C bindings/py compile
     - name: Build wheels
-      uses: pypa/cibuildwheel@v2.19.2
+      uses: pypa/cibuildwheel@v2.21.1
       with:
         package-dir: bindings/py
       env:
@@ -103,7 +103,7 @@ jobs:
         export MACOSX_DEPLOYMENT_TARGET=10.9
         make -C bindings/py compile
     - name: Build wheels
-      uses: pypa/cibuildwheel@v2.19.2
+      uses: pypa/cibuildwheel@v2.21.1
       with:
         package-dir: bindings/py
       env:
@@ -152,11 +152,11 @@ jobs:
         mkdir dist
         mv artifacts/*/* dist/
     - name: Upload to GitHub Release
-      uses: softprops/action-gh-release@v2.0.6
+      uses: softprops/action-gh-release@v2.0.8
       with:
         files: bindings/py/dist/*
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@ec4db0b4ddc65acdf4bff5fa45ac92d78b56bdf0
+      uses: pypa/gh-action-pypi-publish@0ab0b79471669eb3a4d647e625009c62f9f3b241
       with:
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
