@@ -74,7 +74,7 @@ var tagMap = map[Hash]traits{
 	Input:      objectTag,
 	Ins:        keepPTag,
 	Kbd:        normalTag,
-	Label:      normalTag,
+	Label:      normalTag | keepPTag, // experimentally, keepPTag is needed
 	Legend:     blockTag,
 	Li:         blockTag,
 	Link:       normalTag,

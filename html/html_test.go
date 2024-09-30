@@ -70,6 +70,7 @@ func TestHTML(t *testing.T) {
 		{`<a rel="noopener">`, `<a rel=noopener>`},
 		{`<a rel=" noopener  external ">`, `<a rel="noopener external">`},
 		{`<input accept="image/png, image/jpeg">`, `<input accept=image/png,image/jpeg>`},
+		{`<p></p></label>`, `<p></p></label>`}, // experimentally found
 
 		// increase coverage
 		{`<script style="css">js</script>`, `<script style=css>js</script>`},
