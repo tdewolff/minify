@@ -1217,12 +1217,18 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		} else {
 			m.minifyExpr(expr.X, js.OpMember)
 		}
+
+		// To address issue #757
+		isWrittenOptChainBytes := false
 		if expr.Optional {
 			m.write(optChainBytes)
+			isWrittenOptChainBytes = true
 		}
 		if lit, ok := expr.Y.(*js.LiteralExpr); ok && lit.TokenType == js.StringToken && 2 < len(lit.Data) {
 			if isIdent := js.AsIdentifierName(lit.Data[1 : len(lit.Data)-1]); isIdent {
-				m.write(dotBytes)
+				if !isWrittenOptChainBytes {
+					m.write(dotBytes)
+				}
 				m.write(lit.Data[1 : len(lit.Data)-1])
 				break
 			} else if isNum := js.AsDecimalLiteral(lit.Data[1 : len(lit.Data)-1]); isNum {
