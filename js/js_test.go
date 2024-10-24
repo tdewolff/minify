@@ -3,7 +3,6 @@ package js
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"testing"
@@ -679,6 +678,8 @@ func TestJS(t *testing.T) {
 		{`a=obj["3name"]`, `a=obj["3name"]`},
 		{"a=b`tmpl${a?b:b}tmpl`", "a=b`tmpl${a,b}tmpl`"},
 		{`a=b?.[c]`, `a=b?.[c]`},
+		{`a=b?.["c"]`, `a=b?.c`},         // Issue 757
+		{`a=b?.["c d"]`, `a=b?.["c d"]`}, // Issue 757
 		{`a=b.#c`, `a=b.#c`},
 		{`a=b().#c`, `a=b().#c`},
 		{`a=b?.#c`, `a=b?.#c`},
@@ -977,7 +978,7 @@ func TestRenamerIndices(t *testing.T) {
 
 func BenchmarkJQuery(b *testing.B) {
 	m := minify.New()
-	buf, err := ioutil.ReadFile("../benchmarks/sample_jquery.js")
+	buf, err := os.ReadFile("../benchmarks/sample_jquery.js")
 	if err != nil {
 		panic(err)
 	}
