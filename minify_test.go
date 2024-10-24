@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -205,7 +204,7 @@ func TestWriter(t *testing.T) {
 		return errDummy
 	})
 	m.AddFunc("dummy/late-err", func(m *M, w io.Writer, r io.Reader, _ map[string]string) error {
-		_, _ = ioutil.ReadAll(r)
+		_, _ = io.ReadAll(r)
 		return errDummy
 	})
 
@@ -331,7 +330,7 @@ func TestHelperProcess(*testing.T) {
 			return
 		}
 
-		b, err := ioutil.ReadFile(in)
+		b, err := os.ReadFile(in)
 		if err != nil {
 			_, _ = w.WriteString(err.Error())
 			_ = w.Close()

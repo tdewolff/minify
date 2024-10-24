@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"math"
 	"net/url"
@@ -281,10 +280,10 @@ func run() int {
 	}
 	useStdin := len(inputs) == 0
 
-	Error = log.New(ioutil.Discard, "", 0)
-	Warning = log.New(ioutil.Discard, "", 0)
-	Info = log.New(ioutil.Discard, "", 0)
-	Debug = log.New(ioutil.Discard, "", 0)
+	Error = log.New(io.Discard, "", 0)
+	Warning = log.New(io.Discard, "", 0)
+	Info = log.New(io.Discard, "", 0)
+	Debug = log.New(io.Discard, "", 0)
 	if !quiet {
 		Error = log.New(os.Stderr, "ERROR: ", 0)
 		if 0 < verbose {
@@ -873,7 +872,7 @@ func minify(t Task) bool {
 		return true
 	}
 
-	b, err := ioutil.ReadAll(fr)
+	b, err := io.ReadAll(fr)
 	if err != nil {
 		fr.Close()
 		fw.Close()

@@ -3,7 +3,6 @@ package minify
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"math/rand"
 	"strconv"
@@ -54,7 +53,7 @@ func TestDataURI(t *testing.T) {
 	}
 	m := New()
 	m.AddFunc("text/x", func(_ *M, w io.Writer, r io.Reader, _ map[string]string) error {
-		b, _ := ioutil.ReadAll(r)
+		b, _ := io.ReadAll(r)
 		test.String(t, string(b), "<?xx?>")
 		_, _ = w.Write(b)
 		return nil

@@ -1,10 +1,11 @@
+//go:build gofuzz
 // +build gofuzz
 
 package fuzz
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/xml"
@@ -13,6 +14,6 @@ import (
 // Fuzz is a fuzz test.
 func Fuzz(data []byte) int {
 	r := bytes.NewBuffer(data)
-	_ = xml.Minify(minify.New(), ioutil.Discard, r, nil)
+	_ = xml.Minify(minify.New(), io.Discard, r, nil)
 	return 1
 }

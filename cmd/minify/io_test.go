@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"testing"
 
 	"github.com/tdewolff/test"
@@ -13,16 +12,16 @@ func testOpener(filename string) (io.ReadCloser, error) {
 	if filename == "err" {
 		return nil, test.ErrPlain
 	} else if filename == "empty" {
-		return ioutil.NopCloser(test.NewEmptyReader()), nil
+		return io.NopCloser(test.NewEmptyReader()), nil
 	}
-	return ioutil.NopCloser(bytes.NewReader([]byte(filename))), nil
+	return io.NopCloser(bytes.NewReader([]byte(filename))), nil
 }
 
 func TestConcat(t *testing.T) {
 	r, err := newConcatFileReader([]string{"test", "test"}, testOpener, nil)
 	test.T(t, err, nil)
 
-	buf, err := ioutil.ReadAll(r)
+	buf, err := io.ReadAll(r)
 	test.T(t, err, nil)
 	test.Bytes(t, buf, []byte("testtest"))
 

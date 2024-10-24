@@ -1,7 +1,7 @@
 package benchmarks
 
 import (
-	"io/ioutil"
+	"os"
 	"runtime"
 	"testing"
 
@@ -12,7 +12,7 @@ import (
 
 func benchmark(b *testing.B, mediatype string, sample string) {
 	m := minify.Default
-	in, err := ioutil.ReadFile(sample)
+	in, err := os.ReadFile(sample)
 	if err != nil {
 		panic(err)
 	}
