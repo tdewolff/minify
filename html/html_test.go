@@ -115,6 +115,7 @@ func TestHTML(t *testing.T) {
 		{`<input placeholder=" a " value=" b ">`, `<input placeholder=" a " value=" b ">`},
 		{`a <strike> b </strike> c`, `a <strike>b </strike>c`},
 		{`a <svg>`, `a <svg>`},
+		{"<h5>\n    Lorem & ipsum\n    dolor sid amet\n</h5>", "<h5>Lorem & ipsum\ndolor sid amet</h5>"},
 
 		// from HTML Minifier
 		{`<DIV TITLE="blah">boo</DIV>`, `<div title=blah>boo</div>`},
