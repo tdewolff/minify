@@ -156,7 +156,7 @@ jobs:
       with:
         files: bindings/py/dist/*
     - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@f7600683efdcb7656dec5b29656edb7bc586e597
+      uses: pypa/gh-action-pypi-publish@15c56dba361d8335944d31a2ecd17d700fc7bcbc
       with:
         user: __token__
         password: ${{ secrets.PYPI_API_TOKEN }}
