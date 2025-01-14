@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/djherbis/atime v1.1.0
-	github.com/fsnotify/fsnotify v1.7.0
+	github.com/fsnotify/fsnotify v1.8.0
 	github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2
 	github.com/tdewolff/argp v0.0.0-20240625173203-87b04d5d3e52
 	github.com/tdewolff/parse/v2 v2.7.19
