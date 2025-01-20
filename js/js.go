@@ -863,13 +863,13 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			expr = expr.Link
 		}
 		data := expr.Data
-		if bytes.Equal(data, undefinedBytes) { // TODO: only if not defined
+		if expr.Decl == js.NoDecl && bytes.Equal(data, undefinedBytes) {
 			if js.OpMember < prec {
 				m.write(groupedZeroIndexBytes)
 			} else {
 				m.write(zeroIndexBytes)
 			}
-		} else if bytes.Equal(data, infinityBytes) { // TODO: only if not defined
+		} else if expr.Decl == js.NoDecl && bytes.Equal(data, infinityBytes) {
 			if js.OpMul < prec {
 				m.write(groupedOneDivZeroBytes)
 			} else {
