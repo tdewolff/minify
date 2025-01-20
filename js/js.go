@@ -9,6 +9,7 @@ import (
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/js"
+	"github.com/tdewolff/parse/v2/strconv"
 )
 
 type blockType int
@@ -1200,6 +1201,131 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			}
 		}
 	case *js.CallExpr:
+		if v, ok := expr.X.(*js.Var); ok && v.Decl == js.NoDecl {
+			if bytes.Equal(v.Data, isNaNBytes) {
+				// isNaN(x) => x!=x
+				if len(expr.Args.List) == 1 {
+					groupLen := 0
+					if js.OpEquals < prec {
+						groupLen = 2
+					}
+					if arg, ok := expr.Args.List[0].Value.(*js.Var); ok && len(arg.Data)+groupLen < 7 {
+						if js.OpEquals < prec {
+							m.write(openParenBytes)
+						}
+						m.write(arg.Data)
+						m.write(notEqualBytes)
+						m.write(arg.Data)
+						if js.OpEquals < prec {
+							m.write(closeParenBytes)
+						}
+						break
+					}
+				}
+			} else if bytes.Equal(v.Data, NumberBytes) {
+				// Number(x) => +x
+				if len(expr.Args.List) == 1 {
+					if js.OpUnary < prec {
+						m.write(openParenBytes)
+					}
+					m.write(plusBytes)
+					m.minifyExpr(expr.Args.List[0].Value, js.OpUnary)
+					if js.OpUnary < prec {
+						m.write(closeParenBytes)
+					}
+					break
+				}
+			} else if bytes.Equal(v.Data, parseIntBytes) {
+				// parseInt(x) => +x
+				base := 10
+				if len(expr.Args.List) == 2 {
+					base = 0
+					if arg, ok := expr.Args.List[1].Value.(*js.LiteralExpr); ok {
+						if i, n := strconv.ParseInt(arg.Data); n == len(arg.Data) {
+							base = int(i)
+						}
+					}
+				}
+				if len(expr.Args.List) == 1 || len(expr.Args.List) == 2 && (base == 2 || base == 8 || base == 10 || base == 16) {
+					if arg, ok := expr.Args.List[0].Value.(*js.Var); ok {
+						if js.OpUnary < prec {
+							m.write(openParenBytes)
+						}
+						m.write(plusBytes)
+						if base == 10 {
+							m.write(arg.Data)
+						} else if base == 2 {
+							m.write([]byte(`("0b"+`))
+							m.write(arg.Data)
+							m.write(closeParenBytes)
+						} else if base == 8 {
+							m.write([]byte(`("0o"+`))
+							m.write(arg.Data)
+							m.write(closeParenBytes)
+						} else if base == 16 {
+							m.write([]byte(`("0x"+`))
+							m.write(arg.Data)
+							m.write(closeParenBytes)
+						}
+						if js.OpUnary < prec {
+							m.write(closeParenBytes)
+						}
+						break
+					}
+				}
+			}
+		} else if dot, ok := expr.X.(*js.DotExpr); ok {
+			if v, ok := dot.X.(*js.Var); ok && v.Decl == js.NoDecl && bytes.Equal(v.Data, MathBytes) {
+				if bytes.Equal(dot.Y.Data, []byte("pow")) {
+					if len(expr.Args.List) == 2 {
+						if js.OpExp < prec {
+							m.write(openParenBytes)
+						}
+						m.minifyExpr(expr.Args.List[0].Value, js.OpUpdate)
+						m.write(expBytes)
+						m.minifyExpr(expr.Args.List[1].Value, js.OpExp)
+						if js.OpExp < prec {
+							m.write(closeParenBytes)
+						}
+						break
+					}
+				} else if bytes.Equal(dot.Y.Data, []byte("trunc")) {
+					if len(expr.Args.List) == 1 {
+						if js.OpBitOr < prec {
+							m.write(openParenBytes)
+						}
+						m.minifyExpr(expr.Args.List[0].Value, js.OpBitOr)
+						m.write(bitOrBytes)
+						m.write(zeroBytes)
+						if js.OpBitOr < prec {
+							m.write(closeParenBytes)
+						}
+						break
+					}
+				} else if bytes.Equal(dot.Y.Data, []byte("abs")) {
+					if len(expr.Args.List) == 1 {
+						groupLen := 0
+						if js.OpAssign < prec {
+							groupLen = 2
+						}
+						if v, ok := expr.Args.List[0].Value.(*js.Var); ok && len(v.Data)*2+groupLen+5 < 10 {
+							if js.OpAssign < prec {
+								m.write(openParenBytes)
+							}
+							m.write(v.Data)
+							m.write([]byte("<0?-"))
+							m.write(v.Data)
+							m.write(colonBytes)
+							m.write(v.Data)
+							if js.OpAssign < prec {
+								m.write(closeParenBytes)
+							}
+							break
+						}
+					}
+				}
+			}
+		}
 		m.minifyExpr(expr.X, js.OpCall)
 		parentInFor := m.inFor
 		m.inFor = false

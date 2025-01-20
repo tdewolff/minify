@@ -15,6 +15,9 @@ var (
 	spaceBytes                 = []byte(" ")
 	newlineBytes               = []byte("\n")
 	starBytes                  = []byte("*")
+	plusBytes                  = []byte("+")
+	expBytes                   = []byte("**")
+	bitOrBytes                 = []byte("|")
 	colonBytes                 = []byte(":")
 	semicolonBytes             = []byte(";")
 	commaBytes                 = []byte(",")
@@ -33,6 +36,7 @@ var (
 	equalBytes                 = []byte("=")
 	optChainBytes              = []byte("?.")
 	arrowBytes                 = []byte("=>")
+	notEqualBytes              = []byte("!=")
 	zeroBytes                  = []byte("0")
 	oneBytes                   = []byte("1")
 	letBytes                   = []byte("let")
@@ -83,6 +87,10 @@ var (
 	groupedNotOneBytes         = []byte("(!1)")
 	debuggerBytes              = []byte("debugger")
 	regExpScriptBytes          = []byte("/script>")
+	isNaNBytes                 = []byte("isNaN")
+	NumberBytes                = []byte("Number")
+	parseIntBytes              = []byte("parseInt")
+	MathBytes                  = []byte("Math")
 )
 
 func isEmptyStmt(stmt js.IStmt) bool {

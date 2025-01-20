@@ -679,8 +679,8 @@ func TestJS(t *testing.T) {
 		{`a=obj["3name"]`, `a=obj["3name"]`},
 		{"a=b`tmpl${a?b:b}tmpl`", "a=b`tmpl${a,b}tmpl`"},
 		{`a=b?.[c]`, `a=b?.[c]`},
-		{`a=b?.["c"]`, `a=b?.c`},         // Issue 757
-		{`a=b?.["c d"]`, `a=b?.["c d"]`}, // Issue 757
+		{`a=b?.["c"]`, `a=b?.c`},         // #757
+		{`a=b?.["c d"]`, `a=b?.["c d"]`}, // #757
 		{`a=b.#c`, `a=b.#c`},
 		{`a=b().#c`, `a=b().#c`},
 		{`a=b?.#c`, `a=b?.#c`},
@@ -688,6 +688,18 @@ func TestJS(t *testing.T) {
 		{`a(b,...c)`, `a(b,...c)`},
 		{`let a="string";a`, `let a="string";a`},
 		{`f((a,b)||d)`, `f((a,b)||d)`},
+
+		// math functions, see #790
+		{`Math.abs(x)`, `x<0?-x:x`},
+		{`Math.trunc(x)`, `x|0`},
+		{`Math.pow(a,b)`, `a**b`},
+		{`isNaN(x)`, `x!=x`},
+		{`Number(x)`, `+x`},
+		{`parseInt(x)`, `+x`},
+		{`parseInt(x,2)`, `+("0b"+x)`},
+		{`parseInt(x,8)`, `+("0o"+x)`},
+		{`parseInt(x,10)`, `+x`},
+		{`parseInt(x,16)`, `+("0x"+x)`},
 
 		// merge expressions
 		{`function f(){b=5;return a+b}`, `function f(){return b=5,a+b}`},
