@@ -9,7 +9,6 @@ import (
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/js"
-	"github.com/tdewolff/parse/v2/strconv"
 )
 
 type blockType int
@@ -1234,44 +1233,6 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 						m.write(closeParenBytes)
 					}
 					break
-				}
-			} else if bytes.Equal(v.Data, parseIntBytes) {
-				// parseInt(x) => +x
-				base := 10
-				if len(expr.Args.List) == 2 {
-					base = 0
-					if arg, ok := expr.Args.List[1].Value.(*js.LiteralExpr); ok {
-						if i, n := strconv.ParseInt(arg.Data); n == len(arg.Data) {
-							base = int(i)
-						}
-					}
-				}
-				if len(expr.Args.List) == 1 || len(expr.Args.List) == 2 && (base == 2 || base == 8 || base == 10 || base == 16) {
-					if arg, ok := expr.Args.List[0].Value.(*js.Var); ok {
-						if js.OpUnary < prec {
-							m.write(openParenBytes)
-						}
-						m.write(plusBytes)
-						if base == 10 {
-							m.write(arg.Data)
-						} else if base == 2 {
-							m.write([]byte(`("0b"+`))
-							m.write(arg.Data)
-							m.write(closeParenBytes)
-						} else if base == 8 {
-							m.write([]byte(`("0o"+`))
-							m.write(arg.Data)
-							m.write(closeParenBytes)
-						} else if base == 16 {
-							m.write([]byte(`("0x"+`))
-							m.write(arg.Data)
-							m.write(closeParenBytes)
-						}
-						if js.OpUnary < prec {
-							m.write(closeParenBytes)
-						}
-						break
-					}
 				}
 			}
 		} else if dot, ok := expr.X.(*js.DotExpr); ok {

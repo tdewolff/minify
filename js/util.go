@@ -89,7 +89,6 @@ var (
 	regExpScriptBytes          = []byte("/script>")
 	isNaNBytes                 = []byte("isNaN")
 	NumberBytes                = []byte("Number")
-	parseIntBytes              = []byte("parseInt")
 	MathBytes                  = []byte("Math")
 )
 

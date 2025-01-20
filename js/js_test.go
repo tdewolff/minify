@@ -695,11 +695,6 @@ func TestJS(t *testing.T) {
 		{`Math.pow(a,b)`, `a**b`},
 		{`isNaN(x)`, `x!=x`},
 		{`Number(x)`, `+x`},
-		{`parseInt(x)`, `+x`},
-		{`parseInt(x,2)`, `+("0b"+x)`},
-		{`parseInt(x,8)`, `+("0o"+x)`},
-		{`parseInt(x,10)`, `+x`},
-		{`parseInt(x,16)`, `+("0x"+x)`},
 
 		// merge expressions
 		{`function f(){b=5;return a+b}`, `function f(){return b=5,a+b}`},
