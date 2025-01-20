@@ -863,10 +863,10 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		}
 		data := expr.Data
 		if bytes.Equal(data, undefinedBytes) { // TODO: only if not defined
-			if js.OpUnary < prec {
-				m.write(groupedVoidZeroBytes)
+			if js.OpMember < prec {
+				m.write(groupedZeroIndexBytes)
 			} else {
-				m.write(voidZeroBytes)
+				m.write(zeroIndexBytes)
 			}
 		} else if bytes.Equal(data, infinityBytes) { // TODO: only if not defined
 			if js.OpMul < prec {
@@ -997,6 +997,8 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		if expr.Op == js.PostIncrToken || expr.Op == js.PostDecrToken {
 			m.minifyExpr(expr.X, unaryPrecMap[expr.Op])
 			m.write(expr.Op.Bytes())
+		} else if expr.Op == js.VoidToken && !hasSideEffects(expr.X) {
+			m.write(zeroIndexBytes)
 		} else {
 			isLtNot := expr.Op == js.NotToken && 0 < len(m.prev) && m.prev[len(m.prev)-1] == '<'
 			m.write(expr.Op.Bytes())
