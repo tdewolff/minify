@@ -50,6 +50,7 @@ func TestDataURI(t *testing.T) {
 		{"data:text/other,\"<\u2318", "data:text/other,%22%3C%E2%8C%98"},
 		{"data:text/other,\"<\u2318>", "data:text/other;base64,IjzijJg+"},
 		{`data:text/svg+xml,%3Csvg height="100" width="100"><circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red" /></svg>`, `data:text/svg+xml,%3Csvg height="100" width="100"><circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="red" /></svg>`},
+		{`data:image/svg&#43;xml,%e2%ad%90`, `data:image/svg&#43;xml,%E2%AD%90`},
 	}
 	m := New()
 	m.AddFunc("text/x", func(_ *M, w io.Writer, r io.Reader, _ map[string]string) error {
