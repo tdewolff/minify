@@ -47,10 +47,10 @@ Using Homebrew, see [Brew tap](https://github.com/tdewolff/homebrew-tap/)
 brew install tdewolff/tap/minify
 ```
 
-### Ubuntu
+### Debian / Ubuntu
 ```
-sudo apt-get update
-sudo apt-get install minify
+sudo apt update
+sudo apt install minify
 ```
 
 Note: may be outdated
