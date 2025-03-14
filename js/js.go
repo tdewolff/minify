@@ -1228,7 +1228,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 						m.write(openParenBytes)
 					}
 					m.write(plusBytes)
-					m.minifyExpr(expr.Args.List[0].Value, js.OpUnary)
+					m.minifyExpr(&js.GroupExpr{expr.Args.List[0].Value}, js.OpUnary)
 					if js.OpUnary < prec {
 						m.write(closeParenBytes)
 					}
@@ -1238,24 +1238,26 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		} else if dot, ok := expr.X.(*js.DotExpr); ok {
 			if v, ok := dot.X.(*js.Var); ok && v.Decl == js.NoDecl && bytes.Equal(v.Data, MathBytes) {
 				if bytes.Equal(dot.Y.Data, []byte("pow")) {
+					// Math.pow(a,b) => a**b
 					if len(expr.Args.List) == 2 {
 						if js.OpExp < prec {
 							m.write(openParenBytes)
 						}
-						m.minifyExpr(expr.Args.List[0].Value, js.OpUpdate)
+						m.minifyExpr(&js.GroupExpr{expr.Args.List[0].Value}, js.OpUpdate)
 						m.write(expBytes)
-						m.minifyExpr(expr.Args.List[1].Value, js.OpExp)
+						m.minifyExpr(&js.GroupExpr{expr.Args.List[1].Value}, js.OpExp)
 						if js.OpExp < prec {
 							m.write(closeParenBytes)
 						}
 						break
 					}
 				} else if bytes.Equal(dot.Y.Data, []byte("trunc")) {
+					// Math.trunc(x) => x|0
 					if len(expr.Args.List) == 1 {
 						if js.OpBitOr < prec {
 							m.write(openParenBytes)
 						}
-						m.minifyExpr(expr.Args.List[0].Value, js.OpBitOr)
+						m.minifyExpr(&js.GroupExpr{expr.Args.List[0].Value}, js.OpBitOr)
 						m.write(bitOrBytes)
 						m.write(zeroBytes)
 						if js.OpBitOr < prec {
@@ -1264,6 +1266,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 						break
 					}
 				} else if bytes.Equal(dot.Y.Data, []byte("abs")) {
+					// Math.abs(x) => x<0?-x:x
 					if len(expr.Args.List) == 1 {
 						groupLen := 0
 						if js.OpAssign < prec {

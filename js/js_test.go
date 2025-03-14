@@ -693,6 +693,7 @@ func TestJS(t *testing.T) {
 		{`Math.abs(x)`, `x<0?-x:x`},
 		{`Math.trunc(x)`, `x|0`},
 		{`Math.pow(a,b)`, `a**b`},
+		{`Math.pow(-a,b)`, `(-a)**b`},
 		{`isNaN(x)`, `x!=x`},
 		{`Number(x)`, `+x`},
 
