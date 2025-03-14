@@ -60,7 +60,7 @@ jobs:
         fetch-depth: 0
     - uses: actions/setup-go@v5
       with:
-        go-version: '>=1.17'
+        go-version: '>=1.23'
     - name: Build Windows extension
       run: |
         set GOOS=windows
@@ -94,7 +94,7 @@ jobs:
         fetch-depth: 0
     - uses: actions/setup-go@v5
       with:
-        go-version: '>=1.17'
+        go-version: '>=1.23'
     - name: Build MacOS extension
       run: |
         export GOOS=darwin
@@ -126,7 +126,7 @@ jobs:
         python-version: '3.11'
     - uses: actions/setup-go@v5
       with:
-        go-version: '>=1.17'
+        go-version: '>=1.23'
     - name: Install dependencies
       run: pip install build
     - name: Build package
