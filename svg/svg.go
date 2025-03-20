@@ -129,6 +129,12 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 			tag = t.Hash
 			if tag == Metadata {
 				t.Data = nil
+			} else if colon := bytes.IndexByte(t.Text, ':'); colon != -1 || t.Data == nil {
+				// skip attributes in namespace (eg. inkscape or sodipodi)
+				t.Data = nil
+			} else if tag == Defs && tb.Peek(1).TokenType == xml.StartTagCloseVoidToken {
+				// skip empty tags
+				t.Data = nil
 			}
 
 			if t.Data == nil {
@@ -156,6 +162,11 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 					attr == ContentScriptType && bytes.Equal(val, []byte("application/ecmascript")) ||
 					attr == ContentStyleType && bytes.Equal(val, cssMimeBytes)) ||
 				tag == Style && attr == Type && bytes.Equal(val, cssMimeBytes) {
+				continue
+			}
+
+			// skip attributes in namespace (eg. inkscape or sodipodi)
+			if colon := bytes.IndexByte(t.Text, ':'); colon != -1 {
 				continue
 			}
 
@@ -197,7 +208,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 				}
 				val = newVal
 			} else if colorAttrMap[attr] && len(val) > 0 && (len(val) < 5 || !parse.EqualFold(val[:4], urlBytes)) {
-				parse.ToLower(val)
+				//parse.ToLower(val)
 				if val[0] == '#' {
 					if name, ok := css.ShortenColorHex[string(val)]; ok {
 						val = name
