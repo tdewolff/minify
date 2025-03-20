@@ -1208,13 +1208,13 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 					if js.OpEquals < prec {
 						groupLen = 2
 					}
-					if arg, ok := expr.Args.List[0].Value.(*js.Var); ok && len(arg.Data)+groupLen < 7 {
+					if v, ok := expr.Args.List[0].Value.(*js.Var); ok && len(v.Data)+groupLen < 7 {
 						if js.OpEquals < prec {
 							m.write(openParenBytes)
 						}
-						m.write(arg.Data)
+						m.minifyExpr(v, js.OpEquals)
 						m.write(notEqualBytes)
-						m.write(arg.Data)
+						m.minifyExpr(v, js.OpEquals)
 						if js.OpEquals < prec {
 							m.write(closeParenBytes)
 						}
@@ -1276,11 +1276,11 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 							if js.OpAssign < prec {
 								m.write(openParenBytes)
 							}
-							m.write(v.Data)
+							m.minifyExpr(v, js.OpCoalesce)
 							m.write([]byte("<0?-"))
-							m.write(v.Data)
+							m.minifyExpr(v, js.OpAssign)
 							m.write(colonBytes)
-							m.write(v.Data)
+							m.minifyExpr(v, js.OpAssign)
 							if js.OpAssign < prec {
 								m.write(closeParenBytes)
 							}
