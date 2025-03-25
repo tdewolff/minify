@@ -574,6 +574,18 @@ func (m *jsMinifier) minifyVarDecl(decl *js.VarDecl, onlyDefines bool) {
 }
 
 func (m *jsMinifier) minifyFuncDecl(decl *js.FuncDecl, inExpr bool) {
+	// TODO: rewrite to arrow function if doe snot refer to this?
+	//if !decl.Generator && decl.Name != nil && (!inExpr || 1 < decl.Name.Uses) {
+	//	m.write(decl.Name.Data)
+	//	m.write(equalBytes)
+	//	m.minifyArrowFunc(&js.ArrowFunc{
+	//		Async:  decl.Async,
+	//		Params: decl.Params,
+	//		Body:   decl.Body,
+	//	})
+	//	return
+	//}
+
 	parentRename := m.renamer.rename
 	m.renamer.rename = !decl.Body.Scope.HasWith && !m.o.KeepVarNames
 	m.hoistVars(&decl.Body)
@@ -1195,7 +1207,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			if expr.Generator {
 				m.write(starBytes)
 				m.minifyExpr(expr.X, js.OpAssign)
-			} else if v, ok := expr.X.(*js.Var); !ok || !bytes.Equal(v.Name(), undefinedBytes) { // TODO: only if not defined
+			} else if v, ok := expr.X.(*js.Var); !ok || !bytes.Equal(v.Name(), undefinedBytes) || v.Decl != js.NoDecl {
 				m.minifyExpr(expr.X, js.OpAssign)
 			}
 		}
@@ -1212,9 +1224,9 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 						if js.OpEquals < prec {
 							m.write(openParenBytes)
 						}
-						m.write(v.Data)
+						m.minifyExpr(v, js.OpEquals)
 						m.write(notEqualBytes)
-						m.write(v.Data)
+						m.minifyExpr(v, js.OpEquals)
 						if js.OpEquals < prec {
 							m.write(closeParenBytes)
 						}
@@ -1276,11 +1288,11 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 							if js.OpAssign < prec {
 								m.write(openParenBytes)
 							}
-							m.write(v.Data)
+							m.minifyExpr(v, js.OpCoalesce)
 							m.write([]byte("<0?-"))
-							m.write(v.Data)
+							m.minifyExpr(v, js.OpAssign)
 							m.write(colonBytes)
-							m.write(v.Data)
+							m.minifyExpr(v, js.OpAssign)
 							if js.OpAssign < prec {
 								m.write(closeParenBytes)
 							}

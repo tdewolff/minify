@@ -200,6 +200,7 @@ func TestJS(t *testing.T) {
 		{`class a extends undefined {}`, `class a extends 0[0]{}`},
 		{`new true`, `new(!0)`},
 		{`function*a(){yield undefined}`, `function*a(){yield}`},
+		{`function*a(){let undefined;yield undefined}`, `function*a(){let undefined;yield undefined}`},
 		{`function*a(){yield*undefined}`, `function*a(){yield*0[0]}`},
 
 		// if/else statements
@@ -377,6 +378,12 @@ func TestJS(t *testing.T) {
 		// TODO: test for variables renaming (first rename, then merge vars)
 
 		// function and method declarations
+		//{`function f(){}`, `f=()=>{}`},
+		//{`function f(a){}`, `f=a=>{}`},
+		//{`function f(a,b){}`, `f=(a,b)=>{}`},
+		//{`function f(){this}`, `function f(){this}`},
+		//{`function f(){arguments}`, `function f(){arguments}`},
+		//{`function f(){}; new f()`, `function f(){}; new f()`},
 		{`function g(){return}`, `function g(){}`},
 		{`function g(){return undefined}`, `function g(){}`},
 		{`function g(){return void 0}`, `function g(){}`},
@@ -696,6 +703,9 @@ func TestJS(t *testing.T) {
 		{`Math.pow(-a,b)`, `(-a)**b`},
 		{`isNaN(x)`, `x!=x`},
 		{`Number(x)`, `+x`},
+		{`module.abs(x)`, `module.abs(x)`},
+		{`module.isNaN(x)`, `module.isNaN(x)`},
+		{`function isNaN(){}isNaN(x)`, `function isNaN(){}isNaN(x)`},
 
 		// merge expressions
 		{`function f(){b=5;return a+b}`, `function f(){return b=5,a+b}`},
@@ -908,6 +918,7 @@ func TestJSVarRenaming(t *testing.T) {
 		{`()=>{var c;try {a} catch(b) {c}}`, `()=>{var b;try{a}catch{b}}`},
 		{`()=>{let foo;Math.abs(foo)}`, `()=>{let a;a<0?-a:a}`},
 		{`()=>{let foo;isNaN(foo)}`, `()=>{let a;a!=a}`},
+		{`()=>{let isNaN;isNaN(foo)}`, `()=>{let a;a(foo)}`},
 
 		// go-fuzz
 		{`var ÆÆ,ÆÆ=t;var ÆÆ=v,a=ÿ`, `var ÆÆ=t,ÆÆ=v,a=ÿ`},
