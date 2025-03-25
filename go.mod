@@ -1,6 +1,6 @@
 module github.com/tdewolff/minify/v2
 
-go 1.23.0
+go 1.18.0
 
 toolchain go1.24.1
 
@@ -17,6 +17,6 @@ require (
 	github.com/cheekybits/is v0.0.0-20150225183255-68e9c0620927 // indirect
 	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
-	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
