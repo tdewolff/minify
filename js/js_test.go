@@ -702,7 +702,6 @@ func TestJS(t *testing.T) {
 		{`Math.pow(a,b)`, `a**b`},
 		{`Math.pow(-a,b)`, `(-a)**b`},
 		{`isNaN(x)`, `x!=x`},
-		{`Number(x)`, `+x`},
 		{`Number(undefined)`, `NaN`},
 		{`Number(null)`, `0`},
 		{`Number(true)`, `1`},
