@@ -1236,13 +1236,28 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			} else if bytes.Equal(v.Data, NumberBytes) {
 				// Number(x) => +x
 				if len(expr.Args.List) == 1 {
-					if js.OpUnary < prec {
-						m.write(openParenBytes)
-					}
-					m.write(plusBytes)
-					m.minifyExpr(&js.GroupExpr{expr.Args.List[0].Value}, js.OpUnary)
-					if js.OpUnary < prec {
-						m.write(closeParenBytes)
+					if lit, ok := expr.Args.List[0].Value.(*js.LiteralExpr); ok && lit.TokenType == js.TrueToken {
+						m.write(oneBytes)
+					} else if ok && (lit.TokenType == js.FalseToken || lit.TokenType == js.NullToken) {
+						m.write(zeroBytes)
+					} else if ok && lit.TokenType == js.DecimalToken {
+						m.minifyExpr(lit, prec)
+					} else if ok && (lit.TokenType == js.IntegerToken || lit.TokenType == js.BinaryToken || lit.TokenType == js.OctalToken || lit.TokenType == js.HexadecimalToken) {
+						if lit.Data[len(lit.Data)-1] == 'n' {
+							lit.Data = lit.Data[:len(lit.Data)-1]
+						}
+						m.minifyExpr(lit, prec)
+					} else if v, ok := expr.Args.List[0].Value.(*js.Var); ok && v.Decl == js.NoDecl && bytes.Equal(v.Data, undefinedBytes) {
+						m.write(nanBytes)
+					} else {
+						if js.OpUnary < prec {
+							m.write(openParenBytes)
+						}
+						m.write(plusBytes)
+						m.minifyExpr(&js.GroupExpr{expr.Args.List[0].Value}, js.OpUnary)
+						if js.OpUnary < prec {
+							m.write(closeParenBytes)
+						}
 					}
 					break
 				}
