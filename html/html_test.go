@@ -116,6 +116,7 @@ func TestHTML(t *testing.T) {
 		{`a <strike> b </strike> c`, `a <strike>b </strike>c`},
 		{`a <svg>`, `a <svg>`},
 		{"<h5>\n    Lorem & ipsum\n    dolor sid amet\n</h5>", "<h5>Lorem & ipsum\ndolor sid amet</h5>"},
+		{`cats  <br>  dogs `, `cats<br>dogs`},
 
 		// from HTML Minifier
 		{`<DIV TITLE="blah">boo</DIV>`, `<div title=blah>boo</div>`},
@@ -369,8 +370,6 @@ func TestHTMLTemplates(t *testing.T) {
 		html     string
 		expected string
 	}{
-		{`a<p>  {{ printf "  !  " }}  </p>b`, `a<p>  {{ printf "  !  " }}  </p>b`},
-		{`a<span>  {{ printf "  !  " }}  </span>b`, `a<span>  {{ printf "  !  " }}  </span>b`},
 		{`<a href={{ .Link }} />`, `<a href={{ .Link }}>`},
 		{`<input type="file" accept="{{ .Accept }}, image/jpeg">`, `<input type=file accept="{{ .Accept }}, image/jpeg">`},
 		{`<option value="0" {{ if eq .Type 0 }}selected{{ end }}>Foo</option>`, `<option value=0 {{ if eq .Type 0 }}selected{{ end }}>Foo`},
@@ -382,6 +381,13 @@ func TestHTMLTemplates(t *testing.T) {
 		{`<p>Hello <code>{{""}}</code> there</p>`, `<p>Hello <code>{{""}}</code> there`},
 		{`<select><option>Default</option>{{range $i, $lang := .Languages}}<option>{{$lang}}</option>{{end}}</select>`, `<select><option>Default{{range $i, $lang := .Languages}}<option>{{$lang}}{{end}}</select>`},
 		{`<tr{{if .Deleted}} class="is-disabled"{{end}}>`, `<tr{{if .Deleted}} class="is-disabled"{{end}}>`},
+
+		// whitespace
+		{`{{ printf "  !  " }}`, `{{ printf "  !  " }}`},
+		{`a<p>  {{a}}  </p>b`, `a<p>{{a}}</p>b`},
+		{`a<span>  {{a}}  </span>b`, `a<span> {{a}} </span>b`},
+		{`a <span>  {{a}}  </span> b`, `a <span>{{a}} </span>b`},
+		{`  {{a}}  {{b}}  `, `{{a}} {{b}}`},
 	}
 
 	m := minify.New()
