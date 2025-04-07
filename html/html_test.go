@@ -365,7 +365,7 @@ func TestHTMLURL(t *testing.T) {
 	}
 }
 
-func TestHTMLTemplates(t *testing.T) {
+func TestHTMLGoTemplates(t *testing.T) {
 	htmlTests := []struct {
 		html     string
 		expected string
@@ -394,6 +394,27 @@ func TestHTMLTemplates(t *testing.T) {
 	m.AddFunc("text/css", css.Minify)
 	m.AddFunc("application/javascript", js.Minify)
 	htmlMinifier := &Minifier{TemplateDelims: GoTemplateDelims}
+	for _, tt := range htmlTests {
+		t.Run(tt.html, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.html)
+			w := &bytes.Buffer{}
+			err := htmlMinifier.Minify(m, w, r, nil)
+			test.Minify(t, tt.html, err, w.String(), tt.expected)
+		})
+	}
+}
+
+func TestHTMLPHPTemplates(t *testing.T) {
+	htmlTests := []struct {
+		html     string
+		expected string
+	}{
+		{"\n<div class=\"foo\">\n<?php\necho \"hello\";\n?>\n</div>\n", "<div class=foo><?php\necho \"hello\";\n?></div>"},
+	}
+
+	m := minify.New()
+	m.AddFunc("text/css", css.Minify)
+	htmlMinifier := &Minifier{TemplateDelims: PHPTemplateDelims}
 	for _, tt := range htmlTests {
 		t.Run(tt.html, func(t *testing.T) {
 			r := bytes.NewBufferString(tt.html)

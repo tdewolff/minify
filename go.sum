@@ -25,8 +25,8 @@ github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3v
 github.com/pelletier/go-toml v1.9.5/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
 github.com/tdewolff/argp v0.0.0-20250209172303-079abae893fb h1:Id2aj2q74MC+yHBGQNeTVuQp/gqJd3vZjMmdoVPPfVc=
 github.com/tdewolff/argp v0.0.0-20250209172303-079abae893fb/go.mod h1:PKhwRVvnrI2gye5NRF3c4VWbE+3E9mGyRUsNWGcJlDY=
-github.com/tdewolff/parse/v2 v2.7.22 h1:ROVbrjtp5RoXi22YSZaOks5DaOcXBJ3PZO5hyyQ9Bbs=
-github.com/tdewolff/parse/v2 v2.7.22/go.mod h1:I7TXO37t3aSG9SlPUBefAhgIF8nt7yYUwVGgETIoBcA=
+github.com/tdewolff/parse/v2 v2.7.23 h1:sCW2PNTCM1yVldh5YK/8wrpRI9rSbloUZWjAydlN2IA=
+github.com/tdewolff/parse/v2 v2.7.23/go.mod h1:I7TXO37t3aSG9SlPUBefAhgIF8nt7yYUwVGgETIoBcA=
 github.com/tdewolff/test v1.0.6/go.mod h1:6DAvZliBAAnD7rhVgwaM7DE5/d9NMOAJ09SqYqeK4QE=
 github.com/tdewolff/test v1.0.11 h1:FdLbwQVHxqG16SlkGveC0JVyrJN62COWTRyUFzfbtBE=
 github.com/tdewolff/test v1.0.11/go.mod h1:XPuWBzvdUzhCuxWO1ojpXsyzsA5bFoS3tO/Q3kFuTG8=
