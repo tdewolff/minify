@@ -99,6 +99,7 @@ which will output
           --html-keep-end-tags    Preserve all end tags
           --html-keep-quotes      Preserve quotes around attribute values
           --html-keep-whitespace  Preserve whitespace characters but still collapse multiple into one
+      -i, --inplace               Minify input files in-place instead of setting output
           --include []string      Path inclusion pattern, includes paths previously excluded
           --js-keep-var-names     Preserve original variable names
           --js-precision int      Number of significant digits to preserve in numbers, 0 is all

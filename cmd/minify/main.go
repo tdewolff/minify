@@ -19,6 +19,7 @@ import (
 
 	"github.com/djherbis/atime"
 	"github.com/matryer/try"
+
 	"github.com/tdewolff/argp"
 	min "github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/minify/v2/css"
@@ -56,6 +57,7 @@ var extMap = map[string]string{
 var (
 	help               bool
 	hidden             bool
+	inplace            bool
 	list               bool
 	m                  *min.M
 	matches            []string
@@ -161,7 +163,9 @@ type Task struct {
 
 // NewTask returns a new Task.
 func NewTask(root, input, output string, sync bool) (Task, error) {
-	if len(output) != 0 && (output == "." || output[len(output)-1] == os.PathSeparator || output[len(output)-1] == '/') {
+	if output == "" {
+		output = input // in-place
+	} else if output == "." || output[len(output)-1] == os.PathSeparator || output[len(output)-1] == '/' {
 		rel, err := filepath.Rel(root, input)
 		if err != nil {
 			return Task{}, err
@@ -204,6 +208,7 @@ func run() int {
 	f := argp.New("minify")
 	f.AddRest(&inputs, "inputs", "Input files or directories, leave blank to use stdin")
 	f.AddOpt(&output, "o", "output", "Output file or directory, leave blank to use stdout")
+	f.AddOpt(&inplace, "i", "inplace", "Minify input files in-place instead of setting output")
 	f.AddOpt(&oldmimetype, "", "mime", "Mimetype (eg. text/css), optional for input filenames (DEPRECATED, use --type)")
 	f.AddOpt(&mimetype, "", "type", "Filetype (eg. css or text/css), optional when specifying inputs")
 	f.AddOpt(Matches{&matches}, "", "match", "Filename matching pattern, only matching filenames are processed")
@@ -331,7 +336,15 @@ func run() int {
 		}
 	}
 
-	if (useStdin || output == "") && (watch || sync) {
+	if inplace && (useStdin || output != "") {
+		if useStdin {
+			Error.Println("--inplace doesn't work with stdin, specify input")
+		}
+		if output != "" {
+			Error.Println("cannot specify both --inplace and --output")
+		}
+		return 1
+	} else if (useStdin || output == "" && !inplace) && (watch || sync) {
 		if watch {
 			Error.Println("--watch doesn't work with stdin and stdout, specify input and output")
 		}
@@ -347,7 +360,7 @@ func run() int {
 			Error.Println("--recursive doesn't work with stdin, specify input")
 		}
 		return 1
-	} else if output == "" && recursive && !bundle {
+	} else if output == "" && !inplace && recursive && !bundle {
 		Error.Println("--recursive doesn't work with stdout, specify output or use --bundle")
 		return 1
 	}
@@ -365,7 +378,7 @@ func run() int {
 	}
 	if 0 < len(preserve) && (useStdin || output == "") {
 		if f.IsSet("preserve") {
-			Error.Println("--preserve cannot be used together with stdin or stdout")
+			Error.Println("--preserve cannot be used together with stdin, stdout or --inplace")
 			return 1
 		}
 		preserve = preserve[:0]
@@ -424,11 +437,16 @@ func run() int {
 		if dirDst {
 			output += string(os.PathSeparator)
 		}
-	} else if !bundle && 1 < len(inputs) {
+	} else if !inplace && !bundle && 1 < len(inputs) {
 		Error.Println("must specify --bundle for multiple input files with stdout destination")
 		return 1
 	}
-	if output == "" {
+	if useStdin {
+		Debug.Println("minify from stdin")
+	}
+	if inplace {
+		Debug.Println("minify in-place")
+	} else if output == "" {
 		Debug.Println("minify to stdout")
 	} else if !dirDst {
 		Debug.Printf("minify to output file %v", output)
@@ -436,9 +454,6 @@ func run() int {
 		Debug.Println("minify to current working directory")
 	} else {
 		Debug.Printf("minify to output directory %v", output)
-	}
-	if useStdin {
-		Debug.Println("minify from stdin")
 	}
 
 	var tasks []Task
