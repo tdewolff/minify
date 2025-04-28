@@ -48,7 +48,7 @@ var extMap = map[string]string{
 	"php":         "application/x-httpd-php",
 	"rss":         "application/rss+xml",
 	"svg":         "image/svg+xml",
-	"tmpl":        "text/x-go-template",
+	"tmpl":        "text/x-template",
 	"webmanifest": "application/manifest+json",
 	"xhtml":       "application/xhtml-xml",
 	"xml":         "text/xml",
@@ -165,7 +165,7 @@ type Task struct {
 func NewTask(root, input, output string, sync bool) (Task, error) {
 	if output == "" {
 		output = input // in-place
-	} else if output == "." || output[len(output)-1] == os.PathSeparator || output[len(output)-1] == '/' {
+	} else if output != "-" && (output == "." || output[len(output)-1] == os.PathSeparator || output[len(output)-1] == '/') {
 		rel, err := filepath.Rel(root, input)
 		if err != nil {
 			return Task{}, err
@@ -236,6 +236,7 @@ func run() int {
 	f.AddOpt(&htmlMinifier.KeepEndTags, "", "html-keep-end-tags", "Preserve all end tags")
 	f.AddOpt(&htmlMinifier.KeepWhitespace, "", "html-keep-whitespace", "Preserve whitespace characters but still collapse multiple into one")
 	f.AddOpt(&htmlMinifier.KeepQuotes, "", "html-keep-quotes", "Preserve quotes around attribute values")
+	//f.AddOpt(&htmlMinifier.TemplateDelims, "", "html-template-delims", "Set template delimiters explicitly, for example <?,?> for PHP or {{,}} for Go templates") // TODO: fix parsing {{ }} in tdewolff/argp
 	f.AddOpt(&jsMinifier.Precision, "", "js-precision", "Number of significant digits to preserve in numbers, 0 is all")
 	f.AddOpt(&jsMinifier.KeepVarNames, "", "js-keep-var-names", "Preserve original variable names")
 	f.AddOpt(&jsMinifier.Version, "", "js-version", "ECMAScript version to toggle supported optimizations (e.g. 2019, 2020), by default 0 is the latest version")
@@ -280,8 +281,8 @@ func run() int {
 
 	if len(inputs) == 1 && inputs[0] == "-" {
 		inputs = inputs[:0] // stdin
-	} else if output == "-" {
-		output = "" // stdout
+	} else if !inplace && output == "" {
+		output = "-" // stdout
 	}
 	useStdin := len(inputs) == 0
 
@@ -344,7 +345,7 @@ func run() int {
 			Error.Println("cannot specify both --inplace and --output")
 		}
 		return 1
-	} else if (useStdin || output == "" && !inplace) && (watch || sync) {
+	} else if (useStdin || output == "-") && (watch || sync) {
 		if watch {
 			Error.Println("--watch doesn't work with stdin and stdout, specify input and output")
 		}
@@ -360,7 +361,7 @@ func run() int {
 			Error.Println("--recursive doesn't work with stdin, specify input")
 		}
 		return 1
-	} else if output == "" && !inplace && recursive && !bundle {
+	} else if output == "-" && recursive && !bundle {
 		Error.Println("--recursive doesn't work with stdout, specify output or use --bundle")
 		return 1
 	}
@@ -419,7 +420,7 @@ func run() int {
 
 	// set output file or directory, empty means stdout
 	dirDst := false
-	if output != "" {
+	if output != "" && output != "-" {
 		if 0 < len(output) && (output[len(output)-1] == os.PathSeparator || output[len(output)-1] == '/') {
 			dirDst = true
 		} else if !bundle && 1 < len(inputs) {
@@ -437,8 +438,11 @@ func run() int {
 		if dirDst {
 			output += string(os.PathSeparator)
 		}
-	} else if !inplace && !bundle && 1 < len(inputs) {
+	} else if output == "-" && !bundle && 1 < len(inputs) {
 		Error.Println("must specify --bundle for multiple input files with stdout destination")
+		return 1
+	} else if inplace && bundle {
+		Error.Println("--bundle cannot be used together with --inplace")
 		return 1
 	}
 	if useStdin {
@@ -446,7 +450,7 @@ func run() int {
 	}
 	if inplace {
 		Debug.Println("minify in-place")
-	} else if output == "" {
+	} else if output == "-" {
 		Debug.Println("minify to stdout")
 	} else if !dirDst {
 		Debug.Printf("minify to output file %v", output)
@@ -459,7 +463,7 @@ func run() int {
 	var tasks []Task
 	var roots []string
 	if useStdin {
-		task, err := NewTask("", "", output, false)
+		task, err := NewTask("", "-", output, false)
 		if err != nil {
 			Error.Println(err)
 			return 1
@@ -513,6 +517,7 @@ func run() int {
 
 	tmplMinifier := htmlMinifier
 	tmplMinifier.TemplateDelims = [2]string{"{{", "}}"}
+	m.Add("text/x-template", &tmplMinifier)
 	m.Add("text/x-go-template", &tmplMinifier)
 	m.Add("text/x-mustache-template", &tmplMinifier)
 	m.Add("text/x-handlebars-template", &tmplMinifier)
@@ -829,7 +834,7 @@ func minify(t Task) bool {
 		srcName = "stdin"
 	}
 	dstName := t.dst
-	if dstName == "" {
+	if dstName == "-" {
 		dstName = "stdout"
 	} else {
 		// rename original when overwriting

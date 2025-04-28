@@ -33,7 +33,7 @@ func SameFile(filename1 string, filename2 string) (bool, error) {
 
 func openInputFile(input string) (io.ReadCloser, error) {
 	var r *os.File
-	if input == "" {
+	if input == "-" {
 		r = os.Stdin
 	} else {
 		err := try.Do(func(attempt int) (bool, error) {
@@ -55,7 +55,7 @@ func openInputFiles(filenames []string, sep []byte) (*concatFileReader, error) {
 
 func openOutputFile(output string) (*os.File, error) {
 	var w *os.File
-	if output == "" {
+	if output == "-" {
 		w = os.Stdout
 	} else {
 		dir := filepath.Dir(output)
