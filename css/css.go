@@ -262,8 +262,6 @@ func (c *cssMinifier) minifyGrammar() {
 				comment := parse.TrimWhitespace(parse.ReplaceMultipleWhitespace(data[3 : len(data)-2]))
 				c.w.Write(comment)
 				c.w.Write(data[len(data)-2:])
-			} else if 5 < len(data) && (data[2] == '#' || data[2] == '@') {
-				c.w.Write(data) // sourceMappingURL
 			}
 		default:
 			c.w.Write(data)
