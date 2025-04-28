@@ -506,6 +506,8 @@ func run() int {
 	m.AddRegexp(regexp.MustCompile("[/+]json$"), &jsonMinifier)
 	m.AddRegexp(regexp.MustCompile("[/+]xml$"), &xmlMinifier)
 
+	m.Add("importmap", &jsonMinifier)
+
 	aspMinifier := htmlMinifier
 	aspMinifier.TemplateDelims = [2]string{"<%", "%>"}
 	m.Add("text/asp", &aspMinifier)
