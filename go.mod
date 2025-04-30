@@ -1,6 +1,6 @@
 module github.com/tdewolff/minify/v2
 
-go 1.18.0
+go 1.17
 
 toolchain go1.24.1
 
