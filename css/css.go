@@ -180,7 +180,7 @@ func (c *cssMinifier) minifyGrammar() {
 
 				// write out the offending declaration (but save the semicolon)
 				vals := c.p.Values()
-				if len(vals) > 0 && vals[len(vals)-1].TokenType == css.SemicolonToken {
+				if 0 < len(vals) && vals[len(vals)-1].TokenType == css.SemicolonToken {
 					vals = vals[:len(vals)-1]
 					semicolonQueued = true
 				}
@@ -383,7 +383,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 
 	// Strip !important from the component list, this will be added later separately
 	important := false
-	if len(components) > 2 && components[len(components)-2].TokenType == css.DelimToken && components[len(components)-2].Data[0] == '!' && ToHash(components[len(components)-1].Data) == Important {
+	if 2 < len(components) && components[len(components)-2].TokenType == css.DelimToken && components[len(components)-2].Data[0] == '!' && ToHash(components[len(components)-1].Data) == Important {
 		components = components[:len(components)-2]
 		important = true
 	}
@@ -413,6 +413,9 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 			c.w.Write(component.Data)
 		}
 		if important {
+			if c.o.KeepCSS2 {
+				c.w.Write(spaceBytes)
+			}
 			c.w.Write(importantBytes)
 		}
 		return
@@ -456,6 +459,9 @@ func (c *cssMinifier) writeDeclaration(values []Token, important bool) {
 	}
 
 	if important {
+		if c.o.KeepCSS2 {
+			c.w.Write(spaceBytes)
+		}
 		c.w.Write(importantBytes)
 	}
 }

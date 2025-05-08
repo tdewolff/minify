@@ -450,6 +450,8 @@ func TestCSSKeepCSS2(t *testing.T) {
 		{`margin:5000em`, `margin:5000em`},
 		{`color:transparent`, `color:transparent`},
 		{`background-color:transparent`, `background-color:transparent`},
+		//{`background-color:black!important`, `background-color:#000!important`}, // TODO: fails! may make result bigger
+		{`background-color:black !important`, `background-color:#000 !important`},
 	}
 
 	m := minify.New()
