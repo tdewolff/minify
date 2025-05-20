@@ -267,7 +267,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 		m.minifyExpr(stmt.Init, js.OpExpr)
 		m.write(closeParenOpenBracketBytes)
 		m.needsSemicolon = false
-		for i, _ := range stmt.List {
+		for i := range stmt.List {
 			stmt.List[i].List = optimizeStmtList(stmt.List[i].List, defaultBlock)
 		}
 		m.renamer.renameScope(stmt.Scope)
@@ -1194,10 +1194,6 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.write(newTargetBytes)
 		m.writeSpaceBeforeIdent()
 	case *js.ImportMetaExpr:
-		if m.expectExpr == expectExprStmt {
-			m.write(openParenBytes)
-			m.groupedStmt = true
-		}
 		m.write(importMetaBytes)
 		m.writeSpaceBeforeIdent()
 	case *js.YieldExpr:
