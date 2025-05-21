@@ -17,7 +17,7 @@ all: build
 compile:
 	go mod init github.com/tdewolff/minify/bindings/js
 	go get -u github.com/tdewolff/parse/v2@master
-    go get -u github.com/tdewolff/minify/v2@master
+	go get -u github.com/tdewolff/minify/v2@master
 	go mod tidy
 	go build -buildmode=c-archive -o minify.a minify.go
 
