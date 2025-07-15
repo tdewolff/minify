@@ -32,8 +32,8 @@ func TestXML(t *testing.T) {
 		{"<x a=\" a \n\r\t b \"/>", `<x a=" a     b "/>`},
 		{`<x a="&apos;b&quot;"></x>`, `<x a="'b&#34;"/>`},
 		{`<x a="&quot;&quot;'"></x>`, `<x a='""&#39;'/>`},
-		{`<x a="&amp;&lt;&gt;"></x>`, `<x a="&amp;&lt;>"/>`},
-		{`<x>&amp;&lt;&gt;</x>`, `<x>&amp;&lt;></x>`},
+		{`<x a="&amp;&lt;&gt;"></x>`, `<x a="&amp;&lt;&gt;"/>`},
+		{`<x>&amp;&lt;&gt;</x>`, `<x>&amp;&lt;&gt;</x>`},
 		{`<x>&#38;&#038;&#60;</x>`, `<x>&amp;&amp;&lt;</x>`},
 		{`<!DOCTYPE foo SYSTEM "Foo.dtd">`, `<!DOCTYPE foo SYSTEM "Foo.dtd">`},
 		{`text <!--comment--> text`, `text text`},
@@ -42,6 +42,7 @@ func TestXML(t *testing.T) {
 		{"<x>\n<!--y-->\n</x>", `<x></x>`},
 		{`<style>lala{color:red}</style>`, `<style>lala{color:red}</style>`},
 		{`cats  and 	dogs `, `cats and dogs`},
+		{`<x> ]]&gt; </x>`, `<x>]]&gt;</x>`}, // #825
 
 		// go fuzz
 		{`</0`, `</0`},
