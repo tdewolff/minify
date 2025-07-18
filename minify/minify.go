@@ -24,20 +24,23 @@ func init() {
 	Default.AddFuncRegexp(regexp.MustCompile("[/+]json$"), json.Minify)
 	Default.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 
-	aspMinifier := html.Minifier{}
+	Default.AddFunc("importmap", json.Minify)
+	Default.AddFunc("speculationrules", json.Minify)
+
+	aspMinifier := &html.Minifier{}
 	aspMinifier.TemplateDelims = [2]string{"<%", "%>"}
-	Default.Add("text/asp", &aspMinifier)
-	Default.Add("text/x-ejs-template", &aspMinifier)
+	Default.Add("text/asp", aspMinifier)
+	Default.Add("text/x-ejs-template", aspMinifier)
 
-	phpMinifier := html.Minifier{}
+	phpMinifier := &html.Minifier{}
 	phpMinifier.TemplateDelims = [2]string{"<?", "?>"} // also handles <?php
-	Default.Add("application/x-httpd-php", &phpMinifier)
+	Default.Add("application/x-httpd-php", phpMinifier)
 
-	tmplMinifier := html.Minifier{}
+	tmplMinifier := &html.Minifier{}
 	tmplMinifier.TemplateDelims = [2]string{"{{", "}}"}
-	Default.Add("text/x-go-template", &tmplMinifier)
-	Default.Add("text/x-mustache-template", &tmplMinifier)
-	Default.Add("text/x-handlebars-template", &tmplMinifier)
+	Default.Add("text/x-go-template", tmplMinifier)
+	Default.Add("text/x-mustache-template", tmplMinifier)
+	Default.Add("text/x-handlebars-template", tmplMinifier)
 }
 
 // CSS string minifier using all default minifiers

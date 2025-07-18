@@ -507,6 +507,7 @@ func run() int {
 	m.AddRegexp(regexp.MustCompile("[/+]xml$"), &xmlMinifier)
 
 	m.Add("importmap", &jsonMinifier)
+	m.Add("speculationrules", &jsonMinifier)
 
 	aspMinifier := htmlMinifier
 	aspMinifier.TemplateDelims = [2]string{"<%", "%>"}

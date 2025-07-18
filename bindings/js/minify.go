@@ -121,6 +121,24 @@ func minifyConfig(ckeys **C.char, cvals **C.char, length C.longlong) *C.char {
 	m.AddRegexp(regexp.MustCompile("^(application|text)/(x-)?(java|ecma|j|live)script(1\\.[0-5])?$|^module$"), jsMinifier)
 	m.AddRegexp(regexp.MustCompile("[/+]json$"), jsonMinifier)
 	m.AddRegexp(regexp.MustCompile("[/+]xml$"), xmlMinifier)
+
+	m.Add("importmap", jsonMinifier)
+	m.Add("speculationrules", jsonMinifier)
+
+	aspMinifier := *htmlMinifier
+	aspMinifier.TemplateDelims = [2]string{"<%", "%>"}
+	m.Add("text/asp", &aspMinifier)
+	m.Add("text/x-ejs-template", aspMinifier)
+
+	phpMinifier := *htmlMinifier
+	phpMinifier.TemplateDelims = [2]string{"<?", "?>"} // also handles <?php
+	m.Add("application/x-httpd-php", phpMinifier)
+
+	tmplMinifier := *htmlMinifier
+	tmplMinifier.TemplateDelims = [2]string{"{{", "}}"}
+	m.Add("text/x-go-template", tmplMinifier)
+	m.Add("text/x-mustache-template", tmplMinifier)
+	m.Add("text/x-handlebars-template", tmplMinifier)
 	return nil
 }
 
