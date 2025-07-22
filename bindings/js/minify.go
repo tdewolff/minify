@@ -128,17 +128,17 @@ func minifyConfig(ckeys **C.char, cvals **C.char, length C.longlong) *C.char {
 	aspMinifier := *htmlMinifier
 	aspMinifier.TemplateDelims = [2]string{"<%", "%>"}
 	m.Add("text/asp", &aspMinifier)
-	m.Add("text/x-ejs-template", aspMinifier)
+	m.Add("text/x-ejs-template", &aspMinifier)
 
 	phpMinifier := *htmlMinifier
 	phpMinifier.TemplateDelims = [2]string{"<?", "?>"} // also handles <?php
-	m.Add("application/x-httpd-php", phpMinifier)
+	m.Add("application/x-httpd-php", &phpMinifier)
 
 	tmplMinifier := *htmlMinifier
 	tmplMinifier.TemplateDelims = [2]string{"{{", "}}"}
-	m.Add("text/x-go-template", tmplMinifier)
-	m.Add("text/x-mustache-template", tmplMinifier)
-	m.Add("text/x-handlebars-template", tmplMinifier)
+	m.Add("text/x-go-template", &tmplMinifier)
+	m.Add("text/x-mustache-template", &tmplMinifier)
+	m.Add("text/x-handlebars-template", &tmplMinifier)
 	return nil
 }
 
