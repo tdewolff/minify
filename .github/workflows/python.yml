@@ -143,7 +143,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Download artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         path: bindings/py/artifacts
     - name: Bundle release artifacts
