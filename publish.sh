@@ -9,8 +9,8 @@ wget -q --show-progress https://github.com/tdewolff/minify/archive/v$VERSION.tar
 SHA256=`sha256sum v$VERSION.tar.gz`
 SHA256=( $SHA256 )
 
-GOMODCACHE="$PWD"/deps go mod download -modcacherw -x
-tar -caf minify-v$VERSION-deps.tar.xz deps
+GOMODCACHE="$PWD"/go-mod go mod download -modcacherw -x
+tar -caf minify-v$VERSION-deps.tar.xz go-mod
 
 echo ""
 echo "Releasing for AUR..."
