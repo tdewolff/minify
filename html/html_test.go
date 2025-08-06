@@ -257,6 +257,7 @@ func TestHTMLKeepSpecialComments(t *testing.T) {
 		{`<!--[if gt IE 6]><!--> <b> </b> <![endif]-->`, `<!--[if gt IE 6]><!--><b></b><![endif]-->`},
 		{`<!--[if IE]foo<![endif]-->`, `<!--[if IE]foo<![endif]-->`}, // #596
 		{`<!--# SSI-->`, `<!--# SSI-->`},                             // #657
+		{`<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->`, `<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->`}, // #832
 	}
 
 	m := minify.New()

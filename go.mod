@@ -9,7 +9,7 @@ require (
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/matryer/try v0.0.0-20161228173917-9ac251b645a2
 	github.com/tdewolff/argp v0.0.0-20250209172303-079abae893fb
-	github.com/tdewolff/parse/v2 v2.8.1
+	github.com/tdewolff/parse/v2 v2.8.2-0.20250806174018-50048bb39781
 	github.com/tdewolff/test v1.0.11
 )
 
