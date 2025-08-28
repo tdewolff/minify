@@ -17,8 +17,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/avast/retry-go/v4"
 	"github.com/djherbis/atime"
-	"github.com/matryer/try"
 
 	"github.com/tdewolff/argp"
 	min "github.com/tdewolff/minify/v2"
@@ -490,7 +490,7 @@ func run() int {
 
 	// make output directory
 	if dirDst {
-		if err := os.MkdirAll(output, 0777); err != nil {
+		if err := os.MkdirAll(output, 0o777); err != nil {
 			Error.Println(err)
 			return 1
 		}
@@ -844,10 +844,12 @@ func minify(t Task) bool {
 		for i := range srcs {
 			if sameFile, _ := SameFile(srcs[i], t.dst); sameFile {
 				srcs[i] += ".bak"
-				err := try.Do(func(attempt int) (bool, error) {
-					ferr := os.Rename(t.dst, srcs[i])
-					return attempt < 5, ferr
-				})
+				err := retry.Do(
+					func() error {
+						return os.Rename(t.dst, srcs[i])
+					},
+					retry.Attempts(5),
+				)
 				if err != nil {
 					Error.Println(err)
 					return false

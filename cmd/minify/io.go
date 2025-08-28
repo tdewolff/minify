@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/matryer/try"
+	"github.com/avast/retry-go/v4"
 )
 
 // IsDir returns whether the path is a directory.
@@ -36,12 +36,14 @@ func openInputFile(input string) (io.ReadCloser, error) {
 	if input == "-" {
 		r = os.Stdin
 	} else {
-		err := try.Do(func(attempt int) (bool, error) {
-			var ferr error
-			r, ferr = os.Open(input)
-			return attempt < 5, ferr
-		})
-
+		err := retry.Do(
+			func() error {
+				var ferr error
+				r, ferr = os.Open(input)
+				return ferr
+			},
+			retry.Attempts(5),
+		)
 		if err != nil {
 			return nil, fmt.Errorf("open input file %q: %w", input, err)
 		}
@@ -59,16 +61,18 @@ func openOutputFile(output string) (*os.File, error) {
 		w = os.Stdout
 	} else {
 		dir := filepath.Dir(output)
-		if err := os.MkdirAll(dir, 0777); err != nil {
+		if err := os.MkdirAll(dir, 0o777); err != nil {
 			return nil, fmt.Errorf("creating directory %q: %w", dir, err)
 		}
 
-		err := try.Do(func(attempt int) (bool, error) {
-			var ferr error
-			w, ferr = os.OpenFile(output, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
-			return attempt < 5, ferr
-		})
-
+		err := retry.Do(
+			func() error {
+				var ferr error
+				w, ferr = os.OpenFile(output, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0o666)
+				return ferr
+			},
+			retry.Attempts(5),
+		)
 		if err != nil {
 			return nil, fmt.Errorf("open output file %q: %w", output, err)
 		}
@@ -82,7 +86,7 @@ func createSymlink(input, output string) error {
 			return err
 		}
 	}
-	if err := os.MkdirAll(filepath.Dir(output), 0777); err != nil {
+	if err := os.MkdirAll(filepath.Dir(output), 0o777); err != nil {
 		return err
 	}
 	if err := os.Symlink(input, output); err != nil {
