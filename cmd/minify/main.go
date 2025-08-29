@@ -489,7 +489,7 @@ func run() int {
 
 	// make output directory
 	if dirDst {
-		if err := os.MkdirAll(output, 0777); err != nil {
+		if err := os.MkdirAll(output, 0755); err != nil {
 			Error.Println(err)
 			return 1
 		}

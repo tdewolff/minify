@@ -57,13 +57,13 @@ func openOutputFile(output string) (*os.File, error) {
 		w = os.Stdout
 	} else {
 		dir := filepath.Dir(output)
-		if err := os.MkdirAll(dir, 0777); err != nil {
+		if err := os.MkdirAll(dir, 0755); err != nil {
 			return nil, fmt.Errorf("creating directory %q: %w", dir, err)
 		}
 
 		err := retry(5, func() error {
 			var err error
-			w, err = os.OpenFile(output, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
+			w, err = os.OpenFile(output, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 			return err
 		})
 
@@ -80,7 +80,7 @@ func createSymlink(input, output string) error {
 			return err
 		}
 	}
-	if err := os.MkdirAll(filepath.Dir(output), 0777); err != nil {
+	if err := os.MkdirAll(filepath.Dir(output), 0755); err != nil {
 		return err
 	}
 	if err := os.Symlink(input, output); err != nil {
