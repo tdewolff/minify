@@ -227,6 +227,7 @@ func run() int {
 
 	f.AddOpt(&siteurl, "", "url", "URL of file to enable URL minification")
 	f.AddOpt(&cssMinifier.Precision, "", "css-precision", "Number of significant digits to preserve in numbers, 0 is all")
+	f.AddOpt(&cssMinifier.Version, "", "css-version", "CSS version to toggle supported optimizations (e.g. 2), by default 0 is the latest version")
 	f.AddOpt(&htmlMinifier.KeepComments, "", "html-keep-comments", "Preserve all comments")
 	f.AddOpt(&htmlMinifier.KeepConditionalComments, "", "html-keep-conditional-comments", "Preserve all IE conditional comments (DEPRECATED)")
 	f.AddOpt(&htmlMinifier.KeepSpecialComments, "", "html-keep-special-comments", "Preserve all IE conditionals and SSI tags")

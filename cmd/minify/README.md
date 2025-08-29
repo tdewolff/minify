@@ -85,6 +85,7 @@ which will output
                                   directories
       -b, --bundle                Bundle files by concatenation into a single file
           --css-precision int     Number of significant digits to preserve in numbers, 0 is all
+          --css-version int       CSS version to toggle supported optimizations (e.g. 2), by default 0 is the latest version
           --exclude []string      Path exclusion pattern, excludes paths from being processed
           --ext map[string]string
                                   Filename extension mapping to filetype (eg. css or text/css)
