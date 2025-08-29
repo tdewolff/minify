@@ -1,4 +1,4 @@
-// +build linux darwin netbsd solaris openbsd js wasm
+//go:build linux || darwin || netbsd || solaris || openbsd || js || wasm
 
 package main
 
