@@ -703,7 +703,7 @@ func TestJS(t *testing.T) {
 		{`Math.trunc(x)`, `x|0`},
 		{`Math.pow(a,b)`, `a**b`},
 		{`Math.pow(-a,b)`, `(-a)**b`},
-		{`isNaN(x)`, `x!=x`},
+		{`isNaN(x)`, `isNaN(x)`},
 		{`Number(undefined)`, `NaN`},
 		{`Number(null)`, `0`},
 		{`Number(true)`, `1`},
@@ -924,7 +924,7 @@ func TestJSVarRenaming(t *testing.T) {
 		{`(e,s)=>{e=>0,s(e(s))}`, `(a,b)=>{a=>0,b(a(b))}`}, // #469
 		{`()=>{var c;try {a} catch(b) {c}}`, `()=>{var b;try{a}catch{b}}`},
 		{`()=>{let foo;Math.abs(foo)}`, `()=>{let a;a<0?-a:a}`},
-		{`()=>{let foo;isNaN(foo)}`, `()=>{let a;a!=a}`},
+		{`()=>{let foo;isNaN(foo)}`, `()=>{let a;isNaN(a)}`},
 		{`()=>{let isNaN;isNaN(foo)}`, `()=>{let a;a(foo)}`},
 
 		// go-fuzz

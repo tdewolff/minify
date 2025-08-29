@@ -1209,27 +1209,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		}
 	case *js.CallExpr:
 		if v, ok := expr.X.(*js.Var); ok && v.Decl == js.NoDecl {
-			if bytes.Equal(v.Data, isNaNBytes) {
-				// isNaN(x) => x!=x
-				if len(expr.Args.List) == 1 {
-					groupLen := 0
-					if js.OpEquals < prec {
-						groupLen = 2
-					}
-					if v, ok := expr.Args.List[0].Value.(*js.Var); ok && len(v.Data)+groupLen < 7 {
-						if js.OpEquals < prec {
-							m.write(openParenBytes)
-						}
-						m.minifyExpr(v, js.OpEquals)
-						m.write(notEqualBytes)
-						m.minifyExpr(v, js.OpEquals)
-						if js.OpEquals < prec {
-							m.write(closeParenBytes)
-						}
-						break
-					}
-				}
-			} else if bytes.Equal(v.Data, NumberBytes) {
+			if bytes.Equal(v.Data, NumberBytes) {
 				// Number(x) => +x
 				if len(expr.Args.List) == 1 {
 					if lit, ok := expr.Args.List[0].Value.(*js.LiteralExpr); ok && lit.TokenType == js.TrueToken {
