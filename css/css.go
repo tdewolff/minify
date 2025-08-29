@@ -147,8 +147,12 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 	if !o.Inline {
 		o.Inline = params != nil && params["inline"] == "1"
 	}
-	if o.Version == 0 && o.KeepCSS2 {
-		o.Version = 2
+	if o.Version <= 0 {
+		if o.KeepCSS2 {
+			o.Version = 2
+		} else {
+			o.Version = 3
+		}
 	}
 
 	z := parse.NewInput(r)
