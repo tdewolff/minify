@@ -965,6 +965,7 @@ func retry(attempts int, fn func() error) (err error) {
 			return
 		}
 	}
+	return
 }
 
 func preserveAttributes(srcs []string, root, dst string) {
