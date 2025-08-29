@@ -5,8 +5,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-
-	"github.com/matryer/try"
 )
 
 // IsDir returns whether the path is a directory.
@@ -36,10 +34,10 @@ func openInputFile(input string) (io.ReadCloser, error) {
 	if input == "-" {
 		r = os.Stdin
 	} else {
-		err := try.Do(func(attempt int) (bool, error) {
-			var ferr error
-			r, ferr = os.Open(input)
-			return attempt < 5, ferr
+		err := retry(5, func() error {
+			var err error
+			r, err = os.Open(input)
+			return err
 		})
 
 		if err != nil {
@@ -63,10 +61,10 @@ func openOutputFile(output string) (*os.File, error) {
 			return nil, fmt.Errorf("creating directory %q: %w", dir, err)
 		}
 
-		err := try.Do(func(attempt int) (bool, error) {
-			var ferr error
-			w, ferr = os.OpenFile(output, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
-			return attempt < 5, ferr
+		err := retry(5, func() error {
+			var err error
+			w, err = os.OpenFile(output, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
+			return err
 		})
 
 		if err != nil {

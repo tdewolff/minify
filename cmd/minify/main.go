@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/djherbis/atime"
-	"github.com/matryer/try"
 
 	"github.com/tdewolff/argp"
 	min "github.com/tdewolff/minify/v2"
@@ -844,9 +843,8 @@ func minify(t Task) bool {
 		for i := range srcs {
 			if sameFile, _ := SameFile(srcs[i], t.dst); sameFile {
 				srcs[i] += ".bak"
-				err := try.Do(func(attempt int) (bool, error) {
-					ferr := os.Rename(t.dst, srcs[i])
-					return attempt < 5, ferr
+				err := retry(5, func() error {
+					return os.Rename(t.dst, srcs[i])
 				})
 				if err != nil {
 					Error.Println(err)
@@ -959,6 +957,14 @@ func minify(t Task) bool {
 	}
 	preserveAttributes(srcs, t.root, t.dst)
 	return success
+}
+
+func retry(attempts int, fn func() error) (err error) {
+	for ; 0 < attempts; attempts-- {
+		if err = fn(); err == nil {
+			return
+		}
+	}
 }
 
 func preserveAttributes(srcs []string, root, dst string) {
