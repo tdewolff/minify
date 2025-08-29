@@ -49,7 +49,7 @@ var extMap = map[string]string{
 	"svg":         "image/svg+xml",
 	"tmpl":        "text/x-template",
 	"webmanifest": "application/manifest+json",
-	"xhtml":       "application/xhtml-xml",
+	"xhtml":       "application/xhtml+xml",
 	"xml":         "text/xml",
 }
 

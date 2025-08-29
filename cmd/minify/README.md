@@ -132,16 +132,23 @@ which will output
 ### Types
 Default extension mapping to mimetype (and thus minifier). Use `--ext` to add more mappings, see below for an example.
 
+	asp          text/asp
 	css          text/css
+	ejs          text/x-ejs-template
+	gohtml       text/x-go-template
+	handlebars   text/x-handlebars-template
 	htm          text/html
 	html         text/html
 	js           application/javascript
 	json         application/json
 	mjs          application/javascript
+	mustache     text/x-mustache-template
+	php          application/x-httpd-php
 	rss          application/rss+xml
 	svg          image/svg+xml
+	tmpl         text/x-template
 	webmanifest  application/manifest+json
-	xhtml        application/xhtml-xml
+	xhtml        application/xhtml+xml
 	xml          text/xml
 
 ## Examples
