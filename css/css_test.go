@@ -143,7 +143,7 @@ func TestCSSInline(t *testing.T) {
 		{"color: hsla(400, 150%, 150%, 2);", "color:#fff"},
 		//{"color: hwb(0 0% 0%);", "color:red"}, TODO
 		//{"color: hwb(120 20% 20%/50%);", "color:"}, TODO
-		{"background-color:transparent", "background-color:initial"},
+		{"background-color:transparent", "background-color:transparent"},
 		{"background-position:top", "background-position:top"},
 		{"background-position:bottom", "background-position:bottom"},
 		{"background-position:center", "background-position:50%"},
