@@ -20,7 +20,7 @@ jobs:
     - uses: actions/setup-go@v6
       with:
         go-version: '>=1.17'
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@v5
       with:
         node-version: ${{ matrix.node }}
     - name: Install node-gyp
@@ -45,7 +45,7 @@ jobs:
     - uses: actions/setup-go@v6
       with:
         go-version: '>=1.17'
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@v5
     - name: Install node-gyp and prebuildify
       run: npm install --location=global node-gyp node-gyp-build node-api-headers prebuildify
     - name: Install dependencies
@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@v5
       with:
         registry-url: 'https://registry.npmjs.org'
     - name: Install node-gyp and prebuildify
