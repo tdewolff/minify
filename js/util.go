@@ -16,6 +16,8 @@ var (
 	newlineBytes               = []byte("\n")
 	starBytes                  = []byte("*")
 	plusBytes                  = []byte("+")
+	plusPlusBytes              = []byte("++")
+	minMinBytes                = []byte("--")
 	expBytes                   = []byte("**")
 	bitOrBytes                 = []byte("|")
 	colonBytes                 = []byte(":")
