@@ -51,6 +51,6 @@
     "node-gyp-build": "^4.8.4"
   },
   "devDependencies": {
-    "node-api-headers": "^1.5.0"
+    "node-api-headers": "^1.6.0"
   }
 }
