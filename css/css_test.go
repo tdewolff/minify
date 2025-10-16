@@ -348,6 +348,7 @@ func TestCSSInline(t *testing.T) {
 		{"--foo: ;", "--foo: "},               // whitespace value
 		{"--foo:;", "--foo:"},                 // empty value
 		{"--foo: initial ;", "--foo:initial"}, // invalid value, serializes to empty
+		{"x: var(--0);", "x:var(--0)"},
 		{"color=blue;", "color=blue"},
 		{"x: white , white", "x:white,white"},
 
