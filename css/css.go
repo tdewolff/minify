@@ -246,11 +246,8 @@ func (c *cssMinifier) minifyGrammar() {
 				c.w.Write(val.Data)
 			}
 			c.w.Write(leftBracketBytes)
-		case css.QualifiedRuleGrammar:
-			c.minifySelectors(data, c.p.Values())
-			c.w.Write(commaBytes)
 		case css.BeginRulesetGrammar:
-			c.minifySelectors(data, c.p.Values())
+			c.minifySelectors(c.p.Values())
 			c.w.Write(leftBracketBytes)
 		case css.DeclarationGrammar:
 			c.minifyDeclaration(data, c.p.Values())
@@ -277,7 +274,7 @@ func (c *cssMinifier) minifyGrammar() {
 	}
 }
 
-func (c *cssMinifier) minifySelectors(property []byte, values []css.Token) {
+func (c *cssMinifier) minifySelectors(values []css.Token) {
 	inAttr := false
 	isClass := false
 	for _, val := range c.p.Values() {

@@ -44,6 +44,7 @@ func TestCSS(t *testing.T) {
 		{"a { b: 1", "a{b:1}"},
 		{"@unknown { border:1px solid #000 }", "@unknown{border:1px solid #000 }"},
 		{":root { --custom-variable:0px; }", ":root{--custom-variable:0px}"},
+		{"a, b, c {color:red}", "a,b,c{color:red}"},
 
 		// recurring property overwrites previous
 		//{"a{color:blue;color:red}", "a{color:red}"},
