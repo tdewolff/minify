@@ -1013,13 +1013,14 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 									m.minifyExpr(left, js.OpUnary)
 									break
 								}
-							} else if right.Op == js.AddToken || right.Op == js.SubToken || right.Op == js.MulToken || right.Op == js.DivToken || right.Op == js.ModToken || right.Op == js.ExpToken || right.Op == js.LtLtToken || right.Op == js.GtGtToken || right.Op == js.GtGtGtToken || right.Op == js.BitAndToken || right.Op == js.BitOrToken || right.Op == js.BitXorToken || right.Op == js.AndToken || right.Op == js.OrToken || right.Op == js.NullishToken {
-								// a=a+b  =>  a+=b
-								m.minifyExpr(left, js.OpLHS)
-								m.write(right.Op.Bytes())
-								m.write(equalBytes)
-								m.minifyExpr(y, js.OpAssign)
-								break
+								// TODO: may break implicit "evaluation" of variables? see #863
+								//} else if right.Op == js.AddToken || right.Op == js.SubToken || right.Op == js.MulToken || right.Op == js.DivToken || right.Op == js.ModToken || right.Op == js.ExpToken || right.Op == js.LtLtToken || right.Op == js.GtGtToken || right.Op == js.GtGtGtToken || right.Op == js.BitAndToken || right.Op == js.BitOrToken || right.Op == js.BitXorToken {
+								//	// a=a+b  =>  a+=b
+								//	m.minifyExpr(left, js.OpLHS)
+								//	m.write(right.Op.Bytes())
+								//	m.write(equalBytes)
+								//	m.minifyExpr(y, js.OpAssign)
+								//	break
 							}
 						}
 					}

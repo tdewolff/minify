@@ -1383,7 +1383,10 @@ func decimalNumber(num []byte, prec int) []byte {
 func binaryNumber(num []byte, prec int) []byte {
 	b, suffix := removeUnderscoresAndSuffix(num)
 	if len(b) <= 2 || 65 < len(b) {
-		return num
+		if suffix {
+			return append(b, 'n')
+		}
+		return b
 	}
 	var n int64
 	for _, c := range b[2:] {
@@ -1406,7 +1409,10 @@ func binaryNumber(num []byte, prec int) []byte {
 func octalNumber(num []byte, prec int) []byte {
 	b, suffix := removeUnderscoresAndSuffix(num)
 	if len(b) <= 2 || 23 < len(b) {
-		return num
+		if suffix {
+			return append(b, 'n')
+		}
+		return b
 	}
 	var n int64
 	for _, c := range b[2:] {
@@ -1429,7 +1435,10 @@ func octalNumber(num []byte, prec int) []byte {
 func hexadecimalNumber(num []byte, prec int) []byte {
 	b, suffix := removeUnderscoresAndSuffix(num)
 	if len(b) <= 2 || 12 < len(b) || len(b) == 12 && ('D' < b[2] && b[2] <= 'F' || 'd' < b[2]) {
-		return num
+		if suffix {
+			return append(b, 'n')
+		}
+		return b
 	}
 	var n int64
 	for _, c := range b[2:] {
