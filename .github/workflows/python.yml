@@ -38,7 +38,7 @@ jobs:
         CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64
         CIBW_BEFORE_ALL: .ci/ensure-go.sh; make -C bindings/py compile
     - name: Upload wheels
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: wheels-linux-${{ matrix.go_target }}
         path: ./wheelhouse/*.whl
@@ -74,7 +74,7 @@ jobs:
       env:
         CIBW_ARCHS: ${{ matrix.cibw_target }}
     - name: Upload wheels
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: wheels-windows-${{ matrix.go_target }}
         path: ./wheelhouse/*.whl
@@ -109,7 +109,7 @@ jobs:
       env:
         CIBW_ARCHS: ${{ matrix.cibw_target }}
     - name: Upload wheels
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: wheels-macos-${{ matrix.go_target }}
         path: ./wheelhouse/*.whl
@@ -132,7 +132,7 @@ jobs:
     - name: Build package
       run: make -C bindings/py build
     - name: Upload sdist
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: wheels
         path: bindings/py/dist/*
