@@ -74,7 +74,7 @@ jobs:
         registry-url: 'https://registry.npmjs.org'
     - name: Install node-gyp and prebuildify
       run: npm install --location=global node-gyp node-gyp-build node-api-headers prebuildify
-    - uses: actions/download-artifact@v5
+    - uses: actions/download-artifact@v6
       with:
         path: bindings/js/prebuilds
     - name: Move artifacts
