@@ -933,6 +933,7 @@ func TestJSVarRenaming(t *testing.T) {
 		{`()=>{let foo;Math.abs(foo)}`, `()=>{let a;a<0?-a:a}`},
 		{`()=>{let foo;isNaN(foo)}`, `()=>{let a;isNaN(a)}`},
 		{`()=>{let isNaN;isNaN(foo)}`, `()=>{let a;a(foo)}`},
+		{`class a { #foo = 1; #bar() { this.#foo++ } }`, `class a{#a=1;#b(){this.#a++}}`},
 
 		// go-fuzz
 		{`var ÆÆ,ÆÆ=t;var ÆÆ=v,a=ÿ`, `var ÆÆ=t,ÆÆ=v,a=ÿ`},

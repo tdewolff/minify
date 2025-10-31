@@ -64,6 +64,20 @@ func (r *renamer) renameScope(scope js.Scope) {
 	}
 }
 
+// rename all private elements in a class
+func (r *renamer) renameClassScope(scope js.Scope) {
+	if !r.rename {
+		return
+	}
+
+	i := 0
+	sort.Sort(js.VarsByUses(scope.Declared))
+	for _, v := range scope.Declared {
+		v.Data = append(v.Data[:1], r.getName(v.Data[1:], i)...) // keep #
+		i++
+	}
+}
+
 func (r *renamer) isReserved(name []byte, undeclared js.VarArray) bool {
 	if 1 < len(name) { // there are no keywords or known globals that are one character long
 		if _, ok := r.reserved[string(name)]; ok {
