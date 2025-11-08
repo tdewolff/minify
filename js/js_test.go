@@ -438,8 +438,8 @@ func TestJS(t *testing.T) {
 		//{`()=>a()`, ``},
 		{`if(true){let b}`, ``},
 		{`if(true){let b=5}`, ``},
-		{`if(true){const b=c}`, `!0&&c`},
-		{`if(true){const b=c.d}`, `!0&&c.d`},
+		{`if(true){const b=c}`, `c`},
+		{`if(true){const b=c.d}`, `c.d`},
 
 		// arrow functions
 		{`() => {}`, `()=>{}`},
@@ -860,6 +860,7 @@ func TestJS(t *testing.T) {
 		{"var a = /*! comment */ b;", "/*! comment */var a=b"}, // #664
 		{`var c="";for(let i=0;;);var d="";for(let i=0;;);`, `var d,c="";for(let i=0;;);d="";for(let i=0;;);`}, // #687
 		{"String.raw`\\b`", "String.raw`\\b`"}, // #701
+		{"if(true){const a=setInterval(()=>{clearInterval(a)},100)}", "{const a=setInterval(()=>{clearInterval(a)},100)}"}, // #867
 	}
 
 	m := minify.New()
@@ -896,8 +897,8 @@ func TestJSVarRenaming(t *testing.T) {
 		{`function a(){var b;b}`, `function a(){var a;a}`},
 		{`!function(){x=function(){return fun()};var fun=function(){return 0}}`, `!function(){x=function(){return a()};var a=function(){return 0}}`},
 		{`!function(){var x=function(){return y};const y=5;x,y}`, `!function(){var b=function(){return a};const a=5;b,a}`},
-		{`!function(){if(1){const x=5;x;5}var y=function(){return x};y}`, `!function(){if(1){const a=5;a,5}var a=function(){return x};a}`},
-		{`!function(){var x=function(){return y};x;if(1){const y=5;y;5}}`, `!function(){var a=function(){return y};if(a,1){const a=5;a,5}}`},
+		{`!function(){if(1){const x=5;x;5}var y=function(){return x};y}`, `!function(){{const a=5;a,5}var a=function(){return x};a}`},
+		{`!function(){var x=function(){return y};x;if(1){const y=5;y;5}}`, `!function(){var a=function(){return y};a;{const a=5;a,5}}`},
 		{`!function(){var x=function(){return y};x;if(z)var y=5}`, `!function(){var a,b=function(){return a};b,z&&(a=5)}`},
 		{`!function(){var x=function(){return y};x;if(z){var y=5;5}}`, `!function(){var a,b=function(){return a};b,z&&(a=5,5)}`},
 		{`!function(){var x,y,z=(x,y)=>x+y;x,y,z}`, `!function(){var a,b,c=(a,b)=>a+b;a,b,c}`},

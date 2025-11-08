@@ -7,9 +7,32 @@ import (
 func optimizeStmt(i js.IStmt) js.IStmt {
 	// convert if/else into expression statement, and optimize blocks
 	if ifStmt, ok := i.(*js.IfStmt); ok {
-		if ifStmt.Body != nil {
-			ifStmt.Body = optimizeStmt(ifStmt.Body)
+		if truthy, ok := isTruthy(ifStmt.Cond); ok && truthy {
+			if hasSideEffects(ifStmt.Cond) {
+				ifStmt.Else = nil
+				return i // TODO: remove if and return StmtList(Cond, Body)
+			}
+			return optimizeStmt(ifStmt.Body)
+		} else if ok {
+			// falsy
+			if isEmptyStmt(ifStmt.Else) {
+				if hasSideEffects(ifStmt.Cond) {
+					return &js.ExprStmt{Value: ifStmt.Cond}
+				}
+				return &js.EmptyStmt{}
+			} else if hasSideEffects(ifStmt.Cond) {
+				if unaryExpr, ok := ifStmt.Cond.(*js.UnaryExpr); ok && unaryExpr.Op == js.NotToken {
+					ifStmt.Cond = unaryExpr.X
+				} else {
+					ifStmt.Cond = &js.UnaryExpr{js.NotToken, ifStmt.Cond}
+				}
+				ifStmt.Body, ifStmt.Else = ifStmt.Else, nil
+				return i // TODO: remove if and return StmtList(Cond, Body)
+			}
+			return optimizeStmt(ifStmt.Else)
 		}
+
+		ifStmt.Body = optimizeStmt(ifStmt.Body)
 		if ifStmt.Else != nil {
 			ifStmt.Else = optimizeStmt(ifStmt.Else)
 		}
@@ -122,7 +145,9 @@ func optimizeStmt(i js.IStmt) js.IStmt {
 				// remove let or const declaration in otherwise empty scope, but keep assignments
 				exprs := []js.IExpr{}
 				for _, item := range varDecl.List {
-					if item.Default != nil && hasSideEffects(item.Default) {
+					if bindingUsed(item.Binding) {
+						return blockStmt
+					} else if item.Default != nil && hasSideEffects(item.Default) {
 						exprs = append(exprs, item.Default)
 					}
 				}
@@ -150,7 +175,7 @@ func optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 	j := 0                           // write index
 	for i := 0; i < len(list); i++ { // read index
 		if ifStmt, ok := list[i].(*js.IfStmt); ok && !isEmptyStmt(ifStmt.Else) {
-			// if(!a)b;else c  =>  if(a)c; else b
+			// if(a)return b;else c  =>  if(a)b; c
 			if unary, ok := ifStmt.Cond.(*js.UnaryExpr); ok && unary.Op == js.NotToken && isFlowStmt(lastStmt(ifStmt.Else)) {
 				ifStmt.Cond = unary.X
 				ifStmt.Body, ifStmt.Else = ifStmt.Else, ifStmt.Body

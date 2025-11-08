@@ -999,6 +999,24 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 						}
 					}
 				}
+			} else if expr.Op == js.AndToken {
+				// TODO: use truthy instead of true?
+				if (isTrue(expr.X) || isFalse(expr.Y)) && !hasSideEffects(expr.X) {
+					m.minifyExpr(expr.Y, prec)
+					break
+				} else if (isTrue(expr.Y) || isFalse(expr.X)) && !hasSideEffects(expr.Y) {
+					m.minifyExpr(expr.X, prec)
+					break
+				}
+			} else if expr.Op == js.OrToken {
+				// TODO: use truthy instead of true?
+				if (isTrue(expr.X) || isFalse(expr.Y)) && !hasSideEffects(expr.Y) {
+					m.minifyExpr(expr.X, prec)
+					break
+				} else if (isTrue(expr.Y) || isFalse(expr.X)) && !hasSideEffects(expr.X) {
+					m.minifyExpr(expr.Y, prec)
+					break
+				}
 			} else if expr.Op == js.EqToken {
 				if left, ok := expr.X.(*js.Var); ok {
 					if right, ok := expr.Y.(*js.BinaryExpr); ok {

@@ -175,6 +175,34 @@ func hasDefines(v *js.VarDecl) bool {
 	return false
 }
 
+func bindingUsed(ibinding js.IBinding) bool {
+	switch binding := ibinding.(type) {
+	case *js.Var:
+		if 1 < binding.Uses {
+			return true
+		}
+	case *js.BindingArray:
+		for _, item := range binding.List {
+			if item.Binding != nil && bindingUsed(item.Binding) {
+				return true
+			}
+		}
+		if binding.Rest != nil && bindingUsed(binding.Rest) {
+			return true
+		}
+	case *js.BindingObject:
+		for _, item := range binding.List {
+			if item.Value.Binding != nil && bindingUsed(item.Value.Binding) {
+				return true
+			}
+		}
+		if binding.Rest != nil && bindingUsed(binding.Rest) {
+			return true
+		}
+	}
+	return false
+}
+
 func bindingVars(ibinding js.IBinding) (vs []*js.Var) {
 	switch binding := ibinding.(type) {
 	case *js.Var:
