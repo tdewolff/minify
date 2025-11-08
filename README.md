@@ -22,12 +22,12 @@ The core functionality associates mimetypes with minification functions, allowin
 
 ### Sponsors
 #### SiteGround
+[![SiteGround](https://www.siteground.com/img/downloads/siteground-logo-black-transparent-vector.svg)](https://www.siteground.com/)
+
 Thank you SiteGround for having sponsored this project for many years! Their contribution is invaluable for code maintenance and improvements. If you are in need of professional web hosting, I can highly recommend their products.
 
 #### Requesting sponsors
 I'm actively looking for support in the form of donations or sponsorships to keep developing this library and highly appreciate any gesture. Please see the Sponsors button in GitHub for ways to contribute, or contact me directly.
-
-[![SiteGround](https://www.siteground.com/img/downloads/siteground-logo-black-transparent-vector.svg)](https://www.siteground.com/)
 
 #### Table of Contents
 
