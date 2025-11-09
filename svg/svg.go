@@ -32,7 +32,7 @@ type Minifier struct {
 	KeepComments bool
 	Precision    int // number of significant digits
 	newPrecision int // precision for new numbers
-	Inline       bool
+	inline       bool
 }
 
 // Minify minifies SVG data, it reads from r and writes to w.
@@ -50,8 +50,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 	if o.newPrecision <= 0 || 15 < o.newPrecision {
 		o.newPrecision = 15 // minimum number of digits a double can represent exactly
 	}
-	if !o.Inline {
-		o.Inline = params != nil && params["inline"] == "1"
+	if !o.inline {
+		o.inline = params != nil && params["inline"] == "1"
 	}
 
 	// namespaces to keep
@@ -171,7 +171,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 				val, _ = o.shortenDimension(val)
 			}
 			if attr == Xml_Space && bytes.Equal(val, []byte("preserve")) ||
-				tag == Svg && (o.Inline && attr == Xmlns ||
+				tag == Svg && (o.inline && attr == Xmlns ||
 					attr == Version && bytes.Equal(val, []byte("1.1")) ||
 					attr == X && bytes.Equal(val, zeroBytes) ||
 					attr == Y && bytes.Equal(val, zeroBytes) ||

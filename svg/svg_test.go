@@ -182,7 +182,7 @@ func TestSVGInline(t *testing.T) {
 	}
 
 	m := minify.New()
-	o := &Minifier{Inline: true}
+	o := &Minifier{inline: true}
 	for _, tt := range svgTests {
 		t.Run(tt.svg, func(t *testing.T) {
 			r := bytes.NewBufferString(tt.svg)

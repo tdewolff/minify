@@ -442,7 +442,7 @@ func TestCSSInline(t *testing.T) {
 	}
 }
 
-func TestCSSKeepCSS2(t *testing.T) {
+func TestCSS2(t *testing.T) {
 	tests := []struct {
 		css      string
 		expected string
@@ -458,7 +458,7 @@ func TestCSSKeepCSS2(t *testing.T) {
 
 	m := minify.New()
 	params := map[string]string{"inline": "1"}
-	cssMinifier := &Minifier{KeepCSS2: true}
+	cssMinifier := &Minifier{Version: 2}
 	for _, tt := range tests {
 		t.Run(tt.css, func(t *testing.T) {
 			r := bytes.NewBufferString(tt.css)
