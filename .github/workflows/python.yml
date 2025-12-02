@@ -19,7 +19,7 @@ jobs:
         - go_target: arm64
           cibw_target: aarch64
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
     - name: Set up QEMU
@@ -55,7 +55,7 @@ jobs:
         #- go_target: arm64
         #  cibw_target: ARM64
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
     - uses: actions/setup-go@v6
@@ -89,7 +89,7 @@ jobs:
         #- go_target: arm64
         #  cibw_target: arm64
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
     - uses: actions/setup-go@v6
@@ -117,7 +117,7 @@ jobs:
   sdist:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
       with:
         fetch-depth: 0
     - name: Set up Python
