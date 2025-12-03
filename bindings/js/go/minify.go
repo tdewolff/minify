@@ -2,14 +2,42 @@ package main
 
 /*
 #include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+typedef struct {
+	const char *mediatype;
+	const char *data;
+	int32_t cssPrecision;
+	int32_t cssVersion;
+	bool htmlKeepComments;
+	bool htmlKeepConditionalComments;
+	bool htmlKeepDefaultAttrvals;
+	bool htmlKeepDocumentTags;
+	bool htmlKeepEndTags;
+	bool htmlKeepQuotes;
+	bool htmlKeepSpecialComments;
+	bool htmlKeepWhitespace;
+	bool jsKeepVarNames;
+	int32_t jsPrecision;
+	int32_t jsVersion;
+	bool jsonKeepNumbers;
+	int32_t jsonPrecision;
+	bool svgKeepComments;
+	int32_t svgPrecision;
+	bool xmlKeepWhitespace;
+} MinifyOptions;
+
+typedef struct {
+	char *error;
+	char *data;
+} MinifyResult;
 */
 import "C"
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 	"unsafe"
 
@@ -24,26 +52,26 @@ import (
 )
 
 type minifyOptions struct {
-	Type                        string `json:"type"`
-	Data                        string `json:"data"`
-	CSSPrecision                int    `json:"cssPrecision"`
-	CSSVersion                  int    `json:"cssVersion"`
-	HTMLKeepComments            bool   `json:"htmlKeepComments"`
-	HTMLKeepConditionalComments bool   `json:"htmlKeepConditionalComments"`
-	HTMLKeepDefaultAttrvals     bool   `json:"htmlKeepDefaultAttrvals"`
-	HTMLKeepDocumentTags        bool   `json:"htmlKeepDocumentTags"`
-	HTMLKeepEndTags             bool   `json:"htmlKeepEndTags"`
-	HTMLKeepQuotes              bool   `json:"htmlKeepQuotes"`
-	HTMLKeepSpecialComments     bool   `json:"htmlKeepSpecialComments"`
-	HTMLKeepWhitespace          bool   `json:"htmlKeepWhitespace"`
-	JSKeepVarNames              bool   `json:"jsKeepVarNames"`
-	JSPrecision                 int    `json:"jsPrecision"`
-	JSVersion                   int    `json:"jsVersion"`
-	JSONKeepNumbers             bool   `json:"jsonKeepNumbers"`
-	JSONPrecision               int    `json:"jsonPrecision"`
-	SVGKeepComments             bool   `json:"svgKeepComments"`
-	SVGPrecision                int    `json:"svgPrecision"`
-	XMLKeepWhitespace           bool   `json:"xmlKeepWhitespace"`
+	Type                        string
+	Data                        string
+	CSSPrecision                int
+	CSSVersion                  int
+	HTMLKeepComments            bool
+	HTMLKeepConditionalComments bool
+	HTMLKeepDefaultAttrvals     bool
+	HTMLKeepDocumentTags        bool
+	HTMLKeepEndTags             bool
+	HTMLKeepQuotes              bool
+	HTMLKeepSpecialComments     bool
+	HTMLKeepWhitespace          bool
+	JSKeepVarNames              bool
+	JSPrecision                 int
+	JSVersion                   int
+	JSONKeepNumbers             bool
+	JSONPrecision               int
+	SVGKeepComments             bool
+	SVGPrecision                int
+	XMLKeepWhitespace           bool
 }
 
 var (
@@ -52,97 +80,33 @@ var (
 	xmlMediatypePattern  = regexp.MustCompile("[/+]xml$")
 )
 
-type minifyResult struct {
-	Error string `json:"error"`
-	Data  string `json:"data"`
-}
-
-func parseOptions(cOptionsJson *C.char) (minifyOptions, error) {
-	opts := minifyOptions{}
-	if cOptionsJson == nil {
-		return opts, nil
+func parseOptions(opts *C.MinifyOptions) (minifyOptions, error) {
+	if opts == nil {
+		return minifyOptions{}, errors.New("options are required")
 	}
 
-	raw := strings.TrimSpace(C.GoString(cOptionsJson))
-	if raw == "" {
-		return opts, nil
-	}
-
-	decoder := json.NewDecoder(strings.NewReader(raw))
-	decoder.UseNumber()
-
-	rawOpts := map[string]interface{}{}
-	if err := decoder.Decode(&rawOpts); err != nil {
-		return opts, err
-	}
-
-	opts.Type = parseString(rawOpts["type"])
-	opts.Data = parseString(rawOpts["data"])
-	opts.CSSPrecision = parseInt(rawOpts["cssPrecision"])
-	opts.CSSVersion = parseInt(rawOpts["cssVersion"])
-	opts.HTMLKeepComments = parseBool(rawOpts["htmlKeepComments"])
-	opts.HTMLKeepConditionalComments = parseBool(rawOpts["htmlKeepConditionalComments"])
-	opts.HTMLKeepDefaultAttrvals = parseBool(rawOpts["htmlKeepDefaultAttrvals"])
-	opts.HTMLKeepDocumentTags = parseBool(rawOpts["htmlKeepDocumentTags"])
-	opts.HTMLKeepEndTags = parseBool(rawOpts["htmlKeepEndTags"])
-	opts.HTMLKeepQuotes = parseBool(rawOpts["htmlKeepQuotes"])
-	opts.HTMLKeepSpecialComments = parseBool(rawOpts["htmlKeepSpecialComments"])
-	opts.HTMLKeepWhitespace = parseBool(rawOpts["htmlKeepWhitespace"])
-	opts.JSKeepVarNames = parseBool(rawOpts["jsKeepVarNames"])
-	opts.JSPrecision = parseInt(rawOpts["jsPrecision"])
-	opts.JSVersion = parseInt(rawOpts["jsVersion"])
-	opts.JSONKeepNumbers = parseBool(rawOpts["jsonKeepNumbers"])
-	opts.JSONPrecision = parseInt(rawOpts["jsonPrecision"])
-	opts.SVGKeepComments = parseBool(rawOpts["svgKeepComments"])
-	opts.SVGPrecision = parseInt(rawOpts["svgPrecision"])
-	opts.XMLKeepWhitespace = parseBool(rawOpts["xmlKeepWhitespace"])
-
-	return opts, nil
-}
-
-func parseString(v interface{}) string {
-	if s, ok := v.(string); ok {
-		return s
-	}
-	return ""
-}
-
-func parseInt(v interface{}) int {
-	switch n := v.(type) {
-	case json.Number:
-		if i, err := n.Int64(); err == nil {
-			return int(i)
-		}
-	case float64:
-		return int(n)
-	case string:
-		if i, err := strconv.Atoi(strings.TrimSpace(n)); err == nil {
-			return i
-		}
-	}
-	return 0
-}
-
-func parseBool(v interface{}) bool {
-	switch b := v.(type) {
-	case bool:
-		return b
-	case string:
-		val := strings.TrimSpace(strings.ToLower(b))
-		return val == "true" || val == "1" || val == "yes"
-	}
-	return false
-}
-
-func buildResult(err error, data string) *C.char {
-	res := minifyResult{}
-	if err != nil {
-		res.Error = err.Error()
-	} else {
-		res.Data = data
-	}
-	b, _ := json.Marshal(res)
-	return C.CString(string(b))
+	return minifyOptions{
+		Type:                        strings.TrimSpace(C.GoString(opts.mediatype)),
+		Data:                        C.GoString(opts.data),
+		CSSPrecision:                int(opts.cssPrecision),
+		CSSVersion:                  int(opts.cssVersion),
+		HTMLKeepComments:            bool(opts.htmlKeepComments),
+		HTMLKeepConditionalComments: bool(opts.htmlKeepConditionalComments),
+		HTMLKeepDefaultAttrvals:     bool(opts.htmlKeepDefaultAttrvals),
+		HTMLKeepDocumentTags:        bool(opts.htmlKeepDocumentTags),
+		HTMLKeepEndTags:             bool(opts.htmlKeepEndTags),
+		HTMLKeepQuotes:              bool(opts.htmlKeepQuotes),
+		HTMLKeepSpecialComments:     bool(opts.htmlKeepSpecialComments),
+		HTMLKeepWhitespace:          bool(opts.htmlKeepWhitespace),
+		JSKeepVarNames:              bool(opts.jsKeepVarNames),
+		JSPrecision:                 int(opts.jsPrecision),
+		JSVersion:                   int(opts.jsVersion),
+		JSONKeepNumbers:             bool(opts.jsonKeepNumbers),
+		JSONPrecision:               int(opts.jsonPrecision),
+		SVGKeepComments:             bool(opts.svgKeepComments),
+		SVGPrecision:                int(opts.svgPrecision),
+		XMLKeepWhitespace:           bool(opts.xmlKeepWhitespace),
+	}, nil
 }
 
 func newMinifier(opts minifyOptions) (*minify.M, error) {
@@ -235,36 +199,64 @@ func resolveType(t string) (string, error) {
 	return "", fmt.Errorf("invalid type %q", trimmed)
 }
 
-//export MinifyString
-func MinifyString(cOptionsJson *C.char) *C.char {
-	opts, err := parseOptions(cOptionsJson)
+func setResult(out *C.MinifyResult, err error, data string) {
+	if out == nil {
+		return
+	}
+
+	if out.error != nil {
+		C.free(unsafe.Pointer(out.error))
+		out.error = nil
+	}
+	if out.data != nil {
+		C.free(unsafe.Pointer(out.data))
+		out.data = nil
+	}
+
 	if err != nil {
-		return buildResult(err, "")
+		out.error = C.CString(err.Error())
+		return
+	}
+
+	out.data = C.CString(data)
+}
+
+//export Minify
+func Minify(cOptions *C.MinifyOptions, cResult *C.MinifyResult) {
+	opts, err := parseOptions(cOptions)
+	if err != nil {
+		setResult(cResult, err, "")
+		return
 	}
 
 	dataBytes := []byte(opts.Data)
 	if len(dataBytes) == 0 {
-		return buildResult(errors.New("data is required"), "")
+		setResult(cResult, errors.New("data is required"), "")
+		return
 	}
 	mediatype, err := resolveType(opts.Type)
 	if err != nil {
-		return buildResult(err, "")
+		setResult(cResult, err, "")
+		return
 	}
 	if mediatype == "" {
-		return buildResult(errors.New("type is required"), "")
+		setResult(cResult, errors.New("type is required"), "")
+		return
 	}
 
 	m, err := newMinifier(opts)
 	if err != nil {
-		return buildResult(err, "")
+		setResult(cResult, err, "")
+		return
 	}
 
 	outBuf := buffer.NewWriter(make([]byte, 0, len(dataBytes)))
 	if err := m.Minify(mediatype, outBuf, buffer.NewReader(dataBytes)); err != nil {
-		return buildResult(err, "")
+		setResult(cResult, err, "")
+		return
 	}
 
-	return buildResult(nil, string(outBuf.Bytes()))
+	setResult(cResult, nil, string(outBuf.Bytes()))
 }
 
 //export FreeCString
