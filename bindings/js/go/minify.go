@@ -1,7 +1,6 @@
 package main
 
 /*
-#include <string.h>
 #include <stdlib.h>
 */
 import "C"
@@ -26,6 +25,7 @@ import (
 
 type minifyOptions struct {
 	Type                        string `json:"type"`
+	Data                        string `json:"data"`
 	CSSPrecision                int    `json:"cssPrecision"`
 	CSSVersion                  int    `json:"cssVersion"`
 	HTMLKeepComments            bool   `json:"htmlKeepComments"`
@@ -57,11 +57,6 @@ type minifyResult struct {
 	Data  string `json:"data"`
 }
 
-func goBytes(str *C.char, length, capacity C.longlong) []byte {
-	// address space on 32-bit system is smaller than 1<<30
-	return (*[1 << 28]byte)(unsafe.Pointer(str))[:length:capacity]
-}
-
 func parseOptions(cOptionsJson *C.char) (minifyOptions, error) {
 	opts := minifyOptions{}
 	if cOptionsJson == nil {
@@ -82,6 +77,7 @@ func parseOptions(cOptionsJson *C.char) (minifyOptions, error) {
 	}
 
 	opts.Type = parseString(rawOpts["type"])
+	opts.Data = parseString(rawOpts["data"])
 	opts.CSSPrecision = parseInt(rawOpts["cssPrecision"])
 	opts.CSSVersion = parseInt(rawOpts["cssVersion"])
 	opts.HTMLKeepComments = parseBool(rawOpts["htmlKeepComments"])
@@ -240,17 +236,13 @@ func resolveType(t string) (string, error) {
 }
 
 //export MinifyString
-func MinifyString(cData *C.char, cOptionsJson *C.char) *C.char {
+func MinifyString(cOptionsJson *C.char) *C.char {
 	opts, err := parseOptions(cOptionsJson)
 	if err != nil {
 		return buildResult(err, "")
 	}
 
-	var dataBytes []byte
-	if cData != nil {
-		dataLen := C.longlong(C.strlen(cData))
-		dataBytes = goBytes(cData, dataLen, dataLen+1) // +1 for NULL byte
-	}
+	dataBytes := []byte(opts.Data)
 	if len(dataBytes) == 0 {
 		return buildResult(errors.New("data is required"), "")
 	}

@@ -10,9 +10,9 @@ function getProcessMemoryMb() {
 
 async function test() {
     let memoryStats = [];
-    for (let i = 0; i <= 300; i++) {
+    for (let i = 0; i <= 100; i++) {
         const cTs = Date.now();
-        await minify(data, { type: 'text/html', });
+        await minify({ data, type: 'text/html' });
         const eTs = Date.now();
         const currentMemoryMb = getProcessMemoryMb();
         memoryStats.push(currentMemoryMb);

@@ -1,3 +1,4 @@
+// Mirrors the Go-side minifyOptions struct in minify.go.
 type LiteralUnion<T extends string, U extends string> = T | (U & Record<never, never>);
 
 // mirrors regex from the Go library, allows for blabla/json, blabla+json, blabla/xml, etc.
@@ -39,6 +40,7 @@ type CommonMinifyMediaType =
 export type MinifyMediaType = LiteralUnion<KnownMinifyMediaType | CommonMinifyMediaType, CustomMinifyMediaType>;
 
 export interface MinifyOptions {
+  data: string;
   type: MinifyMediaType;
   cssPrecision?: number;
   cssVersion?: number;

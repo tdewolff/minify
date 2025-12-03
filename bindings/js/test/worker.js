@@ -23,7 +23,8 @@ if (isMainThread) {
 } else {
     const { minify } = await import('@tdewolff/minify');
     // config({'html-keep-document-tags': true})
-    const minified = await minify(workerData, {
+    const minified = await minify({
+        data: workerData,
         type: 'text/html',
         htmlKeepDocumentTags: true,
     });

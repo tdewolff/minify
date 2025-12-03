@@ -4,7 +4,8 @@ let input = "<html><span style=\"color:#ff0000;\">A  phrase</span>";
 let expected = "<html><span style=color:red>A phrase</span>";
 
 async function test() {
-    const output = await minify(input, {
+    const output = await minify({
+        data: input,
         type: 'text/html',
         htmlKeepDocumentTags: true,
     });
