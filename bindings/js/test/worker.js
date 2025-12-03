@@ -16,12 +16,16 @@ if (isMainThread) {
         });
     })
     if (output != expected) {
-        throw "unexpected output using worker threads: '"+output+"' instead of '"+expected+"'";
+        throw "unexpected output using worker threads: '" + output + "' instead of '" + expected + "'";
     }
     await worker.terminate();
-    console.log("success!");
+    console.log("success!"); // must reach here to ensure node process was not killed
 } else {
-    const { config, string } = await import('@tdewolff/minify');
-    config({'html-keep-document-tags': true})
-    parentPort.postMessage(string("text/html", workerData));
+    const { minify } = await import('@tdewolff/minify');
+    // config({'html-keep-document-tags': true})
+    const minified = await minify(workerData, {
+        type: 'text/html',
+        htmlKeepDocumentTags: true,
+    });
+    parentPort.postMessage(minified);
 }
