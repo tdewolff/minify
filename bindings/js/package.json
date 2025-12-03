@@ -34,7 +34,7 @@
     "build:ts": "tsdown",
     "build:ts:watch": "tsdown --watch",
     "postinstall": "npm run build:go || bun run build:go",
-    "test": "node test/index.js"
+    "test": "vitest"
   },
   "homepage": "https://github.com/tdewolff/minify#readme",
   "bugs": {
@@ -59,7 +59,8 @@
   "devDependencies": {
     "@types/node": "^24.10.1",
     "tsdown": "^0.17.0-beta.5",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.15"
   },
   "dependencies": {
     "koffi": "^2.14.1"
