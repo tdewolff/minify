@@ -12,26 +12,26 @@ const MinifyCString = koffi.disposable('MinifyCString', koffi.types.str, freeCSt
 
 // Register the struct layouts once so the prototype string can reference them by name.
 const MinifyOptionsStruct = koffi.struct('MinifyOptions', {
-  mediatype: 'str',
-  data: 'str',
-  cssPrecision: 'int32_t',
-  cssVersion: 'int32_t',
-  htmlKeepComments: 'bool',
-  htmlKeepConditionalComments: 'bool',
-  htmlKeepDefaultAttrvals: 'bool',
-  htmlKeepDocumentTags: 'bool',
-  htmlKeepEndTags: 'bool',
-  htmlKeepQuotes: 'bool',
-  htmlKeepSpecialComments: 'bool',
-  htmlKeepWhitespace: 'bool',
-  jsKeepVarNames: 'bool',
-  jsPrecision: 'int32_t',
-  jsVersion: 'int32_t',
-  jsonKeepNumbers: 'bool',
-  jsonPrecision: 'int32_t',
-  svgKeepComments: 'bool',
-  svgPrecision: 'int32_t',
-  xmlKeepWhitespace: 'bool'
+  mediatype: koffi.types.str,
+  data: koffi.types.str,
+  cssPrecision: koffi.types.int32_t,
+  cssVersion: koffi.types.int32_t,
+  htmlKeepComments: koffi.types.bool,
+  htmlKeepConditionalComments: koffi.types.bool,
+  htmlKeepDefaultAttrvals: koffi.types.bool,
+  htmlKeepDocumentTags: koffi.types.bool,
+  htmlKeepEndTags: koffi.types.bool,
+  htmlKeepQuotes: koffi.types.bool,
+  htmlKeepSpecialComments: koffi.types.bool,
+  htmlKeepWhitespace: koffi.types.bool,
+  jsKeepVarNames: koffi.types.bool,
+  jsPrecision: koffi.types.int32_t,
+  jsVersion: koffi.types.int32_t,
+  jsonKeepNumbers: koffi.types.bool,
+  jsonPrecision: koffi.types.int32_t,
+  svgKeepComments: koffi.types.bool,
+  svgPrecision: koffi.types.int32_t,
+  xmlKeepWhitespace: koffi.types.bool
 })
 
 const MinifyResultStruct = koffi.struct('MinifyResult', {
