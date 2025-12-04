@@ -39,9 +39,7 @@ type CommonMinifyMediaType =
 
 export type MinifyMediaType = LiteralUnion<KnownMinifyMediaType | CommonMinifyMediaType, CustomMinifyMediaType>;
 
-export interface MinifyOptions {
-  data: string;
-  type: MinifyMediaType;
+export interface MinifyConfig {
   cssPrecision?: number;
   cssVersion?: number;
   htmlKeepComments?: boolean;
@@ -60,4 +58,9 @@ export interface MinifyOptions {
   svgKeepComments?: boolean;
   svgPrecision?: number;
   xmlKeepWhitespace?: boolean;
+}
+
+export interface MinifyOptions extends MinifyConfig {
+  data: string;
+  type: MinifyMediaType;
 }

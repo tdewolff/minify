@@ -21,13 +21,17 @@ console.log(html) // <html><span class=text style=color:red>A phrase</span></htm
 const source = await readFile('example.html', 'utf8')
 const minified = await minify({ data: source, type: 'text/html', htmlKeepDocumentTags: true })
 await writeFile('example.min.html', minified, 'utf8')
+
+// Overload with explicit type/data parameters
+const minifiedHtml = await minify('text/html', source, { htmlKeepDocumentTags: true })
 ```
 
 ## API
 ```ts
-import { minify, type MinifyOptions } from '@tdewolff/minify'
+import { minify, type MinifyConfig, type MinifyMediaType, type MinifyOptions } from '@tdewolff/minify'
 
 declare function minify(opts: MinifyOptions): Promise<string>
+declare function minify(type: MinifyMediaType, data: string, config?: MinifyConfig | null): Promise<string>
 ```
 
 `MinifyOptions` fields (all optional except `data` and `type`):

@@ -40,6 +40,24 @@ describe('minify', () => {
         expect(output).toBe(expected);
     });
 
+    it('supports the (type, data, config?) overload', async () => {
+        const input = "<html><body>  ok </body></html>";
+        const expected = "<html><body>ok</body></html>";
+
+        const output = await minify('text/html', input, { htmlKeepDocumentTags: true });
+
+        expect(output).toBe(expected);
+    });
+
+    it('treats a null config as default options', async () => {
+        const input = "body { margin: 0px; }";
+        const expected = "body{margin:0}";
+
+        const output = await minify('text/css', input, null);
+
+        expect(output).toBe(expected);
+    });
+
     it('minifies JavaScript', async () => {
         const input = "function add(a, b) { return a + b; }";
         const expected = "function add(e,t){return e+t}";
