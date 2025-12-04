@@ -1,4 +1,4 @@
-JavaScript bindings around the Go minifiers in [tdewolff/minify](https://github.com/tdewolff/minify). The package ships a small native library built from Go and exposes a single async `minify` function.
+JavaScript bindings around the Go minifiers in [tdewolff/minify](https://github.com/tdewolff/minify). The package ships a small native library built from Go and exposes a single async `minify` function. Requires Node.js 20.19+.
 
 ## Quickstart
 ```bash

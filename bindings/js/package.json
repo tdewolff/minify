@@ -5,6 +5,9 @@
   "author": "Taco de Wolff",
   "license": "MIT",
   "description": "Go minifiers for web formats",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
@@ -33,6 +36,7 @@
     "forcebuild:go": "node ./scripts/build-go.mjs --force-build || bun ./scripts/build-go.mjs --force-build",
     "build:ts": "tsdown",
     "build:ts:watch": "tsdown --watch",
+    "prepare": "npm run build:ts",
     "postinstall": "npm run build:go || bun run build:go",
     "test": "vitest"
   },
