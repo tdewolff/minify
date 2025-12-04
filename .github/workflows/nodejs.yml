@@ -1,85 +1,257 @@
 name: NodeJS
+
 on:
-  push:
-    tags:
-    - 'v*'
   pull_request:
     branches:
-    - master
+      - master
+  push:
+    tags:
+      - 'v*'
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  CI: true
+
+defaults:
+  run:
+    shell: bash
+    working-directory: bindings/js
+
 jobs:
   test:
+    name: Test (${{ matrix.os }} / Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        #os: [ubuntu-latest, macos-latest, windows-latest]
-        os: [ubuntu-latest, macos-latest]
-        node: [16, 18, 20]
-    runs-on: ${{ matrix.os }}
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: [20.x, 22.x, 24.x]
     steps:
-    - uses: actions/checkout@v6
-    - uses: actions/setup-go@v6
-      with:
-        go-version: '>=1.17'
-    - uses: actions/setup-node@v6
-      with:
-        node-version: ${{ matrix.node }}
-    - name: Install node-gyp
-      run: npm install -g node-gyp
-    - name: Build from source
-      run: |
-        cd bindings/js
-        npm --version
-        node --version
-        npm ci --build-from-source
-        npm test
+      - uses: actions/checkout@v6
 
-  build:
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            bindings/js/go/go.sum
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: bindings/js/package-lock.json
+
+      - name: Install MinGW (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: choco install mingw --no-progress -y
+
+      - name: Set package version
+        run: &set_version_script |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const version = (process.env.PKG_VERSION || '0.0.0-ci').replace(/^v/, '');
+          for (const file of ['package.json', 'package-lock.json']) {
+            const full = path.join(process.cwd(), file);
+            const json = JSON.parse(fs.readFileSync(full, 'utf8'));
+            json.version = version;
+            if (json.packages && json.packages['']) {
+              json.packages[''].version = version;
+            }
+            fs.writeFileSync(full, JSON.stringify(json, null, 2) + '\n');
+          }
+          NODE
+        env:
+          PKG_VERSION: 0.0.0-${{ matrix.os }}-${{ matrix.node }}
+
+      - name: Install dependencies
+        env:
+          NODE_MINIFY_FORCE_BUILD: '1'
+          CGO_ENABLED: 1
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  prebuilds:
+    name: Prebuild (${{ matrix.goos }}/${{ matrix.goarch }})
+    needs: test
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        #os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+            cc: aarch64-linux-gnu-gcc
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+          - os: windows-latest
+            goos: windows
+            goarch: amd64
     steps:
-    - uses: actions/checkout@v6
-    - uses: actions/setup-go@v6
-      with:
-        go-version: '>=1.17'
-    - uses: actions/setup-node@v6
-    - name: Install node-gyp and prebuildify
-      run: npm install --location=global node-gyp node-gyp-build node-api-headers prebuildify
-    - name: Install dependencies
-      run: |
-        cd bindings/js
-        npm install node-gyp-build node-api-headers
-    - name: Build
-      run: make -C bindings/js
-    - name: Test
-      run: |
-        cd bindings/js
-        npm test
-    - uses: actions/upload-artifact@v5
-      with:
-        name: ${{ matrix.os }}.node
-        path: bindings/js/prebuilds/*/*.node
+      - uses: actions/checkout@v6
 
-  deploy:
-    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-    needs: [build]
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            bindings/js/go/go.sum
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: bindings/js/package-lock.json
+
+      - name: Install cross compiler (linux/arm64)
+        if: matrix.cc == 'aarch64-linux-gnu-gcc'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Install MinGW (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: choco install mingw --no-progress -y
+
+      - name: Set package version
+        run: *set_version_script
+        env:
+          PKG_VERSION: ${{ github.ref_name || '0.0.0-prebuild' }}
+
+      - name: Install dependencies (JS only)
+        run: npm ci --ignore-scripts
+
+      - name: Build Go library
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 1
+          CC: ${{ matrix.cc || (runner.os == 'Windows' && 'gcc') || '' }}
+          NODE_MINIFY_FORCE_BUILD: 1
+        run: npm run build:go
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: prebuild-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: bindings/js/build/${{ matrix.goos }}-${{ matrix.goarch }}
+          if-no-files-found: error
+
+  package:
+    name: Package and publish
+    needs: prebuilds
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
-    - uses: actions/checkout@v6
-    - uses: actions/setup-node@v6
-      with:
-        registry-url: 'https://registry.npmjs.org'
-    - name: Install node-gyp and prebuildify
-      run: npm install --location=global node-gyp node-gyp-build node-api-headers prebuildify
-    - uses: actions/download-artifact@v6
-      with:
-        path: bindings/js/prebuilds
-    - name: Move artifacts
-      run: cd bindings/js/prebuilds && mv */* .
-    - name: Publish
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      run: make -C bindings/js publish
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: bindings/js/package-lock.json
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Set package version
+        run: *set_version_script
+        env:
+          PKG_VERSION: ${{ github.ref_name || '0.0.0-dev' }}
+
+      - name: Download prebuilts
+        uses: actions/download-artifact@v6
+        with:
+          pattern: prebuild-*
+          path: bindings/js/build/_artifacts
+
+      - name: Organize prebuilts into platform folders
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+
+          artifact_root="build/_artifacts"
+          found_any=0
+
+          for artifact in "$artifact_root"/prebuild-*; do
+            [ -d "$artifact" ] || continue
+            found_any=1
+
+            platform="${artifact##*/}"
+            platform="${platform#prebuild-}"
+            dest="build/${platform}"
+            mkdir -p "$dest"
+
+            moved=0
+
+            for candidate in \
+              "$artifact/bindings/js/build/${platform}" \
+              "$artifact/build/${platform}" \
+              "$artifact/${platform}"
+            do
+              if [ -d "$candidate" ]; then
+                mv "$candidate"/* "$dest"/
+                moved=1
+                break
+              fi
+            done
+
+            if [ "$moved" -eq 0 ]; then
+              for f in "$artifact"/**/minify.*; do
+                mv "$f" "$dest"/
+                moved=1
+              done
+            fi
+
+            if [ "$moved" -eq 0 ]; then
+              echo "No prebuilts found for $platform" >&2
+              exit 1
+            fi
+          done
+
+          if [ "$found_any" -eq 0 ]; then
+            echo "No prebuild artifacts were downloaded" >&2
+            exit 1
+          fi
+
+          rm -rf "$artifact_root"
+
+      - name: Install dependencies (JS only)
+        env:
+          NODE_MINIFY_SKIP_BUILD: 1
+        run: npm ci --ignore-scripts
+
+      - name: Build TypeScript artifacts
+        run: npm run build:ts
+
+      - name: Verify prebuilts
+        run: |
+          ls -R build
+          find build -maxdepth 2 -type f -name "minify.*"
+          if find build -maxdepth 1 -type f -name "minify.*" | grep -q .; then
+            echo "Prebuilts must live under platform-specific folders" >&2
+            exit 1
+          fi
+
+      - name: Publish to npm
+        if: github.event_name == 'push'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'
+        run: npm publish --access public --provenance
