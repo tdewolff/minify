@@ -1,8 +1,27 @@
-import { config, string, file } from '@tdewolff/minify';  // run: npm i @tdewolff/minify
+import { readFile, writeFile } from 'node:fs/promises'
+import { minify } from '@tdewolff/minify'
 
-config({'html-keep-document-tags': true})
+async function run() {
+  const inline = await minify({
+    data: `<html><span class="text" style="color:#ff0000;">A  phrase</span></html>`,
+    type: 'text/html',
+    htmlKeepDocumentTags: true
+  })
+  console.log(inline)
 
-let s = string("text/html", "<html><span style=\"color:#ff0000;\">A  phrase</span></html>");
-console.log(s)
+  const sourcePath = new URL('./example.html', import.meta.url)
+  const outputPath = new URL('./example.min.html', import.meta.url)
 
-file("text/html", "example.html", "example.min.html");
+  const minifiedFile = await minify({
+    data: await readFile(sourcePath, 'utf8'),
+    type: 'text/html',
+    htmlKeepDocumentTags: true
+  })
+
+  await writeFile(outputPath, minifiedFile, 'utf8')
+  console.log(`Minified file written to ${outputPath.pathname}`)
+}
+
+run().catch(err => {
+  console.error(err)
+})

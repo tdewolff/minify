@@ -14,9 +14,7 @@ parse/tests/*/suppressions
 parse/tests/*/corpus/*
 !parse/tests/*/corpus/*.*
 bindings/js/build
-bindings/js/prebuilds
-bindings/js/minify.h
-bindings/js/minify.a
+bindings/js/.cache
 bindings/js/node_modules
 bindings/js/example/package-lock.json
 bindings/js/example/node_modules

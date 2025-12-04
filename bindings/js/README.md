@@ -1,63 +1,68 @@
-JavaScript bindings for the Go minifiers for web formats `minify`, see [github.com/tdewolff/minify](https://github.com/tdewolff/minify).
+JavaScript bindings around the Go minifiers in [tdewolff/minify](https://github.com/tdewolff/minify). The package ships a small native library built from Go and exposes a single async `minify` function. Requires Node.js 20.19+.
 
-## Installation on Windows
-THIS DOES NOT WORK UNFORTUNATELY
-
-- Install [NPM](https://nodejs.org/en/download)
-- Install [Python](https://www.python.org/downloads/) (optional?)
-- Open Windows Command Prompt and run:
-- `$ npm install @tdewolff/minify`
-
-### Build from source
-- Install [Git](https://git-scm.com/)
-- Install [NPM](https://nodejs.org/en/download)
-- Install [Python](https://www.python.org/downloads/)
-- Install [Build Tools for Visual Studio](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) under "Tools for Visual Studio". Make sure to also enable the "Desktop development with C++", see [NodeJS - On Windows](https://github.com/nodejs/node-gyp#on-windows)
-- Install [TDM-GCC](https://jmeubank.github.io/tdm-gcc/download/) and select the 64+32 bit version, this is only to provide the `mingw32-make` binary
-- Install [Go](https://go.dev/doc/install)
-- Open the Git Bash and run:
-- `$ git clone https://github.com/tdewolff/minify`
-- `$ cd minify/bindings/js`
-- `$ npm install`
-
-## Usage
-There are three functions available in JavaScript: configure the minifiers, minify a string, and minify a file. Below an example of their usage:
-
-```js
-import { config, string, file } from '@tdewolff/minify';
-
-# default config option values
-config({
-    'css-precision': 0,
-    'html-keep-comments': false,
-    'html-keep-conditional-comments': false,
-    'html-keep-default-attr-vals': false,
-    'html-keep-document-tags': false,
-    'html-keep-end-tags': false,
-    'html-keep-whitespace': false,
-    'html-keep-quotes': false,
-    'js-precision': 0,
-    'js-keep-var-names': false,
-    'js-version': 0,
-    'json-precision': 0,
-    'json-keep-numbers': false,
-    'svg-keep-comments': false,
-    'svg-precision': 0,
-    'xml-keep-whitespace': false,
-})
-
-const s = string('text/html', '<span style="color:#ff0000;" class="text">Some  text</span>')
-console.log(s)  // <span style=color:red class=text>Some text</span>
-
-file('text/html', 'example.html', 'example.min.html')  // creates example.min.html
+## Quickstart
+```bash
+npm install @tdewolff/minify
 ```
 
-## Mediatypes
-The first argument is the mediatype of the content. The following mediatypes correspond to the configured minifiers:
+```js
+import { readFile, writeFile } from 'node:fs/promises'
+import { minify } from '@tdewolff/minify'
 
-- `text/css`: CSS
-- `text/html`: HTML
-- `image/svg+xml`: SVG
-- `(application|text)/(x-)?(java|ecma)script`: JS
-- `*/json */*-json`: JSON
-- `*/xml */*-xml`: XML
+// Inline string
+const html = await minify({
+  data: `<html><span class="text" style="color:#ff0000;">A  phrase</span></html>`,
+  type: 'text/html',
+  htmlKeepDocumentTags: true
+})
+console.log(html) // <html><span class=text style=color:red>A phrase</span></html>
+
+// File input/output
+const source = await readFile('example.html', 'utf8')
+const minified = await minify({ data: source, type: 'text/html', htmlKeepDocumentTags: true })
+await writeFile('example.min.html', minified, 'utf8')
+
+// Overload with explicit type/data parameters
+const minifiedHtml = await minify('text/html', source, { htmlKeepDocumentTags: true })
+```
+
+## API
+```ts
+import { minify, type MinifyConfig, type MinifyMediaType, type MinifyOptions } from '@tdewolff/minify'
+
+declare function minify(opts: MinifyOptions): Promise<string>
+declare function minify(type: MinifyMediaType, data: string, config?: MinifyConfig | null): Promise<string>
+```
+
+`MinifyOptions` fields (all optional except `data` and `type`):
+
+- `data`: string content to minify.
+- `type`: mediatype used to pick the minifier (see below).
+- `cssPrecision`, `cssVersion`
+- `htmlKeepComments`, `htmlKeepConditionalComments`, `htmlKeepDefaultAttrvals`, `htmlKeepDocumentTags`, `htmlKeepEndTags`, `htmlKeepQuotes`, `htmlKeepSpecialComments`, `htmlKeepWhitespace`
+- `jsKeepVarNames`, `jsPrecision`, `jsVersion`
+- `jsonKeepNumbers`, `jsonPrecision`
+- `svgKeepComments`, `svgPrecision`
+- `xmlKeepWhitespace`
+
+Errors are thrown for missing data, invalid types, or native parse errors.
+
+## Mediatypes
+These types are accepted by the Go minifiers (regex-style JSON/XML/JS matches are supported):
+
+- `text/css`
+- `text/html`
+- `image/svg+xml`
+- JavaScript media types matching `(application|text)/(x-)?(java|ecma|j|live)script` and `module`
+- Any type ending in `/json` or `+json`, and `importmap`/`speculationrules`
+- Any type ending in `/xml` or `+xml`
+
+## Native build
+`npm install` runs `npm run build:go`, which builds `build/<goos>-<goarch>/minify.{so|dll|dylib}` using Go 1.24+ and a C compiler. The library is resolved automatically based on `process.platform`/`process.arch`.
+
+Useful knobs:
+- `NODE_MINIFY_LIB_PATH`: point to an existing compiled library to skip detection.
+- `NODE_MINIFY_SKIP_BUILD=1`: skip building (ensure the library already exists).
+- `NODE_MINIFY_FORCE_BUILD=1`: rebuild even if a library is present.
+- `NODE_MINIFY_DEBUG_BUILD=1`: keep symbols/paths (no strip flags).
+- `GOOS`/`GOARCH`: cross-build, e.g. `GOOS=windows GOARCH=amd64 npm run build:go`.

@@ -5,34 +5,48 @@
   "author": "Taco de Wolff",
   "license": "MIT",
   "description": "Go minifiers for web formats",
-  "main": "./index.js",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
-    ".": "./index.js",
-    "./package.json": "./package.json"
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
   },
   "files": [
-    "README",
-    "Makefile",
-    "go.mod",
-    "go.sum",
-    "minify.go",
-    "minify.c",
-    "index.js",
-    "test.js",
-    "binding.gyp",
-    "build/binding.Makefile",
-    "build/config.gypi",
-    "build/Makefile",
-    "build/minify.target.mk",
-    "prebuilds"
+    "dist/",
+    "build/",
+    "go/",
+    "scripts/"
   ],
   "scripts": {
-    "install": "node-gyp-build",
-    "test": "node test/index.js"
+    "build": "(npm run build:go || bun run build:go) && (npm run build:ts || bun run build:ts)",
+    "build:go": "node ./scripts/build-go.mjs || bun ./scripts/build-go.mjs",
+    "forcebuild:go": "node ./scripts/build-go.mjs --force-build || bun ./scripts/build-go.mjs --force-build",
+    "build:ts": "tsdown",
+    "build:ts:watch": "tsdown --watch",
+    "prepare": "npm run build:ts",
+    "postinstall": "npm run build:go || bun run build:go",
+    "test": "vitest"
   },
   "homepage": "https://github.com/tdewolff/minify#readme",
   "bugs": {
     "url": "https://github.com/tdewolff/minify/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tdewolff/minify.git"
   },
   "keywords": [
     "minify",
@@ -46,11 +60,13 @@
     "xml",
     "go"
   ],
-  "dependencies": {
-    "node-gyp": "^12.1.0",
-    "node-gyp-build": "^4.8.4"
-  },
   "devDependencies": {
-    "node-api-headers": "^1.7.0"
+    "@types/node": "^24.10.1",
+    "tsdown": "^0.17.0-beta.5",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.15"
+  },
+  "dependencies": {
+    "koffi": "^2.14.1"
   }
 }
