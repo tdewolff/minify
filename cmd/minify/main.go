@@ -624,11 +624,7 @@ func minifyWorker(chanTasks <-chan Task, chanFails chan<- int) {
 // compilePattern returns *regexp.Regexp or glob.Glob
 func compilePattern(pattern string) (*regexp.Regexp, error) {
 	if len(pattern) == 0 || pattern[0] != '~' {
-		sep := string(filepath.Separator)
-		if sep == `\` {
-			sep = `\\`
-		}
-
+		sep := regexp.QuoteMeta(string(filepath.Separator))
 		if strings.HasPrefix(pattern, `\~`) {
 			pattern = pattern[1:]
 		}
