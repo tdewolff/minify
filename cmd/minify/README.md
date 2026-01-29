@@ -219,6 +219,13 @@ Match will filters all files by the given pattern, eg. `--match '*.css'` will on
 
 You may define multiple patterns within one option, such as: `--exclude '**/folder1/**' '**/folder2/**' '**/folder3/**'` Doing this might result in unexpected behaviour when it is followed immediately by the input files, as this would be interpreted as another pattern, and not as inputs. `--exclude dir_to_exclude folder_input` Instead format accordingly: `--exclude dir_to_exclude -- folder_input`.
 
+To match `*` or `?` literally, precede by a backslash. To specify a regular expression directly instead of a glob, use the tilde as a prefix (to use a tilde literally at the beginning, precede by a backslash). Examples of regular expressions:
+
+```
+./minify --match ~^path[0-9]/[^/]*.(js|html)$
+./minify --match ~^(?i)pathCaseInsensitive[0-9]/[^/]*.(js|html)$
+```
+
 ### Concatenate
 When multiple inputs are given and the output is either standard output or a single file, it will concatenate the files together if you use the bundle option.
 

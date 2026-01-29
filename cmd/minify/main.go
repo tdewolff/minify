@@ -292,13 +292,11 @@ func run() int {
 	Debug = log.New(io.Discard, "", 0)
 	if !quiet {
 		Error = log.New(os.Stderr, "ERROR: ", 0)
+		Warning = log.New(os.Stderr, "WARNING: ", 0)
 		if 0 < verbose {
-			Warning = log.New(os.Stderr, "WARNING: ", 0)
-		}
-		if 1 < verbose {
 			Info = log.New(os.Stderr, "INFO: ", 0)
 		}
-		if 2 < verbose {
+		if 1 < verbose {
 			Debug = log.New(os.Stderr, "DEBUG: ", 0)
 		}
 	}
@@ -629,10 +627,14 @@ func compilePattern(pattern string) (*regexp.Regexp, error) {
 			pattern = pattern[1:]
 		}
 		pattern = regexp.QuoteMeta(pattern)
+		pattern = strings.ReplaceAll(pattern, `\\\*`, `\*`)
+		pattern = strings.ReplaceAll(pattern, `\\\?`, `\?`)
 		pattern = strings.ReplaceAll(pattern, `\*\*`, `.*`)
 		pattern = strings.ReplaceAll(pattern, `\*`, fmt.Sprintf(`[^%s]*`, sep))
-		pattern = strings.ReplaceAll(pattern, `\?`, fmt.Sprintf(`[^%s]?`, sep))
+		pattern = strings.ReplaceAll(pattern, `\?`, fmt.Sprintf(`[^%s]`, sep))
 		pattern = "^" + pattern + "$"
+	} else {
+		pattern = pattern[1:]
 	}
 	return regexp.Compile(pattern)
 }
@@ -693,7 +695,8 @@ func createTasks(fsys fs.FS, inputs []string, output string) ([]Task, []string, 
 			info, err = os.Lstat(input)
 		}
 		if err != nil {
-			return nil, nil, err
+			Error.Println(err)
+			continue
 		}
 
 		if preserveLinks && info.Mode()&os.ModeSymlink != 0 {
@@ -747,7 +750,8 @@ func createTasks(fsys fs.FS, inputs []string, output string) ([]Task, []string, 
 					// follow and dereference symlinks
 					info, err := fs.Stat(fsys, input)
 					if err != nil {
-						return err
+						Error.Println(err)
+						return nil
 					}
 					if info.IsDir() {
 						return fs.WalkDir(fsys, input, walkFn)
