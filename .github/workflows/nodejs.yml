@@ -176,7 +176,7 @@ jobs:
           PKG_VERSION: ${{ github.ref_name || '0.0.0-dev' }}
 
       - name: Download prebuilts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: prebuild-*
           path: bindings/js/build/_artifacts
