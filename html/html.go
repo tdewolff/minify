@@ -80,7 +80,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	}
 
 	omitSpace := true // if true the next leading space is omitted
-	inPre := false
+	inPre, inTemplate := false, false
 
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
@@ -258,6 +258,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 			if t.Hash == Pre {
 				inPre = t.TokenType == html.StartTagToken
+			} else if t.Hash == Template {
+				inTemplate = t.TokenType == html.StartTagToken
 			}
 
 			// remove superfluous tags, except for html, head and body tags when KeepDocumentTags is set
@@ -265,7 +267,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				break
 			} else if t.TokenType == html.EndTagToken {
 				omitEndTag := false
-				if !o.KeepEndTags {
+				if !o.KeepEndTags && !inTemplate {
 					if t.Hash == Thead || t.Hash == Tbody || t.Hash == Tfoot || t.Hash == Tr || t.Hash == Th ||
 						t.Hash == Td || t.Hash == Option || t.Hash == Dd || t.Hash == Dt || t.Hash == Li ||
 						t.Hash == Rb || t.Hash == Rt || t.Hash == Rtc || t.Hash == Rp {
@@ -278,8 +280,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							// continue if text token is empty or whitespace
 							if next.TokenType == html.TextToken && parse.IsAllWhitespace(next.Data) {
 								continue
-							}
-							if next.TokenType == html.ErrorToken || next.TokenType == html.EndTagToken && next.Traits&keepPTag == 0 || next.TokenType == html.StartTagToken && next.Traits&omitPTag != 0 {
+							} else if next.TokenType == html.ErrorToken || next.TokenType == html.EndTagToken && next.Traits&keepPTag == 0 || next.TokenType == html.StartTagToken && next.Traits&omitPTag != 0 {
 								omitEndTag = true // omit p end tag
 							}
 							break
@@ -292,8 +293,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 							// continue if text token
 							if next.TokenType == html.TextToken {
 								continue
-							}
-							if next.TokenType == html.ErrorToken || next.Hash != Option {
+							} else if next.TokenType == html.ErrorToken || next.Hash != Option {
 								omitEndTag = true // omit optgroup end tag
 							}
 							break
