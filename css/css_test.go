@@ -80,6 +80,7 @@ func TestCSS(t *testing.T) {
 		{"a{@media screen and (min-width:1024px){ width: 40%; } & h1 { font-size: clamp(2.5rem, 1rem + 3vw, 3.5rem)}}", "a{@media screen and (min-width:1024px){width: 40%;}& h1 { font-size: clamp(2.5rem, 1rem + 3vw, 3.5rem)}}"},      // #602
 		{"a{padding:calc(var(--dce-edge-xsmall,6px) - 2px) calc(var(--dce-button-horizontal-padding,18px) - 2px)}", "a{padding:calc(var(--dce-edge-xsmall,6px) - 2px)calc(var(--dce-button-horizontal-padding,18px) - 2px)}"},            // #673
 		{"a{border-color:var(--dce-brand-color,#01A982)var(--dce-brand-color,#01A982)var(--dce-border-weak,#0000001F)}", "a{border-color:var(--dce-brand-color,#01A982)var(--dce-brand-color,#01A982)var(--dce-border-weak,#0000001F)}"}, // #673
+		{"a{& :is(b) { } }", "a{& :is(b){}}"}, // #908
 	}
 
 	m := minify.New()
