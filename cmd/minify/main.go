@@ -799,12 +799,10 @@ func minify(t Task) bool {
 		if t.srcs[0] == t.dst {
 			return true
 		} else if info, err := os.Lstat(t.srcs[0]); preserveLinks && err == nil && info.Mode()&os.ModeSymlink != 0 {
-			src, err := os.Readlink(t.srcs[0])
-			if err != nil {
+			if src, err := os.Readlink(t.srcs[0]); err != nil {
 				Error.Println(err)
 				return false
-			}
-			if err := createSymlink(src, t.dst); err != nil {
+			} else if err := createSymlink(src, t.dst); err != nil {
 				Error.Println(err)
 				return false
 			}
@@ -819,12 +817,10 @@ func minify(t Task) bool {
 			if 0 < len(ext) {
 				ext = ext[1:]
 			}
-			srcMimetype, ok := extMap[ext]
-			if !ok {
+			if srcMimetype, ok := extMap[ext]; !ok {
 				Warning.Printf("cannot infer mimetype from extension in %v, set --type explicitly", src)
 				return false
-			}
-			if fileMimetype == "" {
+			} else if fileMimetype == "" {
 				fileMimetype = srcMimetype
 			} else if srcMimetype != fileMimetype {
 				Warning.Printf("inferred mimetype %v of %v for concatenation unequal to previous mimetypes, set --type explicitly", srcMimetype, src)
@@ -940,28 +936,30 @@ func minify(t Task) bool {
 		}
 	}
 
-	// remove original that was renamed, when overwriting files
-	for i := range srcs {
-		if srcs[i] == t.dst+".bak" {
-			if err == nil {
-				if err = os.Remove(srcs[i]); err != nil {
-					Error.Println(err)
-					return false
+	if t.dst != "-" {
+		// remove original that was renamed, when overwriting files
+		for i := range srcs {
+			if srcs[i] == t.dst+".bak" {
+				if err == nil {
+					if err = os.Remove(srcs[i]); err != nil {
+						Error.Println(err)
+						return false
+					}
+				} else {
+					if err = os.Remove(t.dst); err != nil {
+						Error.Println(err)
+						return false
+					} else if err = os.Rename(srcs[i], t.dst); err != nil {
+						Error.Println(err)
+						return false
+					}
 				}
-			} else {
-				if err = os.Remove(t.dst); err != nil {
-					Error.Println(err)
-					return false
-				} else if err = os.Rename(srcs[i], t.dst); err != nil {
-					Error.Println(err)
-					return false
-				}
+				srcs[i] = t.dst
+				break
 			}
-			srcs[i] = t.dst
-			break
 		}
+		preserveAttributes(srcs, t.root, t.dst)
 	}
-	preserveAttributes(srcs, t.root, t.dst)
 	return success
 }
 

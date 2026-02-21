@@ -8,7 +8,7 @@ require (
 	github.com/djherbis/atime v1.1.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/tdewolff/argp v0.0.0-20250430135133-0f54527d2b1e
-	github.com/tdewolff/parse/v2 v2.8.6
+	github.com/tdewolff/parse/v2 v2.8.8
 	github.com/tdewolff/test v1.0.11
 )
 
