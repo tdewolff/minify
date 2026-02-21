@@ -31,13 +31,13 @@
     "scripts/"
   ],
   "scripts": {
-    "build": "(npm run build:go || bun run build:go) && (npm run build:ts || bun run build:ts)",
-    "build:go": "node ./scripts/build-go.mjs || bun ./scripts/build-go.mjs",
-    "forcebuild:go": "node ./scripts/build-go.mjs --force-build || bun ./scripts/build-go.mjs --force-build",
+    "build": "npm run build:go && npm run build:ts",
+    "build:go": "node ./scripts/build-go.mjs",
+    "forcebuild:go": "node ./scripts/build-go.mjs --force-build",
     "build:ts": "tsdown",
     "build:ts:watch": "tsdown --watch",
     "prepare": "npm run build:ts",
-    "postinstall": "npm run build:go || bun run build:go",
+    "postinstall": "npm run build:go",
     "test": "vitest"
   },
   "homepage": "https://github.com/tdewolff/minify#readme",

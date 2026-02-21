@@ -6,7 +6,7 @@ toolchain go1.24.1
 
 require (
 	github.com/tdewolff/minify/v2 v2.24.7
-	github.com/tdewolff/parse/v2 v2.8.5
+	github.com/tdewolff/parse/v2 v2.8.8
 )
 
 replace github.com/tdewolff/minify/v2 => ../../..

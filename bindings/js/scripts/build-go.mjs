@@ -62,6 +62,15 @@ if (!useLocalModule) {
   syncModuleVersion(env)
 }
 
+const tidyResult = spawnSync('go', ['mod', 'tidy'], {
+  cwd: goRoot,
+  env,
+  stdio: 'inherit'
+})
+if (tidyResult.status !== 0) {
+  process.exit(tidyResult.status ?? 1)
+}
+
 const goArgs = ['build', '-buildmode=c-shared', '-o', outputLib]
 
 if (!isDebugBuild) {
@@ -105,15 +114,6 @@ function syncModuleVersion(env) {
   })
   if (getResult.status !== 0) {
     process.exit(getResult.status ?? 1)
-  }
-
-  const tidyResult = spawnSync('go', ['mod', 'tidy'], {
-    cwd: goRoot,
-    env,
-    stdio: 'inherit'
-  })
-  if (tidyResult.status !== 0) {
-    process.exit(tidyResult.status ?? 1)
   }
 }
 
