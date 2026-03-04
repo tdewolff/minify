@@ -24,7 +24,7 @@ jobs:
         fetch-depth: 0
     - name: Set up QEMU
       if: matrix.go_target == 'arm64'
-      uses: docker/setup-qemu-action@v3
+      uses: docker/setup-qemu-action@v4
       with:
         platforms: arm64
     - name: Build wheels
