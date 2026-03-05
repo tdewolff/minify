@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
-    - uses: docker/metadata-action@v5
+    - uses: docker/metadata-action@v6
       id: meta
       with:
         images: tdewolff/minify
