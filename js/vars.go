@@ -370,12 +370,12 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) {
 					// move arrays/objects to the front (saves a space)
 					if _, ok := item.Binding.(*js.BindingObject); ok {
 						if j != 0 && nArrays == 0 && nObjects == 0 {
-							varDecl.List[0], varDecl.List[j] = varDecl.List[j], varDecl.List[0]
+							shiftToFront(varDecl.List, j)
 						}
 						nObjects++
 					} else if _, ok := item.Binding.(*js.BindingArray); ok {
 						if j != 0 && nArrays == 0 && nObjects == 0 {
-							varDecl.List[0], varDecl.List[j] = varDecl.List[j], varDecl.List[0]
+							shiftToFront(varDecl.List, j)
 						}
 						nArrays++
 					}
@@ -480,7 +480,7 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) {
 						}
 					}
 					if !interferes {
-						decl.List[0], decl.List[i] = decl.List[i], decl.List[0]
+						shiftToFront(decl.List, i)
 						break BeginArrayObject
 					}
 				} else {

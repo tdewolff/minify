@@ -1463,3 +1463,9 @@ func hexadecimalNumber(num []byte, prec int) []byte {
 	}
 	return minify.Number(b, prec)
 }
+
+func shiftToFront[T any](list []T, i int) {
+	toBeFirst := list[i]
+	copy(list[1:i+1], list[0:i])
+	list[0] = toBeFirst
+}

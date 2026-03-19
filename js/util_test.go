@@ -142,3 +142,21 @@ func TestHasSideEffects(t *testing.T) {
 		})
 	}
 }
+
+func TestShiftToFront(t *testing.T) {
+	tests := []struct {
+			input    []int
+			index    int
+			expected []int
+	}{
+			{[]int{1, 2, 3}, 0, []int{1, 2, 3}},
+			{[]int{1, 2, 3}, 1, []int{2, 1, 3}},
+			{[]int{1, 2, 3}, 2, []int{3, 1, 2}},
+			{[]int{1, 2, 3, 4, 5}, 3, []int{4, 1, 2, 3, 5}},
+	}
+
+	for _, tt := range tests {
+			shiftToFront(tt.input, tt.index)
+			test.T(t, tt.input, tt.expected)
+	}
+}
