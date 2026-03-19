@@ -14,14 +14,10 @@ install:
 	. cmd/minify/bash_completion
 
 release:
-	TAG=$(shell git describe --tags --exact-match 2> /dev/null);
-	if [ "${.SHELLSTATUS}" -eq 0 ]; then \
-		echo "Releasing ${VERSION}"; \
-	else \
-		echo "ERROR: commit is not tagged with a version"; \
-		echo ""; \
-		exit 1; \
-	fi
+	if ! git describe --tags --exact-match 2> /dev/null; then \
+    	echo "ERROR: commit is not tagged with a version"; \
+    	exit 1; \
+	fi 
 	rm -rf dist
 	mkdir -p dist
 	for t in ${TARGETS}; do \
