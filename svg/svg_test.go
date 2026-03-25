@@ -133,8 +133,8 @@ func TestSVGStyle(t *testing.T) {
 		svg      string
 		expected string
 	}{
-		{`<style> a > b {} </style>`, `<style>a>b{}</style>`},
-		{`<style> <![CDATA[ @media x < y {} ]]> </style>`, `<style>@media x &lt; y{}</style>`},
+		{`<style> a > b {c:d} </style>`, `<style>a>b{c:d}</style>`},
+		{`<style> <![CDATA[ @media x < y {c:d} ]]> </style>`, `<style>@media x &lt; y{c:d}</style>`},
 		{`<style> <![CDATA[ * { content: '<<<<<'; } ]]> </style>`, `<style><![CDATA[*{content:'<<<<<'}]]></style>`},
 		{`<style/><![CDATA[ * { content: '<<<<<'; ]]>`, `<style/><![CDATA[ * { content: '<<<<<'; ]]>`},
 		{`<path style="fill: black; stroke: #ff0000;"/>`, `<path style="fill:#000;stroke:red"/>`},
@@ -192,6 +192,25 @@ func TestSVGInline(t *testing.T) {
 	}
 }
 
+func TestSVGNamespaces(t *testing.T) {
+	var svgTests = []struct {
+		svg      string
+		expected string
+	}{
+		{`<use x-bind:href="myicon">`, `<use x-bind:href="myicon">`}, // #936
+	}
+
+	m := minify.New()
+	o := &Minifier{inline: true, KeepNamespaces: []string{"x-bind"}}
+	for _, tt := range svgTests {
+		t.Run(tt.svg, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.svg)
+			w := &bytes.Buffer{}
+			err := o.Minify(m, w, r, nil)
+			test.Minify(t, tt.svg, err, w.String(), tt.expected)
+		})
+	}
+}
 func TestReaderErrors(t *testing.T) {
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}

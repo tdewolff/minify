@@ -244,6 +244,7 @@ func run() int {
 	f.AddOpt(&jsonMinifier.KeepNumbers, "", "json-keep-numbers", "Preserve original numbers instead of minifying them")
 	f.AddOpt(&svgMinifier.KeepComments, "", "svg-keep-comments", "Preserve all comments")
 	f.AddOpt(&svgMinifier.Precision, "", "svg-precision", "Number of significant digits to preserve in numbers, 0 is all")
+	f.AddOpt(&svgMinifier.KeepNamespaces, "", "svg-keep-namespaces", "Namespaces to keep, besides xlink")
 	f.AddOpt(&xmlMinifier.KeepWhitespace, "", "xml-keep-whitespace", "Preserve whitespace characters but still collapse multiple into one")
 	f.Parse()
 

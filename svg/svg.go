@@ -23,16 +23,18 @@ var (
 	cssMimeBytes     = []byte("text/css")
 	noneBytes        = []byte("none")
 	urlBytes         = []byte("url(")
+	xmlnsBytes       = []byte("xmlns")
 )
 
 ////////////////////////////////////////////////////////////////
 
 // Minifier is an SVG minifier.
 type Minifier struct {
-	KeepComments bool
-	Precision    int // number of significant digits
-	newPrecision int // precision for new numbers
-	inline       bool
+	KeepComments   bool
+	Precision      int // number of significant digits
+	KeepNamespaces []string
+	newPrecision   int // precision for new numbers
+	inline         bool
 }
 
 // Minify minifies SVG data, it reads from r and writes to w.
@@ -55,7 +57,10 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 	}
 
 	// namespaces to keep
-	namespaces := []Hash{Xlink}
+	namespaces := [][]byte{[]byte("xlink")}
+	for _, ns := range o.KeepNamespaces {
+		namespaces = append(namespaces, []byte(ns))
+	}
 
 	var tag Hash
 	defaultStyleType := cssMimeBytes
@@ -141,7 +146,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 					// skip attributes in namespace (eg. inkscape or sodipodi)
 					keep := false
 					for _, ns := range namespaces {
-						if prefix == ns {
+						if bytes.Equal(t.Text[:colon], ns) {
 							keep = true
 							break
 						}
@@ -186,9 +191,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 			// skip attributes in namespace (eg. inkscape or sodipodi)
 			if colon := bytes.IndexByte(t.Text, ':'); colon != -1 {
 				keep := false
-				prefix, name := ToHash(t.Text[:colon]), ToHash(t.Text[colon+1:])
 				for _, ns := range namespaces {
-					if prefix == ns || tag == Svg && prefix == Xmlns && name == ns {
+					if bytes.Equal(t.Text[:colon], ns) || tag == Svg && bytes.Equal(t.Text[:colon], xmlnsBytes) && bytes.Equal(ns, t.Text[colon+1:]) {
 						keep = true
 						break
 					}
