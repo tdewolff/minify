@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"sort"
 
 	"github.com/tdewolff/minify/v2"
 	"github.com/tdewolff/parse/v2"
@@ -543,25 +542,7 @@ func (m *jsMinifier) minifyVarDecl(decl *js.VarDecl, onlyDefines bool) {
 			}
 		}
 	} else {
-		if decl.TokenType == js.VarToken {
-			sort.SliceStable(decl.List, func(i, j int) bool {
-				if decl.List[i].Default == nil && decl.List[j].Default == nil {
-					// sort single-length variables names
-					// TODO: why not all names? Why need identOrder?
-					if a, ok := decl.List[i].Binding.(*js.Var); ok && len(a.Data) == 1 {
-						if b, ok := decl.List[j].Binding.(*js.Var); ok && len(b.Data) == 1 {
-							return m.renamer.identOrder[a.Data[0]] < m.renamer.identOrder[b.Data[0]]
-						}
-					}
-				} else if decl.List[i].Default == nil {
-					if _, ok := decl.List[j].Binding.(*js.Var); j != 0 || ok {
-						// move non-define declarations to the front, except for the first array/object
-						return true
-					}
-				}
-				return false
-			})
-		}
+		m.optimizeVarOrder(decl)
 
 		m.write(decl.TokenType.Bytes())
 		m.writeSpaceBeforeIdent()

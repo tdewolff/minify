@@ -2,6 +2,7 @@ package js
 
 import (
 	"bytes"
+	"slices"
 	"sort"
 
 	"github.com/tdewolff/parse/v2/js"
@@ -365,18 +366,12 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) {
 			nArrays := 0  // of which lhs arrays
 			nObjects := 0 // of which lhs objects
 			hasDefinitions := false
-			for j, item := range varDecl.List {
+			for _, item := range varDecl.List {
 				if item.Default != nil {
 					// move arrays/objects to the front (saves a space)
 					if _, ok := item.Binding.(*js.BindingObject); ok {
-						if j != 0 && nArrays == 0 && nObjects == 0 {
-							varDecl.List[0], varDecl.List[j] = varDecl.List[j], varDecl.List[0]
-						}
 						nObjects++
 					} else if _, ok := item.Binding.(*js.BindingArray); ok {
-						if j != 0 && nArrays == 0 && nObjects == 0 {
-							varDecl.List[0], varDecl.List[j] = varDecl.List[j], varDecl.List[0]
-						}
 						nArrays++
 					}
 					score -= m.countHoistLength(item.Binding) // var names and commas
@@ -459,37 +454,77 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) {
 				}
 			}
 		}
+	}
+}
 
-		// rearrange to put array/object first
-		var prevRefs []*js.Var
-	BeginArrayObject:
-		for i, item := range decl.List {
-			refs := bindingVars(item.Binding)
-			if _, ok := item.Binding.(*js.Var); !ok {
-				if i != 0 {
-					interferes := false
-					if item.Default != nil {
-					InterferenceLoop:
-						for _, ref := range refs {
-							for _, v := range prevRefs {
-								if ref == v {
-									interferes = true
-									break InterferenceLoop
-								}
+func (m *jsMinifier) optimizeVarOrder(decl *js.VarDecl) {
+	// rearrange to put array/object first
+	var prevRefs []*js.Var
+BeginArrayObject:
+	for i, item := range decl.List {
+		refs := bindingVars(item.Binding)
+		if _, ok := item.Binding.(*js.Var); !ok {
+			if i != 0 {
+				interferes := false
+				if item.Default != nil {
+				InterferenceLoop:
+					for _, ref := range refs {
+						for _, v := range prevRefs {
+							if ref == v {
+								interferes = true
+								break InterferenceLoop
 							}
 						}
 					}
-					if !interferes {
-						decl.List[0], decl.List[i] = decl.List[i], decl.List[0]
-						break BeginArrayObject
+				}
+				if !interferes {
+					// put current item to the front but otherwise maintain order
+					if i == 1 {
+						decl.List[0], decl.List[1] = decl.List[1], decl.List[0]
+					} else {
+						copy(decl.List[1:], decl.List[:i])
+						decl.List[0] = item
 					}
-				} else {
 					break BeginArrayObject
 				}
-			}
-			if item.Default != nil {
-				prevRefs = append(prevRefs, refs...)
+			} else {
+				break BeginArrayObject
 			}
 		}
+		if item.Default != nil {
+			prevRefs = append(prevRefs, refs...)
+		}
+	}
+
+	if decl.TokenType == js.VarToken {
+		// keep array/object assignment inplace
+		start := 0
+		if _, ok := decl.List[0].Binding.(*js.Var); !ok {
+			start++
+		}
+
+		// sort variable names to optimize gzip compression
+		slices.SortStableFunc(decl.List[start:], func(a, b js.BindingElement) int {
+			if a.Default == nil && b.Default == nil {
+				// sort single-length variables names
+				if va, ok := a.Binding.(*js.Var); ok && len(va.Data) == 1 {
+					if vb, ok := b.Binding.(*js.Var); ok && len(vb.Data) == 1 {
+						// sort by most used identifiers first, this is not in ASCII order
+						A, B := m.renamer.identOrder[va.Data[0]], m.renamer.identOrder[vb.Data[0]]
+						if A < B {
+							return -1
+						} else if B < A {
+							return 1
+						}
+						return 0
+					}
+				}
+			} else if a.Default == nil {
+				return -1
+			} else if b.Default == nil {
+				return 1
+			}
+			return 0
+		})
 	}
 }
