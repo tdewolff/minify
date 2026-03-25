@@ -346,12 +346,10 @@ The SVG minifier uses these minifications:
 - shorten `path` data
 - use relative or absolute positions in path data whichever is shorter
 
-TODO:
-- convert attributes to style attribute whenever shorter
-- merge path data? (same style and no intersection -- the latter is difficult)
-
 Options:
 
+- `KeepComments` preserve comments
+- `KeepNamespaces` a list of XML namespace prefixes to preserve, default is `[]string{"xlink"}`
 - `Precision` number of significant digits to preserve for numbers, `0` means no trimming
 
 ## XML
