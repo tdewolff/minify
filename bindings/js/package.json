@@ -61,7 +61,7 @@
     "go"
   ],
   "devDependencies": {
-    "@types/node": "^25.3.0",
+    "@types/node": "^25.5.2",
     "tsdown": "^0.21.4",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
