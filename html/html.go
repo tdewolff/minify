@@ -201,7 +201,11 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					for {
 						next := tb.Peek(i)
 						// trim if EOF, text token with leading whitespace or block token
-						if next.TokenType == html.ErrorToken {
+						if 100 < i {
+							// prevent long execution time with many following tokens
+							omitSpace = false
+							break
+						} else if next.TokenType == html.ErrorToken {
 							t.Data = t.Data[:len(t.Data)-1]
 							omitSpace = false
 							break
