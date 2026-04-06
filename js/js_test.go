@@ -866,6 +866,7 @@ func TestJS(t *testing.T) {
 		{"(a?.b()).c", "(a?.b()).c"},                                        // #912
 		{`var a=0;var b=1,c=[...b],[d]=1;`, "var[d]=1,a=0,b=1,c=[...b]"},    // #926
 		{`class A{get #a(){} set #a(x){}}`, `class A{get#a(){}set#a(x){}}`}, // #932
+		{`()=>{const a=1,{b}=a}`, `()=>{const a=1,{b}=a}`},                  // # 939
 	}
 
 	m := minify.New()

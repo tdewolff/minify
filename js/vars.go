@@ -204,37 +204,116 @@ func bindingUsed(ibinding js.IBinding) bool {
 	return false
 }
 
-func bindingVars(ibinding js.IBinding) (vs []*js.Var) {
+func bindingVars(vs *[]*js.Var, ibinding js.IBinding) {
 	switch binding := ibinding.(type) {
 	case *js.Var:
-		vs = append(vs, binding)
+		*vs = append(*vs, binding)
 	case *js.BindingArray:
 		for _, item := range binding.List {
 			if item.Binding != nil {
-				vs = append(vs, bindingVars(item.Binding)...)
+				bindingVars(vs, item.Binding)
 			}
 		}
 		if binding.Rest != nil {
-			vs = append(vs, bindingVars(binding.Rest)...)
+			bindingVars(vs, binding.Rest)
 		}
 	case *js.BindingObject:
 		for _, item := range binding.List {
 			if item.Value.Binding != nil {
-				vs = append(vs, bindingVars(item.Value.Binding)...)
+				bindingVars(vs, item.Value.Binding)
 			}
 		}
 		if binding.Rest != nil {
-			vs = append(vs, binding.Rest)
+			*vs = append(*vs, binding.Rest)
 		}
 	}
-	return
+}
+
+func exprVars(vs *[]*js.Var, iexpr js.IExpr) {
+	switch expr := iexpr.(type) {
+	case *js.Var:
+		*vs = append(*vs, expr)
+	case *js.ArrayExpr:
+		for _, item := range expr.List {
+			exprVars(vs, item.Value)
+		}
+	case *js.ObjectExpr:
+		for _, item := range expr.List {
+			exprVars(vs, item.Init)
+		}
+	case *js.TemplateExpr:
+		exprVars(vs, expr.Tag)
+		for _, item := range expr.List {
+			exprVars(vs, item.Expr)
+		}
+	case *js.GroupExpr:
+		exprVars(vs, expr.X)
+	case *js.IndexExpr:
+		exprVars(vs, expr.X)
+		exprVars(vs, expr.Y)
+	case *js.DotExpr:
+		exprVars(vs, expr.X)
+		exprVars(vs, expr.Y)
+	case *js.NewExpr:
+		exprVars(vs, expr.X)
+		if expr.Args != nil {
+			for _, item := range expr.Args.List {
+				exprVars(vs, item.Value)
+			}
+		}
+	case *js.CallExpr:
+		exprVars(vs, expr.X)
+		for _, item := range expr.Args.List {
+			exprVars(vs, item.Value)
+		}
+	case *js.UnaryExpr:
+		exprVars(vs, expr.X)
+	case *js.BinaryExpr:
+		exprVars(vs, expr.X)
+		exprVars(vs, expr.Y)
+	case *js.CondExpr:
+		exprVars(vs, expr.Cond)
+		exprVars(vs, expr.X)
+		exprVars(vs, expr.Y)
+	case *js.YieldExpr:
+		exprVars(vs, expr.X)
+	case *js.CommaExpr:
+		for _, item := range expr.List {
+			exprVars(vs, item)
+		}
+	case *js.ArrowFunc:
+		for _, param := range expr.Params.List {
+			exprVars(vs, param.Default)
+		}
+		*vs = append(*vs, expr.Body.Scope.Undeclared...)
+	case *js.FuncDecl:
+		for _, param := range expr.Params.List {
+			exprVars(vs, param.Default)
+		}
+		*vs = append(*vs, expr.Body.Scope.Undeclared...)
+	case *js.ClassDecl:
+		exprVars(vs, expr.Extends)
+		for _, item := range expr.List {
+			if item.StaticBlock != nil {
+				*vs = append(*vs, item.StaticBlock.Scope.Undeclared...)
+			} else if item.Method != nil {
+				for _, param := range item.Method.Params.List {
+					exprVars(vs, param.Default)
+				}
+				*vs = append(*vs, item.Method.Body.Scope.Undeclared...)
+			} else {
+				exprVars(vs, item.Field.Init)
+			}
+		}
+	}
 }
 
 func addDefinition(decl *js.VarDecl, binding js.IBinding, value js.IExpr, forward bool) {
 	if decl.TokenType != js.ErrorToken {
 		// see if not already defined in variable declaration list
 		// if forward is set, binding=value comes before decl, otherwise the reverse holds true
-		vars := bindingVars(binding)
+		var vars []*js.Var
+		bindingVars(&vars, binding)
 
 		// remove variables in destination
 	RemoveVarsLoop:
@@ -332,12 +411,14 @@ func mergeVarDeclExprStmt(decl *js.VarDecl, exprStmt *js.ExprStmt, forward bool)
 }
 
 func (m *jsMinifier) countHoistLength(ibinding js.IBinding) int {
+	var refs []*js.Var
+	bindingVars(&refs, ibinding)
 	if !m.o.KeepVarNames {
-		return len(bindingVars(ibinding)) * 2 // assume that var name will be of length one, +1 for the comma
+		return len(refs) * 2 // assume that var name will be of length one, +1 for the comma
 	}
 
 	n := 0
-	for _, v := range bindingVars(ibinding) {
+	for _, v := range refs {
 		n += len(v.Data) + 1 // +1 for the comma when added to other declaration
 	}
 	return n
@@ -413,16 +494,18 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) {
 		// get original declarations
 		orig := []*js.Var{}
 		for _, item := range decl.List {
-			orig = append(orig, bindingVars(item.Binding)...)
+			bindingVars(&orig, item.Binding)
 		}
 
 		// hoist other variable declarations in this function scope but don't initialize yet
 		j := 0
+		var refs []*js.Var
 		for i, varDecl := range body.Scope.VarDecls {
 			if hoist[i] {
 				varDecl.TokenType = js.ErrorToken
 				for _, item := range varDecl.List {
-					refs := bindingVars(item.Binding)
+					refs = refs[:0]
+					bindingVars(&refs, item.Binding)
 					bindingElements := make([]js.BindingElement, 0, len(refs))
 				DeclaredLoop:
 					for _, ref := range refs {
@@ -458,49 +541,20 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) {
 }
 
 func (m *jsMinifier) optimizeVarOrder(decl *js.VarDecl) {
-	// rearrange to put array/object first
-	var prevRefs []*js.Var
-BeginArrayObject:
-	for i, item := range decl.List {
-		refs := bindingVars(item.Binding)
-		if _, ok := item.Binding.(*js.Var); !ok {
-			if i != 0 {
-				interferes := false
-				if item.Default != nil {
-				InterferenceLoop:
-					for _, ref := range refs {
-						for _, v := range prevRefs {
-							if ref == v {
-								interferes = true
-								break InterferenceLoop
-							}
-						}
-					}
-				}
-				if !interferes {
-					// put current item to the front but otherwise maintain order
-					if i == 1 {
-						decl.List[0], decl.List[1] = decl.List[1], decl.List[0]
-					} else {
-						copy(decl.List[1:], decl.List[:i])
-						decl.List[0] = item
-					}
-					break BeginArrayObject
-				}
-			} else {
-				break BeginArrayObject
-			}
-		}
-		if item.Default != nil {
-			prevRefs = append(prevRefs, refs...)
-		}
-	}
-
 	if decl.TokenType == js.VarToken {
-		// keep array/object assignment inplace
+		// rearrange to put array/object first
 		start := 0
-		if _, ok := decl.List[0].Binding.(*js.Var); !ok {
-			start++
+		for i, item := range decl.List {
+			if _, ok := item.Binding.(*js.Var); !ok {
+				if i == 1 {
+					decl.List[0], decl.List[1] = decl.List[1], decl.List[0]
+				} else if 1 < i {
+					copy(decl.List[1:], decl.List[:i])
+					decl.List[0] = item
+				}
+				start = 1
+				break
+			}
 		}
 
 		// sort variable names to optimize gzip compression
@@ -526,5 +580,42 @@ BeginArrayObject:
 			}
 			return 0
 		})
+	} else {
+		// rearrange to put array/object first for let or const assignment
+		var bindings []*js.Var
+		var refs []*js.Var
+		for i, item := range decl.List {
+			if _, ok := item.Binding.(*js.Var); !ok {
+				// is array or object assignment
+				if i != 0 {
+					interferes := false
+					if item.Default != nil {
+						refs = refs[:0]
+						exprVars(&refs, item.Default)
+						for _, ref := range refs {
+							for _, binding := range bindings {
+								if binding == ref {
+									interferes = true
+									break
+								}
+							}
+						}
+					}
+					if !interferes {
+						// put current item to the front but otherwise maintain order
+						if i == 1 {
+							decl.List[0], decl.List[1] = decl.List[1], decl.List[0]
+						} else {
+							copy(decl.List[1:], decl.List[:i])
+							decl.List[0] = item
+						}
+						break
+					}
+				} else {
+					break
+				}
+			}
+			bindingVars(&bindings, item.Binding)
+		}
 	}
 }
