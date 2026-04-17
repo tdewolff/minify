@@ -109,6 +109,18 @@ func parseOptions(opts *C.MinifyOptions) (minifyOptions, error) {
 	}, nil
 }
 
+func toSet(tags []string) map[string]struct{} {
+	if len(tags) == 0 {
+		return nil
+	}
+
+	m := make(map[string]struct{}, len(tags))
+	for _, t := range tags {
+		m[strings.ToLower(t)] = struct{}{}
+	}
+	return m
+}
+
 func newMinifier(opts minifyOptions) (*minify.M, error) {
 	m := minify.New()
 
@@ -125,6 +137,7 @@ func newMinifier(opts minifyOptions) (*minify.M, error) {
 		KeepQuotes:              opts.HTMLKeepQuotes,
 		KeepSpecialComments:     opts.HTMLKeepSpecialComments,
 		KeepWhitespace:          opts.HTMLKeepWhitespace,
+		PreserveWhitespaceTags:  toSet(opts.PreserveWhitespaceTags),
 	}
 	jsMinifier := &js.Minifier{
 		Precision:    opts.JSPrecision,
