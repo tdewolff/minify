@@ -525,6 +525,44 @@ func TestMinifyErrors(t *testing.T) {
 	}
 }
 
+func TestHTMLPreserveWhitespaceTags(t *testing.T) {
+	htmlTests := []struct {
+		html     string
+		expected string
+	}{
+		{
+			"<custom-component>\n    foo\n    bar\n</custom-component>",
+			"<custom-component>\n    foo\n    bar\n</custom-component>",
+		},
+		{
+			"<strip-component>\n    foo\n    bar\n</strip-component>",
+			"<strip-component>foo\nbar</strip-component>",
+		},
+		{
+			"<pre>\n    foo\n    bar\n</pre>",
+			"<pre>\n    foo\n    bar\n</pre>",
+		},
+	}
+
+	m := minify.New()
+	m.AddFunc("text/css", css.Minify)
+
+	htmlMinifier := &Minifier{
+		PreserveWhitespaceTags: map[string]struct{}{
+			"custom-component": {},
+		},
+	}
+
+	for _, tt := range htmlTests {
+		t.Run(tt.html, func(t *testing.T) {
+			r := bytes.NewBufferString(tt.html)
+			w := &bytes.Buffer{}
+			err := htmlMinifier.Minify(m, w, r, nil)
+			test.Minify(t, tt.html, err, w.String(), tt.expected)
+		})
+	}
+}
+
 func TestMinifyErrorPropagation(t *testing.T) {
 	errorTests := []struct {
 		html string
