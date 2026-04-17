@@ -80,7 +80,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 	}
 
 	omitSpace := true // if true the next leading space is omitted
-	inPre, inTemplate := false, false
+	inWhitespacePreservingMode, inTemplate := false, false
 
 	attrMinifyBuffer := buffer.NewWriter(make([]byte, 0, 64))
 	attrByteBuffer := make([]byte, 0, 64)
@@ -180,7 +180,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				} else {
 					w.Write(t.Data)
 				}
-			} else if inPre {
+			} else if inWhitespacePreservingMode {
 				w.Write(t.Data)
 				// omitSpace = true after block element
 			} else {
@@ -261,7 +261,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 
 			if t.Hash == Pre {
-				inPre = t.TokenType == html.StartTagToken
+				inWhitespacePreservingMode = t.TokenType == html.StartTagToken
 			} else if t.Hash == Template {
 				inTemplate = t.TokenType == html.StartTagToken
 			}
