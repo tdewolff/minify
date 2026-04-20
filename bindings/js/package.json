@@ -63,7 +63,7 @@
   "devDependencies": {
     "@types/node": "^25.5.2",
     "tsdown": "^0.21.8",
-    "typescript": "^6.0.2",
+    "typescript": "^6.0.3",
     "vitest": "^4.1.4"
   },
   "dependencies": {
