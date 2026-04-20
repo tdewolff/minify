@@ -1569,7 +1569,7 @@ func (c *cssMinifier) minifyDimension(value Token) (Token, []byte) {
 	//		}
 	//		for i := range dimensions {
 	//			if dimensions[i] != h { //&& (d < 1.0) == (multipliers[i] > 1.0) {
-	//				b, _ := strconvParse.AppendFloat([]byte{}, d*multipliers[i], -1)
+	//				b := strconvParse.AppendFloat([]byte{}, d*multipliers[i], -1)
 	//				if c.o.Version<=2 {
 	//					b = minify.Decimal(b, c.o.newPrecision) // don't use exponents
 	//				} else {
