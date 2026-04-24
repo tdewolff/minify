@@ -62,11 +62,11 @@
   ],
   "devDependencies": {
     "@types/node": "^25.5.2",
-    "tsdown": "^0.21.7",
+    "tsdown": "^0.21.8",
     "typescript": "^6.0.2",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.4"
   },
   "dependencies": {
-    "koffi": "^2.15.5"
+    "koffi": "^2.15.6"
   }
 }
