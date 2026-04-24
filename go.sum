@@ -14,8 +14,8 @@ github.com/mattn/go-sqlite3 v1.14.22 h1:2gZY6PC6kBnID23Tichd1K+Z0oS6nE/XwU+Vz/5o
 github.com/mattn/go-sqlite3 v1.14.22/go.mod h1:Uh1q+B4BYcTPb+yiD3kU8Ct7aC0hY9fxUwlHK0RXw+Y=
 github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3ve8=
 github.com/pelletier/go-toml v1.9.5/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
-github.com/tdewolff/argp v0.0.0-20260420171815-209d4e7b26a0 h1:S2XvPJZ0xQRuSETeDiWeehnqBLvJgTjWWF8mF8rYIh8=
-github.com/tdewolff/argp v0.0.0-20260420171815-209d4e7b26a0/go.mod h1:xw2b1X81m4zY1OGytzHNr/YKXbf/STHkK5idoNamlYE=
+github.com/tdewolff/argp v0.0.0-20260424074207-decde4f86440 h1:wJfhggFlz8Y2aRDorOjgX6KuIzsDg/FjlIlK8Tg804I=
+github.com/tdewolff/argp v0.0.0-20260424074207-decde4f86440/go.mod h1:t4IfmOfK1WpBPd456pTdSB4f+BuMp6CUGnV7CBzduxk=
 github.com/tdewolff/parse/v2 v2.8.12 h1:5BBjfaCv482v3nltlS0u6wH1xJaxjR6ofDrWttNvROg=
 github.com/tdewolff/parse/v2 v2.8.12/go.mod h1:Hwlni2tiVNKyzR1o6nUs4FOF07URA+JLBLd6dlIXYqo=
 github.com/tdewolff/test v1.0.11/go.mod h1:XPuWBzvdUzhCuxWO1ojpXsyzsA5bFoS3tO/Q3kFuTG8=

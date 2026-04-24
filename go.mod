@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/djherbis/atime v1.1.0
 	github.com/fsnotify/fsnotify v1.9.0
-	github.com/tdewolff/argp v0.0.0-20260420171815-209d4e7b26a0
+	github.com/tdewolff/argp v0.0.0-20260424074207-decde4f86440
 	github.com/tdewolff/parse/v2 v2.8.12
 	github.com/tdewolff/test v1.0.12
 )

@@ -204,116 +204,128 @@ func bindingUsed(ibinding js.IBinding) bool {
 	return false
 }
 
-func bindingVars(vs *[]*js.Var, ibinding js.IBinding) {
+func appendBindingVars(vs []*js.Var, ibinding js.IBinding) []*js.Var {
 	switch binding := ibinding.(type) {
 	case *js.Var:
-		*vs = append(*vs, binding)
+		vs = append(vs, binding)
 	case *js.BindingArray:
 		for _, item := range binding.List {
 			if item.Binding != nil {
-				bindingVars(vs, item.Binding)
+				vs = appendBindingVars(vs, item.Binding)
 			}
 		}
 		if binding.Rest != nil {
-			bindingVars(vs, binding.Rest)
+			vs = appendBindingVars(vs, binding.Rest)
 		}
 	case *js.BindingObject:
 		for _, item := range binding.List {
 			if item.Value.Binding != nil {
-				bindingVars(vs, item.Value.Binding)
+				vs = appendBindingVars(vs, item.Value.Binding)
 			}
 		}
 		if binding.Rest != nil {
-			*vs = append(*vs, binding.Rest)
+			vs = append(vs, binding.Rest)
 		}
 	}
+	return vs
 }
 
-func exprVars(vs *[]*js.Var, iexpr js.IExpr) {
+func appendExprVars(vs []*js.Var, iexpr js.IExpr) []*js.Var {
 	switch expr := iexpr.(type) {
 	case *js.Var:
-		*vs = append(*vs, expr)
+		vs = append(vs, expr)
 	case *js.ArrayExpr:
 		for _, item := range expr.List {
-			exprVars(vs, item.Value)
+			vs = appendExprVars(vs, item.Value)
 		}
 	case *js.ObjectExpr:
 		for _, item := range expr.List {
-			exprVars(vs, item.Init)
+			if item.Name != nil && item.Name.Computed != nil {
+				vs = appendExprVars(vs, item.Name.Computed)
+			}
+			vs = appendExprVars(vs, item.Value)
+			if item.Init != nil {
+				vs = appendExprVars(vs, item.Init)
+			}
 		}
 	case *js.TemplateExpr:
-		exprVars(vs, expr.Tag)
+		vs = appendExprVars(vs, expr.Tag)
 		for _, item := range expr.List {
-			exprVars(vs, item.Expr)
+			vs = appendExprVars(vs, item.Expr)
 		}
 	case *js.GroupExpr:
-		exprVars(vs, expr.X)
+		vs = appendExprVars(vs, expr.X)
 	case *js.IndexExpr:
-		exprVars(vs, expr.X)
-		exprVars(vs, expr.Y)
+		vs = appendExprVars(vs, expr.X)
+		vs = appendExprVars(vs, expr.Y)
 	case *js.DotExpr:
-		exprVars(vs, expr.X)
-		exprVars(vs, expr.Y)
+		vs = appendExprVars(vs, expr.X)
+		vs = appendExprVars(vs, expr.Y)
 	case *js.NewExpr:
-		exprVars(vs, expr.X)
+		vs = appendExprVars(vs, expr.X)
 		if expr.Args != nil {
 			for _, item := range expr.Args.List {
-				exprVars(vs, item.Value)
+				vs = appendExprVars(vs, item.Value)
 			}
 		}
 	case *js.CallExpr:
-		exprVars(vs, expr.X)
+		vs = appendExprVars(vs, expr.X)
 		for _, item := range expr.Args.List {
-			exprVars(vs, item.Value)
+			vs = appendExprVars(vs, item.Value)
 		}
 	case *js.UnaryExpr:
-		exprVars(vs, expr.X)
+		vs = appendExprVars(vs, expr.X)
 	case *js.BinaryExpr:
-		exprVars(vs, expr.X)
-		exprVars(vs, expr.Y)
+		vs = appendExprVars(vs, expr.X)
+		vs = appendExprVars(vs, expr.Y)
 	case *js.CondExpr:
-		exprVars(vs, expr.Cond)
-		exprVars(vs, expr.X)
-		exprVars(vs, expr.Y)
+		vs = appendExprVars(vs, expr.Cond)
+		vs = appendExprVars(vs, expr.X)
+		vs = appendExprVars(vs, expr.Y)
 	case *js.YieldExpr:
-		exprVars(vs, expr.X)
+		vs = appendExprVars(vs, expr.X)
 	case *js.CommaExpr:
 		for _, item := range expr.List {
-			exprVars(vs, item)
+			vs = appendExprVars(vs, item)
 		}
 	case *js.ArrowFunc:
 		for _, param := range expr.Params.List {
-			exprVars(vs, param.Default)
+			vs = appendExprVars(vs, param.Default)
 		}
-		*vs = append(*vs, expr.Body.Scope.Undeclared...)
+		vs = append(vs, expr.Body.Scope.Undeclared...)
 	case *js.FuncDecl:
 		for _, param := range expr.Params.List {
-			exprVars(vs, param.Default)
+			vs = appendExprVars(vs, param.Default)
 		}
-		*vs = append(*vs, expr.Body.Scope.Undeclared...)
+		vs = append(vs, expr.Body.Scope.Undeclared...)
 	case *js.ClassDecl:
-		exprVars(vs, expr.Extends)
+		vs = appendExprVars(vs, expr.Extends)
 		for _, item := range expr.List {
 			if item.StaticBlock != nil {
-				*vs = append(*vs, item.StaticBlock.Scope.Undeclared...)
+				vs = append(vs, item.StaticBlock.Scope.Undeclared...)
 			} else if item.Method != nil {
 				for _, param := range item.Method.Params.List {
-					exprVars(vs, param.Default)
+					vs = appendExprVars(vs, param.Default)
 				}
-				*vs = append(*vs, item.Method.Body.Scope.Undeclared...)
+				vs = append(vs, item.Method.Body.Scope.Undeclared...)
 			} else {
-				exprVars(vs, item.Field.Init)
+				if item.Field.Name.Private == nil && item.Field.Name.Computed != nil {
+					vs = appendExprVars(vs, item.Field.Name.Computed)
+				}
+				if item.Field.Init != nil {
+					vs = appendExprVars(vs, item.Field.Init)
+				}
 			}
 		}
 	}
+	return vs
 }
 
 func addDefinition(decl *js.VarDecl, binding js.IBinding, value js.IExpr, forward bool) {
 	if decl.TokenType != js.ErrorToken {
 		// see if not already defined in variable declaration list
 		// if forward is set, binding=value comes before decl, otherwise the reverse holds true
-		var vars []*js.Var
-		bindingVars(&vars, binding)
+		vars := appendBindingVars(nil, binding)
 
 		// remove variables in destination
 	RemoveVarsLoop:
@@ -411,8 +423,7 @@ func mergeVarDeclExprStmt(decl *js.VarDecl, exprStmt *js.ExprStmt, forward bool)
 }
 
 func (m *jsMinifier) countHoistLength(ibinding js.IBinding) int {
-	var refs []*js.Var
-	bindingVars(&refs, ibinding)
+	refs := appendBindingVars(nil, ibinding)
 	if !m.o.KeepVarNames {
 		return len(refs) * 2 // assume that var name will be of length one, +1 for the comma
 	}
@@ -494,7 +505,7 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) {
 		// get original declarations
 		orig := []*js.Var{}
 		for _, item := range decl.List {
-			bindingVars(&orig, item.Binding)
+			orig = appendBindingVars(orig, item.Binding)
 		}
 
 		// hoist other variable declarations in this function scope but don't initialize yet
@@ -504,8 +515,7 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) {
 			if hoist[i] {
 				varDecl.TokenType = js.ErrorToken
 				for _, item := range varDecl.List {
-					refs = refs[:0]
-					bindingVars(&refs, item.Binding)
+					refs = appendBindingVars(refs[:0], item.Binding)
 					bindingElements := make([]js.BindingElement, 0, len(refs))
 				DeclaredLoop:
 					for _, ref := range refs {
@@ -546,7 +556,9 @@ func (m *jsMinifier) optimizeVarOrder(decl *js.VarDecl) {
 		start := 0
 		for i, item := range decl.List {
 			if _, ok := item.Binding.(*js.Var); !ok {
-				if i == 1 {
+				if i == 0 {
+					// no-op
+				} else if i == 1 {
 					decl.List[0], decl.List[1] = decl.List[1], decl.List[0]
 				} else if 1 < i {
 					copy(decl.List[1:], decl.List[:i])
@@ -580,18 +592,17 @@ func (m *jsMinifier) optimizeVarOrder(decl *js.VarDecl) {
 			}
 			return 0
 		})
-	} else {
+	} else if _, ok := decl.List[0].Binding.(*js.Var); ok {
 		// rearrange to put array/object first for let or const assignment
-		var bindings []*js.Var
 		var refs []*js.Var
+		var bindings []*js.Var
 		for i, item := range decl.List {
 			if _, ok := item.Binding.(*js.Var); !ok {
 				// is array or object assignment
 				if i != 0 {
 					interferes := false
 					if item.Default != nil {
-						refs = refs[:0]
-						exprVars(&refs, item.Default)
+						refs = appendExprVars(refs[:0], item.Default)
 						for _, ref := range refs {
 							for _, binding := range bindings {
 								if binding == ref {
@@ -615,7 +626,7 @@ func (m *jsMinifier) optimizeVarOrder(decl *js.VarDecl) {
 					break
 				}
 			}
-			bindingVars(&bindings, item.Binding)
+			bindings = appendBindingVars(bindings, item.Binding)
 		}
 	}
 }
