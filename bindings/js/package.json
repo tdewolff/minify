@@ -67,6 +67,6 @@
     "vitest": "^4.1.5"
   },
   "dependencies": {
-    "koffi": "^2.16.1"
+    "koffi": "^2.16.2"
   }
 }
