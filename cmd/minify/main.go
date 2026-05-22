@@ -237,6 +237,8 @@ func run() int {
 	f.AddOpt(&htmlMinifier.KeepWhitespace, "", "html-keep-whitespace", "Preserve whitespace characters but still collapse multiple into one")
 	f.AddOpt(&htmlMinifier.KeepQuotes, "", "html-keep-quotes", "Preserve quotes around attribute values")
 	//f.AddOpt(&htmlMinifier.TemplateDelims, "", "html-template-delims", "Set template delimiters explicitly, for example <?,?> for PHP or {{,}} for Go templates") // TODO: fix parsing {{ }} in tdewolff/argp
+	f.AddOpt(&htmlMinifier.TemplateBegin, "", "html-template-begin", "Set template open delimiters explicitly, for example <? for PHP or {{ for Go templates")
+	f.AddOpt(&htmlMinifier.TemplateEnd, "", "html-template-end", "Set template close delimiters explicitly, for example ?> for PHP or }} for Go templates")
 	f.AddOpt(&jsMinifier.Precision, "", "js-precision", "Number of significant digits to preserve in numbers, 0 is all")
 	f.AddOpt(&jsMinifier.KeepVarNames, "", "js-keep-var-names", "Preserve original variable names")
 	f.AddOpt(&jsMinifier.Version, "", "js-version", "ECMAScript version to toggle supported optimizations (e.g. 2019, 2020), by default 0 is the latest version")
