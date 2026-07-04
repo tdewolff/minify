@@ -176,7 +176,6 @@ func (c *cssMinifier) minifyGrammar() {
 	for {
 		gt, _, data := c.p.Next()
 	Next:
-		fmt.Println(gt, string(data))
 		switch gt {
 		case css.ErrorGrammar:
 			if c.p.HasParseError() {
@@ -1150,12 +1149,12 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 		values[0] = minifyColor(values[0])
 	case Background_Color:
 		values[0] = minifyColor(values[0])
-		if c.o.Version >= 3 {
-			if values[0].Ident == Transparent {
-				values[0].Data = initialBytes
-				values[0].Ident = Initial
-			}
-		}
+		//if c.o.Version >= 3 {
+		//	if values[0].Ident == Transparent {
+		//		values[0].Data = initialBytes
+		//		values[0].Ident = Initial
+		//	}
+		//}
 	case Border_Color:
 		sameValues := true
 		for i := range values {
