@@ -13,6 +13,6 @@ require (
 require (
 	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
-	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
