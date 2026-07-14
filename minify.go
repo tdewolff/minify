@@ -302,14 +302,12 @@ func (z *writer) Close() error {
 func (m *M) Writer(mediatype string, w io.Writer) io.WriteCloser {
 	pr, pw := io.Pipe()
 	z := &writer{pw, sync.WaitGroup{}, false, nil}
-	z.wg.Add(1)
-	go func() {
-		defer z.wg.Done()
+	z.wg.Go(func() {
 		defer pr.Close()
 		if err := m.Minify(mediatype, w, pr); err != nil {
 			z.err = err
 		}
-	}()
+	})
 	return z
 }
 
@@ -341,14 +339,12 @@ func (w *responseWriter) Write(b []byte) (int, error) {
 		if _, params, minifier := w.m.Match(w.mediatype); minifier != nil {
 			pr, pw := io.Pipe()
 			z := &writer{pw, sync.WaitGroup{}, false, nil}
-			z.wg.Add(1)
-			go func() {
-				defer z.wg.Done()
+			z.wg.Go(func() {
 				defer pr.Close()
 				if err := minifier(w.m, w.ResponseWriter, pr, params); err != nil {
 					z.err = err
 				}
-			}()
+			})
 			w.z = z
 		} else {
 			w.z = w.ResponseWriter

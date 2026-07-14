@@ -356,7 +356,7 @@ var numbers [][]byte
 
 func TestMain(t *testing.T) {
 	numbers = make([][]byte, 0, n)
-	for j := 0; j < n; j++ {
+	for range n {
 		numbers = append(numbers, RandNumBytes(true))
 	}
 }
@@ -389,7 +389,7 @@ func RandNumBytes(withExp bool) []byte {
 
 func BenchmarkNumber(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		for j := 0; j < n; j++ {
+		for j := range n {
 			Number(numbers[j], -1)
 		}
 	}

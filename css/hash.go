@@ -877,13 +877,13 @@ func ToHash(s []byte) Hash {
 	//	return HashMap[string(s)]
 	//}
 	h := uint32(_Hash_hash0)
-	for i := 0; i < len(s); i++ {
+	for i := range s {
 		h ^= uint32(s[i])
 		h *= 16777619
 	}
 	if i := _Hash_table[h&uint32(len(_Hash_table)-1)]; int(i&0xff) == len(s) {
 		t := _Hash_text[i>>8 : i>>8+i&0xff]
-		for i := 0; i < len(s); i++ {
+		for i := range s {
 			if t[i] != s[i] {
 				goto NEXT
 			}
@@ -893,7 +893,7 @@ func ToHash(s []byte) Hash {
 NEXT:
 	if i := _Hash_table[(h>>16)&uint32(len(_Hash_table)-1)]; int(i&0xff) == len(s) {
 		t := _Hash_text[i>>8 : i>>8+i&0xff]
-		for i := 0; i < len(s); i++ {
+		for i := range s {
 			if t[i] != s[i] {
 				return 0
 			}

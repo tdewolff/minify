@@ -3,6 +3,7 @@ package js
 import (
 	"bytes"
 	"encoding/hex"
+	"slices"
 	stdStrconv "strconv"
 	"unicode/utf8"
 
@@ -366,10 +367,8 @@ func hasSideEffects(i js.IExpr) bool {
 	case *js.CondExpr:
 		return hasSideEffects(expr.Cond) || hasSideEffects(expr.X) || hasSideEffects(expr.Y)
 	case *js.CommaExpr:
-		for _, item := range expr.List {
-			if hasSideEffects(item) {
-				return true
-			}
+		if slices.ContainsFunc(expr.List, hasSideEffects) {
+			return true
 		}
 	case *js.ArrayExpr:
 		for _, item := range expr.List {

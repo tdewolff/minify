@@ -1014,7 +1014,7 @@ func TestRenamerIndices(t *testing.T) {
 		j := renamer.getIndex(name)
 		test.T(t, j, i, string(name))
 	}
-	for i := 0; i < 100000; i++ {
+	for i := range 100000 {
 		name := renamer.getName([]byte{' '}, i)
 		j := renamer.getIndex(name)
 		test.T(t, j, i, string(name))
@@ -1027,7 +1027,7 @@ func BenchmarkJQuery(b *testing.B) {
 	if err != nil {
 		panic(err)
 	}
-	for j := 0; j < 10; j++ {
+	for j := range 10 {
 		b.Run(fmt.Sprintf("%d", j), func(b *testing.B) {
 			b.SetBytes(int64(len(buf)))
 			for i := 0; i < b.N; i++ {

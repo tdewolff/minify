@@ -599,7 +599,7 @@ func (c *cssMinifier) minifyTokens(prop Hash, fun Hash, values []Token) []Token 
 
 				if a == 1.0 && (len(vals) == 3 || len(vals) == 4) { // only minify color if fully opaque
 					if fun == Rgb || fun == Rgba {
-						for j := 0; j < 3; j++ {
+						for j := range 3 {
 							if args[j*2].TokenType == css.NumberToken {
 								vals[j] /= 255.0
 								if vals[j] < minify.Epsilon {
@@ -628,14 +628,14 @@ func (c *cssMinifier) minifyTokens(prop Hash, fun Hash, values []Token) []Token 
 				if 3 <= len(vals) && (fun == Rgb || fun == Rgba) {
 					// 0%, 20%, 40%, 60%, 80% and 100% can be represented exactly as, 51, 102, 153, 204, and 255 respectively
 					removePercentage := true
-					for j := 0; j < 3; j++ {
+					for j := range 3 {
 						if args[j*2].TokenType != css.PercentageToken || 2.0*minify.Epsilon <= math.Mod(vals[j]+minify.Epsilon, 0.2) {
 							removePercentage = false
 							break
 						}
 					}
 					if removePercentage {
-						for j := 0; j < 3; j++ {
+						for j := range 3 {
 							args[j*2].TokenType = css.NumberToken
 							if vals[j] < minify.Epsilon {
 								args[j*2].Data = zeroBytes
@@ -735,7 +735,7 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 				parse.ToLower(value.Data)
 				s := value.Data[1 : len(value.Data)-1]
 				if 0 < len(s) {
-					for _, split := range bytes.Split(s, spaceBytes) {
+					for split := range bytes.SplitSeq(s, spaceBytes) {
 						// if len is zero, it contains two consecutive spaces
 						if len(split) == 0 || !css.IsIdent(split) {
 							unquote = false
@@ -1337,7 +1337,7 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 				values = append(values, Token{css.CommaToken, commaBytes, nil, 0, None})
 			}
 			if ran[0] == ran[1] {
-				urange := []byte(fmt.Sprintf("U+%X", ran[0]))
+				urange := fmt.Appendf(nil, "U+%X", ran[0])
 				values = append(values, Token{css.UnicodeRangeToken, urange, nil, 0, None})
 			} else if ran[0] == 0 && ran[1] == 0x10FFFF {
 				values = append(values, Token{css.IdentToken, initialBytes, nil, 0, None})
@@ -1357,12 +1357,12 @@ func (c *cssMinifier) minifyProperty(prop Hash, values []Token) []Token {
 				var urange []byte
 				if wildcards != 0 {
 					if ran[0]>>(wildcards*4) == 0 {
-						urange = []byte(fmt.Sprintf("U+%s", strings.Repeat("?", wildcards)))
+						urange = fmt.Appendf(nil, "U+%s", strings.Repeat("?", wildcards))
 					} else {
-						urange = []byte(fmt.Sprintf("U+%X%s", ran[0]>>(wildcards*4), strings.Repeat("?", wildcards)))
+						urange = fmt.Appendf(nil, "U+%X%s", ran[0]>>(wildcards*4), strings.Repeat("?", wildcards))
 					}
 				} else {
-					urange = []byte(fmt.Sprintf("U+%X-%X", ran[0], ran[1]))
+					urange = fmt.Appendf(nil, "U+%X-%X", ran[0], ran[1])
 				}
 				values = append(values, Token{css.UnicodeRangeToken, urange, nil, 0, None})
 			}

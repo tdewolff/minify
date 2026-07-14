@@ -604,11 +604,8 @@ func (m *jsMinifier) optimizeVarOrder(decl *js.VarDecl) {
 					if item.Default != nil {
 						refs = appendExprVars(refs[:0], item.Default)
 						for _, ref := range refs {
-							for _, binding := range bindings {
-								if binding == ref {
-									interferes = true
-									break
-								}
+							if slices.Contains(bindings, ref) {
+								interferes = true
 							}
 						}
 					}

@@ -441,7 +441,7 @@ func Number(num []byte, prec int) []byte {
 					start += -d
 				}
 				num[newDot] = '.'
-				for i := 0; i < zeroes; i++ {
+				for i := range zeroes {
 					num[newDot+1+i] = '0'
 				}
 			}

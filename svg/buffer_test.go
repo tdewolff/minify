@@ -43,9 +43,9 @@ func TestAttributes(t *testing.T) {
 	l := xml.NewLexer(r)
 	tb := NewTokenBuffer(r, l)
 	tb.Shift()
-	for k := 0; k < 2; k++ { // run twice to ensure similar results
+	for range 2 { // run twice to ensure similar results
 		attrs := tb.Attributes(X, Y, Width, Height, Rx, Ry)
-		for i := 0; i < 6; i++ {
+		for i := range 6 {
 			test.That(t, attrs[i] != nil, "attr must not be nil")
 			val := string(attrs[i].AttrVal)
 			j, _ := strconv.ParseInt(val, 10, 32)

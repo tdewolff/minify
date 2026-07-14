@@ -221,7 +221,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 			} else if attr == ViewBox {
 				j := 0
 				newVal := val[:0]
-				for i := 0; i < 4; i++ {
+				for i := range 4 {
 					if i != 0 {
 						if j >= len(val) || val[j] != ' ' && val[j] != ',' {
 							newVal = append(newVal, val[j:]...)
