@@ -384,6 +384,7 @@ func TestHTMLGoTemplates(t *testing.T) {
 		{`<select><option>Default</option>{{range $i, $lang := .Languages}}<option>{{$lang}}</option>{{end}}</select>`, `<select><option>Default{{range $i, $lang := .Languages}}<option>{{$lang}}{{end}}</select>`},
 		{`<tr{{if .Deleted}} class="is-disabled"{{end}}>`, `<tr{{if .Deleted}} class="is-disabled"{{end}}>`},
 		{`<a {{.Foo}}{{xx .Bar}}>`, `<a {{.Foo}}{{xx .Bar}}>`},
+		{`<div {{if .Item.IsOpen}}data-item-open{{end}}{{if .Item.Archived}} data-item-archived{{end}}>`, `<div {{if .Item.IsOpen}}data-item-open{{end}}{{if .Item.Archived}} data-item-archived{{end}}>`},
 
 		// whitespace
 		{`{{ printf "  !  " }}`, `{{ printf "  !  " }}`},

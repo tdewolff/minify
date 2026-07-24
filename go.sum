@@ -18,6 +18,8 @@ github.com/tdewolff/argp v0.0.0-20260424074207-decde4f86440 h1:wJfhggFlz8Y2aRDor
 github.com/tdewolff/argp v0.0.0-20260424074207-decde4f86440/go.mod h1:t4IfmOfK1WpBPd456pTdSB4f+BuMp6CUGnV7CBzduxk=
 github.com/tdewolff/parse/v2 v2.8.13 h1:si/8rLw5BZZTWCCiMm9A3f6x+RmqYfrkEeXCgpX5ick=
 github.com/tdewolff/parse/v2 v2.8.13/go.mod h1:XdsoSFThlVIRIajAuqz1evNY7bagZS8LBOPA3aVopwQ=
+github.com/tdewolff/parse/v2 v2.8.14 h1:GuhuMMPKAqj5BhP9hZUz3r3JqX/lOvQ1E6wxW6p/FhY=
+github.com/tdewolff/parse/v2 v2.8.14/go.mod h1:XdsoSFThlVIRIajAuqz1evNY7bagZS8LBOPA3aVopwQ=
 github.com/tdewolff/test v1.0.11/go.mod h1:XPuWBzvdUzhCuxWO1ojpXsyzsA5bFoS3tO/Q3kFuTG8=
 github.com/tdewolff/test v1.0.12 h1:7F21DqIajswxuche0geHdrUZRCWE4oko4b7bcmkkrxk=
 github.com/tdewolff/test v1.0.12/go.mod h1:XPuWBzvdUzhCuxWO1ojpXsyzsA5bFoS3tO/Q3kFuTG8=
