@@ -236,7 +236,8 @@ func (c *cssMinifier) minifyGrammar() {
 			for _, val := range values {
 				c.w.Write(val.Data)
 			}
-			semicolonQueued = true
+			c.w.Write(semicolonBytes)
+			semicolonQueued = false
 		case css.BeginAtRuleGrammar:
 			rule := slices.Clone(data)
 			values := slices.Clone(c.p.Values())

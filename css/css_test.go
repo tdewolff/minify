@@ -25,11 +25,11 @@ func TestCSS(t *testing.T) {
 		{".cla .ss > #id { x:y; }", ".cla .ss>#id{x:y}"},
 		{".cla[id ^= L] { x:y; }", ".cla[id^=L]{x:y}"},
 		{"area:focus { outline : 0;}", "area:focus{outline:0}"},
-		{"@import 'file';", "@import 'file'"},
-		{"@import url('file');", "@import 'file'"},
-		{"@import url(//url);", `@import "//url"`},
-		{"@import url(\n//url\n);", `@import "//url"`},
-		{"@import url();", `@import ""`},
+		{"@import 'file';", "@import 'file';"},
+		{"@import url('file');", "@import 'file';"},
+		{"@import url(//url);", `@import "//url";`},
+		{"@import url(\n//url\n);", `@import "//url";`},
+		{"@import url();", `@import "";`},
 		{"@font-face { x:y; }", "@font-face{x:y}"},
 
 		{"input[type=\"radio\"]{x:y}", "input[type=radio]{x:y}"},
@@ -73,9 +73,9 @@ func TestCSS(t *testing.T) {
 		{"{d:url( \n  \n\t0", "{d:url()}"},
 		{"{d:urL(     '0", `{d:url("'")}`},
 		{`{-ms-filter:"`, `{-ms-filter:"}`},
-		{"@import url(", `@import url(`},
-		{"@import url( ", `@import url( `},
-		{"@import url(  )", `@import ""`},
+		{"@import url(", `@import url(;`},
+		{"@import url( ", `@import url( ;`},
+		{"@import url(  )", `@import "";`},
 
 		// bugs
 		{"a{@media screen and (min-width:1024px){ width: 40%; } & h1 { font-size: clamp(2.5rem, 1rem + 3vw, 3.5rem)}}", "a{@media screen and (min-width:1024px){width: 40%;}& h1{font-size:clamp(2.5rem,1rem + 3vw,3.5rem)}}"},           // #602
