@@ -30,11 +30,16 @@ func TestXML(t *testing.T) {
 		{`<x a=a></x>`, `<x a=a/>`},
 		{`<x a=foo></x>`, `<x a=foo/>`},
 		{"<x a=\" a \n\r\t b \"/>", `<x a=" a     b "/>`},
+		{`<x a="p&#9;q&#10;r&#13;s"/>`, `<x a="p&#9;q&#10;r&#13;s"/>`}, // keep whitespace refs, else normalization turns them to spaces
+		{`<x a="&#09;&#0009;"/>`, `<x a="&#9;&#9;"/>`},                 // strip leading zeros
+		{`<x a="&#x9;&#xA;&#xd;"/>`, `<x a="&#9;&#10;&#13;"/>`},        // hex canonicalises to decimal
+		{`<x a="&#9;end"/>`, `<x a="&#9;end"/>`},                       // ref at value boundary is kept
 		{`<x a="&apos;b&quot;"></x>`, `<x a="'b&#34;"/>`},
 		{`<x a="&quot;&quot;'"></x>`, `<x a='""&#39;'/>`},
 		{`<x a="&amp;&lt;&gt;"></x>`, `<x a="&amp;&lt;&gt;"/>`},
 		{`<x>&amp;&lt;&gt;</x>`, `<x>&amp;&lt;&gt;</x>`},
 		{`<x>&#38;&#038;&#60;</x>`, `<x>&amp;&amp;&lt;</x>`},
+		{`<x>a&#9;b</x>`, "<x>a\tb</x>"}, // text content is not normalized, decode stays
 		{`<!DOCTYPE foo SYSTEM "Foo.dtd">`, `<!DOCTYPE foo SYSTEM "Foo.dtd">`},
 		{`text <!--comment--> text`, `text text`},
 		{"text\n<!--comment-->\ntext", "text\ntext"},
