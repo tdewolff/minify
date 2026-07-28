@@ -35,6 +35,12 @@ func TestSVG(t *testing.T) {
 		{`<path x=""> </path>`, `<path x=""/>`},
 		{`<path x=" a "/>`, `<path x="a"/>`},
 		{"<path x=\" a \n b \"/>", `<path x="a b"/>`},
+		{`<path id="p&#9;q&#10;r&#13;s"/>`, `<path id="p&#9;q&#10;r&#13;s"/>`}, // keep whitespace refs, else normalization turns them to spaces
+		{`<path id="&#x9;&#xA;&#xD;"/>`, `<path id="&#9;&#10;&#13;"/>`},        // hex canonicalises to decimal
+		{`<path id="&#9;end"/>`, `<path id="&#9;end"/>`},                       // ref at value boundary is kept
+		{`<text>a&#9;b</text>`, "<text>a\tb</text>"},                           // text content is not normalized, decode stays
+		{`<path id="a&#9;&#9;b"/>`, `<path id="a&#9;&#9;b"/>`},                 // consecutive refs survive whitespace collapse
+		{`<path id="a  b"/>`, `<path id="a b"/>`},                              // literal whitespace still collapses
 		{`<path x="5.0px" y="0%"/>`, `<path x="5" y="0"/>`},
 		{`<svg viewBox="5.0px 5px 240IN px"><path/></svg>`, `<svg viewBox="5 5 240in px"><path/></svg>`},
 		{`<svg viewBox="5.0!5px"><path/></svg>`, `<svg viewBox="5!5px"><path/></svg>`},

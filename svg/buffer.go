@@ -46,7 +46,7 @@ func (z *TokenBuffer) read(t *Token) {
 		if len(t.AttrVal) > 1 && (t.AttrVal[0] == '"' || t.AttrVal[0] == '\'') {
 			t.Offset++
 			t.AttrVal = t.AttrVal[1 : len(t.AttrVal)-1] // quotes will be readded in attribute loop if necessary
-			t.AttrVal = parse.ReplaceMultipleWhitespaceAndEntities(t.AttrVal, minifyXML.EntitiesMap, nil)
+			t.AttrVal = parse.ReplaceMultipleWhitespaceAndEntities(t.AttrVal, minifyXML.EntitiesMap, minifyXML.AttrRevEntitiesMap)
 			t.AttrVal = parse.TrimWhitespace(t.AttrVal)
 		}
 		t.Hash = ToHash(t.Text)

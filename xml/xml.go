@@ -127,7 +127,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				w.Write(t.AttrVal)
 			} else {
 				val := t.AttrVal[1 : len(t.AttrVal)-1]
-				val = parse.ReplaceEntities(val, EntitiesMap, nil)
+				val = parse.ReplaceEntities(val, EntitiesMap, AttrRevEntitiesMap)
 				val = xml.EscapeAttrVal(&attrByteBuffer, val) // prefer single or double quotes depending on what occurs more often in value
 				w.Write(val)
 			}
