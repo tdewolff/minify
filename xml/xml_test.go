@@ -39,7 +39,8 @@ func TestXML(t *testing.T) {
 		{`<x a="&amp;&lt;&gt;"></x>`, `<x a="&amp;&lt;&gt;"/>`},
 		{`<x>&amp;&lt;&gt;</x>`, `<x>&amp;&lt;&gt;</x>`},
 		{`<x>&#38;&#038;&#60;</x>`, `<x>&amp;&amp;&lt;</x>`},
-		{`<x>a&#9;b</x>`, "<x>a\tb</x>"}, // text content is not normalized, decode stays
+		{`<x>a&#9;b</x>`, `<x>a&#9;b</x>`},                         // keep whitespace refs in text, else normalization turns them to spaces
+		{`<x>p&#9;q&#10;r&#13;s</x>`, `<x>p&#9;q&#10;r&#13;s</x>`}, // same for LF and CR
 		{`<!DOCTYPE foo SYSTEM "Foo.dtd">`, `<!DOCTYPE foo SYSTEM "Foo.dtd">`},
 		{`text <!--comment--> text`, `text text`},
 		{"text\n<!--comment-->\ntext", "text\ntext"},

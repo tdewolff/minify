@@ -38,7 +38,7 @@ func TestSVG(t *testing.T) {
 		{`<path id="p&#9;q&#10;r&#13;s"/>`, `<path id="p&#9;q&#10;r&#13;s"/>`}, // keep whitespace refs, else normalization turns them to spaces
 		{`<path id="&#x9;&#xA;&#xD;"/>`, `<path id="&#9;&#10;&#13;"/>`},        // hex canonicalises to decimal
 		{`<path id="&#9;end"/>`, `<path id="&#9;end"/>`},                       // ref at value boundary is kept
-		{`<text>a&#9;b</text>`, "<text>a\tb</text>"},                           // text content is not normalized, decode stays
+		{`<text>a&#9;b</text>`, `<text>a&#9;b</text>`},                         // keep whitespace refs in text, else normalization turns them to spaces
 		{`<path id="a&#9;&#9;b"/>`, `<path id="a&#9;&#9;b"/>`},                 // consecutive refs survive whitespace collapse
 		{`<path id="a  b"/>`, `<path id="a b"/>`},                              // literal whitespace still collapses
 		{`<path x="5.0px" y="0%"/>`, `<path x="5" y="0"/>`},

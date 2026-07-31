@@ -96,7 +96,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 				w.Write(t.Data)
 			}
 		case xml.TextToken:
-			t.Data = parse.ReplaceMultipleWhitespaceAndEntities(t.Data, minifyXML.EntitiesMap, nil)
+			t.Data = parse.ReplaceMultipleWhitespaceAndEntities(t.Data, minifyXML.EntitiesMap, minifyXML.TextRevEntitiesMap)
 			t.Data = parse.TrimWhitespace(t.Data)
 
 			if tag == Style && len(t.Data) > 0 {

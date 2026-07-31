@@ -14,9 +14,14 @@ var AttrRevEntitiesMap = map[byte][]byte{
 	'\r': []byte("&#13;"),
 }
 
-// TextRevEntitiesMap is a map of escapes.
+// TextRevEntitiesMap is a map of escapes. It keeps whitespace character
+// references; decoding them to literal tab/LF/CR would let text whitespace
+// normalization collapse them to a space.
 var TextRevEntitiesMap = map[byte][]byte{
-	'<': []byte("&lt;"),
-	'>': []byte("&gt;"),
-	'&': []byte("&amp;"),
+	'<':  []byte("&lt;"),
+	'>':  []byte("&gt;"),
+	'&':  []byte("&amp;"),
+	'\t': []byte("&#9;"),
+	'\n': []byte("&#10;"),
+	'\r': []byte("&#13;"),
 }
