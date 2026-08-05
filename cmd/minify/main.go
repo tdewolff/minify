@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"runtime/pprof"
 	"sort"
 	"strings"
 	"time"
@@ -189,18 +188,6 @@ func main() {
 }
 
 func run() int {
-	{
-		f, err := os.Create("cpu")
-		if err != nil {
-			log.Fatal(err)
-		}
-		pprof.StartCPUProfile(f)
-		defer func() {
-			pprof.StopCPUProfile()
-			f.Close()
-		}()
-	}
-
 	var inputs []string
 	var output string
 	var siteurl string
