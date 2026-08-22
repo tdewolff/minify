@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 
@@ -243,8 +244,9 @@ func (m *M) MinifyMimetype(mimetype []byte, w io.Writer, r io.Reader, params map
 // Bytes minifies an array of bytes (safe for concurrent use). When an error occurs it return the original array and the error.
 // It returns an error when no such mimetype exists (ErrNotExist) or any error occurred in the minifier function.
 func (m *M) Bytes(mediatype string, v []byte) ([]byte, error) {
-	out := buffer.NewWriter(make([]byte, 0, len(v)))
-	if err := m.Minify(mediatype, out, buffer.NewReader(v)); err != nil {
+	b := slices.Clone(v) // TODO: test
+	out := buffer.NewWriter(b[:0])
+	if err := m.Minify(mediatype, out, buffer.NewReader(b)); err != nil {
 		return v, err
 	}
 	return out.Bytes(), nil
@@ -253,8 +255,9 @@ func (m *M) Bytes(mediatype string, v []byte) ([]byte, error) {
 // String minifies a string (safe for concurrent use). When an error occurs it return the original string and the error.
 // It returns an error when no such mimetype exists (ErrNotExist) or any error occurred in the minifier function.
 func (m *M) String(mediatype string, v string) (string, error) {
-	out := buffer.NewWriter(make([]byte, 0, len(v)))
-	if err := m.Minify(mediatype, out, buffer.NewReader([]byte(v))); err != nil {
+	b := []byte(v)
+	out := buffer.NewWriter(b[:0]) // TODO: test
+	if err := m.Minify(mediatype, out, buffer.NewReader(b)); err != nil {
 		return v, err
 	}
 	return string(out.Bytes()), nil
