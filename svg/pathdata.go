@@ -76,20 +76,27 @@ func (p *PathData) ShortenPathData(b []byte) []byte {
 		return b
 	}
 
-	var cmd byte
 	p.x, p.y = 0.0, 0.0
 	p.coords = p.coords[:0]
 	p.coordFloats = p.coordFloats[:0]
 	p.state = PathDataState{}
 
-	j := 0
+	j, k := 0, 0
+	cmd := byte('M')
 	for i := 0; i < len(b); i++ {
 		c := b[i]
 		if c == ' ' || c == ',' || c == '\n' || c == '\r' || c == '\t' {
 			continue
-		} else if pathCmds[c] && (cmd == 0 || cmd != c || c == 'M' || c == 'm') { // any command
-			if cmd != 0 {
-				j += p.copyInstruction(b[j:], cmd)
+		} else if pathCmds[c] && (cmd == 0 || cmd != c && (cmd != 'M' || c != 'L') && (cmd != 'm' || c != 'l') || c == 'M' || c == 'm') { // any command
+			if 0 < i {
+				if cmd != 0 {
+					j += p.copyInstruction(b[j:], cmd)
+				} else if k < j {
+					j += copy(b[j:], b[k:i])
+				} else {
+					j += i - k
+				}
+				k = i
 			}
 			cmd = c
 			p.coords = p.coords[:0]
@@ -105,17 +112,22 @@ func (p *PathData) ShortenPathData(b []byte) []byte {
 			} else {
 				cmd = 0 // bad format, don't minify
 			}
-		} else if n := parse.Number(b[i:]); n > 0 {
+		} else if n := parse.Number(b[i:]); 0 < n {
 			f, _ := strconv.ParseFloat(b[i : i+n])
 			p.coords = append(p.coords, b[i:i+n])
 			p.coordFloats = append(p.coordFloats, f)
 			i += n - 1
+		} else if !pathCmds[c] {
+			cmd = 0
 		}
 	}
-	if cmd == 0 {
-		return b
+	if cmd != 0 {
+		j += p.copyInstruction(b[j:], cmd)
+	} else if k < j {
+		j += copy(b[j:], b[k:])
+	} else {
+		j += len(b) - k
 	}
-	j += p.copyInstruction(b[j:], cmd)
 	return b[:j]
 }
 
@@ -125,6 +137,9 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 	n := len(p.coords)
 	if n == 0 {
 		if cmd == 'Z' || cmd == 'z' {
+			p.state.cmd = 0
+			p.state.prevDigit = false
+			p.state.prevDigitIsInt = false
 			p.x = p.x0
 			p.y = p.y0
 			b[0] = 'z'
@@ -136,12 +151,11 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 
 	// get new cursor coordinates
 	di := 0
-	if (cmd == 'M' || cmd == 'm' || cmd == 'L' || cmd == 'l' || cmd == 'T' || cmd == 't') && n%2 == 0 {
+	if (cmd == 'M' || cmd == 'm') && n%2 == 0 {
+		di = 2 // print all subsequent L/l commands as well
+		//p.state.cmd = byte(0) // reprint M always, as the first pair is a move but subsequent pairs are L
+	} else if (cmd == 'L' || cmd == 'l' || cmd == 'T' || cmd == 't') && n%2 == 0 {
 		di = 2
-		// reprint M always, as the first pair is a move but subsequent pairs are L
-		if cmd == 'M' || cmd == 'm' {
-			p.state.cmd = byte(0)
-		}
 	} else if cmd == 'H' || cmd == 'h' || cmd == 'V' || cmd == 'v' {
 		di = 1
 	} else if (cmd == 'S' || cmd == 's' || cmd == 'Q' || cmd == 'q') && n%4 == 0 {
@@ -158,7 +172,7 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 	origCmd := cmd
 	for i := 0; i < n; i += di {
 		// subsequent coordinate pairs for M are really L
-		if i > 0 && (origCmd == 'M' || origCmd == 'm') {
+		if 0 < i && (origCmd == 'M' || origCmd == 'm') {
 			origCmd = 'L' + (origCmd - 'M')
 		}
 
@@ -341,12 +355,12 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 func (p *PathData) shortenCurPosInstruction(cmd byte, coords [][]byte) PathDataState {
 	state := p.state
 	p.curBuffer = p.curBuffer[:0]
-	if cmd != state.cmd && !(state.cmd == 'M' && cmd == 'L' || state.cmd == 'm' && cmd == 'l') {
+	if (cmd != state.cmd || cmd == 'M' || cmd == 'm') && !(state.cmd == 0 && cmd == 'M' || state.cmd == 'M' && cmd == 'L' || state.cmd == 'm' && cmd == 'l') {
 		p.curBuffer = append(p.curBuffer, cmd)
-		state.cmd = cmd
 		state.prevDigit = false
 		state.prevDigitIsInt = false
 	}
+	state.cmd = cmd
 	for i, coord := range coords {
 		// Arc has boolean flags that can only be 0 or 1. copyFlag prevents from adding a dot before a zero (instead of a space). However, when the dot already was there, the command is malformed and could make the path longer than before, introducing bugs.
 		if (cmd == 'A' || cmd == 'a') && (i%7 == 3 || i%7 == 4) {
@@ -364,14 +378,22 @@ func (p *PathData) shortenCurPosInstruction(cmd byte, coords [][]byte) PathDataS
 func (p *PathData) shortenAltPosInstruction(cmd byte, coordFloats []float64, x, y float64) PathDataState {
 	state := p.state
 	p.altBuffer = p.altBuffer[:0]
-	if cmd != state.cmd && !(state.cmd == 'M' && cmd == 'L' || state.cmd == 'm' && cmd == 'l') {
+	if (cmd != state.cmd || cmd == 'M' || cmd == 'm') && !(state.cmd == 0 && cmd == 'M' || state.cmd == 'M' && cmd == 'L' || state.cmd == 'm' && cmd == 'l') {
 		p.altBuffer = append(p.altBuffer, cmd)
-		state.cmd = cmd
 		state.prevDigit = false
 		state.prevDigitIsInt = false
 	}
+	state.cmd = cmd
 	for i, f := range coordFloats {
-		if cmd == 'L' || cmd == 'l' || cmd == 'C' || cmd == 'c' || cmd == 'S' || cmd == 's' || cmd == 'Q' || cmd == 'q' || cmd == 'T' || cmd == 't' || cmd == 'M' || cmd == 'm' {
+		if cmd == 'M' || cmd == 'm' {
+			if i%2 == 0 {
+				f += x
+				x = f
+			} else {
+				f += y
+				y = f
+			}
+		} else if cmd == 'L' || cmd == 'l' || cmd == 'C' || cmd == 'c' || cmd == 'S' || cmd == 's' || cmd == 'Q' || cmd == 'q' || cmd == 'T' || cmd == 't' {
 			if i%2 == 0 {
 				f += x
 			} else {
