@@ -44,6 +44,7 @@ func TestCSS(t *testing.T) {
 		{"a { b: 1", "a{b:1}"},
 		{"@unknown { border:1px solid #000 }", "@unknown{border:1px solid #000 }"},
 		{":root { --custom-variable:0px; }", ":root{--custom-variable:0px}"},
+		{":root { --v: a,\n        b,\n        c;\n}", ":root{--v:a, b, c}"}, // #740
 		{"a, b, c {color:red}", "a,b,c{color:red}"},
 		{"a, b, c { /* lala */ }", ""},
 
@@ -351,9 +352,18 @@ func TestCSSInline(t *testing.T) {
 		{"--custom-variable:0px;", "--custom-variable:0px"},
 		{"--foo: 0px ;", "--foo:0px"},
 		{"--foo: if(x > 5) this.width = 10", "--foo:if(x > 5) this.width = 10"},
-		{"--foo: ;", "--foo: "},               // whitespace value
-		{"--foo:;", "--foo:"},                 // empty value
-		{"--foo: initial ;", "--foo:initial"}, // invalid value, serializes to empty
+		{"--foo: 1px   2px", "--foo:1px 2px"},                   // #740
+		{"--foo: a  /* b   c */  d", "--foo:a /* b   c */ d"},   // #740, comment content is kept
+		{`--foo: "a   b"   "c"`, `--foo:"a   b" "c"`},           // #740, string content is kept
+		{`--foo: a\ \ \ b`, `--foo:a\ \ \ b`},                   // #740, escaped whitespace is kept
+		{"--foo: a\\\n   b", "--foo:a\\\n   b"},                 // #740, collapsing would turn the delimiter into an escaped space
+		{"--foo: a\nb   c", "--foo:a\nb c"},                     // #740, a single whitespace is left alone
+		{`--foo: a \41   b`, `--foo:a \41  b`},                  // #740, the escape takes one whitespace
+		{"--foo: calc(1px   +   2px)", "--foo:calc(1px + 2px)"}, // #740
+		{"--foo: url(  a  b  )   c", "--foo:url(  a  b  ) c"},   // #740, url content is kept
+		{"--foo: ;", "--foo: "},                                 // whitespace value
+		{"--foo:;", "--foo:"},                                   // empty value
+		{"--foo: initial ;", "--foo:initial"},                   // invalid value, serializes to empty
 		{"x: var(--0);", "x:var(--0)"},
 		{"color=blue;", "color=blue"},
 		{"x: white , white", "x:white,white"},

@@ -268,7 +268,7 @@ func (c *cssMinifier) minifyGrammar() {
 		case css.CustomPropertyGrammar:
 			c.w.Write(data)
 			c.w.Write(colonBytes)
-			value := parse.TrimWhitespace(c.p.Values()[0].Data)
+			value := parse.TrimWhitespace(replaceMultipleWhitespace(c.p.Values()[0].Data))
 			if len(c.p.Values()[0].Data) != 0 && len(value) == 0 {
 				value = spaceBytes
 			}
@@ -284,6 +284,36 @@ func (c *cssMinifier) minifyGrammar() {
 		default:
 			c.w.Write(data)
 		}
+	}
+}
+
+// replaceMultipleWhitespace replaces runs of two or more whitespace characters
+// in a custom property value by a single space. Unlike its namesake in parse it
+// tokenizes the value, so that whitespace inside strings, comments and urls is
+// kept. It writes in place, which is safe because the parser hands us a value it
+// built itself and nothing reads it after this.
+func replaceMultipleWhitespace(b []byte) []byte {
+	multiple := false
+	for i := 1; i < len(b) && !multiple; i++ {
+		multiple = parse.IsWhitespace(b[i-1]) && parse.IsWhitespace(b[i])
+	}
+	if !multiple {
+		return b
+	}
+
+	l := css.NewLexer(parse.NewInputBytes(b))
+	j, backslash := 0, false
+	for {
+		tt, data := l.Next()
+		if tt == css.ErrorToken {
+			return b[:j]
+		} else if tt == css.WhitespaceToken && 1 < len(data) && !backslash {
+			data = spaceBytes
+		}
+		// a backslash is only a delimiter when a newline follows it, and collapsing
+		// that newline would turn the pair into an escaped space
+		backslash = tt == css.DelimToken && data[0] == '\\'
+		j += copy(b[j:], data)
 	}
 }
 
