@@ -63,6 +63,7 @@ var cmdArgExtension = regexp.MustCompile(`^\.[0-9a-zA-Z]+`)
 func (c *cmdMinifier) Minify(_ *M, w io.Writer, r io.Reader, _ map[string]string) error {
 	cmd := &exec.Cmd{}
 	*cmd = *c.cmd // concurrency safety
+	cmd.Args = slices.Clone(c.cmd.Args)
 
 	var in, out *os.File
 	for i, arg := range cmd.Args {
