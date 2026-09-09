@@ -137,6 +137,33 @@ func TestAdd(t *testing.T) {
 	test.String(t, s[len(s)-13:], "exit status 2")
 }
 
+type commandOutputWriter struct {
+	err error
+}
+
+func (w commandOutputWriter) Write([]byte) (int, error) {
+	return 0, w.err
+}
+
+func TestCommandOutputWriteError(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		writeErr, want error
+	}{
+		{"error", errDummy, errDummy},
+		{"short-write", nil, io.ErrShortWrite},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := New()
+			m.AddCmd("dummy/file", helperCommand(t, "dummy/file", "-in=[$in.ext]", "-out=$out.ext"))
+			err := m.Minify("dummy/file", commandOutputWriter{tc.writeErr}, strings.NewReader("test"))
+			if !errors.Is(err, tc.want) {
+				t.Fatalf("got %v, want %v", err, tc.want)
+			}
+		})
+	}
+}
+
 func TestCommandArgumentsReusable(t *testing.T) {
 	cmd := helperCommand(t, "dummy/file", "-in=[$in.ext]", "-out=$out.ext")
 	args := slices.Clone(cmd.Args)

@@ -101,8 +101,6 @@ func (c *cmdMinifier) Minify(_ *M, w io.Writer, r io.Reader, _ map[string]string
 	}
 	if out == nil {
 		cmd.Stdout = w
-	} else {
-		defer io.Copy(w, out)
 	}
 	stderr := &bytes.Buffer{}
 	cmd.Stderr = stderr
@@ -113,6 +111,12 @@ func (c *cmdMinifier) Minify(_ *M, w io.Writer, r io.Reader, _ map[string]string
 			err = fmt.Errorf("%s", stderr.String())
 		}
 		err = fmt.Errorf("command %s failed: %w", cmd.Path, err)
+	}
+	if out != nil {
+		_, copyErr := io.Copy(w, out)
+		if err == nil {
+			return copyErr
+		}
 	}
 	return err
 }
