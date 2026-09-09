@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -160,6 +161,25 @@ func TestCommandOutputWriteError(t *testing.T) {
 				t.Fatalf("got %v, want %v", err, tc.want)
 			}
 		})
+	}
+}
+
+func TestCommandArgumentsReusable(t *testing.T) {
+	cmd := helperCommand(t, "dummy/file", "-in=[$in.ext]", "-out=$out.ext")
+	args := slices.Clone(cmd.Args)
+	m := New()
+	m.AddCmd("dummy/file", cmd)
+	for _, input := range []string{"first", "second"} {
+		var out bytes.Buffer
+		if err := m.Minify("dummy/file", &out, strings.NewReader(input)); err != nil {
+			t.Fatal(err)
+		}
+		if out.String() != input {
+			t.Fatalf("got %q, want %q", out.String(), input)
+		}
+		if !slices.Equal(cmd.Args, args) {
+			t.Fatalf("command arguments changed: got %q, want %q", cmd.Args, args)
+		}
 	}
 }
 
