@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 
@@ -134,6 +135,52 @@ func TestAdd(t *testing.T) {
 
 	s = mAdd.Minify("stderr6", w, r).Error()
 	test.String(t, s[len(s)-13:], "exit status 2")
+}
+
+type commandOutputWriter struct {
+	err error
+}
+
+func (w commandOutputWriter) Write([]byte) (int, error) {
+	return 0, w.err
+}
+
+func TestCommandOutputWriteError(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		writeErr, want error
+	}{
+		{"error", errDummy, errDummy},
+		{"short-write", nil, io.ErrShortWrite},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := New()
+			m.AddCmd("dummy/file", helperCommand(t, "dummy/file", "-in=[$in.ext]", "-out=$out.ext"))
+			err := m.Minify("dummy/file", commandOutputWriter{tc.writeErr}, strings.NewReader("test"))
+			if !errors.Is(err, tc.want) {
+				t.Fatalf("got %v, want %v", err, tc.want)
+			}
+		})
+	}
+}
+
+func TestCommandArgumentsReusable(t *testing.T) {
+	cmd := helperCommand(t, "dummy/file", "-in=[$in.ext]", "-out=$out.ext")
+	args := slices.Clone(cmd.Args)
+	m := New()
+	m.AddCmd("dummy/file", cmd)
+	for _, input := range []string{"first", "second"} {
+		var out bytes.Buffer
+		if err := m.Minify("dummy/file", &out, strings.NewReader(input)); err != nil {
+			t.Fatal(err)
+		}
+		if out.String() != input {
+			t.Fatalf("got %q, want %q", out.String(), input)
+		}
+		if !slices.Equal(cmd.Args, args) {
+			t.Fatalf("command arguments changed: got %q, want %q", cmd.Args, args)
+		}
+	}
 }
 
 func TestMatch(t *testing.T) {
