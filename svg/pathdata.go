@@ -355,7 +355,7 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 func (p *PathData) shortenCurPosInstruction(cmd byte, coords [][]byte) PathDataState {
 	state := p.state
 	p.curBuffer = p.curBuffer[:0]
-	if (cmd != state.cmd || cmd == 'M' || cmd == 'm') && !(state.cmd == 0 && cmd == 'M' || state.cmd == 'M' && cmd == 'L' || state.cmd == 'm' && cmd == 'l') {
+	if (cmd != state.cmd || cmd == 'M' || cmd == 'm') && !(state.cmd == 'M' && cmd == 'L' || state.cmd == 'm' && cmd == 'l') {
 		p.curBuffer = append(p.curBuffer, cmd)
 		state.prevDigit = false
 		state.prevDigitIsInt = false
@@ -378,7 +378,7 @@ func (p *PathData) shortenCurPosInstruction(cmd byte, coords [][]byte) PathDataS
 func (p *PathData) shortenAltPosInstruction(cmd byte, coordFloats []float64, x, y float64) PathDataState {
 	state := p.state
 	p.altBuffer = p.altBuffer[:0]
-	if (cmd != state.cmd || cmd == 'M' || cmd == 'm') && !(state.cmd == 0 && cmd == 'M' || state.cmd == 'M' && cmd == 'L' || state.cmd == 'm' && cmd == 'l') {
+	if (cmd != state.cmd || cmd == 'M' || cmd == 'm') && !(state.cmd == 'M' && cmd == 'L' || state.cmd == 'm' && cmd == 'l') {
 		p.altBuffer = append(p.altBuffer, cmd)
 		state.prevDigit = false
 		state.prevDigitIsInt = false
