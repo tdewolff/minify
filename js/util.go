@@ -212,6 +212,9 @@ var binaryLeftPrecMap = map[js.TokenType]js.OpPrec{
 	js.AndToken:        js.OpAnd,
 	js.OrToken:         js.OpOr,
 	js.NullishToken:    js.OpBitOr, // or OpCoalesce
+	js.AndEqToken:      js.OpLHS,
+	js.OrEqToken:       js.OpLHS,
+	js.NullishEqToken:  js.OpLHS,
 	js.CommaToken:      js.OpExpr,
 }
 
@@ -254,6 +257,9 @@ var binaryRightPrecMap = map[js.TokenType]js.OpPrec{
 	js.AndToken:        js.OpAnd,   // changes order in AST but not in execution
 	js.OrToken:         js.OpOr,    // changes order in AST but not in execution
 	js.NullishToken:    js.OpBitOr, // or OpCoalesce
+	js.AndEqToken:      js.OpAssign,
+	js.OrEqToken:       js.OpAssign,
+	js.NullishEqToken:  js.OpAssign,
 	js.CommaToken:      js.OpAssign,
 }
 

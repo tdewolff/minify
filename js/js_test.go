@@ -863,11 +863,12 @@ func TestJS(t *testing.T) {
 		{"String.raw`\\b`", "String.raw`\\b`"}, // #701
 		{"if(true){const a=setInterval(()=>{clearInterval(a)},100)}", "{const a=setInterval(()=>{clearInterval(a)},100)}"}, // #867
 		{"({a(key){if(x){b.push({key})}}})", "({a(key){x&&b.push({key})}})"},                                               // #910
-		{"(a?.b()).c", "(a?.b()).c"},                                        // #912
-		{`var a=0;var b=1,c=[...b],[d]=1;`, "var[d]=1,a=0,b=1,c=[...b]"},    // #926
-		{`class A{get #a(){} set #a(x){}}`, `class A{get#a(){}set#a(x){}}`}, // #932
-		{`()=>{const a=1,{b}=a}`, `()=>{const a=1,{b}=a}`},                  // # 939
-		{`()=>{const a={b};const{c}={d:a}}`, `()=>{const a={b},{c}={d:a}}`}, // # 939
+		{"(a?.b()).c", "(a?.b()).c"},                                                                                     // #912
+		{`var a=0;var b=1,c=[...b],[d]=1;`, "var[d]=1,a=0,b=1,c=[...b]"},                                                 // #926
+		{`class A{get #a(){} set #a(x){}}`, `class A{get#a(){}set#a(x){}}`},                                              // #932
+		{`()=>{const a=1,{b}=a}`, `()=>{const a=1,{b}=a}`},                                                               // # 939
+		{`()=>{const a={b};const{c}={d:a}}`, `()=>{const a={b},{c}={d:a}}`},                                              // # 939
+		{`this._dirty&&=(this._texture.update(this._image),!1)`, `this._dirty&&=(this._texture.update(this._image),!1)`}, // # 1037
 	}
 
 	m := minify.New()
