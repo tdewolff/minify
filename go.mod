@@ -11,6 +11,7 @@ require (
 )
 
 require (
+	github.com/dvyukov/go-fuzz v0.0.0-20240924070022-e577bee5275c // indirect
 	github.com/jmoiron/sqlx v1.4.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	golang.org/x/sys v0.47.0 // indirect

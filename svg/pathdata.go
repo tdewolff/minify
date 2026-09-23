@@ -82,7 +82,7 @@ func (p *PathData) ShortenPathData(b []byte) []byte {
 	p.state = PathDataState{}
 
 	j, k := 0, 0
-	cmd := byte('M')
+	var cmd byte
 	for i := 0; i < len(b); i++ {
 		c := b[i]
 		if c == ' ' || c == ',' || c == '\n' || c == '\r' || c == '\t' {
@@ -90,7 +90,7 @@ func (p *PathData) ShortenPathData(b []byte) []byte {
 		} else if pathCmds[c] && (cmd == 0 || cmd != c && (cmd != 'M' || c != 'L') && (cmd != 'm' || c != 'l') || c == 'M' || c == 'm') { // any command
 			if 0 < i {
 				if cmd != 0 {
-					j += p.copyInstruction(b[j:], cmd)
+					j += p.copyInstruction(b[j:], b[k:i], cmd)
 				} else if k < j {
 					j += copy(b[j:], b[k:i])
 				} else {
@@ -122,7 +122,7 @@ func (p *PathData) ShortenPathData(b []byte) []byte {
 		}
 	}
 	if cmd != 0 {
-		j += p.copyInstruction(b[j:], cmd)
+		j += p.copyInstruction(b[j:], b[k:], cmd)
 	} else if k < j {
 		j += copy(b[j:], b[k:])
 	} else {
@@ -133,7 +133,7 @@ func (p *PathData) ShortenPathData(b []byte) []byte {
 
 // copyInstruction copies pathdata of a single command, but may be comprised of multiple sets for that command. For example, L takes two coordinates, but this function may process 2*N coordinates. Lowercase commands are relative commands, where the coordinates are relative to the previous point. Uppercase commands have absolute coordinates.
 // We update p.x and p.y (the current coordinates) according to the commands given. For each set of coordinates we call shortenCurPosInstruction and shortenAltPosInstruction. The former just minifies the coordinates, the latter will inverse the lowercase/uppercase of the command, and see if the coordinates get smaller due to that. The shortest is chosen and copied to b, i.e. b is the destination and is not read from.
-func (p *PathData) copyInstruction(b []byte, cmd byte) int {
+func (p *PathData) copyInstruction(b, orig []byte, cmd byte) int {
 	n := len(p.coords)
 	if n == 0 {
 		if cmd == 'Z' || cmd == 'z' {
@@ -145,7 +145,7 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 			b[0] = 'z'
 			return 1
 		}
-		return 0
+		return copy(b, orig)
 	}
 	isRelCmd := cmd >= 'a'
 
@@ -165,7 +165,7 @@ func (p *PathData) copyInstruction(b []byte, cmd byte) int {
 	} else if (cmd == 'A' || cmd == 'a') && n%7 == 0 {
 		di = 7
 	} else {
-		return 0
+		return copy(b, orig)
 	}
 
 	j := 0
