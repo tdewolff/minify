@@ -56,7 +56,7 @@ func TestJS(t *testing.T) {
 		{`a-- > b`, `a-- >b`},
 		{`(a--) > b`, `a-- >b`},
 		{`a-- < b`, `a--<b`},
-		{`a < !--b`, `a<! --b`},
+		{`a < !--b`, `a<!--b`},
 		{`a > !--b`, `a>!--b`},
 		{`!--b`, `!--b`},
 		{`/a/ + b`, `/a/+b`},
@@ -167,9 +167,10 @@ func TestJS(t *testing.T) {
 		{`"str1ng" + "str2ng"`, `"str1ngstr2ng"`},
 		{`"str1ng" + "str2ng" + "str3ng"`, `"str1ngstr2ngstr3ng"`},
 		{`"padding" + this`, `"padding"+this`},
-		{`"<\/script>"`, `"<\/script>"`},
-		{`"</scr"+"ipt>"`, `"<\/script>"`},
-		{`"<\/SCRIPT>"`, `"<\/SCRIPT>"`},
+		{`"</script>"`, `"</script>"`},
+		{`"</scr"+"ipt>"`, `"</script>"`},
+		{`"</SCRIPT>"`, `"</SCRIPT>"`},
+		{`"\x3c/SCRIPT>"`, `"</SCRIPT>"`},
 		{`"\""`, `'"'`},
 		{`'\'""'`, "`'\"\"`"},
 		{`"\"\"a'"`, "`\"\"a'`"},
@@ -795,8 +796,8 @@ func TestJS(t *testing.T) {
 		{`/[^a-b\-\-]/`, `/[^a-b--]/`},
 		{`/[^a-b\-\-\-]/`, `/[^a-b-\--]/`},
 		{`/[^a\-\--\-\-\-]/`, `/[^a\-\-----]/`},
-		{`x</script>/`, `x< /script>/`},
-		{`x</SCRIPT>/`, `x< /SCRIPT>/`},
+		{`x</script>/`, `x</script>/`},
+		{`x</SCRIPT>/`, `x</SCRIPT>/`},
 
 		// edge-cases
 		{`let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`, `let o=null;try{o=(o?.a).b||"FAIL"}catch{}console.log(o||"PASS")`},
@@ -804,10 +805,11 @@ func TestJS(t *testing.T) {
 		{`1.5.a`, `1.5.a`},
 		{`1e4.a`, `1e4.a`},
 		{`t0.a`, `t0.a`},
-		{`for(;a < !--script;);`, `for(;a<! --script;);`},
-		{`for(;a < /script>/;);`, `for(;a< /script>/;);`},
-		{`a<<!--script`, `a<<! --script`},
-		{`a<</script>/`, `a<< /script>/`},
+		{`for(;a < !--script;);`, `for(;a<!--script;);`},
+		{`for(;a < /script>/;);`, `for(;a</script>/;);`},
+		{`a<<!--script`, `a<<!--script`},
+		{`a<</script>/`, `a<</script>/`},
+		{"`\\x3c/script>`", "`</script>`"},
 		{`function f(a,b){a();for(const c of b){const b=0}}`, `function f(a,b){a();for(const c of b){const b=0}}`},
 		{`function f(){return a,b,void 0}`, `function f(){return a,b}`},
 		{`var arr=[];var slice=arr.slice;var concat=arr.concat;var push=arr.push;var indexOf=arr.indexOf;var class2type={};`, `var arr=[],slice=arr.slice,concat=arr.concat,push=arr.push,indexOf=arr.indexOf,class2type={}`},
@@ -996,6 +998,39 @@ func TestJSVersion(t *testing.T) {
 	}
 }
 
+func TestJSEscapeHTML(t *testing.T) {
+	tests := []struct {
+		js       string
+		expected string
+	}{
+		{`"<\/script>"`, `"<\/script>"`},
+		{`"</scr"+"ipt>"`, `"<\/script>"`},
+		{`"<\/SCRIPT>"`, `"<\/SCRIPT>"`},
+		{`"\x3c/SCRIPT>"`, `"<\/SCRIPT>"`},
+		{`x< /script>/`, `x< /script>/`},
+		{`x< /SCRIPT>/`, `x< /SCRIPT>/`},
+		{`for(;a < !--script;);`, `for(;a<! --script;);`},
+		{`for(;a < /script>/;);`, `for(;a< /script>/;);`},
+		{`a<<!--script`, `a<<! --script`},
+		{`"<\!--script"`, `"<\!--script"`},
+		{"`<\\!--script`", "`<\\!--script`"},
+		{`a<< /script>/`, `a<< /script>/`},
+		{"`\\x3c/script>`", "`<\\/script>`"},
+		{`a < !--b`, `a<! --b`},
+	}
+
+	m := minify.New()
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%v", tt.js), func(t *testing.T) {
+			r := bytes.NewBufferString(tt.js)
+			w := &bytes.Buffer{}
+			o := Minifier{KeepVarNames: true, useAlphabetVarNames: true}
+			params := map[string]string{"escape-html": "1"}
+			err := o.Minify(m, w, r, params)
+			test.Minify(t, tt.js, err, w.String(), tt.expected)
+		})
+	}
+}
 func TestReaderError(t *testing.T) {
 	r := test.NewErrorReader(0)
 	w := &bytes.Buffer{}

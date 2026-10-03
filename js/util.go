@@ -942,7 +942,7 @@ func mergeBinaryExpr(expr *js.BinaryExpr) {
 	}
 }
 
-func minifyString(b []byte, allowTemplate bool) []byte {
+func minifyString(b []byte, allowTemplate, escapeHTML bool) []byte {
 	if len(b) < 3 {
 		return []byte("\"\"")
 	}
@@ -1029,10 +1029,10 @@ func minifyString(b []byte, allowTemplate bool) []byte {
 	b[len(b)-1] = quote
 
 	// strip unnecessary escapes
-	return replaceEscapes(b, quote, 1, 1)
+	return replaceEscapes(b, quote, 1, 1, escapeHTML)
 }
 
-func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
+func replaceEscapes(b []byte, quote byte, prefix, suffix int, escapeHTML bool) []byte {
 	// strip unnecessary escapes
 	j := 0
 	start := 0
@@ -1207,28 +1207,25 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 				i++
 				b[i] = c // was overwritten above
 			}
-		} else if c == '<' && 9 <= len(b)-1-i {
-			if b[i+1] == '\\' && 10 <= len(b)-1-i && parse.EqualFold(b[i+2:i+10], []byte("/script>")) {
-				i += 9
-			} else if parse.EqualFold(b[i+1:i+9], []byte("/script>")) {
-				i++
-				if j < start {
-					// avoid append
-					j += copy(b[j:], b[start:i])
-					b[j] = '\\'
-					j++
-					start = i
-				} else {
-					b = append(append(b[:i], '\\'), b[i:]...)
-					i++
-					b[i] = '/' // was overwritten above
-				}
-			}
 		}
 	}
 	if start != 0 {
 		j += copy(b[j:], b[start:])
-		return b[:j]
+		b = b[:j]
+	}
+	if escapeHTML {
+		// TODO: not optimised, integrate above?
+		for i := 0; i < len(b); i++ {
+			if b[i] == '<' {
+				if i+3 < len(b) && bytes.Equal(b[i+1:i+4], []byte("!--")) {
+					b = append(append(b[:i+1], '\\'), b[i+1:]...)
+					b[i+2] = '!' // war overwritten above
+				} else if i+8 < len(b) && parse.EqualFold(b[i+1:i+9], []byte("/script>")) {
+					b = append(append(b[:i+1], '\\'), b[i+1:]...)
+					b[i+2] = '/' // war overwritten above
+				}
+			}
+		}
 	}
 	return b
 }

@@ -53,6 +53,7 @@ func (o *Minifier) Minify(_ *minify.M, w io.Writer, r io.Reader, params map[stri
 		w:       w,
 		renamer: newRenamer(!o.KeepVarNames, !o.useAlphabetVarNames),
 	}
+	m.escapeHTML = params != nil && params["escape-html"] == "1"
 	m.hoistVars(&ast.BlockStmt)
 	ast.List = optimizeStmtList(ast.List, functionBlock)
 	for _, item := range ast.List {
@@ -85,6 +86,7 @@ type jsMinifier struct {
 	groupedStmt    bool       // avoid ambiguous syntax by grouping the expression statement
 	inFor          bool
 	spaceBefore    byte
+	escapeHTML     bool
 
 	renamer *renamer
 }
@@ -357,7 +359,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			if stmt.Default != nil || stmt.List != nil {
 				m.write(fromBytes)
 			}
-			m.write(minifyString(stmt.Module, false))
+			m.write(minifyString(stmt.Module, false, m.escapeHTML))
 			m.requireSemicolon()
 		}
 	case *js.ExportStmt:
@@ -395,7 +397,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			}
 			if stmt.Module != nil {
 				m.write(fromBytes)
-				m.write(minifyString(stmt.Module, false))
+				m.write(minifyString(stmt.Module, false, m.escapeHTML))
 			}
 			m.requireSemicolon()
 		}
@@ -467,7 +469,7 @@ func (m *jsMinifier) minifyStmtOrBlock(i js.IStmt, blockType blockType) {
 func (m *jsMinifier) minifyAlias(alias js.Alias) {
 	if alias.Name != nil {
 		if alias.Name[0] == '"' || alias.Name[0] == '\'' {
-			m.write(minifyString(alias.Name, false))
+			m.write(minifyString(alias.Name, false, m.escapeHTML))
 		} else {
 			m.write(alias.Name)
 		}
@@ -478,7 +480,7 @@ func (m *jsMinifier) minifyAlias(alias js.Alias) {
 	}
 	if alias.Binding != nil {
 		if alias.Binding[0] == '"' || alias.Binding[0] == '\'' {
-			m.write(minifyString(alias.Binding, false))
+			m.write(minifyString(alias.Binding, false, m.escapeHTML))
 		} else {
 			m.write(alias.Binding)
 		}
@@ -770,7 +772,7 @@ func (m *jsMinifier) minifyPropertyName(name js.PropertyName) {
 		m.minifyExpr(name.Computed, js.OpAssign)
 		m.write(closeBracketBytes)
 	} else if name.Literal.TokenType == js.StringToken {
-		m.write(minifyString(name.Literal.Data, false))
+		m.write(minifyString(name.Literal.Data, false, m.escapeHTML))
 	} else {
 		m.write(name.Literal.Data)
 	}
@@ -903,10 +905,10 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				m.write(notOneBytes)
 			}
 		} else if expr.TokenType == js.StringToken {
-			m.write(minifyString(expr.Data, m.o.minVersion(2015)))
+			m.write(minifyString(expr.Data, m.o.minVersion(2015), m.escapeHTML))
 		} else if expr.TokenType == js.RegExpToken {
 			// </script>/ => < /script>/
-			if 0 < len(m.prev) && m.prev[len(m.prev)-1] == '<' && len(regExpScriptBytes) <= len(expr.Data) && parse.EqualFold(expr.Data[:len(regExpScriptBytes)], regExpScriptBytes) {
+			if m.escapeHTML && 0 < len(m.prev) && m.prev[len(m.prev)-1] == '<' && len(regExpScriptBytes) <= len(expr.Data) && parse.EqualFold(expr.Data[:len(regExpScriptBytes)], regExpScriptBytes) {
 				m.write(spaceBytes)
 			}
 			m.write(minifyRegExp(expr.Data))
@@ -1068,7 +1070,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			} else if expr.Op == js.PosToken {
 				// +++  =>  + ++
 				m.writeSpaceBefore('+')
-			} else if expr.Op == js.NegToken || isLtNot {
+			} else if expr.Op == js.NegToken || isLtNot && m.escapeHTML {
 				// ---  =>  - --
 				// <!--  =>  <! --
 				m.writeSpaceBefore('-')
@@ -1218,14 +1220,14 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 		m.inFor = false
 		for _, item := range expr.List {
 			if expr.Tag == nil {
-				m.write(replaceEscapes(item.Value, '`', 1, 2))
+				m.write(replaceEscapes(item.Value, '`', 1, 2, m.escapeHTML))
 			} else {
 				m.write(item.Value)
 			}
 			m.minifyExpr(item.Expr, js.OpExpr)
 		}
 		if expr.Tag == nil {
-			m.write(replaceEscapes(expr.Tail, '`', 1, 1))
+			m.write(replaceEscapes(expr.Tail, '`', 1, 1, m.escapeHTML))
 		} else {
 			m.write(expr.Tail)
 		}

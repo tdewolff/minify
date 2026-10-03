@@ -167,7 +167,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					} else if 0 < len(rawTagMediatype) {
 						mimetype, params = parse.Mediatype(rawTagMediatype)
 					} else if rawTagHash == Script {
-						mimetype = jsMimeBytes
+						mimetype, params = jsMimeBytes, map[string]string{"escape-html": "1"}
 					} else if rawTagHash == Style {
 						mimetype = cssMimeBytes
 					}

@@ -96,7 +96,7 @@ func TestString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.str, func(t *testing.T) {
-			test.Bytes(t, minifyString([]byte(tt.str), true), []byte(tt.expected))
+			test.Bytes(t, minifyString([]byte(tt.str), true, false), []byte(tt.expected))
 		})
 	}
 }
