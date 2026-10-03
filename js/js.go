@@ -906,7 +906,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			m.write(minifyString(expr.Data, m.o.minVersion(2015)))
 		} else if expr.TokenType == js.RegExpToken {
 			// </script>/ => < /script>/
-			if 0 < len(m.prev) && m.prev[len(m.prev)-1] == '<' && bytes.HasPrefix(expr.Data, regExpScriptBytes) {
+			if 0 < len(m.prev) && m.prev[len(m.prev)-1] == '<' && len(regExpScriptBytes) <= len(expr.Data) && parse.EqualFold(expr.Data[:len(regExpScriptBytes)], regExpScriptBytes) {
 				m.write(spaceBytes)
 			}
 			m.write(minifyRegExp(expr.Data))

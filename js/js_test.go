@@ -169,6 +169,7 @@ func TestJS(t *testing.T) {
 		{`"padding" + this`, `"padding"+this`},
 		{`"<\/script>"`, `"<\/script>"`},
 		{`"</scr"+"ipt>"`, `"<\/script>"`},
+		{`"<\/SCRIPT>"`, `"<\/SCRIPT>"`},
 		{`"\""`, `'"'`},
 		{`'\'""'`, "`'\"\"`"},
 		{`"\"\"a'"`, "`\"\"a'`"},
@@ -794,6 +795,8 @@ func TestJS(t *testing.T) {
 		{`/[^a-b\-\-]/`, `/[^a-b--]/`},
 		{`/[^a-b\-\-\-]/`, `/[^a-b-\--]/`},
 		{`/[^a\-\--\-\-\-]/`, `/[^a\-\-----]/`},
+		{`x</script>/`, `x< /script>/`},
+		{`x</SCRIPT>/`, `x< /SCRIPT>/`},
 
 		// edge-cases
 		{`let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`, `let o=null;try{o=(o?.a).b||"FAIL"}catch{}console.log(o||"PASS")`},

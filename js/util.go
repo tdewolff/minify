@@ -8,6 +8,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/tdewolff/minify/v2"
+	"github.com/tdewolff/parse/v2"
 	"github.com/tdewolff/parse/v2/js"
 	"github.com/tdewolff/parse/v2/strconv"
 )
@@ -1207,9 +1208,9 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int) []byte {
 				b[i] = c // was overwritten above
 			}
 		} else if c == '<' && 9 <= len(b)-1-i {
-			if b[i+1] == '\\' && 10 <= len(b)-1-i && bytes.Equal(b[i+2:i+10], []byte("/script>")) {
+			if b[i+1] == '\\' && 10 <= len(b)-1-i && parse.EqualFold(b[i+2:i+10], []byte("/script>")) {
 				i += 9
-			} else if bytes.Equal(b[i+1:i+9], []byte("/script>")) {
+			} else if parse.EqualFold(b[i+1:i+9], []byte("/script>")) {
 				i++
 				if j < start {
 					// avoid append

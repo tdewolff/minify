@@ -208,6 +208,8 @@ func TestHTMLCSSJS(t *testing.T) {
 		{`<style amp-boilerplate>body{-webkit-animation:-amp-start 8s    steps(1,end) 0s 1 normal both;}</style>`, `<style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;}</style>`},
 		{`<button onclick="return false">`, `<button onclick=return!1>`},                                                                                                                      // #631
 		{`<html><svg id="foo" viewBox="0 0 1 1" xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>`, `<svg id="foo" viewBox="0 0 1 1"><rect width="1" height="1"/></svg>`}, // #704
+		{`<script>var a="<\/SCRIPT>"</script>`, `<script>var a="<\/SCRIPT>"</script>`},
+		{`<script>x< /SCRIPT>/</script>`, `<script>x< /SCRIPT>/</script>`},
 	}
 
 	m := minify.New()
