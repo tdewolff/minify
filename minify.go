@@ -248,22 +248,20 @@ func (m *M) MinifyMimetype(mimetype []byte, w io.Writer, r io.Reader, params map
 
 // Bytes minifies an array of bytes (safe for concurrent use). When an error occurs it return the original array and the error.
 // It returns an error when no such mimetype exists (ErrNotExist) or any error occurred in the minifier function.
-func (m *M) Bytes(mediatype string, v []byte) ([]byte, error) {
-	b := slices.Clone(v) // TODO: test
-	out := buffer.NewWriter(b[:0])
+func (m *M) Bytes(mediatype string, b []byte) ([]byte, error) {
+	out := buffer.NewWriter(make([]byte, 0, len(b))) // TODO: reuse input buffer, make sure minifiers NEVER make output longer, need tests
 	if err := m.Minify(mediatype, out, buffer.NewReader(b)); err != nil {
-		return v, err
+		return b, err
 	}
 	return out.Bytes(), nil
 }
 
 // String minifies a string (safe for concurrent use). When an error occurs it return the original string and the error.
 // It returns an error when no such mimetype exists (ErrNotExist) or any error occurred in the minifier function.
-func (m *M) String(mediatype string, v string) (string, error) {
-	b := []byte(v)
-	out := buffer.NewWriter(b[:0]) // TODO: test
-	if err := m.Minify(mediatype, out, buffer.NewReader(b)); err != nil {
-		return v, err
+func (m *M) String(mediatype string, s string) (string, error) {
+	out := buffer.NewWriter(make([]byte, 0, len(s))) // TODO: reuse input buffer, make sure minifiers NEVER make output longer, need tests
+	if err := m.Minify(mediatype, out, strings.NewReader(s)); err != nil {
+		return s, err
 	}
 	return string(out.Bytes()), nil
 }
