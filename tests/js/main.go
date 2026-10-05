@@ -22,8 +22,8 @@ func Fuzz(data []byte) int {
 		// is </script> is present, it was not originally embedded in HTML
 		params = map[string]string{"escape-html": "1"}
 	}
-	_ = js.Minify(minify.New(), w, r, params)
-	if hasScript != bytes.Contains(bytes.ToLower(w.Bytes()), []byte("</script>")) || hasComment != bytes.Contains(data, []byte("<!--")) {
+	err := js.Minify(minify.New(), w, r, params)
+	if err == nil && (hasScript != bytes.Contains(bytes.ToLower(w.Bytes()), []byte("</script>")) || hasComment != bytes.Contains(data, []byte("<!--"))) {
 		panic("</script> or <!-- added or removed")
 	}
 	return 1
