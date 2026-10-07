@@ -61,6 +61,8 @@ type Minifier struct {
 	KeepQuotes              bool
 	KeepWhitespace          bool
 	TemplateDelims          [2]string
+	TemplateBegin           string
+	TemplateEnd             string
 }
 
 // Minify minifies HTML data, it reads from r and writes to w.
@@ -87,6 +89,12 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 	z := parse.NewInput(r)
 	defer z.Restore()
+
+	// shim to properly handle template delims if they have been passed via the cli
+	if o.TemplateDelims[0] == "" && o.TemplateDelims[1] == "" && o.TemplateBegin != "" && o.TemplateEnd != "" {
+		o.TemplateDelims[0] = o.TemplateBegin
+		o.TemplateDelims[1] = o.TemplateEnd
+	}
 
 	l := html.NewTemplateLexer(z, o.TemplateDelims)
 	tb := NewTokenBuffer(z, l)
