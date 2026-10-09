@@ -195,20 +195,12 @@ func optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 		list[i] = optimizeStmt(list[i])
 
 		if _, ok := list[i].(*js.EmptyStmt); ok {
-			k := i + 1
-			for ; k < len(list); k++ {
-				if _, ok := list[k].(*js.EmptyStmt); !ok {
-					break
-				}
-			}
-			list = append(list[:i], list[k:]...)
-			i--
 			continue
 		}
 
-		if 0 < i {
+		if 0 < j {
 			// merge expression statements with expression, return, and throw statements
-			if left, ok := list[i-1].(*js.ExprStmt); ok {
+			if left, ok := list[j-1].(*js.ExprStmt); ok {
 				if right, ok := list[i].(*js.ExprStmt); ok {
 					right.Value = commaExpr(left.Value, right.Value)
 					j--
@@ -257,7 +249,7 @@ func optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 						j--
 					}
 				}
-			} else if left, ok := list[i-1].(*js.VarDecl); ok {
+			} else if left, ok := list[j-1].(*js.VarDecl); ok {
 				if right, ok := list[i].(*js.VarDecl); ok && left.TokenType == right.TokenType {
 					// merge const and let declarations, or non-hoisted var declarations
 					right.List = append(left.List, right.List...)
@@ -275,7 +267,7 @@ func optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 					if exprStmt, ok := list[i].(*js.ExprStmt); ok {
 						// pull in assignments to variables into the declaration, e.g. var a;a=5  =>  var a=5
 						if merge := mergeVarDeclExprStmt(left, exprStmt, false); merge {
-							list[i] = list[i-1]
+							list[i] = list[j-1]
 							j--
 						}
 					} else if forStmt, ok := list[i].(*js.ForStmt); ok {
