@@ -241,9 +241,55 @@ func (c *cssMinifier) minifyGrammar() {
 		case css.BeginAtRuleGrammar:
 			rule := slices.Clone(data)
 			values := slices.Clone(c.p.Values())
+			atRuleName := rule
+			if len(atRuleName) > 0 && atRuleName[0] == '@' {
+				atRuleName = atRuleName[1:]
+			}
+			if len(atRuleName) > 0 && atRuleName[0] == '-' {
+				if i := bytes.IndexByte(atRuleName[1:], '-'); i != -1 {
+					atRuleName = atRuleName[i+2:]
+				}
+			}
+			isScope := bytes.EqualFold(atRuleName, []byte("scope"))
+
 			gt, _, data = c.p.Next()
 			if gt == css.EndAtRuleGrammar {
 				gt, _, data = c.p.Next()
+			} else if isScope {
+				var body []byte
+				for gt != css.EndAtRuleGrammar && gt != css.ErrorGrammar {
+					body = append(body, data...)
+					gt, _, data = c.p.Next()
+				}
+				w := &bytes.Buffer{}
+				minifier := *c.o
+				minifier.Inline = false
+				if err := minifier.Minify(c.m, w, bytes.NewReader(body), nil); err == nil {
+					if w.Len() > 0 {
+						c.w.Write(rule)
+						for _, val := range values {
+							c.w.Write(val.Data)
+						}
+						c.w.Write(leftBracketBytes)
+						c.w.Write(w.Bytes())
+						c.w.Write(rightBracketBytes)
+						semicolonQueued = false
+					}
+				} else {
+					c.w.Write(rule)
+					for _, val := range values {
+						c.w.Write(val.Data)
+					}
+					c.w.Write(leftBracketBytes)
+					c.w.Write(body)
+					if gt == css.EndAtRuleGrammar {
+						c.w.Write(rightBracketBytes)
+					}
+					semicolonQueued = false
+				}
+				if gt == css.EndAtRuleGrammar {
+					gt, _, data = c.p.Next()
+				}
 			} else {
 				c.w.Write(rule)
 				for _, val := range values {
