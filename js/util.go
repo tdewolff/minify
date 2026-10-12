@@ -91,6 +91,7 @@ var (
 	groupedNotOneBytes         = []byte("(!1)")
 	debuggerBytes              = []byte("debugger")
 	regExpScriptBytes          = []byte("/script>")
+	regExpCommentBytes         = []byte("!--")
 	isNaNBytes                 = []byte("isNaN")
 	NumberBytes                = []byte("Number")
 	MathBytes                  = []byte("Math")
@@ -1318,7 +1319,7 @@ var regexpClassEscapeTable = [256]bool{
 	false, false, false, false, false, false, false, false,
 }
 
-func minifyRegExp(b []byte) []byte {
+func minifyRegExp(b []byte, escapeHTML bool) []byte {
 	inClass := false
 	afterDash := 0
 	iClass := 0
@@ -1353,10 +1354,25 @@ func minifyRegExp(b []byte) []byte {
 			iClass = i
 		} else if inClass && b[i] == ']' {
 			inClass = false
-		} else if b[i] == '/' {
-			break
 		} else if inClass && 2 < afterDash && b[i] == '-' {
 			afterDash = 0
+		}
+	}
+	if escapeHTML {
+		// /[</script>]/ => /[<\/script>]/
+		// /<!--/ => /<\!--/
+		for i := 0; i < len(b); i++ {
+			if b[i] == '<' {
+				if i+4 <= len(b) && bytes.Equal(b[i+1:i+4], regExpCommentBytes) {
+					b = append(b[:i+2], b[i+1:]...)
+					b[i+1] = '\\'
+					i += 3
+				} else if i+9 <= len(b) && parse.EqualFold(b[i+1:i+9], regExpScriptBytes) {
+					b = append(b[:i+2], b[i+1:]...)
+					b[i+1] = '\\'
+					i += 9
+				}
+			}
 		}
 	}
 	return b

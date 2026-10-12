@@ -911,7 +911,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			if m.escapeHTML && 0 < len(m.prev) && m.prev[len(m.prev)-1] == '<' && len(regExpScriptBytes) <= len(expr.Data) && parse.EqualFold(expr.Data[:len(regExpScriptBytes)], regExpScriptBytes) {
 				m.write(spaceBytes)
 			}
-			m.write(minifyRegExp(expr.Data))
+			m.write(minifyRegExp(expr.Data, m.escapeHTML))
 		} else {
 			m.write(expr.Data)
 		}

@@ -798,6 +798,8 @@ func TestJS(t *testing.T) {
 		{`/[^a\-\--\-\-\-]/`, `/[^a\-\-----]/`},
 		{`x</script>/`, `x</script>/`},
 		{`x</SCRIPT>/`, `x</SCRIPT>/`},
+		{`/[<\/script>]/`, `/[</script>]/`},
+		{`/<\!--/`, `/<!--/`},
 
 		// edge-cases
 		{`let o=null;try{o=(o?.a).b||"FAIL"}catch(x){}console.log(o||"PASS")`, `let o=null;try{o=(o?.a).b||"FAIL"}catch{}console.log(o||"PASS")`},
@@ -1017,6 +1019,8 @@ func TestJSEscapeHTML(t *testing.T) {
 		{`a<< /script>/`, `a<< /script>/`},
 		{"`\\x3c/script>`", "`<\\/script>`"},
 		{`a < !--b`, `a<! --b`},
+		{`/[</script\>]/`, `/[<\/script>]/`},
+		{`/<!-\-/`, `/<\!--/`},
 	}
 
 	m := minify.New()
