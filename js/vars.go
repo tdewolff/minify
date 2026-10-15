@@ -47,7 +47,7 @@ func newRenamer(rename, useCharFreq bool) *renamer {
 	}
 }
 
-func (r *renamer) renameScope(scope js.Scope) {
+func (r *renamer) renameScope(scope *js.Scope) {
 	if !r.rename {
 		return
 	}
@@ -58,7 +58,7 @@ func (r *renamer) renameScope(scope js.Scope) {
 	for _, v := range scope.Declared {
 		v.Data = r.getName(v.Data, i)
 		i++
-		for r.isReserved(v.Data, scope.Undeclared) {
+		for r.isReserved(v.Data, scope) {
 			v.Data = r.getName(v.Data, i)
 			i++
 		}
@@ -66,7 +66,7 @@ func (r *renamer) renameScope(scope js.Scope) {
 }
 
 // rename all private elements in a class
-func (r *renamer) renameClassScope(scope js.Scope) {
+func (r *renamer) renameClassScope(scope *js.Scope) {
 	if !r.rename {
 		return
 	}
@@ -79,13 +79,25 @@ func (r *renamer) renameClassScope(scope js.Scope) {
 	}
 }
 
-func (r *renamer) isReserved(name []byte, undeclared js.VarArray) bool {
+func (r *renamer) isReserved(name []byte, scope *js.Scope) bool {
 	if 1 < len(name) { // there are no keywords or known globals that are one character long
 		if _, ok := r.reserved[string(name)]; ok {
 			return true
 		}
 	}
-	for _, v := range undeclared {
+	//if scope.VarIndices != nil {
+	//	for _, index := range scope.VarIndices[string(name)] {
+	//		v := scope.Undeclared[index]
+	//		for v.Link != nil {
+	//			v = v.Link
+	//		}
+	//		if !bytes.Equal(v.Data, name) {
+	//			panic("oops")
+	//		}
+	//		return true
+	//	}
+	//} else {
+	for _, v := range scope.Undeclared {
 		for v.Link != nil {
 			v = v.Link
 		}
@@ -93,6 +105,7 @@ func (r *renamer) isReserved(name []byte, undeclared js.VarArray) bool {
 			return true
 		}
 	}
+	//}
 	return false
 }
 
