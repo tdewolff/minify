@@ -23,7 +23,7 @@ func Fuzz(data []byte) int {
 		params = map[string]string{"escape-html": "1"}
 	}
 	err := js.Minify(minify.New(), w, r, params)
-	if err == nil && (!hasScript && bytes.Contains(bytes.ToLower(w.Bytes()), []byte("</script>")) || !hasComment && bytes.Contains(data, []byte("<!--"))) {
+	if err == nil && (!hasScript && bytes.Contains(bytes.ToLower(w.Bytes()), []byte("</script>")) || !hasComment && bytes.Contains(w.Bytes(), []byte("<!--"))) {
 		panic("</script> or <!-- added")
 	}
 	return 1
