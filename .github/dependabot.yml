@@ -3,14 +3,13 @@ updates:
 - package-ecosystem: gomod
   directory: /
   schedule:
-    interval: weekly
+    interval: monthly
 - package-ecosystem: npm
   directory: /bindings/js
   versioning-strategy: increase
   schedule:
-    interval: weekly
+    interval: monthly
 - package-ecosystem: github-actions
   directory: /
   schedule:
-    # Check for updates to GitHub Actions every weekday
     interval: monthly
