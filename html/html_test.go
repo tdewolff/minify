@@ -208,6 +208,8 @@ func TestHTMLCSSJS(t *testing.T) {
 		{`<style amp-boilerplate>body{-webkit-animation:-amp-start 8s    steps(1,end) 0s 1 normal both;}</style>`, `<style amp-boilerplate>body{-webkit-animation:-amp-start 8s steps(1,end) 0s 1 normal both;}</style>`},
 		{`<button onclick="return false">`, `<button onclick=return!1>`},                                                                                                                      // #631
 		{`<html><svg id="foo" viewBox="0 0 1 1" xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1"/></svg>`, `<svg id="foo" viewBox="0 0 1 1"><rect width="1" height="1"/></svg>`}, // #704
+		{`<svg><svg></svg><path d="M"/></svg>`, `<svg><svg/><path d="M"/></svg>`},                                                                                                             // #1055
+		{`<math><math></math><mi attr="x"/></math>`, `<math><math/><mi attr="x"/></math>`},                                                                                                    // #1055
 		{`<script>var a="<\/script>"</script>`, `<script>var a="<\/script>"</script>`},
 		{`<script>var a="<\/SCRIPT>"</script>`, `<script>var a="<\/SCRIPT>"</script>`},
 		{`<script>var a="\x3c/SCRIPT>"</script>`, `<script>var a="<\/SCRIPT>"</script>`},
@@ -220,6 +222,7 @@ func TestHTMLCSSJS(t *testing.T) {
 	m.AddFunc("text/css", css.Minify)
 	m.AddFunc("application/javascript", js.Minify)
 	m.AddFunc("image/svg+xml", svg.Minify)
+	m.AddFuncRegexp(regexp.MustCompile("[/+]xml$"), xml.Minify)
 	for _, tt := range htmlTests {
 		t.Run(tt.html, func(t *testing.T) {
 			r := bytes.NewBufferString(tt.html)
