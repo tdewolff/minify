@@ -12,7 +12,7 @@ import (
 
 // Fuzz is a fuzz test.
 func Fuzz(data []byte) int {
-	hasScript := bytes.Contains(bytes.ToLower(data), []byte("</script>"))
+	hasScript := bytes.Contains(bytes.ToLower(data), []byte("</script"))
 	hasComment := bytes.Contains(data, []byte("<!--"))
 
 	w := &bytes.Buffer{}
@@ -23,8 +23,8 @@ func Fuzz(data []byte) int {
 		params = map[string]string{"escape-html": "1"}
 	}
 	err := js.Minify(minify.New(), w, r, params)
-	if err == nil && (!hasScript && bytes.Contains(bytes.ToLower(w.Bytes()), []byte("</script>")) || !hasComment && bytes.Contains(w.Bytes(), []byte("<!--"))) {
-		panic("</script> or <!-- added")
+	if err == nil && (!hasScript && bytes.Contains(bytes.ToLower(w.Bytes()), []byte("</script")) || !hasComment && bytes.Contains(w.Bytes(), []byte("<!--"))) {
+		panic("</script or <!-- added")
 	}
 	return 1
 }

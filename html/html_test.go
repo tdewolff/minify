@@ -215,6 +215,7 @@ func TestHTMLCSSJS(t *testing.T) {
 		{`<script>var a="\x3c/SCRIPT>"</script>`, `<script>var a="<\/SCRIPT>"</script>`},
 		{`<script>var a="</scr"+"ipt>"</script>`, `<script>var a="<\/script>"</script>`},
 		{`<script>x< /SCRIPT>/</script>`, `<script>x< /SCRIPT>/</script>`},
+		{`<script>var a="<\/script >"</script>`, `<script>var a="<\/script >"</script>`},
 	}
 
 	m := minify.New()

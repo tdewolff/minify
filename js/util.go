@@ -90,7 +90,7 @@ var (
 	notOneBytes                = []byte("!1")
 	groupedNotOneBytes         = []byte("(!1)")
 	debuggerBytes              = []byte("debugger")
-	regExpScriptBytes          = []byte("/script>")
+	regExpScriptBytes          = []byte("/script")
 	regExpCommentBytes         = []byte("!--")
 	isNaNBytes                 = []byte("isNaN")
 	NumberBytes                = []byte("Number")
@@ -1221,7 +1221,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int, escapeHTML bool) [
 				if i+3 < len(b) && bytes.Equal(b[i+1:i+4], []byte("!--")) {
 					b = append(append(b[:i+1], '\\'), b[i+1:]...)
 					b[i+2] = '!' // war overwritten above
-				} else if i+8 < len(b) && parse.EqualFold(b[i+1:i+9], []byte("/script>")) {
+				} else if i+7 < len(b) && parse.EqualFold(b[i+1:i+8], []byte("/script")) {
 					b = append(append(b[:i+1], '\\'), b[i+1:]...)
 					b[i+2] = '/' // war overwritten above
 				}
@@ -1359,7 +1359,7 @@ func minifyRegExp(b []byte, escapeHTML bool) []byte {
 		}
 	}
 	if escapeHTML {
-		// /[</script>]/ => /[<\/script>]/
+		// /[</script]/ => /[<\/script]/
 		// /<!--/ => /<\!--/
 		for i := 0; i < len(b); i++ {
 			if b[i] == '<' {
@@ -1367,7 +1367,7 @@ func minifyRegExp(b []byte, escapeHTML bool) []byte {
 					b = append(b[:i+2], b[i+1:]...)
 					b[i+1] = '\\'
 					i += 3
-				} else if i+9 <= len(b) && parse.EqualFold(b[i+1:i+9], regExpScriptBytes) {
+				} else if i+8 <= len(b) && parse.EqualFold(b[i+1:i+8], regExpScriptBytes) {
 					b = append(b[:i+2], b[i+1:]...)
 					b[i+1] = '\\'
 					i += 9
