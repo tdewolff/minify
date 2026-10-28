@@ -408,7 +408,10 @@ func hasSideEffects(i js.IExpr) bool {
 		}
 		return hasSideEffects(expr.X)
 	case *js.BinaryExpr:
-		return binaryOpPrecMap[expr.Op] == js.OpAssign
+		if binaryOpPrecMap[expr.Op] == js.OpAssign {
+			return true
+		}
+		return hasSideEffects(expr.X) || hasSideEffects(expr.Y)
 	}
 	return true
 }

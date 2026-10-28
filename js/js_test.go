@@ -876,6 +876,10 @@ func TestJS(t *testing.T) {
 		{`()=>{const a=1,{b}=a}`, `()=>{const a=1,{b}=a}`},                                                               // # 939
 		{`()=>{const a={b};const{c}={d:a}}`, `()=>{const a={b},{c}={d:a}}`},                                              // # 939
 		{`this._dirty&&=(this._texture.update(this._image),!1)`, `this._dirty&&=(this._texture.update(this._image),!1)`}, // # 1037
+		//{`function f(a){return void(a||b())}`, `function f(a){a||b()}`},                                                  // #1057
+		//{`export function f(a){if(x)return void(a||b());return 1}`, `export function f(a){return x?a||b(),0[0]:1}`},      // #1057
+		//{`const g=a=>void(a||b())`, `const g=a=>{a||b()}`},                                                               // #1057
+		//{`function h(a){return void(a||(c=1))}`, `function h(a){a||(c=1)}`},                                              // #1057
 	}
 
 	m := minify.New()
