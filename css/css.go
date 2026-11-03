@@ -17,6 +17,10 @@ import (
 	strconvParse "github.com/tdewolff/parse/v2/strconv"
 )
 
+const NestedFunctionLimit = 1000
+
+var ErrNestedFunctionLimit = fmt.Errorf("too many nested functions")
+
 var (
 	spaceBytes        = []byte(" ")
 	colonBytes        = []byte(":")
@@ -160,18 +164,17 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, params map[stri
 		p: css.NewParser(z, o.Inline),
 		o: o,
 	}
-	c.minifyGrammar()
-
-	if _, err := w.Write(nil); err != nil {
+	if err := c.minifyGrammar(); err != nil {
 		return err
-	}
-	if c.p.Err() == io.EOF {
+	} else if _, err := w.Write(nil); err != nil {
+		return err
+	} else if c.p.Err() == io.EOF {
 		return nil
 	}
 	return c.p.Err()
 }
 
-func (c *cssMinifier) minifyGrammar() {
+func (c *cssMinifier) minifyGrammar() error {
 	semicolonQueued := false
 	for {
 		gt, _, data := c.p.Next()
@@ -194,7 +197,7 @@ func (c *cssMinifier) minifyGrammar() {
 				}
 				continue
 			}
-			return
+			return nil
 		case css.EndAtRuleGrammar, css.EndRulesetGrammar:
 			c.w.Write(rightBracketBytes)
 			semicolonQueued = false
@@ -263,7 +266,9 @@ func (c *cssMinifier) minifyGrammar() {
 			}
 			goto Next
 		case css.DeclarationGrammar:
-			c.minifyDeclaration(data, c.p.Values())
+			if err := c.minifyDeclaration(data, c.p.Values()); err != nil {
+				return err
+			}
 			semicolonQueued = true
 		case css.CustomPropertyGrammar:
 			c.w.Write(data)
@@ -285,6 +290,7 @@ func (c *cssMinifier) minifyGrammar() {
 			c.w.Write(data)
 		}
 	}
+	return nil
 }
 
 func (c *cssMinifier) minifySelectors(values []css.Token) {
@@ -319,24 +325,31 @@ func (c *cssMinifier) minifySelectors(values []css.Token) {
 	}
 }
 
-func (c *cssMinifier) parseFunction(values []css.Token) ([]Token, int) {
+func (c *cssMinifier) parseFunction(values []css.Token, level int) ([]Token, int, error) {
+	if NestedFunctionLimit < level {
+		return nil, 0, ErrNestedFunctionLimit
+	}
+
 	i := 1
-	level := 0
+	parenthesisLevel := 0
 	args := []Token{}
 	for ; i < len(values); i++ {
 		tt := values[i].TokenType
 		data := values[i].Data
 		if tt == css.LeftParenthesisToken {
-			level++
+			parenthesisLevel++
 		} else if tt == css.RightParenthesisToken {
-			if level == 0 {
+			if parenthesisLevel == 0 {
 				i++
 				break
 			}
-			level--
+			parenthesisLevel--
 		}
 		if tt == css.FunctionToken {
-			subArgs, di := c.parseFunction(values[i:])
+			subArgs, di, err := c.parseFunction(values[i:], level+1)
+			if err != nil {
+				return nil, 0, ErrNestedFunctionLimit
+			}
 			h := ToHash(parse.ToLower(parse.Copy(data[:len(data)-1]))) // TODO: use ToHashFold
 			args = append(args, Token{tt, data, subArgs, h, 0})
 			i += di - 1
@@ -348,10 +361,10 @@ func (c *cssMinifier) parseFunction(values []css.Token) ([]Token, int) {
 			args = append(args, Token{tt, data, nil, 0, h})
 		}
 	}
-	return args, i
+	return args, i, nil
 }
 
-func (c *cssMinifier) parseDeclaration(values []css.Token) []Token {
+func (c *cssMinifier) parseDeclaration(values []css.Token) ([]Token, error) {
 	// Check if this is a simple list of values separated by whitespace or commas, otherwise we'll not be processing
 	prevSep := true
 	tokens := c.tokenBuffer[:0]
@@ -360,11 +373,11 @@ func (c *cssMinifier) parseDeclaration(values []css.Token) []Token {
 		data := values[i].Data
 		if tt == css.LeftParenthesisToken || tt == css.LeftBraceToken || tt == css.LeftBracketToken ||
 			tt == css.RightParenthesisToken || tt == css.RightBraceToken || tt == css.RightBracketToken {
-			return nil
+			return nil, nil
 		}
 
 		if !prevSep && tt != css.WhitespaceToken && tt != css.CommaToken && (tt != css.DelimToken || values[i].Data[0] != '/') {
-			return nil
+			return nil, nil
 		}
 
 		if tt == css.WhitespaceToken || tt == css.CommaToken || tt == css.DelimToken && values[i].Data[0] == '/' {
@@ -373,7 +386,10 @@ func (c *cssMinifier) parseDeclaration(values []css.Token) []Token {
 			}
 			prevSep = true
 		} else if tt == css.FunctionToken {
-			args, di := c.parseFunction(values[i:])
+			args, di, err := c.parseFunction(values[i:], 0)
+			if err != nil {
+				return nil, err
+			}
 			h := ToHash(parse.ToLower(parse.Copy(data[:len(data)-1]))) // TODO: use ToHashFold
 			tokens = append(tokens, Token{tt, data, args, h, 0})
 			prevSep = true
@@ -388,15 +404,15 @@ func (c *cssMinifier) parseDeclaration(values []css.Token) []Token {
 		}
 	}
 	c.tokenBuffer = tokens // update buffer size for memory reuse
-	return tokens
+	return tokens, nil
 }
 
-func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token) {
+func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token) error {
 	c.w.Write(property)
 	c.w.Write(colonBytes)
 
 	if len(components) == 0 {
-		return
+		return nil
 	}
 
 	// Strip !important from the component list, this will be added later separately
@@ -407,7 +423,10 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 	}
 
 	prop := ToHash(property)
-	values := c.parseDeclaration(components)
+	values, err := c.parseDeclaration(components)
+	if err != nil {
+		return err
+	}
 
 	// Do not process complex values (eg. containing blocks or is not alternated between whitespace/commas and flat values
 	if values == nil {
@@ -436,7 +455,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 			}
 			c.w.Write(importantBytes)
 		}
-		return
+		return nil
 	}
 
 	values = c.minifyTokens(prop, 0, values)
@@ -444,6 +463,7 @@ func (c *cssMinifier) minifyDeclaration(property []byte, components []css.Token)
 		values = c.minifyProperty(prop, values)
 	}
 	c.writeDeclaration(values, important)
+	return nil
 }
 
 func (c *cssMinifier) writeFunction(args []Token) {
