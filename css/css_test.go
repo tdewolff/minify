@@ -82,9 +82,16 @@ func TestCSS(t *testing.T) {
 		{"a{padding:calc(var(--dce-edge-xsmall,6px) - 2px) calc(var(--dce-button-horizontal-padding,18px) - 2px)}", "a{padding:calc(var(--dce-edge-xsmall,6px) - 2px)calc(var(--dce-button-horizontal-padding,18px) - 2px)}"},            // #673
 		{"a{border-color:var(--dce-brand-color,#01A982)var(--dce-brand-color,#01A982)var(--dce-border-weak,#0000001F)}", "a{border-color:var(--dce-brand-color,#01A982)var(--dce-brand-color,#01A982)var(--dce-border-weak,#0000001F)}"}, // #673
 		{"--custom:calc(var(--a) + var(--b))", "--custom:calc(var(--a) + var(--b))"}, // #784
-		{"a{& :is(b) {c:d;} }", "a{& :is(b){c:d}}"},                                  // #908
-		{"a{&:is(b) :is(c) {d:e;} }", "a{&:is(b) :is(c){d:e}}"},                      // #908
-		//{"@scope (body) { :scope { color: red; } }", "@scope(body){:scope{color:red}}"}, // #968
+		{"a{& :is(b) {c:d;} }", "a{& :is(b){c:d}}"},                                                                                    // #908
+		{"a{&:is(b) :is(c) {d:e;} }", "a{&:is(b) :is(c){d:e}}"},                                                                        // #908
+		{"@scope (body) { :scope { color: red; } }", "@scope(body){:scope{color:red}}"},                                                 // #968
+		{"@scope { :scope { color: red; } }", "@scope{:scope{color:red}}"},                                                             // #968
+		{"@scope (.card) to (.content) { h2 { font-size: 1.5em; } }", "@scope(.card) to (.content){h2{font-size:1.5em}}"},             // #968
+		{"@scope (body) {\n\t:scope {\n\t\tcolor: red;\n\t}\n\ta {\n\t\ttext-decoration: underline;\n\t}\n}", "@scope(body){:scope{color:red}a{text-decoration:underline}}"}, // #968
+		{"@scope (body) {}", ""},                                                                                                       // #968
+		{"@scope (body) {   }", ""},                                                                                                    // #968
+		{"@scope (body) { @scope (.child) { :scope { color: red; } } }", "@scope(body){@scope(.child){:scope{color:red}}}"},            // #968
+		{"div { @scope (.child) { :scope { color: red; } } }", "div{@scope(.child){:scope{color:red}}}"},                              // #968
 	}
 
 	m := minify.New()
