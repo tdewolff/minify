@@ -36,7 +36,8 @@ jobs:
         CIBW_MANYLINUX_I686_IMAGE: quay.io/pypa/manylinux_2_28_i686
         CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_28_x86_64
         CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux_2_28_aarch64
-        CIBW_BEFORE_ALL: .ci/ensure-go.sh; make -C bindings/py compile
+        CIBW_ENVIRONMENT: GOTOOLCHAIN=auto
+        CIBW_BEFORE_ALL: ./ensure-go.sh && make -C bindings/py compile
     - name: Upload wheels
       uses: actions/upload-artifact@v7
       with:
@@ -60,7 +61,7 @@ jobs:
         fetch-depth: 0
     - uses: actions/setup-go@v7
       with:
-        go-version: '>=1.25'
+        go-version: '>=1.26'
     - name: Build Windows extension
       run: |
         set GOOS=windows
@@ -94,7 +95,7 @@ jobs:
         fetch-depth: 0
     - uses: actions/setup-go@v7
       with:
-        go-version: '>=1.25'
+        go-version: '>=1.26'
     - name: Build MacOS extension
       run: |
         export GOOS=darwin
@@ -126,7 +127,7 @@ jobs:
         python-version: '3.13'
     - uses: actions/setup-go@v7
       with:
-        go-version: '>=1.25'
+        go-version: '>=1.26'
     - name: Install dependencies
       run: pip install build
     - name: Build package
