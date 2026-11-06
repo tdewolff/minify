@@ -8,25 +8,22 @@ on:
     - master
 jobs:
   linux:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
         - go_target: amd64
           cibw_target: x86_64
+          os: ubuntu-26.04
         #- go_target:'386
         #  cibw_target: i686
         - go_target: arm64
           cibw_target: aarch64
+          os: ubuntu-26.04-arm
     steps:
     - uses: actions/checkout@v7
       with:
         fetch-depth: 0
-    - name: Set up QEMU
-      if: matrix.go_target == 'arm64'
-      uses: docker/setup-qemu-action@v4
-      with:
-        platforms: arm64
     - name: Build wheels
       uses: pypa/cibuildwheel@v4.3.5
       with:
