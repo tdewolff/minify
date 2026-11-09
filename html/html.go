@@ -275,7 +275,7 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					if t.Hash == Thead || t.Hash == Tbody || t.Hash == Tfoot || t.Hash == Tr || t.Hash == Th ||
 						t.Hash == Td || t.Hash == Option || t.Hash == Dd || t.Hash == Dt || t.Hash == Li ||
 						t.Hash == Rb || t.Hash == Rt || t.Hash == Rtc || t.Hash == Rp {
-						omitEndTag = true // omit end tags
+						omitEndTag = endTagOmittable(t.Hash, tb) // omit end tags when the next element allows it
 					} else if t.Hash == P {
 						i := 0
 						for {
@@ -542,5 +542,43 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				}
 			}
 		}
+	}
+}
+
+// endTagOmittable returns whether the end tag of the given element may be omitted given what follows it.
+// Following the optional tags section of the HTML standard, the next non-whitespace, non-comment token
+// must be the start tag of one of the elements listed for it, or the end of the parent element. Omitting
+// it before anything else makes the parser nest the following content inside the element, e.g. a <tr>
+// after an omitted </thead> becomes a header row and a <div> after an omitted </dd> becomes part of it.
+func endTagOmittable(hash Hash, tb *TokenBuffer) bool {
+	for i := 0; ; i++ {
+		next := tb.Peek(i)
+		if next.TokenType == html.CommentToken || next.TokenType == html.TemplateToken ||
+			next.TokenType == html.TextToken && (hash == Option || parse.IsAllWhitespace(next.Data)) {
+			continue // dropped by the minifier (text in a select is dropped by the parser too), or unknown template output
+		}
+		if next.TokenType == html.ErrorToken || next.TokenType == html.EndTagToken {
+			return hash != Thead // a thead end tag can only be omitted before a tbody or tfoot
+		} else if next.TokenType != html.StartTagToken {
+			return false
+		}
+		switch hash {
+		case Li:
+			return next.Hash == Li
+		case Dt, Dd:
+			return next.Hash == Dt || next.Hash == Dd
+		case Rb, Rt, Rtc, Rp:
+			return next.Hash == Rb || next.Hash == Rt || next.Hash == Rtc || next.Hash == Rp
+		case Option:
+			return next.Hash == Option || next.Hash == Optgroup
+		case Thead, Tbody, Tfoot:
+			// a tfoot before a tbody is not conforming, but the parser closes the tfoot on the tbody start tag
+			return next.Hash == Tbody || next.Hash == Tfoot
+		case Tr:
+			return next.Hash == Tr
+		case Td, Th:
+			return next.Hash == Td || next.Hash == Th
+		}
+		return false
 	}
 }
