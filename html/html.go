@@ -268,7 +268,11 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 
 			// remove superfluous tags, except for html, head and body tags when KeepDocumentTags is set
 			if !hasAttributes && (!o.KeepDocumentTags && (t.Hash == Html || t.Hash == Head || t.Hash == Body) || t.Hash == Colgroup) {
-				break
+				// the body start tag cannot be omitted when the first element in the body belongs in
+				// the head, since the parser would then put that element in the head instead
+				if t.TokenType != html.StartTagToken || t.Hash != Body || !nextIsHeadElement(tb) {
+					break
+				}
 			} else if t.TokenType == html.EndTagToken {
 				omitEndTag := false
 				if !o.KeepEndTags && !inTemplate {
@@ -542,5 +546,24 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				}
 			}
 		}
+	}
+}
+
+// nextIsHeadElement returns whether the next non-whitespace token starts an element that the HTML parser
+// would insert in the head when no body start tag precedes it.
+func nextIsHeadElement(tb *TokenBuffer) bool {
+	for i := 0; ; i++ {
+		next := tb.Peek(i)
+		if next.TokenType == html.StartTagCloseToken || next.TokenType == html.CommentToken || next.TokenType == html.TextToken && parse.IsAllWhitespace(next.Data) {
+			continue // the body tag's own closing bracket, or a comment or whitespace that is dropped anyway
+		}
+		if next.TokenType != html.StartTagToken {
+			return false
+		}
+		switch next.Hash {
+		case Base, Basefont, Link, Meta, Noframes, Noscript, Script, Style, Template, Title:
+			return true
+		}
+		return false
 	}
 }
