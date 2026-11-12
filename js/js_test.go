@@ -164,6 +164,9 @@ func TestJS(t *testing.T) {
 		{"'string\\\r\nstring\\\nstring\\\rstring\\\u2028string\\\u2029string'", `"stringstringstringstringstringstring"`},
 		{`"\x7H\u877H"`, `"\x7H\u877H"`},
 		{`"\u01ac\u01de\u0187\u{0001a0}"`, `"ƬǞƇƠ"`},
+		{`"\u005c"`, `"\\"`},               // #1071
+		{`"x\u005cy\u{5c}b"`, `"x\\y\\b"`}, // #1071
+		{"`\\u005c`", "`\\\\`"},            // #1071
 		{`"str1ng" + "str2ng"`, `"str1ngstr2ng"`},
 		{`"str1ng" + "str2ng" + "str3ng"`, `"str1ngstr2ngstr3ng"`},
 		{`"padding" + this`, `"padding"+this`},
