@@ -1319,20 +1319,6 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 							}
 							break
 						}
-					} else if bytes.Equal(y.Data, []byte("trunc")) {
-						// Math.trunc(x) => x|0
-						if len(expr.Args.List) == 1 {
-							if js.OpBitOr < prec {
-								m.write(openParenBytes)
-							}
-							m.minifyExpr(&js.GroupExpr{expr.Args.List[0].Value}, js.OpBitOr)
-							m.write(bitOrBytes)
-							m.write(zeroBytes)
-							if js.OpBitOr < prec {
-								m.write(closeParenBytes)
-							}
-							break
-						}
 					} else if bytes.Equal(y.Data, []byte("abs")) {
 						// Math.abs(x) => x<0?-x:x
 						if len(expr.Args.List) == 1 {
