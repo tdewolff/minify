@@ -643,7 +643,8 @@ func isFalsy(i js.IExpr) (bool, bool) {
 	if lit, ok := i.(*js.LiteralExpr); ok {
 		tt := lit.TokenType
 		d := lit.Data
-		if tt == js.FalseToken || tt == js.NullToken || tt == js.StringToken && len(lit.Data) == 0 {
+		if tt == js.FalseToken || tt == js.NullToken || tt == js.StringToken && len(lit.Data) == 2 {
+			// lit.Data includes the quotes, so "" and '' have length 2
 			return !negated, true // falsy
 		} else if tt == js.TrueToken || tt == js.StringToken {
 			return negated, true // truthy
