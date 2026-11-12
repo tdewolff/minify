@@ -567,23 +567,44 @@ func (m *jsMinifier) hoistVars(body *js.BlockStmt) {
 	}
 }
 
+// moveDestructuringFront moves the first array/object binding to the front of the declaration list, but skips a binding whose initializer reads a variable declared by an earlier item (#939, #1067). It returns true if the first item is an array/object binding.
+func moveDestructuringFront(decl *js.VarDecl) bool {
+	var refs []*js.Var
+	var bindings []*js.Var
+	for i, item := range decl.List {
+		if _, ok := item.Binding.(*js.Var); !ok {
+			// is array or object assignment
+			if i == 0 {
+				return true
+			}
+			interferes := false
+			if item.Default != nil {
+				refs = appendExprVars(refs[:0], item.Default)
+				for _, ref := range refs {
+					if slices.Contains(bindings, ref) {
+						interferes = true
+						break
+					}
+				}
+			}
+			if !interferes {
+				// put current item to the front but otherwise maintain order
+				copy(decl.List[1:], decl.List[:i])
+				decl.List[0] = item
+				return true
+			}
+		}
+		bindings = appendBindingVars(bindings, item.Binding)
+	}
+	return false
+}
+
 func (m *jsMinifier) optimizeVarOrder(decl *js.VarDecl) {
 	if decl.TokenType == js.VarToken {
 		// rearrange to put array/object first
 		start := 0
-		for i, item := range decl.List {
-			if _, ok := item.Binding.(*js.Var); !ok {
-				if i == 0 {
-					// no-op
-				} else if i == 1 {
-					decl.List[0], decl.List[1] = decl.List[1], decl.List[0]
-				} else if 1 < i {
-					copy(decl.List[1:], decl.List[:i])
-					decl.List[0] = item
-				}
-				start = 1
-				break
-			}
+		if moveDestructuringFront(decl) {
+			start = 1
 		}
 
 		// sort variable names to optimize gzip compression
@@ -611,36 +632,6 @@ func (m *jsMinifier) optimizeVarOrder(decl *js.VarDecl) {
 		})
 	} else if _, ok := decl.List[0].Binding.(*js.Var); ok {
 		// rearrange to put array/object first for let or const assignment
-		var refs []*js.Var
-		var bindings []*js.Var
-		for i, item := range decl.List {
-			if _, ok := item.Binding.(*js.Var); !ok {
-				// is array or object assignment
-				if i != 0 {
-					interferes := false
-					if item.Default != nil {
-						refs = appendExprVars(refs[:0], item.Default)
-						for _, ref := range refs {
-							if slices.Contains(bindings, ref) {
-								interferes = true
-							}
-						}
-					}
-					if !interferes {
-						// put current item to the front but otherwise maintain order
-						if i == 1 {
-							decl.List[0], decl.List[1] = decl.List[1], decl.List[0]
-						} else {
-							copy(decl.List[1:], decl.List[:i])
-							decl.List[0] = item
-						}
-						break
-					}
-				} else {
-					break
-				}
-			}
-			bindings = appendBindingVars(bindings, item.Binding)
-		}
+		moveDestructuringFront(decl)
 	}
 }
