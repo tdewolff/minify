@@ -985,19 +985,21 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				}
 			} else if expr.Op == js.AndToken {
 				// TODO: use truthy instead of true?
-				if (isTrue(expr.X) || isFalse(expr.Y)) && !hasSideEffects(expr.X) {
+				// a&&true and a&&false only equal a and false when a is a boolean
+				if (isTrue(expr.X) || isFalse(expr.Y) && isBooleanExpr(expr.X)) && !hasSideEffects(expr.X) {
 					m.minifyExpr(expr.Y, prec)
 					break
-				} else if (isTrue(expr.Y) || isFalse(expr.X)) && !hasSideEffects(expr.Y) {
+				} else if (isTrue(expr.Y) && isBooleanExpr(expr.X) || isFalse(expr.X)) && !hasSideEffects(expr.Y) {
 					m.minifyExpr(expr.X, prec)
 					break
 				}
 			} else if expr.Op == js.OrToken {
 				// TODO: use truthy instead of true?
-				if (isTrue(expr.X) || isFalse(expr.Y)) && !hasSideEffects(expr.Y) {
+				// a||false and a||true only equal a and true when a is a boolean
+				if (isTrue(expr.X) || isFalse(expr.Y) && isBooleanExpr(expr.X)) && !hasSideEffects(expr.Y) {
 					m.minifyExpr(expr.X, prec)
 					break
-				} else if (isTrue(expr.Y) || isFalse(expr.X)) && !hasSideEffects(expr.X) {
+				} else if (isTrue(expr.Y) && isBooleanExpr(expr.X) || isFalse(expr.X)) && !hasSideEffects(expr.X) {
 					m.minifyExpr(expr.Y, prec)
 					break
 				}
