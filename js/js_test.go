@@ -907,6 +907,11 @@ func TestJS(t *testing.T) {
 		{`()=>{const a={b};const{c}=(0,a.b)(1)}`, `()=>{const a={b},{c}=(0,a.b)(1)}`},                                    // #1068
 		{`()=>{const a=2;const[b,c]=(a>1?[a,1]:[0,a])}`, `()=>{const a=2,[b,c]=a>1?[a,1]:[0,a]}`},                        // #1068
 		{`()=>{const a=2;const[b]=(c)}`, `()=>{const[b]=c,a=2}`},                                                         // #1068
+		{`var a={b:1};var{b}=a`, `var a={b:1},{b}=a`},                                                                    // #1067
+		{`var a=[];var[b]=a`, `var a=[],[b]=a`},                                                                          // #1067
+		{`var a={b:1};var{b}=a,[c]=d`, `var[c]=d,a={b:1},{b}=a`},                                                         // #1067
+		{`var a=2;var[b,c]=(a>1?[a,1]:[0,a])`, `var a=2,[b,c]=a>1?[a,1]:[0,a]`},                                          // #1067
+		{`var a=1;var{b}=c`, `var{b}=c,a=1`},                                                                             // #1067
 		{`this._dirty&&=(this._texture.update(this._image),!1)`, `this._dirty&&=(this._texture.update(this._image),!1)`}, // # 1037
 		//{`function f(a){return void(a||b())}`, `function f(a){a||b()}`},                                                  // #1057
 		//{`export function f(a){if(x)return void(a||b());return 1}`, `export function f(a){return x?a||b(),0[0]:1}`},      // #1057
