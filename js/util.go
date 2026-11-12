@@ -1128,7 +1128,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int, escapeHTML bool) [
 					if m == -1 {
 						i++
 						continue
-					} else if num < 256 && quote == byte(num) {
+					} else if num == '\\' || num < 256 && quote == byte(num) {
 						b[i] = '\\'
 						i++
 						n--
