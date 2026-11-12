@@ -246,6 +246,10 @@ func appendBindingVars(vs []*js.Var, ibinding js.IBinding) []*js.Var {
 func appendExprVars(vs []*js.Var, iexpr js.IExpr) []*js.Var {
 	switch expr := iexpr.(type) {
 	case *js.Var:
+		// uses inside parentheses are parsed as new variables that link to the declared one
+		for expr.Link != nil {
+			expr = expr.Link
+		}
 		vs = append(vs, expr)
 	case *js.ArrayExpr:
 		for _, item := range expr.List {
