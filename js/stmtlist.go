@@ -4,22 +4,76 @@ import (
 	"github.com/tdewolff/parse/v2/js"
 )
 
+// varDeclCollector collects the variables declared with var in a statement, but not in nested functions or classes
+type varDeclCollector struct {
+	vars []*js.Var
+}
+
+func (v *varDeclCollector) Enter(n js.INode) js.IVisitor {
+	switch n := n.(type) {
+	case *js.FuncDecl, *js.ArrowFunc, *js.ClassDecl, *js.MethodDecl:
+		return nil
+	case *js.VarDecl:
+		if n.TokenType == js.VarToken {
+			for _, item := range n.List {
+				for _, w := range appendBindingVars(nil, item.Binding) {
+					if 1 < w.Uses {
+						v.vars = append(v.vars, w)
+					}
+				}
+			}
+		}
+	}
+	return v
+}
+
+func (v *varDeclCollector) Exit(n js.INode) {}
+
+// deadVarDecl returns a var declaration without initializers for the variables that are declared with var in a statement that will be removed, as the declaration is hoisted and still needed (#1069)
+func deadVarDecl(i js.IStmt) *js.VarDecl {
+	if i == nil {
+		return nil
+	}
+	v := &varDeclCollector{}
+	js.Walk(v, i)
+	if len(v.vars) == 0 {
+		return nil
+	}
+	decl := &js.VarDecl{TokenType: js.VarToken}
+	for _, w := range v.vars {
+		decl.List = append(decl.List, js.BindingElement{Binding: w})
+	}
+	return decl
+}
+
+// withVarDecl puts decl before i, it returns a block statement with an empty scope that optimizeStmtList splices into its list
+func withVarDecl(decl *js.VarDecl, i js.IStmt) js.IStmt {
+	if decl == nil {
+		return i
+	} else if _, ok := i.(*js.EmptyStmt); ok {
+		return decl
+	}
+	return &js.BlockStmt{List: []js.IStmt{decl, i}, Scope: js.Scope{}}
+}
+
 func optimizeStmt(i js.IStmt) js.IStmt {
 	// convert if/else into expression statement, and optimize blocks
 	if ifStmt, ok := i.(*js.IfStmt); ok {
 		if truthy, ok := isTruthy(ifStmt.Cond); ok && truthy {
+			decl := deadVarDecl(ifStmt.Else)
 			if hasSideEffects(ifStmt.Cond) {
 				ifStmt.Else = nil
-				return i // TODO: remove if and return StmtList(Cond, Body)
+				return withVarDecl(decl, i) // TODO: remove if and return StmtList(Cond, Body)
 			}
-			return optimizeStmt(ifStmt.Body)
+			return withVarDecl(decl, optimizeStmt(ifStmt.Body))
 		} else if ok {
 			// falsy
+			decl := deadVarDecl(ifStmt.Body)
 			if isEmptyStmt(ifStmt.Else) {
 				if hasSideEffects(ifStmt.Cond) {
-					return &js.ExprStmt{Value: ifStmt.Cond}
+					return withVarDecl(decl, &js.ExprStmt{Value: ifStmt.Cond})
 				}
-				return &js.EmptyStmt{}
+				return withVarDecl(decl, &js.EmptyStmt{})
 			} else if hasSideEffects(ifStmt.Cond) {
 				if unaryExpr, ok := ifStmt.Cond.(*js.UnaryExpr); ok && unaryExpr.Op == js.NotToken {
 					ifStmt.Cond = unaryExpr.X
@@ -27,9 +81,9 @@ func optimizeStmt(i js.IStmt) js.IStmt {
 					ifStmt.Cond = &js.UnaryExpr{js.NotToken, ifStmt.Cond}
 				}
 				ifStmt.Body, ifStmt.Else = ifStmt.Else, nil
-				return i // TODO: remove if and return StmtList(Cond, Body)
+				return withVarDecl(decl, i) // TODO: remove if and return StmtList(Cond, Body)
 			}
-			return optimizeStmt(ifStmt.Else)
+			return withVarDecl(decl, optimizeStmt(ifStmt.Else))
 		}
 
 		ifStmt.Body = optimizeStmt(ifStmt.Body)
@@ -193,6 +247,10 @@ func optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 		}
 
 		list[i] = optimizeStmt(list[i])
+		if blockStmt, ok := list[i].(*js.BlockStmt); ok && blockStmt.Scope.Parent == nil {
+			// var declaration kept from a removed if/else branch, see withVarDecl
+			list = append(list[:i], append(blockStmt.List, list[i+1:]...)...)
+		}
 
 		if _, ok := list[i].(*js.EmptyStmt); ok {
 			continue
