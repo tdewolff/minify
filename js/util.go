@@ -65,6 +65,7 @@ var (
 	importBytes                = []byte("import")
 	exportBytes                = []byte("export")
 	fromBytes                  = []byte("from")
+	withBytes                  = []byte("with")
 	returnBytes                = []byte("return")
 	classBytes                 = []byte("class")
 	asSpaceBytes               = []byte("as ")

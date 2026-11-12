@@ -360,6 +360,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 				m.write(fromBytes)
 			}
 			m.write(minifyString(stmt.Module, false, m.escapeHTML))
+			m.minifyImportAttributes(stmt.Attributes)
 			m.requireSemicolon()
 		}
 	case *js.ExportStmt:
@@ -398,6 +399,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			if stmt.Module != nil {
 				m.write(fromBytes)
 				m.write(minifyString(stmt.Module, false, m.escapeHTML))
+				m.minifyImportAttributes(stmt.Attributes)
 			}
 			m.requireSemicolon()
 		}
@@ -413,6 +415,27 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			m.write(newlineBytes)
 		}
 	}
+}
+
+func (m *jsMinifier) minifyImportAttributes(attrs []js.ImportAttribute) {
+	if attrs == nil {
+		return
+	}
+	m.write(withBytes)
+	m.write(openBraceBytes)
+	for i, attr := range attrs {
+		if i != 0 {
+			m.write(commaBytes)
+		}
+		if attr.Key[0] == '"' || attr.Key[0] == '\'' {
+			m.write(minifyString(attr.Key, false, m.escapeHTML))
+		} else {
+			m.write(attr.Key)
+		}
+		m.write(colonBytes)
+		m.write(minifyString(attr.Value, false, m.escapeHTML))
+	}
+	m.write(closeBraceBytes)
 }
 
 func (m *jsMinifier) minifyBlockStmt(stmt *js.BlockStmt) {
