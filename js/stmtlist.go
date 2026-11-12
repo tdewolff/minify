@@ -358,6 +358,7 @@ func optimizeStmtList(list []js.IStmt, blockType blockType) []js.IStmt {
 						list[j-1] = &js.ExprStmt{Value: commaExpr.List[0]}
 					} else {
 						commaExpr.List = commaExpr.List[:len(commaExpr.List)-1]
+						list[j-1] = &js.ExprStmt{Value: commaExpr}
 					}
 				}
 			}
