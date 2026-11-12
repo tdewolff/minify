@@ -44,6 +44,8 @@ func TestCSS(t *testing.T) {
 		{"a { b: 1", "a{b:1}"},
 		{"@unknown { border:1px solid #000 }", "@unknown{border:1px solid #000 }"},
 		{":root { --custom-variable:0px; }", ":root{--custom-variable:0px}"},
+		{"a{--foo: a\\\n;color:red}", "a{--foo:a\\\n;color:red}"},                                                                                                   // #740
+		{":root { --v: 1px   2px }\n:root { --v: a,   b,   c; }\n:root { --v: a,\n        b,\n        c;\n}", ":root{--v:1px 2px}:root{--v:a,b,c}:root{--v:a,b,c}"}, // #740
 		{"a, b, c {color:red}", "a,b,c{color:red}"},
 		{"a, b, c { /* lala */ }", ""},
 
@@ -354,6 +356,22 @@ func TestCSSInline(t *testing.T) {
 		{"--foo: ;", "--foo: "},               // whitespace value
 		{"--foo:;", "--foo:"},                 // empty value
 		{"--foo: initial ;", "--foo:initial"}, // invalid value, serializes to empty
+
+		{"--foo: 1px   2px", "--foo:1px 2px"},                                     // #740
+		{"--foo: a,   b,   c", "--foo:a,b,c"},                                     // #740
+		{"--foo: a,\n        b,\n        c", "--foo:a,b,c"},                       // #740
+		{"--foo: a ,b , c", "--foo:a,b,c"},                                        // #740
+		{"--foo: \"a  ,  b\"   'c  d'", "--foo:\"a  ,  b\" 'c  d'"},               // #740
+		{"--foo: url(  a.png  )  x", "--foo:url(  a.png  ) x"},                    // #740
+		{"--foo: f(  a  ,  b  )", "--foo:f( a,b )"},                               // #740
+		{"--foo: a  /* x  y */  b", "--foo:a /* x  y */ b"},                       // #740
+		{"--foo: calc(var(--a)  +  var(--b))", "--foo:calc(var(--a) + var(--b))"}, // #740
+		{"--foo: a\\\n  b", "--foo:a\\\n  b"},                                     // #740
+		{"--foo: a\\\n  , b", "--foo:a\\\n  ,b"},                                  // #740
+		{"--foo: \\41   b", "--foo:\\41  b"},                                      // #740
+		{"--foo: a\\ ", "--foo:a\\ "},                                             // escaped space
+		{"--foo: a\\  ", "--foo:a\\ "},                                            // escaped space
+
 		{"x: var(--0);", "x:var(--0)"},
 		{"color=blue;", "color=blue"},
 		{"x: white , white", "x:white,white"},
