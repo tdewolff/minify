@@ -716,7 +716,8 @@ func TestJS(t *testing.T) {
 
 		// math functions, see #790
 		{`Math.abs(x)`, `x<0?-x:x`},
-		{`Math.trunc(x)`, `x|0`},
+		{`Math.trunc(x)`, `Math.trunc(x)`}, // #1077: x|0 wraps values outside the int32 range
+		{`Math.trunc(2**40+.5)`, `Math.trunc(2**40+.5)`},
 		{`Math.pow(a,b)`, `a**b`},
 		{`Math.pow(-a,b)`, `(-a)**b`},
 		{`Math.sqrt(a)`, `a**.5`},

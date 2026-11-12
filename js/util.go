@@ -21,7 +21,6 @@ var (
 	plusPlusBytes              = []byte("++")
 	minMinBytes                = []byte("--")
 	expBytes                   = []byte("**")
-	bitOrBytes                 = []byte("|")
 	colonBytes                 = []byte(":")
 	semicolonBytes             = []byte(";")
 	commaBytes                 = []byte(",")
