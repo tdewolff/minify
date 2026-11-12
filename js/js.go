@@ -1328,7 +1328,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				}
 			}
 		} else if dot, ok := expr.X.(*js.DotExpr); ok {
-			if x, ok := dot.X.(*js.Var); ok && x.Decl == js.NoDecl && bytes.Equal(x.Data, MathBytes) {
+			if x, ok := dot.X.(*js.Var); ok && x.Decl == js.NoDecl && bytes.Equal(x.Data, MathBytes) && !hasSpreadArg(expr.Args) {
 				if y, ok := dot.Y.(js.LiteralExpr); ok {
 					if bytes.Equal(y.Data, []byte("pow")) {
 						// Math.pow(a,b) => a**b
@@ -1367,8 +1367,8 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 							}
 						}
 					} else if bytes.Equal(y.Data, []byte("sqrt")) {
-						// Math.sqrt(x) => x**.5
-						if len(expr.Args.List) == 1 {
+						// Math.sqrt(x) => x**.5, only for number literals since Math.sqrt(-0) is -0 and Math.sqrt(-Infinity) is NaN
+						if len(expr.Args.List) == 1 && isNumericLiteral(expr.Args.List[0].Value) {
 							if js.OpExp < prec {
 								m.write(openParenBytes)
 							}
