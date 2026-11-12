@@ -717,6 +717,18 @@ func TestJS(t *testing.T) {
 		// math functions, see #790
 		{`Math.abs(x)`, `x<0?-x:x`},
 		{`Math.trunc(x)`, `Math.trunc(x)`}, // #1077: x|0 wraps values outside the int32 range
+		{`x=a||false`, `x=a||!1`},          // #1066: a||false is false, not a, when a is falsy
+		{`x=a&&true`, `x=a&&!0`},           // #1066
+		{`x=a||true`, `x=a||!0`},           // #1066
+		{`x=a&&false`, `x=a&&!1`},          // #1066
+		{`x=0&&false`, `x=0&&!1`},          // #1066
+		{`x=1&&true`, `x=1&&!0`},           // #1066
+		{`x=0||false`, `x=0||!1`},          // #1066
+		{`x=a<b||false`, `x=a<b`},
+		{`x=a<b&&true`, `x=a<b`},
+		{`x=!a&&true`, `x=!a`},
+		{`x=true&&a`, `x=a`},
+		{`x=false||a`, `x=a`},
 		{`Math.trunc(2**40+.5)`, `Math.trunc(2**40+.5)`},
 		{`Math.pow(a,b)`, `a**b`},
 		{`Math.pow(-a,b)`, `(-a)**b`},
