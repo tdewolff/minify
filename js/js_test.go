@@ -727,7 +727,9 @@ func TestJS(t *testing.T) {
 		{`f((a,b)||d)`, `f((a,b)||d)`},
 
 		// math functions, see #790
-		{`Math.abs(x)`, `x<0?-x:x`},
+		{`Math.abs(x)`, `Math.abs(x)`}, // x<0?-x:x is wrong for -0, strings, undefined, null, ...
+		{`Math.abs(-0)`, `Math.abs(-0)`},
+		{`x=Math.abs(a)`, `x=Math.abs(a)`},
 		{`Math.trunc(x)`, `Math.trunc(x)`}, // #1077: x|0 wraps values outside the int32 range
 		{`x=a||false`, `x=a||!1`},          // #1066: a||false is false, not a, when a is falsy
 		{`x=a&&true`, `x=a&&!0`},           // #1066
@@ -1001,7 +1003,7 @@ func TestJSVarRenaming(t *testing.T) {
 		{`()=>{var a;if(x){const b=0;while(true);}}`, `()=>{if(x){const b=0;for(var a;!0;);}}`},
 		{`(e,s)=>{e=>0,s(e(s))}`, `(a,b)=>{a=>0,b(a(b))}`}, // #469
 		{`()=>{var c;try {a} catch(b) {c}}`, `()=>{var b;try{a}catch{b}}`},
-		{`()=>{let foo;Math.abs(foo)}`, `()=>{let a;a<0?-a:a}`},
+		{`()=>{let foo;Math.abs(foo)}`, `()=>{let a;Math.abs(a)}`},
 		{`()=>{let foo;isNaN(foo)}`, `()=>{let a;isNaN(a)}`},
 		{`()=>{let isNaN;isNaN(foo)}`, `()=>{let a;a(foo)}`},
 		{`class a { #foo = 1; #bar() { this.#foo++ } }`, `class a{#a=1;#b(){this.#a++}}`},

@@ -1344,28 +1344,6 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 							}
 							break
 						}
-					} else if bytes.Equal(y.Data, []byte("abs")) {
-						// Math.abs(x) => x<0?-x:x
-						if len(expr.Args.List) == 1 {
-							groupLen := 0
-							if js.OpAssign < prec {
-								groupLen = 2
-							}
-							if v, ok := expr.Args.List[0].Value.(*js.Var); ok && len(v.Data)*2+groupLen+5 < 10 {
-								if js.OpAssign < prec {
-									m.write(openParenBytes)
-								}
-								m.minifyExpr(v, js.OpCoalesce)
-								m.write([]byte("<0?-"))
-								m.minifyExpr(v, js.OpAssign)
-								m.write(colonBytes)
-								m.minifyExpr(v, js.OpAssign)
-								if js.OpAssign < prec {
-									m.write(closeParenBytes)
-								}
-								break
-							}
-						}
 					} else if bytes.Equal(y.Data, []byte("sqrt")) {
 						// Math.sqrt(x) => x**.5, only for number literals since Math.sqrt(-0) is -0 and Math.sqrt(-Infinity) is NaN
 						if len(expr.Args.List) == 1 && isNumericLiteral(expr.Args.List[0].Value) {
