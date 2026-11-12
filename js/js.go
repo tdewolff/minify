@@ -1141,19 +1141,6 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 			panic(fmt.Sprintf("bad type: %T!=(js.LiteralExpr,*js.Var)", expr.Y)) // should never happen
 		}
 
-		if group, ok := expr.X.(*js.GroupExpr); ok {
-			if lit, ok := group.X.(*js.LiteralExpr); ok && (lit.TokenType == js.DecimalToken || lit.TokenType == js.IntegerToken) {
-				if lit.TokenType == js.DecimalToken {
-					m.write(minify.Number(lit.Data, m.o.Precision))
-				} else {
-					m.write(lit.Data)
-					m.write(dotBytes)
-				}
-				m.write(dotBytes)
-				m.write(yData)
-				break
-			}
-		}
 		precInner := expr.Prec
 		if precInner == js.OpMember && prec < js.OpMember {
 			precInner = js.OpCall
