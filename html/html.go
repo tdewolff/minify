@@ -167,10 +167,14 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 					} else if 0 < len(rawTagMediatype) {
 						mimetype, params = parse.Mediatype(rawTagMediatype)
 					} else if rawTagHash == Script {
-						mimetype, params = jsMimeBytes, map[string]string{"escape-html": "1"}
+						mimetype = jsMimeBytes
 					} else if rawTagHash == Style {
 						mimetype = cssMimeBytes
 					}
+					if params == nil {
+						params = map[string]string{}
+					}
+					params["escape-html"] = "1"
 					if err := m.MinifyMimetype(mimetype, w, buffer.NewReader(t.Data), params); err != nil {
 						if err != minify.ErrNotExist {
 							return minify.UpdateErrorPosition(err, z, t.Offset)
