@@ -360,6 +360,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 				m.write(fromBytes)
 			}
 			m.write(minifyString(stmt.Module, false, m.escapeHTML))
+			m.minifyImportAttributes(stmt.Attributes)
 			m.requireSemicolon()
 		}
 	case *js.ExportStmt:
@@ -398,6 +399,7 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			if stmt.Module != nil {
 				m.write(fromBytes)
 				m.write(minifyString(stmt.Module, false, m.escapeHTML))
+				m.minifyImportAttributes(stmt.Attributes)
 			}
 			m.requireSemicolon()
 		}
@@ -413,6 +415,27 @@ func (m *jsMinifier) minifyStmt(i js.IStmt) {
 			m.write(newlineBytes)
 		}
 	}
+}
+
+func (m *jsMinifier) minifyImportAttributes(attrs []js.ImportAttribute) {
+	if attrs == nil {
+		return
+	}
+	m.write(withBytes)
+	m.write(openBraceBytes)
+	for i, attr := range attrs {
+		if i != 0 {
+			m.write(commaBytes)
+		}
+		if attr.Key[0] == '"' || attr.Key[0] == '\'' {
+			m.write(minifyString(attr.Key, false, m.escapeHTML))
+		} else {
+			m.write(attr.Key)
+		}
+		m.write(colonBytes)
+		m.write(minifyString(attr.Value, false, m.escapeHTML))
+	}
+	m.write(closeBraceBytes)
 }
 
 func (m *jsMinifier) minifyBlockStmt(stmt *js.BlockStmt) {
@@ -985,19 +1008,21 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				}
 			} else if expr.Op == js.AndToken {
 				// TODO: use truthy instead of true?
-				if (isTrue(expr.X) || isFalse(expr.Y)) && !hasSideEffects(expr.X) {
+				// a&&true and a&&false only equal a and false when a is a boolean
+				if (isTrue(expr.X) || isFalse(expr.Y) && isBooleanExpr(expr.X)) && !hasSideEffects(expr.X) {
 					m.minifyExpr(expr.Y, prec)
 					break
-				} else if (isTrue(expr.Y) || isFalse(expr.X)) && !hasSideEffects(expr.Y) {
+				} else if (isTrue(expr.Y) && isBooleanExpr(expr.X) || isFalse(expr.X)) && !hasSideEffects(expr.Y) {
 					m.minifyExpr(expr.X, prec)
 					break
 				}
 			} else if expr.Op == js.OrToken {
 				// TODO: use truthy instead of true?
-				if (isTrue(expr.X) || isFalse(expr.Y)) && !hasSideEffects(expr.Y) {
+				// a||false and a||true only equal a and true when a is a boolean
+				if (isTrue(expr.X) || isFalse(expr.Y) && isBooleanExpr(expr.X)) && !hasSideEffects(expr.Y) {
 					m.minifyExpr(expr.X, prec)
 					break
-				} else if (isTrue(expr.Y) || isFalse(expr.X)) && !hasSideEffects(expr.X) {
+				} else if (isTrue(expr.Y) && isBooleanExpr(expr.X) || isFalse(expr.X)) && !hasSideEffects(expr.X) {
 					m.minifyExpr(expr.Y, prec)
 					break
 				}
@@ -1303,7 +1328,7 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 				}
 			}
 		} else if dot, ok := expr.X.(*js.DotExpr); ok {
-			if x, ok := dot.X.(*js.Var); ok && x.Decl == js.NoDecl && bytes.Equal(x.Data, MathBytes) {
+			if x, ok := dot.X.(*js.Var); ok && x.Decl == js.NoDecl && bytes.Equal(x.Data, MathBytes) && !hasSpreadArg(expr.Args) {
 				if y, ok := dot.Y.(js.LiteralExpr); ok {
 					if bytes.Equal(y.Data, []byte("pow")) {
 						// Math.pow(a,b) => a**b
@@ -1319,45 +1344,9 @@ func (m *jsMinifier) minifyExpr(i js.IExpr, prec js.OpPrec) {
 							}
 							break
 						}
-					} else if bytes.Equal(y.Data, []byte("trunc")) {
-						// Math.trunc(x) => x|0
-						if len(expr.Args.List) == 1 {
-							if js.OpBitOr < prec {
-								m.write(openParenBytes)
-							}
-							m.minifyExpr(&js.GroupExpr{expr.Args.List[0].Value}, js.OpBitOr)
-							m.write(bitOrBytes)
-							m.write(zeroBytes)
-							if js.OpBitOr < prec {
-								m.write(closeParenBytes)
-							}
-							break
-						}
-					} else if bytes.Equal(y.Data, []byte("abs")) {
-						// Math.abs(x) => x<0?-x:x
-						if len(expr.Args.List) == 1 {
-							groupLen := 0
-							if js.OpAssign < prec {
-								groupLen = 2
-							}
-							if v, ok := expr.Args.List[0].Value.(*js.Var); ok && len(v.Data)*2+groupLen+5 < 10 {
-								if js.OpAssign < prec {
-									m.write(openParenBytes)
-								}
-								m.minifyExpr(v, js.OpCoalesce)
-								m.write([]byte("<0?-"))
-								m.minifyExpr(v, js.OpAssign)
-								m.write(colonBytes)
-								m.minifyExpr(v, js.OpAssign)
-								if js.OpAssign < prec {
-									m.write(closeParenBytes)
-								}
-								break
-							}
-						}
 					} else if bytes.Equal(y.Data, []byte("sqrt")) {
-						// Math.sqrt(x) => x**.5
-						if len(expr.Args.List) == 1 {
+						// Math.sqrt(x) => x**.5, only for number literals since Math.sqrt(-0) is -0 and Math.sqrt(-Infinity) is NaN
+						if len(expr.Args.List) == 1 && isNumericLiteral(expr.Args.List[0].Value) {
 							if js.OpExp < prec {
 								m.write(openParenBytes)
 							}

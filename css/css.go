@@ -273,7 +273,7 @@ func (c *cssMinifier) minifyGrammar() error {
 		case css.CustomPropertyGrammar:
 			c.w.Write(data)
 			c.w.Write(colonBytes)
-			value := parse.TrimWhitespace(c.p.Values()[0].Data)
+			value := minifyCustomPropertyValue(c.p.Values()[0].Data)
 			if len(c.p.Values()[0].Data) != 0 && len(value) == 0 {
 				value = spaceBytes
 			}
@@ -291,6 +291,80 @@ func (c *cssMinifier) minifyGrammar() error {
 		}
 	}
 	return nil
+}
+
+// minifyCustomPropertyValue collapses each run of whitespace in a custom
+// property value to a single space and removes whitespace around commas and
+// at both ends. All other tokens, such as strings and comments, are kept as is.
+func minifyCustomPropertyValue(value []byte) []byte {
+	if !hasCollapsibleWhitespace(value) {
+		return trimCustomPropertyValue(value)
+	}
+
+	b := make([]byte, 0, len(value))
+	l := css.NewLexer(parse.NewInputBytes(value))
+	var ws []byte
+	prev := css.ErrorToken
+	for {
+		tt, data := l.Next()
+		if tt == css.ErrorToken {
+			if l.Err() != io.EOF {
+				return trimCustomPropertyValue(value)
+			}
+			if ws != nil && isBackslashDelim(prev, b) {
+				b = append(b, ws...)
+			}
+			return b
+		} else if tt == css.WhitespaceToken {
+			ws = data
+			continue
+		}
+		if ws != nil && prev != css.ErrorToken {
+			if isBackslashDelim(prev, b) {
+				// a backslash followed by a newline is not an escape, keep the
+				// newline since a space would turn it into one
+				b = append(b, ws...)
+			} else if prev != css.CommaToken && tt != css.CommaToken {
+				b = append(b, ' ')
+			}
+		}
+		b = append(b, data...)
+		ws = nil
+		prev = tt
+	}
+}
+
+// trimCustomPropertyValue trims whitespace at both ends, but keeps the
+// whitespace after a trailing backslash since it may be an escaped space.
+func trimCustomPropertyValue(value []byte) []byte {
+	start, end := 0, len(value)
+	for start < end && parse.IsWhitespace(value[start]) {
+		start++
+	}
+	for start < end && parse.IsWhitespace(value[end-1]) {
+		end--
+	}
+	if start < end && value[end-1] == '\\' && end < len(value) {
+		end++
+	}
+	return value[start:end]
+}
+
+// hasCollapsibleWhitespace returns true if b has a whitespace character other
+// than a single space, or a space next to a comma.
+func hasCollapsibleWhitespace(b []byte) bool {
+	for i, c := range b {
+		if parse.IsWhitespace(c) {
+			if c != ' ' || i+1 < len(b) && (parse.IsWhitespace(b[i+1]) || b[i+1] == ',') || 0 < i && b[i-1] == ',' {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func isBackslashDelim(tt css.TokenType, b []byte) bool {
+	return tt == css.DelimToken && b[len(b)-1] == '\\'
 }
 
 func (c *cssMinifier) minifySelectors(values []css.Token) {

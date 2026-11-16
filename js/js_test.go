@@ -98,6 +98,11 @@ func TestJS(t *testing.T) {
 		{`import {a as b, c} from "path"`, `import{a as b,c}from"path"`},
 		{`import x, * as b from "path"`, `import x,*as b from"path"`},
 		{`import x, {a as b, c} from "path"`, `import x,{a as b,c}from"path"`},
+		{`import x from "./a.json" with { type: "json" }`, `import x from"./a.json"with{type:"json"}`},
+		{`import "path" with {}`, `import"path"with{}`},
+		{`import * as b from 'path' with { 'type': 'json', b: "c", }`, `import*as b from"path"with{"type":"json",b:"c"}`},
+		{`export * from "path" with { type: "json" }`, `export*from"path"with{type:"json"}`},
+		{`export {a as b} from "path" with { type: "json" }; c()`, `export{a as b}from"path"with{type:"json"};c()`},
 		{`export * from "path"`, `export*from"path"`},
 		{`export * as ns from "path"`, `export*as ns from"path"`},
 		{`export {a as b} from "path"`, `export{a as b}from"path"`},
@@ -164,6 +169,9 @@ func TestJS(t *testing.T) {
 		{"'string\\\r\nstring\\\nstring\\\rstring\\\u2028string\\\u2029string'", `"stringstringstringstringstringstring"`},
 		{`"\x7H\u877H"`, `"\x7H\u877H"`},
 		{`"\u01ac\u01de\u0187\u{0001a0}"`, `"ƬǞƇƠ"`},
+		{`"\u005c"`, `"\\"`},               // #1071
+		{`"x\u005cy\u{5c}b"`, `"x\\y\\b"`}, // #1071
+		{"`\\u005c`", "`\\\\`"},            // #1071
 		{`"str1ng" + "str2ng"`, `"str1ngstr2ng"`},
 		{`"str1ng" + "str2ng" + "str3ng"`, `"str1ngstr2ngstr3ng"`},
 		{`"padding" + this`, `"padding"+this`},
@@ -391,6 +399,10 @@ func TestJS(t *testing.T) {
 		{`function g(){return undefined}`, `function g(){}`},
 		{`function g(){return void 0}`, `function g(){}`},
 		{`function g(){return a++,void 0}`, `function g(){a++}`},
+		{`function g(){return a++,b++,void 0}`, `function g(){a++,b++}`},
+		{`function g(){a();b();return undefined}`, `function g(){a(),b()}`},
+		{`function g(){a();b();c();return void 0}`, `function g(){a(),b(),c()}`},
+		{`var f=function(v){log.push("a");log.push(v);return undefined}`, `var f=function(v){log.push("a"),log.push(v)}`},
 		{`for (var a of b){continue}`, `for(var a of b);`},
 		{`for (var a of b){continue LABEL}`, `for(var a of b)continue LABEL`},
 		{`for (var a of b){break}`, `for(var a of b)break`},
@@ -622,6 +634,14 @@ func TestJS(t *testing.T) {
 		{`0o00?a:b`, `b`},
 		{`0n?a:b`, `b`},
 		{`(0n?a:b)()`, `b()`},
+		{`""?a:b`, `b`}, // #1065
+		{`''?a:b`, `b`},
+		{`!""?a:b`, `a`},
+		{`"0"?a:b`, `a`},
+		{`" "?a:b`, `a`},
+		{`if("")a=1;else a=2`, `a=2`}, // #1065
+		{`if(!"")a=1;else a=2`, `a=1`},
+		{`if("a")a=1;else a=2`, `a=1`},
 		{`!0`, `!0`},
 		{`!42`, `!1`},
 		{`!"str"`, `!1`},
@@ -707,12 +727,36 @@ func TestJS(t *testing.T) {
 		{`f((a,b)||d)`, `f((a,b)||d)`},
 
 		// math functions, see #790
-		{`Math.abs(x)`, `x<0?-x:x`},
-		{`Math.trunc(x)`, `x|0`},
+		{`Math.abs(x)`, `Math.abs(x)`}, // x<0?-x:x is wrong for -0, strings, undefined, null, ...
+		{`Math.abs(-0)`, `Math.abs(-0)`},
+		{`x=Math.abs(a)`, `x=Math.abs(a)`},
+		{`Math.trunc(x)`, `Math.trunc(x)`}, // #1077: x|0 wraps values outside the int32 range
+		{`x=a||false`, `x=a||!1`},          // #1066: a||false is false, not a, when a is falsy
+		{`x=a&&true`, `x=a&&!0`},           // #1066
+		{`x=a||true`, `x=a||!0`},           // #1066
+		{`x=a&&false`, `x=a&&!1`},          // #1066
+		{`x=0&&false`, `x=0&&!1`},          // #1066
+		{`x=1&&true`, `x=1&&!0`},           // #1066
+		{`x=0||false`, `x=0||!1`},          // #1066
+		{`x=a<b||false`, `x=a<b`},
+		{`x=a<b&&true`, `x=a<b`},
+		{`x=!a&&true`, `x=!a`},
+		{`x=true&&a`, `x=a`},
+		{`x=false||a`, `x=a`},
+		{`Math.trunc(2**40+.5)`, `Math.trunc(2**40+.5)`},
 		{`Math.pow(a,b)`, `a**b`},
 		{`Math.pow(-a,b)`, `(-a)**b`},
-		{`Math.sqrt(a)`, `a**.5`},
-		{`++Math.sqrt(a*5)`, `++((a*5)**.5)`},
+		{`Math.sqrt(2)`, `2**.5`},
+		{`Math.sqrt(2)**2`, `(2**.5)**2`},
+		{`Math.sqrt(a)`, `Math.sqrt(a)`},
+		{`Math.sqrt(-0)`, `Math.sqrt(-0)`},
+		{`Math.sqrt(-Infinity)`, `Math.sqrt(-(1/0))`},
+		{`Math.sqrt(4n)`, `Math.sqrt(4n)`},
+		{`Math.sqrt()`, `Math.sqrt()`},
+		{`Math.sqrt(...a)`, `Math.sqrt(...a)`},
+		{`Math.pow(...a)`, `Math.pow(...a)`},
+		{`Math.pow(a,...b)`, `Math.pow(a,...b)`},
+		{`Math.abs(...a)`, `Math.abs(...a)`},
 		{`isNaN(x)`, `isNaN(x)`},
 		{`Number(undefined)`, `NaN`},
 		{`Number(null)`, `0`},
@@ -813,7 +857,7 @@ func TestJS(t *testing.T) {
 		{`a<</script>/`, `a<</script>/`},
 		{"`\\x3c/script>`", "`</script>`"},
 		{`function f(a,b){a();for(const c of b){const b=0}}`, `function f(a,b){a();for(const c of b){const b=0}}`},
-		{`function f(){return a,b,void 0}`, `function f(){return a,b}`},
+		{`function f(){return a,b,void 0}`, `function f(){a,b}`},
 		{`var arr=[];var slice=arr.slice;var concat=arr.concat;var push=arr.push;var indexOf=arr.indexOf;var class2type={};`, `var arr=[],slice=arr.slice,concat=arr.concat,push=arr.push,indexOf=arr.indexOf,class2type={}`},
 		{`var arr=[];var class2type={};a=5;var rlocalProtocol=0`, `var arr=[],class2type={};a=5;var rlocalProtocol=0`},
 		{`function f(){a=b;if(!o)return c;return d}`, `function f(){return a=b,o?d:c}`},
@@ -875,6 +919,15 @@ func TestJS(t *testing.T) {
 		{`class A{get #a(){} set #a(x){}}`, `class A{get#a(){}set#a(x){}}`},                                              // #932
 		{`()=>{const a=1,{b}=a}`, `()=>{const a=1,{b}=a}`},                                                               // # 939
 		{`()=>{const a={b};const{c}={d:a}}`, `()=>{const a={b},{c}={d:a}}`},                                              // # 939
+		{`()=>{let a=1;let{b}=(a)}`, `()=>{let a=1,{b}=a}`},                                                              // #1068
+		{`()=>{const a={b};const{c}=(0,a.b)(1)}`, `()=>{const a={b},{c}=(0,a.b)(1)}`},                                    // #1068
+		{`()=>{const a=2;const[b,c]=(a>1?[a,1]:[0,a])}`, `()=>{const a=2,[b,c]=a>1?[a,1]:[0,a]}`},                        // #1068
+		{`()=>{const a=2;const[b]=(c)}`, `()=>{const[b]=c,a=2}`},                                                         // #1068
+		{`var a={b:1};var{b}=a`, `var a={b:1},{b}=a`},                                                                    // #1067
+		{`var a=[];var[b]=a`, `var a=[],[b]=a`},                                                                          // #1067
+		{`var a={b:1};var{b}=a,[c]=d`, `var[c]=d,a={b:1},{b}=a`},                                                         // #1067
+		{`var a=2;var[b,c]=(a>1?[a,1]:[0,a])`, `var a=2,[b,c]=a>1?[a,1]:[0,a]`},                                          // #1067
+		{`var a=1;var{b}=c`, `var{b}=c,a=1`},                                                                             // #1067
 		{`this._dirty&&=(this._texture.update(this._image),!1)`, `this._dirty&&=(this._texture.update(this._image),!1)`}, // # 1037
 		//{`function f(a){return void(a||b())}`, `function f(a){a||b()}`},                                                  // #1057
 		//{`export function f(a){if(x)return void(a||b());return 1}`, `export function f(a){return x?a||b(),0[0]:1}`},      // #1057
@@ -950,7 +1003,7 @@ func TestJSVarRenaming(t *testing.T) {
 		{`()=>{var a;if(x){const b=0;while(true);}}`, `()=>{if(x){const b=0;for(var a;!0;);}}`},
 		{`(e,s)=>{e=>0,s(e(s))}`, `(a,b)=>{a=>0,b(a(b))}`}, // #469
 		{`()=>{var c;try {a} catch(b) {c}}`, `()=>{var b;try{a}catch{b}}`},
-		{`()=>{let foo;Math.abs(foo)}`, `()=>{let a;a<0?-a:a}`},
+		{`()=>{let foo;Math.abs(foo)}`, `()=>{let a;Math.abs(a)}`},
 		{`()=>{let foo;isNaN(foo)}`, `()=>{let a;isNaN(a)}`},
 		{`()=>{let isNaN;isNaN(foo)}`, `()=>{let a;a(foo)}`},
 		{`class a { #foo = 1; #bar() { this.#foo++ } }`, `class a{#a=1;#b(){this.#a++}}`},

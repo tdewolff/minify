@@ -21,7 +21,6 @@ var (
 	plusPlusBytes              = []byte("++")
 	minMinBytes                = []byte("--")
 	expBytes                   = []byte("**")
-	bitOrBytes                 = []byte("|")
 	colonBytes                 = []byte(":")
 	semicolonBytes             = []byte(";")
 	commaBytes                 = []byte(",")
@@ -66,6 +65,7 @@ var (
 	importBytes                = []byte("import")
 	exportBytes                = []byte("export")
 	fromBytes                  = []byte("from")
+	withBytes                  = []byte("with")
 	returnBytes                = []byte("return")
 	classBytes                 = []byte("class")
 	asSpaceBytes               = []byte("as ")
@@ -643,7 +643,8 @@ func isFalsy(i js.IExpr) (bool, bool) {
 	if lit, ok := i.(*js.LiteralExpr); ok {
 		tt := lit.TokenType
 		d := lit.Data
-		if tt == js.FalseToken || tt == js.NullToken || tt == js.StringToken && len(lit.Data) == 0 {
+		if tt == js.FalseToken || tt == js.NullToken || tt == js.StringToken && len(lit.Data) == 2 {
+			// lit.Data includes the quotes, so "" and '' have length 2
 			return !negated, true // falsy
 		} else if tt == js.TrueToken || tt == js.StringToken {
 			return negated, true // truthy
@@ -663,6 +664,22 @@ func isFalsy(i js.IExpr) (bool, bool) {
 		return !negated, true // falsy
 	}
 	return false, false // unknown
+}
+
+// hasSpreadArg returns true if any argument is a spread (...x).
+func hasSpreadArg(args js.Args) bool {
+	for _, arg := range args.List {
+		if arg.Rest {
+			return true
+		}
+	}
+	return false
+}
+
+// isNumericLiteral returns true for number literals such as 2, .5, 1e3, 0x10, but not BigInts. They are never negative.
+func isNumericLiteral(expr js.IExpr) bool {
+	lit, ok := expr.(*js.LiteralExpr)
+	return ok && js.NumericToken < lit.TokenType && lit.TokenType <= js.IntegerToken && lit.Data[len(lit.Data)-1] != 'n'
 }
 
 func isBooleanExpr(expr js.IExpr) bool {
@@ -1128,7 +1145,7 @@ func replaceEscapes(b []byte, quote byte, prefix, suffix int, escapeHTML bool) [
 					if m == -1 {
 						i++
 						continue
-					} else if num < 256 && quote == byte(num) {
+					} else if num == '\\' || num < 256 && quote == byte(num) {
 						b[i] = '\\'
 						i++
 						n--

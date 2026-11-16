@@ -1,3 +1,4 @@
+#!/bin/sh
 if command -v dnf; then
     dnf -y install golang gcc
 elif command -v yum; then
