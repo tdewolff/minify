@@ -271,7 +271,8 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 			}
 
 			// remove superfluous tags, except for html, head and body tags when KeepDocumentTags is set
-			if !hasAttributes && (!o.KeepDocumentTags && (t.Hash == Html || t.Hash == Head || t.Hash == Body) || t.Hash == Colgroup) {
+			// the body start tag cannot be omitted when the body starts with an element that the parser would put in the head
+			if !hasAttributes && (!o.KeepDocumentTags && (t.Hash == Html || t.Hash == Head || t.Hash == Body && (t.TokenType == html.EndTagToken || !startsWithHeadElement(tb))) || t.Hash == Colgroup) {
 				break
 			} else if t.TokenType == html.EndTagToken {
 				omitEndTag := false
@@ -546,5 +547,23 @@ func (o *Minifier) Minify(m *minify.M, w io.Writer, r io.Reader, _ map[string]st
 				}
 			}
 		}
+	}
+}
+
+// startsWithHeadElement returns true if the first element after the current body start tag is a meta, noscript, link,
+// script, style, or template element, which the parser would put in the head if the body start tag is omitted, see
+// https://html.spec.whatwg.org/multipage/syntax.html#optional-tags
+func startsWithHeadElement(tb *TokenBuffer) bool {
+	for i := 0; ; i++ {
+		next := tb.Peek(i)
+		if next.TokenType == html.StartTagCloseToken || next.TokenType == html.CommentToken || next.TokenType == html.TextToken && parse.IsAllWhitespace(next.Data) {
+			continue
+		} else if next.TokenType != html.StartTagToken {
+			return false
+		} else if (next.Hash == Script || next.Hash == Style) && tb.Peek(i+1).TokenType == html.StartTagCloseToken && tb.Peek(i+2).TokenType == html.EndTagToken {
+			i += 2 // empty script and style tags are removed
+			continue
+		}
+		return next.Hash == Meta || next.Hash == Noscript || next.Hash == Link || next.Hash == Script || next.Hash == Style || next.Hash == Template
 	}
 }
