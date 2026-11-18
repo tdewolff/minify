@@ -32,6 +32,13 @@ func TestHTML(t *testing.T) {
 		{`<style><!--\ncss\n--></style>`, `<style><!--\ncss\n--></style>`},
 		{`<style>&</style>`, `<style>&</style>`},
 		{`<html><head></head><body>x</body></html>`, `x`},
+		{`<html><head><title>t</title></head><body><script>x()</script></body></html>`, `<title>t</title><body><script>x()</script>`},
+		{`<head></head><body> <!--comment--> <meta name=a><p>x</p></body>`, `<body><meta name=a><p>x`},
+		{`<body><link rel=a href=b>`, `<body><link rel=a href=b>`},
+		{`<body><style>a{}</style>`, `<body><style>a{}</style>`},
+		{`<body><noscript>x</noscript>`, `<body><noscript>x</noscript>`},
+		{`<body><template>x</template>`, `<body><template>x</template>`},
+		{`<body><script></script><p>x</p></body>`, `<p>x`}, // empty script is removed
 		{"<html><head><title> a </title>\n<link></head></html>", `<title>a</title><link>`},
 		{`<meta http-equiv="content-type" content="text/html; charset=utf-8">`, `<meta charset=utf-8>`},
 		{`<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />`, `<meta charset=utf-8>`},
